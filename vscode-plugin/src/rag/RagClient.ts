@@ -16,6 +16,7 @@
 
 import type {
   AgentInfo,
+  ChunkInfo,
   ContextPack,
   DictionarySection,
   DocumentInfo,
@@ -27,10 +28,16 @@ import type {
   MonitorSnapshot,
   ProjectInfo,
   RagResult,
+  RequestAnalysis,
   SearchFilters,
   SearchMode,
   SearchResponse,
   SecurityStatus,
+  SourcesOverview,
+  TaskDetail,
+  TaskGraph,
+  TaskInfo,
+  TaskPanel,
 } from './types';
 
 export interface RagClient {
@@ -54,11 +61,37 @@ export interface RagClient {
   graph(entity: string, depth: number, maxNodes: number): Promise<RagResult<GraphSlice>>;
   entity(name: string): Promise<RagResult<EntityDetail>>;
 
+  /**
+   * As origens do conhecimento: este projeto, as fontes base e o hub.
+   *
+   * Existe porque um índice pode conter três coisas diferentes ao mesmo tempo,
+   * e tratá-las como uma só faz a pessoa acreditar que o repositório contém
+   * algo que na verdade veio de fora dele.
+   */
+  sources(): Promise<RagResult<SourcesOverview>>;
+
   dictionary(): Promise<RagResult<DictionarySection[]>>;
   documents(query?: string, limit?: number): Promise<RagResult<DocumentInfo[]>>;
   fileKnowledge(relPath: string): Promise<RagResult<FileKnowledge>>;
+  /** Conteúdo completo de um chunk. A busca devolve recorte; isto devolve tudo. */
+  chunk(chunkId: string): Promise<RagResult<ChunkInfo>>;
 
   buildContext(query: string, tokens: number): Promise<RagResult<ContextPack>>;
+
+  /**
+   * Orquestração — LEITURA apenas.
+   *
+   * Reivindicar, reportar e mudar estado de tarefa são operações de escrita, e
+   * elas continuam na CLI e no agente. Uma tela de exploração que também
+   * executa trabalho seria uma forma silenciosa de dar ao plugin um poder que
+   * o servidor sobe desligado por padrão.
+   */
+  tasks(project?: string, status?: string): Promise<RagResult<TaskInfo[]>>;
+  task(taskId: string): Promise<RagResult<TaskDetail>>;
+  taskGraph(project?: string): Promise<RagResult<TaskGraph>>;
+  taskPanel(): Promise<RagResult<TaskPanel>>;
+  /** Classifica um pedido sem criar nada. O `--apply` não passa por aqui. */
+  analyzeRequest(request: string): Promise<RagResult<RequestAnalysis>>;
 
   security(): Promise<RagResult<SecurityStatus>>;
   monitor(): Promise<RagResult<MonitorSnapshot>>;

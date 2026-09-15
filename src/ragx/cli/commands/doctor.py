@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import sys
 from typing import Annotated
@@ -17,23 +18,44 @@ from ragx.storage.db import integrity_check, open_db, user_version
 console = Console()
 
 
-def _row(label: str, value: str, ok: bool, hint: list[str] | None = None) -> bool:
-    mark = "[green]ok[/]" if ok else "[bold red]FALHA[/]"
-    console.print(f"  {label:<18}{value:<44}{mark}")
-    # Sugestão de correção só cabe quando a checagem falhou — imprimir "ragx reset"
-    # ao lado de um "ok" faz o usuário achar que há algo errado.
-    if not ok:
-        for h in hint or []:
-            console.print(f"                    [yellow]→ {h}[/]")
-    return ok
+class _Relatorio:
+    """Junta as checagens uma vez e decide DEPOIS como apresentá-las.
+
+    O `doctor` só sabia falar com gente. O plugin do VS Code precisa das
+    mesmas checagens em JSON — e reimplementá-las do outro lado produziria
+    dois diagnósticos que discordam sobre o mesmo ambiente.
+    """
+
+    def __init__(self, como_json: bool) -> None:
+        self.como_json = como_json
+        self.checks: list[dict[str, object]] = []
+
+    def row(self, label: str, value: str, ok: bool, hint: list[str] | None = None) -> bool:
+        self.checks.append(
+            {"name": label, "ok": ok, "detail": value, "hints": list(hint or [])}
+        )
+        if self.como_json:
+            return ok
+        mark = "[green]ok[/]" if ok else "[bold red]FALHA[/]"
+        console.print(f"  {label:<18}{value:<44}{mark}")
+        # Sugestão de correção só cabe quando a checagem falhou — imprimir
+        # "ragx reset" ao lado de um "ok" faz a pessoa achar que há algo errado.
+        if not ok:
+            for h in hint or []:
+                console.print(f"                    [yellow]→ {h}[/]")
+        return ok
 
 
 def doctor(
     full: Annotated[bool, typer.Option("--full", help="Inclui integridade do banco.")] = False,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Valida o ambiente e a configuração."""
     cfg = load_config()
-    console.print("\n[bold]ragx doctor[/]\n")
+    rel = _Relatorio(as_json)
+    _row = rel.row
+    if not as_json:
+        console.print("\n[bold]ragx doctor[/]\n")
     problems = 0
 
     py = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -100,9 +122,23 @@ def doctor(
     problems += not _row("Escrita .ragx/", "permitida" if writable else "negada", writable,
                          [] if writable else ["verifique permissões do diretório"])
 
-    ok = _embedder_status(cfg)
+    ok = _embedder_status(cfg, _row)
     if not ok:
         problems += 1
+
+    if as_json:
+        # Sai com 0 mesmo havendo problema: o diagnóstico está no payload, e
+        # quem pede JSON quer LÊ-LO. Código de saída diferente de zero faz o
+        # chamador descartar a saída inteira e ficar sem diagnóstico nenhum —
+        # foi o que aconteceu com o plugin do VS Code, que mostrava "erro ao
+        # falar com o RAGX" no lugar das checagens.
+        console.print_json(
+            json.dumps(
+                {"ok": problems == 0, "problems": problems, "checks": rel.checks},
+                ensure_ascii=False,
+            )
+        )
+        return
 
     console.print()
     if problems:
@@ -112,7 +148,7 @@ def doctor(
     console.print("[bold green]Tudo certo.[/]\n")
 
 
-def _embedder_status(cfg) -> bool:
+def _embedder_status(cfg, _row) -> bool:  # type: ignore[no-untyped-def]
     provider = cfg.embedding.provider
     try:
         from ragx.embeddings import build_embedder

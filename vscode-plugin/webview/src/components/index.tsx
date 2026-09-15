@@ -374,6 +374,84 @@ export function ErrorState({
   );
 }
 
+// ── layout ──────────────────────────────────────────────────────────────
+/**
+ * Lista e detalhe: lado a lado quando há espaço, empilhados quando não há.
+ *
+ * Na barra lateral (~300px) duas colunas seriam duas colunas ilegíveis, então
+ * o detalhe vai para cima da lista — foi o que a pessoa acabou de escolher, e
+ * é o que ela quer ver. Na aba do editor a lista continua visível ao lado, que
+ * é o ponto inteiro de abrir em tela cheia: comparar sem perder o contexto.
+ */
+export function Split({
+  amplo,
+  principal,
+  lado,
+  larguraLado = 420,
+}: {
+  amplo: boolean;
+  principal: ReactNode;
+  lado?: ReactNode;
+  larguraLado?: number;
+}) {
+  if (!lado) return <>{principal}</>;
+  if (!amplo) {
+    return (
+      <div className="space-y-2">
+        {lado}
+        {principal}
+      </div>
+    );
+  }
+  return (
+    <div className="flex gap-3 items-start">
+      <div className="flex-1 min-w-0">{principal}</div>
+      <aside
+        style={{ width: larguraLado }}
+        className="shrink-0 sticky top-0 max-h-[calc(100vh-8rem)] overflow-y-auto"
+      >
+        {lado}
+      </aside>
+    </div>
+  );
+}
+
+/** Cartões em colunas quando cabe, em uma coluna quando não cabe. */
+export function Grade({ children, min = 280 }: { children: ReactNode; min?: number }) {
+  return (
+    <div
+      className="grid gap-3"
+      style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Trecho de código com número de linha.
+ *
+ * `whitespace-pre-wrap` e não `overflow-x`: quebrar a linha longa é melhor que
+ * esconder o fim dela atrás de uma barra horizontal que ninguém arrasta.
+ */
+export function Codigo({ texto, inicio }: { texto: string; inicio?: number }) {
+  const linhas = texto.split('\n');
+  return (
+    <pre className="text-[0.9em] font-mono whitespace-pre-wrap break-words leading-snug">
+      {linhas.map((l, i) => (
+        <div key={i} className="flex gap-2">
+          {inicio !== undefined && (
+            <span aria-hidden className="text-fg-muted select-none tabular-nums shrink-0 w-10 text-right">
+              {inicio + i}
+            </span>
+          )}
+          <span className="min-w-0">{l || ' '}</span>
+        </div>
+      ))}
+    </pre>
+  );
+}
+
 // ── utilidades ──────────────────────────────────────────────────────────
 export function useDebounced<T>(valor: T, ms: number): T {
   const [atrasado, setAtrasado] = useState(valor);

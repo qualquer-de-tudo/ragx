@@ -44,6 +44,11 @@ export default {
         hover: vsc('list-hoverBackground'),
         active: vsc('list-activeSelectionBackground'),
         'active-fg': vsc('list-activeSelectionForeground'),
+        // Seleção de lista SEM foco. Existe porque o modificador de opacidade
+        // (`bg-active/30`) não gera nada sobre uma cor que é `var(--vscode-*)`:
+        // o Tailwind não consegue calcular o alfa e descarta a classe em
+        // silêncio — a linha selecionada ficava sem destaque nenhum.
+        'active-soft': vsc('list-inactiveSelectionBackground'),
         badge: vsc('badge-background'),
         'badge-fg': vsc('badge-foreground'),
         ok: vsc('testing-iconPassed'),

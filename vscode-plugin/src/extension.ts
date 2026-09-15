@@ -10,12 +10,17 @@
 import * as vscode from 'vscode';
 
 import type { PageId, UiSettings } from './protocol';
+import {
+  ExplorerPanel,
+  KnowledgePanel,
+  type KnowledgeSurface,
+  type PanelHost,
+} from './providers/KnowledgePanel';
 import { CliRagClient } from './rag/CliClient';
 import { discover, toRelPath, type Discovery } from './rag/discovery';
 import { McpRagClient } from './rag/McpClient';
 import type { RagClient } from './rag/RagClient';
 import type { ProjectInfo, SearchMode, SystemState } from './rag/types';
-import { KnowledgePanel } from './providers/KnowledgePanel';
 import { Cache } from './services/cache';
 import { disposeLogger, log, logError, showLogs } from './services/logger';
 import { StatusBar } from './services/statusBar';
@@ -25,18 +30,46 @@ let projeto: ProjectInfo | undefined;
 let estado: SystemState = 'disconnected';
 let descoberta: Discovery = { found: false, markers: [], needsIndex: false };
 let painel: KnowledgePanel | undefined;
+let hospedeiro: PanelHost | undefined;
+let contexto: vscode.ExtensionContext | undefined;
 let statusBar: StatusBar | undefined;
 let cache: Cache | undefined;
 
+/**
+ * Para onde vai um comando de navegação.
+ *
+ * Com a aba do editor aberta, é lá que a pessoa está olhando — mandar o
+ * comando para a barra lateral escondida faria o clique parecer sem efeito.
+ */
+function superficie(): KnowledgeSurface | undefined {
+  // Uma aba já aberta sempre ganha da preferência: é onde a pessoa está.
+  if (ExplorerPanel.ativo) return ExplorerPanel.ativo;
+  const preferida = vscode.workspace
+    .getConfiguration('ragx')
+    .get<string>('defaultSurface', 'sidebar');
+  if (preferida === 'editor' && contexto && hospedeiro) {
+    return ExplorerPanel.abrir(contexto.extensionUri, hospedeiro);
+  }
+  return painel;
+}
+
+function abrirNoEditor(page?: PageId, payload?: Record<string, string>): void {
+  if (!contexto || !hospedeiro) return;
+  ExplorerPanel.abrir(contexto.extensionUri, hospedeiro, page, payload);
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   log('RAGX Knowledge Explorer ativando');
+  contexto = context;
 
   const cfg = () => vscode.workspace.getConfiguration('ragx');
   cache = new Cache(cfg().get<boolean>('cacheEnabled', true));
   statusBar = new StatusBar();
   statusBar.setVisible(cfg().get<boolean>('statusBar', true));
 
-  painel = new KnowledgePanel(context.extensionUri, {
+  // Um único host para as duas superfícies: o que a barra lateral e a aba do
+  // editor mostram vem exatamente da mesma fonte, inclusive o cache.
+  hospedeiro = {
     client: () => cliente,
     project: () => projeto,
     state: () => estado,
@@ -44,13 +77,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     cache: cache!,
     settings: lerSettings,
     root: () => descoberta.root,
-  });
+    openEditor: (page?: PageId) => abrirNoEditor(page),
+  };
+  painel = new KnowledgePanel(context.extensionUri, hospedeiro);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(KnowledgePanel.viewId, painel, {
       // O estado da UI sobrevive a esconder o painel. Sem isto, trocar de aba
       // perde a busca e o contexto que a pessoa acabou de montar.
       webviewOptions: { retainContextWhenHidden: true },
+    }),
+    // Recarregar a janela não pode fechar a aba: o VS Code a reabre e pede
+    // esta função para devolvê-la ao estado de trabalho.
+    vscode.window.registerWebviewPanelSerializer(ExplorerPanel.viewType, {
+      deserializeWebviewPanel: async (panel) => {
+        ExplorerPanel.restaurar(panel, context.extensionUri, hospedeiro!);
+      },
     }),
     statusBar,
     { dispose: disposeLogger },
@@ -65,7 +107,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (!e.affectsConfiguration('ragx')) return;
       cache?.setEnabled(cfg().get<boolean>('cacheEnabled', true));
       statusBar?.setVisible(cfg().get<boolean>('statusBar', true));
-      painel?.pushState();
+      avisarTodas();
       if (e.affectsConfiguration('ragx.connection') || e.affectsConfiguration('ragx.command')) {
         await conectar(true);
       }
@@ -89,7 +131,18 @@ function mudarEstado(novo: SystemState, detalhe?: string): void {
   void vscode.commands.executeCommand(
     'setContext', 'ragx.connected', novo !== 'disconnected' && novo !== 'error',
   );
+  avisarTodas(detalhe);
+}
+
+/**
+ * O estado vai para as DUAS superfícies, sempre.
+ *
+ * Mandar só para a que está em foco deixaria a outra mostrando "conectando"
+ * para sempre — e ela reaparece assim que a pessoa troca de aba.
+ */
+function avisarTodas(detalhe?: string): void {
   painel?.pushState(detalhe);
+  ExplorerPanel.ativo?.pushState(detalhe);
 }
 
 async function conectar(forcar: boolean): Promise<void> {
@@ -160,14 +213,17 @@ function lerSettings(): UiSettings {
 // ── comandos ────────────────────────────────────────────────────────────
 function registrarComandos(context: vscode.ExtensionContext): void {
   const ir = (page: PageId, payload?: Record<string, string>) => () =>
-    painel?.navigate(page, payload);
+    superficie()?.navigate(page, payload);
 
   const comandos: Array<[string, (...args: unknown[]) => unknown]> = [
     ['ragx.openExplorer', ir('overview')],
+    ['ragx.openInEditor', () => abrirNoEditor()],
     ['ragx.search', abrirBusca],
     ['ragx.buildContext', ir('context')],
     ['ragx.exploreGraph', ir('graph')],
     ['ragx.openDictionary', ir('dictionary')],
+    ['ragx.openTasks', ir('tasks')],
+    ['ragx.analyzeRequest', analisarPedido],
     ['ragx.openAgents', ir('agents')],
     ['ragx.status', ir('overview')],
     ['ragx.securityScan', ir('security')],
@@ -191,7 +247,24 @@ async function abrirBusca(): Promise<void> {
     ignoreFocusOut: true,
   });
   if (consulta === undefined) return;
-  painel?.navigate('search', { query: consulta });
+  superficie()?.navigate('search', { query: consulta });
+}
+
+/**
+ * Classifica um pedido antes de começar a escrever código.
+ *
+ * O Task Analyzer é a parte do RAGX que decide entre "faça agora" e
+ * "documente e decomponha antes". Ele só LÊ: nada é criado até alguém rodar
+ * `ragx task plan --apply`, que é escrita e continua fora do plugin.
+ */
+async function analisarPedido(): Promise<void> {
+  const pedido = await vscode.window.showInputBox({
+    prompt: 'O que você quer fazer? O RAGX classifica antes de você começar.',
+    placeHolder: 'migrar a autenticação para SSO em todos os serviços',
+    ignoreFocusOut: true,
+  });
+  if (!pedido?.trim()) return;
+  superficie()?.navigate('tasks', { request: pedido.trim() });
 }
 
 async function sincronizar(): Promise<void> {
@@ -217,7 +290,7 @@ async function sincronizar(): Promise<void> {
       .showErrorMessage(`RAGX: falha ao sincronizar. ${r.error?.message ?? ''}`, 'Ver logs')
       .then((escolha) => escolha === 'Ver logs' && showLogs());
   }
-  painel?.pushState();
+  avisarTodas();
 }
 
 /** Código → conhecimento (§15). */
@@ -234,7 +307,7 @@ async function conhecimentoDoArquivo(): Promise<void> {
     );
     return;
   }
-  painel?.navigate('documents', { path: rel });
+  superficie()?.navigate('documents', { path: rel });
 }
 
 function avisarNaoDisponivel(nome: string): void {

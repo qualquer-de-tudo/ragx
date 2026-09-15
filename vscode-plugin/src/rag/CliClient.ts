@@ -13,9 +13,19 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
+import {
+  toAnalysis,
+  toChunk,
+  toSources,
+  toTask,
+  toTaskDetail,
+  toTaskGraph,
+  toTaskPanel,
+} from './parse';
 import { done, fail, propagate, type RagClient } from './RagClient';
 import type {
   AgentInfo,
+  ChunkInfo,
   ContextPack,
   DictionarySection,
   DocumentInfo,
@@ -27,10 +37,16 @@ import type {
   MonitorSnapshot,
   ProjectInfo,
   RagResult,
+  RequestAnalysis,
   SearchFilters,
   SearchMode,
   SearchResponse,
   SecurityStatus,
+  SourcesOverview,
+  TaskDetail,
+  TaskGraph,
+  TaskInfo,
+  TaskPanel,
 } from './types';
 
 const run = promisify(execFile);
@@ -142,7 +158,26 @@ export class CliRagClient implements RagClient {
   async health(): Promise<RagResult<HealthCheck[]>> {
     const r = await this.exec<Json>(['doctor', '--json']);
     if (!r.ok) {
-      return done([{ name: 'RAGX', status: 'error', detail: r.error?.message }]);
+      // `ragx doctor --json` é recente. Numa instalação anterior o comando
+      // recusa a flag, e pintar a tela de vermelho por causa disso acusaria o
+      // ambiente de um problema que não existe. O índice ainda responde.
+      const stats = await this.stats();
+      if (!stats.ok) {
+        return done([{ name: 'RAGX', status: 'error', detail: r.error?.message }]);
+      }
+      return done([
+        { name: 'RAGX', status: 'ok', detail: 'conectado pela CLI' },
+        {
+          name: 'Índice',
+          status: (stats.data?.chunks ?? 0) > 0 ? 'ok' : 'warn',
+          detail: `${stats.data?.chunks ?? 0} chunks`,
+        },
+        {
+          name: 'Diagnóstico',
+          status: 'warn',
+          detail: 'atualize o RAGX para ver as checagens completas aqui',
+        },
+      ]);
     }
     const checks = (r.data?.checks as Json[]) ?? [];
     return done(
@@ -166,6 +201,7 @@ export class CliRagClient implements RagClient {
     const args = ['search', query, '--mode', mode, '--limit', String(limit), '--json'];
     if (filters?.lang) args.push('--lang', filters.lang);
     if (filters?.kind) args.push('--kind', filters.kind);
+    if (filters?.scope && filters.scope !== 'current') args.push('--scope', filters.scope);
 
     const r = await this.exec<Json>(args);
     if (!r.ok) return propagate<SearchResponse>(r);
@@ -258,7 +294,13 @@ export class CliRagClient implements RagClient {
 
   async documents(query?: string, limit = 200): Promise<RagResult<DocumentInfo[]>> {
     const args = ['documents', '--limit', String(limit), '--json'];
-    if (query) args.push('--filter', query);
+    // `--path` (filtro por caminho), não `--filter`: esta flag nunca existiu na
+    // CLI, e o comando falhava inteiro — a lista de documentos ficava vazia no
+    // transporte de reserva sem nenhuma mensagem que apontasse para a causa.
+    //
+    // O valor vira um LIKE do SQLite lá dentro, com `*` como curinga. Um
+    // trecho sem curinga casaria só com o caminho inteiro e devolveria nada.
+    if (query) args.push('--path', query.includes('*') ? query : `*${query}*`);
     const r = await this.exec<Json | Json[]>(args);
     if (!r.ok) return propagate<DocumentInfo[]>(r);
     const linhas = Array.isArray(r.data)
@@ -277,7 +319,10 @@ export class CliRagClient implements RagClient {
   }
 
   async fileKnowledge(relPath: string): Promise<RagResult<FileKnowledge>> {
-    const r = await this.exec<Json | Json[]>(['chunks', relPath, '--json']);
+    // `ragx chunks` quer `--document <caminho>`; posicional é recusado pelo
+    // Typer, e o erro virava "não indexado" — a mentira mais cara possível
+    // nesta tela, porque acusa o Security Gate de algo que ele não fez.
+    const r = await this.exec<Json | Json[]>(['chunks', '--document', relPath, '--json']);
     if (!r.ok) {
       return done({
         path: relPath,
@@ -307,9 +352,96 @@ export class CliRagClient implements RagClient {
     });
   }
 
+  async sources(): Promise<RagResult<SourcesOverview>> {
+    const [base, projetos, stats, config] = await Promise.all([
+      this.exec<Json>(['base', 'list', '--json']),
+      this.exec<Json | Json[]>(['project', 'list', '--json']),
+      this.stats(),
+      this.exec<Json>(['config', 'show', '--json']),
+    ]);
+    const listaProjetos = Array.isArray(projetos.data)
+      ? (projetos.data as Json[])
+      : ((projetos.data as Json)?.projects as Json[]) ?? [];
+    const cfg = (config.ok ? config.data : {}) ?? {};
+    const secaoBase = (cfg.base as Json) ?? {};
+    const secaoProjeto = (cfg.project as Json) ?? {};
+
+    return done(
+      toSources(
+        base.ok ? base.data ?? {} : {},
+        { projects: listaProjetos },
+        {
+          name: String(secaoProjeto.name ?? 'este projeto'),
+          documents: stats.ok ? stats.data?.documents : undefined,
+          chunks: stats.ok ? stats.data?.chunks : undefined,
+          entities: stats.ok ? stats.data?.entities : undefined,
+        },
+        // Quais fontes base ESTE projeto declara. Sem isto, a tela mostraria
+        // toda fonte instalada na máquina como se fosse deste repositório.
+        (secaoBase.sources as string[]) ?? [],
+      ),
+    );
+  }
+
+  async chunk(chunkId: string): Promise<RagResult<ChunkInfo>> {
+    const r = await this.exec<Json>(['chunk', chunkId, '--json']);
+    if (!r.ok) return propagate<ChunkInfo>(r);
+    return done(toChunk(((r.data?.chunk as Json) ?? r.data ?? {}) as Json, chunkId));
+  }
+
+  // ── orquestração (leitura) ────────────────────────────────────────────
+  async tasks(project?: string, status?: string): Promise<RagResult<TaskInfo[]>> {
+    const args = ['task', 'list', '--json'];
+    if (project) args.push('--project', project);
+    if (status) args.push('--status', status);
+    const r = await this.exec<Json | Json[]>(args);
+    if (!r.ok) return propagate<TaskInfo[]>(r);
+    const linhas = Array.isArray(r.data)
+      ? (r.data as Json[])
+      : ((r.data as Json)?.tasks as Json[]) ?? [];
+    return done(linhas.map(toTask));
+  }
+
+  async task(taskId: string): Promise<RagResult<TaskDetail>> {
+    const r = await this.exec<Json>(['task', 'show', taskId, '--json']);
+    if (!r.ok) return propagate<TaskDetail>(r);
+    return done(toTaskDetail(r.data ?? {}, taskId));
+  }
+
+  async taskGraph(project?: string): Promise<RagResult<TaskGraph>> {
+    const args = ['task', 'graph', '--json'];
+    if (project) args.push('--project', project);
+    const r = await this.exec<Json>(args);
+    if (!r.ok) return propagate<TaskGraph>(r);
+    return done(toTaskGraph(r.data ?? {}));
+  }
+
+  async taskPanel(): Promise<RagResult<TaskPanel>> {
+    const r = await this.exec<Json>(['task', 'status', '--json']);
+    // Ver o comentário no transporte MCP: projeto sem orquestração é normal.
+    if (!r.ok) {
+      return done({
+        counts: {},
+        projects: [],
+        unavailable: r.error?.message ?? 'orquestração indisponível',
+      });
+    }
+    return done(toTaskPanel(r.data ?? {}));
+  }
+
+  async analyzeRequest(request: string): Promise<RagResult<RequestAnalysis>> {
+    const r = await this.exec<Json>(['task', 'analyze', request, '--json']);
+    if (!r.ok) return propagate<RequestAnalysis>(r);
+    return done(toAnalysis(r.data ?? {}));
+  }
+
   async buildContext(query: string, tokens: number): Promise<RagResult<ContextPack>> {
+    // `--format json`, não `--json`: o `context` escolhe o formato da SAÍDA
+    // (markdown | json | xml), e a flag booleana que todos os outros comandos
+    // têm não existe aqui. Com `--json` o Typer recusava e o Context Builder
+    // ficava inteiramente indisponível no transporte de reserva.
     const r = await this.exec<Json>([
-      'context', query, '--tokens', String(tokens), '--json',
+      'context', query, '--tokens', String(tokens), '--format', 'json',
     ]);
     if (!r.ok) return propagate<ContextPack>(r);
     const frags = ((r.data?.fragments as Json[]) ?? []).map((f) => ({

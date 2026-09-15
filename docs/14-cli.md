@@ -213,7 +213,14 @@ ragx vacuum                      VACUUM + optimize + remove órfãos
 ragx reset [--hard]              apaga .ragx/ (--hard também apaga knowledge/)
 ragx version
 ragx doctor --full               inclui checagem de integridade do banco
+ragx doctor --json               as mesmas checagens em JSON, saindo com 0
 ```
+
+> `ragx doctor --json` **sai com código 0 mesmo havendo problema**: o veredito
+> está em `ok` e `problems`, dentro do payload. Quem pede JSON quer ler o
+> diagnóstico, e um código de saída diferente de zero faz o chamador descartar
+> a saída e ficar sem diagnóstico nenhum. O modo humano mantém os códigos 1 e 3,
+> que o instalador usa.
 
 ## Orçamento de tamanho (Fases 1 e 9)
 

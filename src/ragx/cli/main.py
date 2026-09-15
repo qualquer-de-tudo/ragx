@@ -109,10 +109,26 @@ def _root(
         raise typer.Exit
 
 
+def _invocar() -> None:
+    """Executa a CLI SEM deixar o Click reescrever os argumentos.
+
+    No Windows o Click expande curinga contra o diretório atual antes de
+    entregar os argumentos ao comando (`windows_expand_args=True`, o padrão).
+    Para uma ferramenta cujos argumentos são PADRÕES e CONSULTAS, isso é
+    corrupção silenciosa: `ragx documents --path "*src*"` chegava como
+    `--path src` porque existe uma pasta `src` ali, e a listagem voltava vazia.
+    O mesmo valor daria resultados diferentes em duas pastas diferentes.
+
+    Medido neste repo: `--path "*ragx*"` virava `ragx.toml` — um arquivo — e
+    a busca devolvia exatamente um documento.
+    """
+    typer.main.get_command(app)(windows_expand_args=False)
+
+
 def main() -> None:
     err = Console(stderr=True)
     try:
-        app()
+        _invocar()
     except RagxError as exc:
         err.print(f"[bold red]erro:[/] {exc}")
         raise SystemExit(exc.exit_code) from exc

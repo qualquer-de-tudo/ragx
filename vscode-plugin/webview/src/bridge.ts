@@ -8,6 +8,7 @@
 
 import type {
   ExtensionMessage,
+  HostMode,
   PageId,
   ResultPayload,
   UiError,
@@ -48,6 +49,8 @@ export interface HostState {
   state: SystemState;
   project?: ProjectInfo;
   message?: string;
+  /** Barra lateral ou aba do editor — a UI muda de forma conforme o caso. */
+  host: HostMode;
 }
 
 type OuvinteEstado = (s: HostState) => void;
@@ -65,7 +68,12 @@ window.addEventListener('message', (ev: MessageEvent<ExtensionMessage>) => {
   switch (msg.type) {
     case 'state':
       ouvintesEstado.forEach((f) =>
-        f({ state: msg.state, project: msg.project, message: msg.message }),
+        f({
+          state: msg.state,
+          project: msg.project,
+          message: msg.message,
+          host: msg.host ?? 'sidebar',
+        }),
       );
       return;
     case 'settings':

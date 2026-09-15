@@ -1,18 +1,25 @@
 /**
- * As telas do MVP (§54).
+ * As telas do explorador.
  *
- * Toda página segue o mesmo contrato de estados: `loading`, `ready`, `empty`,
- * `error`. Nenhuma delas tem caminho que leve a uma tela em branco (§44) — e o
- * `usePedido` abaixo existe justamente para que isso não dependa de disciplina.
+ * Toda página segue o mesmo contrato de estados (`loading`, `ready`, `empty`,
+ * `error`), garantido pelo `Quadro` em `estado.tsx` — nenhuma delas tem
+ * caminho que leve a uma tela em branco (§44).
+ *
+ * Todas recebem `amplo`. Ele NÃO é um detalhe estético: na barra lateral
+ * (~300px) a resposta certa é uma coluna e detalhe empilhado; na aba do editor
+ * a mesma tela ganha uma segunda coluna e passa a servir para comparar, que é
+ * o motivo de existir a versão em tela cheia.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { UiError, UiSettings } from '../../../src/protocol';
+import type { UiSettings } from '../../../src/protocol';
 import type {
   AgentInfo,
+  ChunkInfo,
   ContextPack,
   DictionarySection,
+  DocumentInfo,
   EntityDetail,
   FileKnowledge,
   GraphNode,
@@ -24,18 +31,20 @@ import type {
   SearchMode,
   SearchResponse,
   SecurityStatus,
+  SourcesOverview,
 } from '../../../src/rag/types';
-import { request, send, toUiError } from '../bridge';
+import { request, send } from '../bridge';
 import {
   Badge,
   Bar,
   Button,
   Card,
+  Codigo,
   EmptyState,
-  ErrorState,
+  Grade,
   Input,
-  Loading,
   Metric,
+  Split,
   Tabs,
   Tree,
   VirtualList,
@@ -44,67 +53,43 @@ import {
   type TreeNode,
 } from '../components';
 import { GraphView } from '../components/GraphView';
+import { Quadro, usePedido } from './estado';
 
-// ── carregamento com estado completo ────────────────────────────────────
-type Estado<T> =
-  | { fase: 'loading' }
-  | { fase: 'ready'; dado: T }
-  | { fase: 'error'; erro: UiError };
+export { Quadro, usePedido } from './estado';
+export { Sources } from './sources';
+export { Tasks } from './tasks';
 
-function usePedido<T>(
-  carregar: () => Promise<T>,
-  deps: unknown[],
-  ativo = true,
-): [Estado<T>, () => void] {
-  const [estado, setEstado] = useState<Estado<T>>({ fase: 'loading' });
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    if (!ativo) return;
-    let cancelado = false;
-    setEstado({ fase: 'loading' });
-    carregar()
-      .then((dado) => !cancelado && setEstado({ fase: 'ready', dado }))
-      .catch((e) => !cancelado && setEstado({ fase: 'error', erro: toUiError(e) }));
-    return () => {
-      cancelado = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick, ativo]);
-
-  return [estado, () => setTick((t) => t + 1)];
+/**
+ * A origem de um caminho, deduzida do prefixo.
+ *
+ * `@base/<nome>/…` é a única marca que o RAGX carrega no próprio caminho, e é
+ * suficiente: tudo que não tem esse prefixo veio do repositório aberto. Sem
+ * esta distinção na tela, um resultado de fonte compartilhada parece um
+ * arquivo do projeto — e a pessoa vai procurá-lo no repositório.
+ */
+export function origemDe(caminho: string): { base: boolean; fonte?: string } {
+  if (!caminho.startsWith('@base/')) return { base: false };
+  return { base: true, fonte: caminho.split('/')[1] };
 }
 
-function Quadro<T>({
-  estado,
-  onRetry,
-  vazio,
-  children,
-}: {
-  estado: Estado<T>;
-  onRetry: () => void;
-  vazio?: (d: T) => boolean;
-  children: (d: T) => React.ReactNode;
-}) {
-  if (estado.fase === 'loading') return <Loading />;
-  if (estado.fase === 'error') {
-    return (
-      <ErrorState
-        error={estado.erro}
-        onRetry={onRetry}
-        onLogs={() => send({ type: 'openLogs' })}
-        onSettings={() => send({ type: 'openSettings' })}
-      />
-    );
+export function MarcaOrigem({ caminho, projeto }: { caminho: string; projeto?: string }) {
+  const o = origemDe(caminho);
+  if (!o.base) {
+    return projeto ? (
+      <Badge tone="neutral" title="Outro projeto do hub">
+        {projeto}
+      </Badge>
+    ) : null;
   }
-  if (vazio?.(estado.dado)) {
-    return <EmptyState title="Nada aqui ainda" hints={['Rode `ragx index .` e sincronize.']} />;
-  }
-  return <>{children(estado.dado)}</>;
+  return (
+    <Badge tone="info" title="Conhecimento base compartilhado, fora deste repositório">
+      @base/{o.fonte}
+    </Badge>
+  );
 }
 
 // ── Overview ────────────────────────────────────────────────────────────
-export function Overview({ onGo }: { onGo: (p: string) => void }) {
+export function Overview({ onGo, amplo }: { onGo: (p: string) => void; amplo: boolean }) {
   const [estado, recarregar] = usePedido<KnowledgeStats>(
     () => request({ type: 'getStats' }, 'stats').then((r) => r.stats),
     [],
@@ -113,12 +98,16 @@ export function Overview({ onGo }: { onGo: (p: string) => void }) {
     () => request({ type: 'getHealth' }, 'health').then((r) => r.checks),
     [],
   );
+  const [origens] = usePedido<SourcesOverview>(
+    () => request({ type: 'getSources' }, 'sources').then((r) => r.overview),
+    [],
+  );
 
   return (
     <div className="space-y-3">
       <Quadro estado={estado} onRetry={recarregar}>
         {(s) => (
-          <>
+          <Grade min={amplo ? 300 : 9999}>
             <Card title="Knowledge Overview">
               <Metric label="Documents" value={fmt(s.documents)} />
               <Metric label="Chunks" value={fmt(s.chunks)} />
@@ -133,10 +122,41 @@ export function Overview({ onGo }: { onGo: (p: string) => void }) {
                   />
                 </div>
                 {s.lastRun?.finishedAt && (
-                  <Metric label="Last sync" value={s.lastRun.finishedAt.replace('T', ' ').replace('Z', '')} />
+                  <Metric
+                    label="Last sync"
+                    value={s.lastRun.finishedAt.replace('T', ' ').replace('Z', '')}
+                  />
                 )}
               </div>
             </Card>
+
+            {/* De onde vem o índice, logo na primeira tela. Sem isto, saber que
+                metade do conhecimento é de uma fonte base exige procurar. */}
+            {origens.fase === 'ready' && (
+              <Card
+                title="Origens"
+                action={
+                  <Button variant="ghost" onClick={() => onGo('sources')}>
+                    Detalhar
+                  </Button>
+                }
+              >
+                {origens.dado.sources.map((f) => (
+                  <div key={f.id} className="flex items-baseline justify-between gap-2 py-0.5">
+                    <span className="truncate">
+                      {f.name}{' '}
+                      {f.kind === 'base' && (
+                        <Badge tone={f.declared ? 'info' : 'warn'}>@base</Badge>
+                      )}
+                      {f.kind === 'peer' && <Badge>hub</Badge>}
+                    </span>
+                    <span className="font-mono tabular-nums text-fg-muted shrink-0">
+                      {f.documents !== undefined ? fmt(f.documents) : '—'}
+                    </span>
+                  </div>
+                ))}
+              </Card>
+            )}
 
             {Object.keys(s.byLang).length > 0 && (
               <Card title="Por linguagem">
@@ -148,36 +168,37 @@ export function Overview({ onGo }: { onGo: (p: string) => void }) {
                   ))}
               </Card>
             )}
-          </>
+
+            {saude.fase === 'ready' && (
+              <Card
+                title="Health"
+                action={
+                  <Button variant="ghost" onClick={() => send({ type: 'sync' })}>
+                    Sync
+                  </Button>
+                }
+              >
+                {saude.dado.map((c) => (
+                  <div key={c.name} className="flex items-center justify-between py-0.5">
+                    <span>{c.name}</span>
+                    <Badge tone={c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'warn' : 'err'}>
+                      {c.status === 'ok' ? '✓ ok' : c.status === 'warn' ? '⚠ atenção' : '✗ erro'}
+                      {c.detail ? ` — ${c.detail}` : ''}
+                    </Badge>
+                  </div>
+                ))}
+              </Card>
+            )}
+          </Grade>
         )}
       </Quadro>
-
-      {saude.fase === 'ready' && (
-        <Card
-          title="Health"
-          action={
-            <Button variant="ghost" onClick={() => send({ type: 'sync' })}>
-              Sync
-            </Button>
-          }
-        >
-          {saude.dado.map((c) => (
-            <div key={c.name} className="flex items-center justify-between py-0.5">
-              <span>{c.name}</span>
-              <Badge tone={c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'warn' : 'err'}>
-                {c.status === 'ok' ? '✓ ok' : c.status === 'warn' ? '⚠ atenção' : '✗ erro'}
-                {c.detail ? ` — ${c.detail}` : ''}
-              </Badge>
-            </div>
-          ))}
-        </Card>
-      )}
 
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={() => onGo('search')}>
           Buscar conhecimento
         </Button>
         <Button onClick={() => onGo('graph')}>Explorar grafo</Button>
+        <Button onClick={() => onGo('tasks')}>Tarefas</Button>
         <Button onClick={() => onGo('context')}>Montar contexto</Button>
       </div>
     </div>
@@ -188,22 +209,56 @@ export function Overview({ onGo }: { onGo: (p: string) => void }) {
 export function Search({
   settings,
   consultaInicial,
+  escopoInicial,
+  prefixoInicial,
+  amplo,
   onEntity,
 }: {
   settings: UiSettings;
   consultaInicial?: string;
+  escopoInicial?: string;
+  prefixoInicial?: string;
+  amplo: boolean;
   onEntity: (nome: string) => void;
 }) {
   const [texto, setTexto] = useState(consultaInicial ?? '');
   const [modo, setModo] = useState<SearchMode>(settings.searchMode);
-  const [abrirFiltros, setAbrirFiltros] = useState(false);
+  const [abrirFiltros, setAbrirFiltros] = useState(Boolean(prefixoInicial));
   const [lang, setLang] = useState('');
   const [kind, setKind] = useState('');
+  const [escopo, setEscopo] = useState(escopoInicial ?? 'current');
+  const [prefixo, setPrefixo] = useState(prefixoInicial ?? '');
+  const [selecionado, setSelecionado] = useState<SearchHit>();
   const consulta = useDebounced(texto, 350);
 
   useEffect(() => {
     if (consultaInicial) setTexto(consultaInicial);
   }, [consultaInicial]);
+  useEffect(() => {
+    if (escopoInicial) setEscopo(escopoInicial);
+  }, [escopoInicial]);
+  useEffect(() => {
+    if (prefixoInicial !== undefined) {
+      setPrefixo(prefixoInicial);
+      setAbrirFiltros(Boolean(prefixoInicial));
+    }
+  }, [prefixoInicial]);
+
+  const [origens] = usePedido<SourcesOverview>(
+    () => request({ type: 'getSources' }, 'sources').then((r) => r.overview),
+    [],
+  );
+  const escopos = useMemo(() => {
+    const base = [{ id: 'current', label: 'Este projeto' }];
+    if (origens.fase !== 'ready') return base;
+    const pares = origens.dado.sources.filter((f) => f.kind === 'peer');
+    if (!pares.length) return base;
+    return [
+      ...base,
+      { id: 'all', label: 'Todos os projetos' },
+      ...pares.map((p) => ({ id: p.scope ?? `project:${p.name}`, label: p.name })),
+    ];
+  }, [origens]);
 
   const [estado, recarregar] = usePedido<SearchResponse>(
     () =>
@@ -212,19 +267,25 @@ export function Search({
           type: 'search',
           query: consulta,
           mode: modo,
-          limit: 30,
+          limit: amplo ? 50 : 30,
           filters: {
             lang: lang || undefined,
             kind: kind || undefined,
+            pathGlob: prefixo || undefined,
+            scope: escopo,
           },
         },
         'search',
       ).then((r) => r.response),
-    [consulta, modo, lang, kind],
+    [consulta, modo, lang, kind, escopo, prefixo, amplo],
     consulta.trim().length >= 2,
   );
 
-  return (
+  // Trocar de consulta invalida a seleção: manter o painel aberto com o
+  // resultado da busca anterior é mostrar uma resposta para outra pergunta.
+  useEffect(() => setSelecionado(undefined), [consulta, modo, escopo, prefixo]);
+
+  const controles = (
     <div className="space-y-2">
       <Input
         label="Buscar no conhecimento"
@@ -245,6 +306,23 @@ export function Search({
             { id: 'keyword', label: 'Palavra-chave' },
           ]}
         />
+        {escopos.length > 1 && (
+          <label className="text-[0.9em] text-fg-muted flex items-center gap-1">
+            Escopo
+            <select
+              value={escopo}
+              onChange={(e) => setEscopo(e.target.value)}
+              aria-label="Escopo da busca"
+              className="bg-bg-input text-fg-input border border-border-input rounded px-1 py-0.5"
+            >
+              {escopos.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <Button variant="ghost" onClick={() => setAbrirFiltros(!abrirFiltros)}>
           Filtros {abrirFiltros ? '▾' : '▸'}
         </Button>
@@ -254,17 +332,32 @@ export function Search({
         <div className="grid grid-cols-2 gap-2 p-2 border border-border rounded">
           <label className="text-[0.9em] text-fg-muted">
             Linguagem
-            <Input label="Filtrar por linguagem" value={lang} onChange={setLang} placeholder="python" />
+            <Input
+              label="Filtrar por linguagem"
+              value={lang}
+              onChange={setLang}
+              placeholder="python"
+            />
           </label>
           <label className="text-[0.9em] text-fg-muted">
             Tipo
             <Input label="Filtrar por tipo" value={kind} onChange={setKind} placeholder="function" />
+          </label>
+          <label className="text-[0.9em] text-fg-muted col-span-2">
+            Caminho — use <code>@base/nome/</code> para ficar só numa fonte base
+            <Input
+              label="Filtrar por caminho"
+              value={prefixo}
+              onChange={setPrefixo}
+              placeholder="src/ ou @base/agents/"
+            />
           </label>
           <div className="col-span-2">
             <Button
               onClick={() => {
                 setLang('');
                 setKind('');
+                setPrefixo('');
               }}
             >
               Limpar filtros
@@ -272,35 +365,65 @@ export function Search({
           </div>
         </div>
       )}
+    </div>
+  );
 
-      {consulta.trim().length < 2 ? (
+  if (consulta.trim().length < 2) {
+    return (
+      <div className="space-y-2">
+        {controles}
         <EmptyState
           title="Busque no conhecimento do projeto"
           hints={[
             'Faça uma pergunta em linguagem natural',
             'Ou procure por um símbolo específico',
             'Híbrida combina sentido e palavra literal',
+            'O escopo separa este projeto do que veio de fora',
           ]}
         />
-      ) : (
-        <Quadro
-          estado={estado}
-          onRetry={recarregar}
-          vazio={(r) => r.results.length === 0}
-        >
-          {(r) => (
-            <div className="space-y-1">
-              <p className="text-fg-muted text-[0.85em]">
-                {r.results.length} resultado(s) · {r.mode}
-                {r.degraded ? ` · degradado: ${r.degraded}` : ''}
-              </p>
-              {r.results.map((h) => (
-                <Resultado key={h.chunkId} hit={h} onEntity={onEntity} />
-              ))}
-            </div>
-          )}
-        </Quadro>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {controles}
+      <Split
+        amplo={amplo}
+        larguraLado={480}
+        lado={
+          selecionado && (
+            <PainelDoResultado
+              hit={selecionado}
+              onFechar={() => setSelecionado(undefined)}
+              onEntity={onEntity}
+            />
+          )
+        }
+        principal={
+          <Quadro estado={estado} onRetry={recarregar} vazio={(r) => r.results.length === 0}>
+            {(r) => (
+              <div className="space-y-1">
+                <p className="text-fg-muted text-[0.85em]">
+                  {r.results.length} resultado(s) · {r.mode}
+                  {escopo !== 'current' ? ` · escopo ${escopo}` : ''}
+                  {r.degraded ? ` · degradado: ${r.degraded}` : ''}
+                </p>
+                {r.results.map((h) => (
+                  <Resultado
+                    key={h.chunkId}
+                    hit={h}
+                    compacto={amplo}
+                    ativo={selecionado?.chunkId === h.chunkId}
+                    onSelect={() => setSelecionado(h)}
+                    onEntity={onEntity}
+                  />
+                ))}
+              </div>
+            )}
+          </Quadro>
+        }
+      />
 
       {estado.fase === 'ready' && estado.dado.results.length === 0 && (
         <EmptyState
@@ -309,12 +432,16 @@ export function Search({
             'Tente uma busca mais ampla',
             'Ou outra formulação da pergunta',
             'Remova os filtros',
+            escopo === 'current'
+              ? 'Amplie o escopo para incluir outros projetos'
+              : 'Reduza o escopo para este projeto',
           ]}
           action={
             <Button
               onClick={() => {
                 setLang('');
                 setKind('');
+                setPrefixo('');
               }}
             >
               Limpar filtros
@@ -326,13 +453,28 @@ export function Search({
   );
 }
 
-function Resultado({ hit, onEntity }: { hit: SearchHit; onEntity: (n: string) => void }) {
+function Resultado({
+  hit,
+  compacto,
+  ativo,
+  onSelect,
+  onEntity,
+}: {
+  hit: SearchHit;
+  /** Em tela cheia o trecho vai para o painel lateral; aqui basta a linha. */
+  compacto: boolean;
+  ativo: boolean;
+  onSelect: () => void;
+  onEntity: (n: string) => void;
+}) {
   const [aberto, setAberto] = useState(false);
   const pct = Math.round(Math.min(1, hit.score * 10) * 100);
   const literal = hit.matchedBy.includes('keyword');
 
   return (
-    <article className="border border-border rounded hover:bg-hover/40">
+    <article
+      className={`border rounded hover:bg-hover ${ativo ? 'border-focus' : 'border-border'}`}
+    >
       <div className="flex items-start gap-2 p-2">
         <span
           className="font-mono text-[0.85em] text-fg-muted w-10 shrink-0 tabular-nums"
@@ -344,9 +486,7 @@ function Resultado({ hit, onEntity }: { hit: SearchHit; onEntity: (n: string) =>
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
-              onClick={() =>
-                send({ type: 'openFile', path: hit.documentPath, line: hit.lines[0] })
-              }
+              onClick={onSelect}
               className="text-link hover:text-link-active hover:underline truncate text-left"
               title={`${hit.documentPath}:${hit.lines[0]}`}
             >
@@ -358,28 +498,43 @@ function Resultado({ hit, onEntity }: { hit: SearchHit; onEntity: (n: string) =>
             <Badge tone={literal ? 'ok' : 'neutral'} title={hit.matchedBy.join(', ')}>
               {literal ? 'literal' : 'semântico'}
             </Badge>
-            {hit.documentPath.startsWith('@base/') && (
-              <Badge tone="info" title="Conhecimento base compartilhado, fora deste repositório">
-                @base
-              </Badge>
-            )}
+            <MarcaOrigem
+              caminho={hit.documentPath}
+              projeto={
+                hit.project && hit.project !== 'current' && hit.project !== 'project'
+                  ? hit.project
+                  : undefined
+              }
+            />
           </div>
           {hit.headingPath && (
             <p className="text-fg-muted text-[0.85em] truncate">{hit.headingPath}</p>
           )}
-          <pre className="mt-1 text-[0.9em] font-mono whitespace-pre-wrap break-words text-fg-muted">
-            {aberto ? hit.content : hit.content.slice(0, 220)}
-            {!aberto && hit.content.length > 220 ? '…' : ''}
-          </pre>
+          {!compacto && (
+            <pre className="mt-1 text-[0.9em] font-mono whitespace-pre-wrap break-words text-fg-muted">
+              {aberto ? hit.content : hit.content.slice(0, 220)}
+              {!aberto && hit.content.length > 220 ? '…' : ''}
+            </pre>
+          )}
           <div className="flex gap-1 mt-1">
-            {hit.content.length > 220 && (
+            {!compacto && hit.content.length > 220 && (
               <Button variant="ghost" onClick={() => setAberto(!aberto)}>
                 {aberto ? 'Menos' : 'Mais'}
               </Button>
             )}
+            <Button variant="ghost" onClick={onSelect}>
+              Ver trecho
+            </Button>
             <Button
               variant="ghost"
-              onClick={() => send({ type: 'openFile', path: hit.documentPath, line: hit.lines[0] })}
+              onClick={() =>
+                send({
+                  type: 'openFile',
+                  path: hit.documentPath,
+                  line: hit.lines[0],
+                  endLine: hit.lines[1],
+                })
+              }
             >
               Abrir
             </Button>
@@ -388,9 +543,6 @@ function Resultado({ hit, onEntity }: { hit: SearchHit; onEntity: (n: string) =>
                 Ver no grafo
               </Button>
             )}
-            <Button variant="ghost" onClick={() => send({ type: 'copy', text: hit.content })}>
-              Copiar
-            </Button>
           </div>
         </div>
       </div>
@@ -398,13 +550,89 @@ function Resultado({ hit, onEntity }: { hit: SearchHit; onEntity: (n: string) =>
   );
 }
 
+/**
+ * O trecho inteiro, com numeração — não o recorte de 220 caracteres.
+ *
+ * A busca devolve um pedaço para caber na lista. Ler de verdade exige o chunk
+ * completo, e é isso que `get_chunk` serve. Em tela estreita este painel vai
+ * para cima da lista; em tela cheia, para o lado.
+ */
+function PainelDoResultado({
+  hit,
+  onFechar,
+  onEntity,
+}: {
+  hit: SearchHit;
+  onFechar: () => void;
+  onEntity: (n: string) => void;
+}) {
+  const [estado, recarregar] = usePedido<ChunkInfo>(
+    () => request({ type: 'getChunk', chunkId: hit.chunkId }, 'chunk').then((r) => r.chunk),
+    [hit.chunkId],
+  );
+
+  return (
+    <Card
+      title={hit.documentPath.split('/').pop() ?? hit.documentPath}
+      action={
+        <Button variant="ghost" onClick={onFechar}>
+          Fechar
+        </Button>
+      }
+    >
+      <div className="flex items-center gap-1.5 flex-wrap mb-2">
+        <MarcaOrigem caminho={hit.documentPath} />
+        <Badge>{hit.kind}</Badge>
+        {hit.symbol && <Badge tone="info">{hit.symbol}</Badge>}
+      </div>
+      <p className="text-fg-muted text-[0.85em] break-all mb-2">
+        {hit.documentPath}:{hit.lines[0]}–{hit.lines[1]}
+      </p>
+
+      <Quadro estado={estado} onRetry={recarregar}>
+        {(c) => (
+          <>
+            <div className="border border-border rounded p-2 overflow-x-auto max-h-[60vh] overflow-y-auto">
+              <Codigo texto={c.content ?? hit.content} inicio={c.lines[0] || hit.lines[0]} />
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Button
+                variant="primary"
+                onClick={() =>
+                  send({
+                    type: 'openFile',
+                    path: hit.documentPath,
+                    line: hit.lines[0],
+                    endLine: hit.lines[1],
+                  })
+                }
+              >
+                Abrir no editor
+              </Button>
+              <Button onClick={() => send({ type: 'copy', text: c.content ?? hit.content })}>
+                Copiar
+              </Button>
+              {hit.symbol && <Button onClick={() => onEntity(hit.symbol!)}>Ver no grafo</Button>}
+            </div>
+            {c.tokens > 0 && (
+              <p className="text-fg-muted text-[0.85em] mt-2">{fmt(c.tokens)} tokens</p>
+            )}
+          </>
+        )}
+      </Quadro>
+    </Card>
+  );
+}
+
 // ── Graph ───────────────────────────────────────────────────────────────
 export function Graph({
   settings,
   entidadeInicial,
+  amplo,
 }: {
   settings: UiSettings;
   entidadeInicial?: string;
+  amplo: boolean;
 }) {
   const [busca, setBusca] = useState(entidadeInicial ?? '');
   const [entidade, setEntidade] = useState(entidadeInicial ?? '');
@@ -433,8 +661,7 @@ export function Graph({
   }, [estado]);
 
   const [detalhe] = usePedido<EntityDetail>(
-    () =>
-      request({ type: 'getEntity', name: selecionado!.name }, 'entity').then((r) => r.entity),
+    () => request({ type: 'getEntity', name: selecionado!.name }, 'entity').then((r) => r.entity),
     [selecionado?.name],
     Boolean(selecionado),
   );
@@ -443,10 +670,7 @@ export function Graph({
   const expandir = useCallback(
     async (n: GraphNode) => {
       try {
-        const r = await request(
-          { type: 'getGraph', entity: n.name, depth: 1 },
-          'graph',
-        );
+        const r = await request({ type: 'getGraph', entity: n.name, depth: 1 }, 'graph');
         setAcumulado((atual) => fundir(atual, r.graph, settings.maxVisibleNodes, n.id));
       } catch {
         /* falha de expansão não desmonta o que já está na tela */
@@ -455,7 +679,11 @@ export function Graph({
     [settings.maxVisibleNodes],
   );
 
-  return (
+  const abrirFonte = useCallback((n: GraphNode) => {
+    if (n.documentPath) send({ type: 'openFile', path: n.documentPath, line: 1 });
+  }, []);
+
+  const controles = (
     <div className="space-y-2">
       <div className="flex gap-2">
         <Input
@@ -483,64 +711,124 @@ export function Graph({
             </option>
           ))}
         </select>
+        {acumulado.nodes.length > 0 && (
+          <Button variant="ghost" onClick={() => setAcumulado({ nodes: [], edges: [] })}>
+            Limpar expansões
+          </Button>
+        )}
         <span className="ml-auto">máx. {settings.maxVisibleNodes} nós visíveis</span>
       </label>
+    </div>
+  );
 
-      {!entidade ? (
+  if (!entidade) {
+    return (
+      <div className="space-y-2">
+        {controles}
         <EmptyState
           title="Sem dados de grafo"
-          hints={['Digite o nome de uma entidade para explorar as relações dela.']}
+          hints={[
+            'Digite o nome de uma entidade para explorar as relações dela.',
+            'A cor indica o tipo; o tamanho, quantas relações o nó tem.',
+            'Duplo clique carrega os vizinhos daquele nó.',
+          ]}
         />
-      ) : (
-        <Quadro estado={estado} onRetry={recarregar}>
-          {() => (
-            <GraphView
-              graph={acumulado}
-              center={acumulado.nodes.find((n) => n.name === entidade)?.id}
-              selectedId={selecionado?.id}
-              onSelect={setSelecionado}
-              onExpand={(n) => void expandir(n)}
-            />
-          )}
-        </Quadro>
-      )}
+      </div>
+    );
+  }
 
-      {selecionado && detalhe.fase === 'ready' && (
-        <Card title={detalhe.dado.entity.name}>
-          <Metric label="Tipo" value={detalhe.dado.entity.type} />
-          {detalhe.dado.entity.summary && (
-            <p className="text-fg-muted text-[0.9em] mt-1">{detalhe.dado.entity.summary}</p>
-          )}
-          {detalhe.dado.relations.length > 0 && (
-            <div className="mt-2">
-              <p className="font-semibold text-[0.9em] mb-1">Relações</p>
-              <ul className="text-[0.9em] space-y-0.5">
-                {detalhe.dado.relations.slice(0, 20).map((r, i) => (
-                  <li key={i} className="font-mono text-fg-muted">
-                    {r.direction === 'out' ? '→' : '←'} {r.type} {r.target}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {detalhe.dado.sources.length > 0 && (
-            <div className="mt-2">
-              <p className="font-semibold text-[0.9em] mb-1">Fontes</p>
-              {detalhe.dado.sources.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => send({ type: 'openFile', path: s.path, line: s.line })}
-                  className="block text-link hover:underline text-[0.9em] text-left"
-                >
-                  {s.path}
-                  {s.line ? `:${s.line}` : ''}
-                </button>
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
+  return (
+    <div className="space-y-2">
+      {controles}
+      <Split
+        amplo={amplo}
+        larguraLado={340}
+        lado={
+          selecionado &&
+          detalhe.fase === 'ready' && (
+            <Card
+              title={detalhe.dado.entity.name}
+              action={
+                <Button variant="ghost" onClick={() => setSelecionado(undefined)}>
+                  Fechar
+                </Button>
+              }
+            >
+              <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                <Badge tone="info">{detalhe.dado.entity.type}</Badge>
+                {detalhe.dado.entity.documentPath && (
+                  <MarcaOrigem caminho={detalhe.dado.entity.documentPath} />
+                )}
+              </div>
+              {detalhe.dado.entity.qualifiedName && (
+                <p className="font-mono text-[0.85em] text-fg-muted break-all mb-1">
+                  {detalhe.dado.entity.qualifiedName}
+                </p>
+              )}
+              {detalhe.dado.entity.summary && (
+                <p className="text-fg-muted text-[0.9em] mt-1">{detalhe.dado.entity.summary}</p>
+              )}
+              {detalhe.dado.relations.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-semibold text-[0.9em] mb-1">
+                    Relações ({detalhe.dado.relations.length})
+                  </p>
+                  <ul className="text-[0.9em] space-y-0.5 max-h-56 overflow-y-auto">
+                    {detalhe.dado.relations.slice(0, 60).map((r, i) => (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBusca(r.target);
+                            setEntidade(r.target);
+                          }}
+                          className="font-mono text-left hover:underline text-fg-muted
+                                     hover:text-link w-full truncate"
+                        >
+                          {r.direction === 'out' ? '→' : '←'} {r.type} {r.target}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {detalhe.dado.sources.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-semibold text-[0.9em] mb-1">Fontes</p>
+                  {detalhe.dado.sources.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => send({ type: 'openFile', path: s.path, line: s.line })}
+                      className="block text-link hover:underline text-[0.9em] text-left truncate w-full"
+                    >
+                      {s.path}
+                      {s.line ? `:${s.line}` : ''}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )
+        }
+        principal={
+          <Quadro estado={estado} onRetry={recarregar}>
+            {() => (
+              <GraphView
+                graph={acumulado}
+                center={acumulado.nodes.find((n) => n.name === entidade)?.id}
+                selectedId={selecionado?.id}
+                onSelect={setSelecionado}
+                onExpand={(n) => void expandir(n)}
+                onOpen={abrirFonte}
+                // Em tela cheia o grafo usa a altura da janela: o mesmo
+                // desenho em 360px vira um novelo, e em 640px se lê.
+                height={amplo ? Math.max(420, Math.round(window.innerHeight * 0.62)) : 360}
+              />
+            )}
+          </Quadro>
+        }
+      />
     </div>
   );
 }
@@ -573,7 +861,7 @@ function fundir(
 }
 
 // ── Dictionary ──────────────────────────────────────────────────────────
-export function Dictionary({ onEntity }: { onEntity: (n: string) => void }) {
+export function Dictionary({ onEntity }: { onEntity: (n: string) => void; amplo?: boolean }) {
   const [estado, recarregar] = usePedido<DictionarySection[]>(
     () => request({ type: 'getDictionary' }, 'dictionary').then((r) => r.sections),
     [],
@@ -627,16 +915,45 @@ export function Dictionary({ onEntity }: { onEntity: (n: string) => void }) {
 }
 
 // ── Documents ───────────────────────────────────────────────────────────
-export function Documents({ caminhoInicial }: { caminhoInicial?: string }) {
-  const [busca, setBusca] = useState('');
+/**
+ * Os arquivos indexados, separados por origem.
+ *
+ * O filtro por origem existe porque a lista misturada não responde à pergunta
+ * que as pessoas fazem aqui: "o que deste índice é meu repositório?". Com
+ * fontes base ativas, metade da lista pode vir de fora — e parecer sua.
+ */
+export function Documents({
+  caminhoInicial,
+  prefixoInicial,
+  amplo,
+}: {
+  caminhoInicial?: string;
+  prefixoInicial?: string;
+  amplo: boolean;
+}) {
+  const [busca, setBusca] = useState(prefixoInicial ?? '');
   const consulta = useDebounced(busca, 350);
   const [selecionado, setSelecionado] = useState<string | undefined>(caminhoInicial);
+  const [origem, setOrigem] = useState<string>(
+    prefixoInicial ? `base:${prefixoInicial}` : 'todas',
+  );
 
   useEffect(() => {
     if (caminhoInicial) setSelecionado(caminhoInicial);
   }, [caminhoInicial]);
+  useEffect(() => {
+    if (prefixoInicial) {
+      setBusca(prefixoInicial);
+      setOrigem(`base:${prefixoInicial}`);
+    }
+  }, [prefixoInicial]);
 
-  const [lista, recarregarLista] = usePedido(
+  const [origens] = usePedido<SourcesOverview>(
+    () => request({ type: 'getSources' }, 'sources').then((r) => r.overview),
+    [],
+  );
+
+  const [lista, recarregarLista] = usePedido<DocumentInfo[]>(
     () =>
       request({ type: 'getDocuments', query: consulta || undefined }, 'documents').then(
         (r) => r.documents,
@@ -653,86 +970,191 @@ export function Documents({ caminhoInicial }: { caminhoInicial?: string }) {
     Boolean(selecionado),
   );
 
+  const basesInstaladas =
+    origens.fase === 'ready'
+      ? origens.dado.sources.filter((f) => f.kind === 'base' && f.declared)
+      : [];
+
+  const filtrar = (docs: DocumentInfo[]) => {
+    if (origem === 'todas') return docs;
+    if (origem === 'projeto') return docs.filter((d) => !d.path.startsWith('@base/'));
+    const prefixo = origem.slice('base:'.length);
+    return docs.filter((d) => d.path.startsWith(prefixo));
+  };
+
+  const detalhe = selecionado && (
+    <Card
+      title={selecionado.split('/').pop() ?? selecionado}
+      action={
+        <Button variant="ghost" onClick={() => setSelecionado(undefined)}>
+          Fechar
+        </Button>
+      }
+    >
+      <div className="flex items-center gap-1.5 flex-wrap mb-2">
+        <MarcaOrigem caminho={selecionado} />
+      </div>
+      <p className="text-fg-muted text-[0.85em] break-all mb-2">{selecionado}</p>
+
+      <Quadro estado={conhecimento} onRetry={recarregarConhecimento}>
+        {(k) =>
+          k.indexed ? (
+            <>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <Badge tone="ok">✓ indexado</Badge>
+                <Badge>{k.chunks.length} chunks</Badge>
+                {k.document?.lang && <Badge>{k.document.lang}</Badge>}
+                {k.document?.redacted && (
+                  <Badge tone="warn" title="Trechos sensíveis foram redigidos pelo gate">
+                    redigido
+                  </Badge>
+                )}
+              </div>
+              {k.entities.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-fg-muted text-[0.9em]">Símbolos</p>
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    {k.entities.map((e) => (
+                      <Badge key={e}>{e}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {k.chunks.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-fg-muted text-[0.9em] mb-0.5">Chunks</p>
+                  <ul className="text-[0.85em] font-mono space-y-0.5 max-h-52 overflow-y-auto">
+                    {k.chunks.map((c) => (
+                      <li key={c.chunkId}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            send({
+                              type: 'openFile',
+                              path: k.path,
+                              line: c.lines[0],
+                              endLine: c.lines[1],
+                            })
+                          }
+                          className="w-full text-left truncate hover:underline text-fg-muted
+                                     hover:text-link"
+                        >
+                          L{c.lines[0]}–{c.lines[1]} {c.symbol || c.headingPath || c.kind}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <Button onClick={() => send({ type: 'openFile', path: k.path, line: 1 })} variant="primary">
+                Abrir arquivo
+              </Button>
+            </>
+          ) : (
+            // Não indexado e bloqueado são indistinguíveis de fora — e é
+            // assim que deve ser. A UI diz os dois, sem inventar um.
+            <EmptyState
+              title="Não está no índice"
+              hints={[
+                k.reason ?? 'Este arquivo não foi indexado.',
+                'Pode ser que o Security Gate o tenha bloqueado por conter segredo.',
+              ]}
+              action={<Button onClick={() => send({ type: 'sync' })}>Sincronizar</Button>}
+            />
+          )
+        }
+      </Quadro>
+    </Card>
+  );
+
   return (
     <div className="space-y-2">
-      {selecionado && (
-        <Card
-          title={selecionado}
-          action={
-            <Button variant="ghost" onClick={() => setSelecionado(undefined)}>
-              Fechar
-            </Button>
-          }
-        >
-          <Quadro estado={conhecimento} onRetry={recarregarConhecimento}>
-            {(k) =>
-              k.indexed ? (
-                <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge tone="ok">✓ indexado</Badge>
-                    <Badge>{k.chunks.length} chunks</Badge>
-                    {k.document?.redacted && (
-                      <Badge tone="warn" title="Trechos sensíveis foram redigidos pelo gate">
-                        redigido
-                      </Badge>
-                    )}
-                  </div>
-                  {k.entities.length > 0 && (
-                    <div className="mb-2">
-                      <p className="text-fg-muted text-[0.9em]">Símbolos</p>
-                      <div className="flex flex-wrap gap-1 mt-0.5">
-                        {k.entities.map((e) => (
-                          <Badge key={e}>{e}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <Button
-                    onClick={() => send({ type: 'openFile', path: k.path, line: 1 })}
-                    variant="primary"
-                  >
-                    Abrir arquivo
-                  </Button>
-                </>
-              ) : (
-                // Não indexado e bloqueado são indistinguíveis de fora — e é
-                // assim que deve ser. A UI diz os dois, sem inventar um.
-                <EmptyState
-                  title="Não está no índice"
-                  hints={[
-                    k.reason ?? 'Este arquivo não foi indexado.',
-                    'Pode ser que o Security Gate o tenha bloqueado por conter segredo.',
-                  ]}
-                  action={<Button onClick={() => send({ type: 'sync' })}>Sincronizar</Button>}
-                />
-              )
-            }
-          </Quadro>
-        </Card>
+      <Input
+        label="Filtrar documentos"
+        value={busca}
+        onChange={setBusca}
+        placeholder="filtrar por caminho…"
+      />
+
+      {basesInstaladas.length > 0 && (
+        <div className="flex gap-1 flex-wrap">
+          {[
+            { id: 'todas', label: 'Todas as origens' },
+            { id: 'projeto', label: 'Só este projeto' },
+            ...basesInstaladas.map((f) => ({
+              id: `base:${f.pathPrefix}`,
+              label: `@base/${f.name}`,
+            })),
+          ].map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              aria-pressed={origem === o.id}
+              onClick={() => setOrigem(o.id)}
+              className={`px-2 py-0.5 rounded text-[0.85em] border ${
+                origem === o.id ? 'border-focus bg-active-soft' : 'border-border hover:bg-hover'
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       )}
 
-      <Input label="Filtrar documentos" value={busca} onChange={setBusca} placeholder="filtrar documentos…" />
-      <Quadro estado={lista} onRetry={recarregarLista} vazio={(d) => d.length === 0}>
-        {(docs) => (
-          <VirtualList
-            items={docs}
-            itemHeight={30}
-            height={Math.min(420, docs.length * 30 + 4)}
-            render={(d) => (
-              <button
-                type="button"
-                onClick={() => setSelecionado(d.path)}
-                className="w-full flex items-center gap-2 px-2 py-1 text-left rounded hover:bg-hover truncate"
-              >
-                <span className="truncate">{d.path}</span>
-                <span className="ml-auto text-fg-muted font-mono text-[0.85em] shrink-0">
-                  {d.chunks}
-                </span>
-              </button>
-            )}
-          />
-        )}
-      </Quadro>
+      <Split
+        amplo={amplo}
+        lado={detalhe}
+        principal={
+          <Quadro estado={lista} onRetry={recarregarLista} vazio={(d) => d.length === 0}>
+            {(docs) => {
+              const visiveis = filtrar(docs);
+              if (!visiveis.length) {
+                return (
+                  <EmptyState
+                    title="Nenhum documento nesta origem"
+                    hints={['Troque a origem ou limpe o filtro de caminho.']}
+                    action={<Button onClick={() => setOrigem('todas')}>Ver todas</Button>}
+                  />
+                );
+              }
+              return (
+                <>
+                  <p className="text-fg-muted text-[0.85em]">
+                    {visiveis.length} de {docs.length} documento(s)
+                  </p>
+                  <VirtualList
+                    items={visiveis}
+                    itemHeight={30}
+                    height={Math.min(amplo ? 640 : 420, visiveis.length * 30 + 4)}
+                    render={(d) => (
+                      <button
+                        type="button"
+                        onClick={() => setSelecionado(d.path)}
+                        className={`w-full flex items-center gap-2 px-2 py-1 text-left rounded
+                                    hover:bg-hover ${
+                                      d.path === selecionado ? 'bg-active-soft' : ''
+                                    }`}
+                      >
+                        {d.path.startsWith('@base/') && (
+                          <span
+                            aria-hidden
+                            title="conhecimento base"
+                            className="shrink-0 w-1.5 h-1.5 rounded-full bg-info"
+                          />
+                        )}
+                        <span className="truncate">{d.path}</span>
+                        <span className="ml-auto text-fg-muted font-mono text-[0.85em] shrink-0">
+                          {d.chunks}
+                        </span>
+                      </button>
+                    )}
+                  />
+                </>
+              );
+            }}
+          </Quadro>
+        }
+      />
     </div>
   );
 }
@@ -890,7 +1312,7 @@ export function Context({ settings }: { settings: UiSettings }) {
 }
 
 // ── Monitor ─────────────────────────────────────────────────────────────
-export function Monitor() {
+export function Monitor({ amplo }: { amplo: boolean }) {
   const [estado, recarregar] = usePedido<MonitorSnapshot>(
     () => request({ type: 'getMonitor' }, 'monitor').then((r) => r.monitor),
     [],
@@ -899,7 +1321,7 @@ export function Monitor() {
   return (
     <Quadro estado={estado} onRetry={recarregar}>
       {(m) => (
-        <div className="space-y-3">
+        <Grade min={amplo ? 300 : 9999}>
           <Card title="RAGX Monitor" action={<Button variant="ghost" onClick={recarregar}>Atualizar</Button>}>
             <Metric label="Documents" value={fmt(m.stats.documents)} />
             <Metric label="Chunks" value={fmt(m.stats.chunks)} />
@@ -932,14 +1354,14 @@ export function Monitor() {
               </ul>
             )}
           </Card>
-        </div>
+        </Grade>
       )}
     </Quadro>
   );
 }
 
 // ── Security ────────────────────────────────────────────────────────────
-export function Security() {
+export function Security({ amplo }: { amplo: boolean }) {
   const [estado, recarregar] = usePedido<SecurityStatus>(
     () => request({ type: 'getSecurity' }, 'security').then((r) => r.security),
     [],
@@ -948,7 +1370,7 @@ export function Security() {
   return (
     <Quadro estado={estado} onRetry={recarregar}>
       {(s) => (
-        <div className="space-y-3">
+        <Grade min={amplo ? 300 : 9999}>
           <Card title="Security Status">
             {[
               ['Security Gate ativo', s.gateActive],
@@ -992,14 +1414,14 @@ export function Security() {
               </p>
             </Card>
           )}
-        </div>
+        </Grade>
       )}
     </Quadro>
   );
 }
 
 // ── Agents ──────────────────────────────────────────────────────────────
-export function Agents() {
+export function Agents({ amplo }: { amplo: boolean }) {
   const [estado, recarregar] = usePedido<AgentInfo[]>(
     () => request({ type: 'getAgents' }, 'agents').then((r) => r.agents),
     [],
@@ -1008,7 +1430,7 @@ export function Agents() {
   return (
     <Quadro estado={estado} onRetry={recarregar} vazio={(a) => a.length === 0}>
       {(agentes) => (
-        <div className="space-y-2">
+        <Grade min={amplo ? 280 : 9999}>
           {agentes.map((a) => (
             <Card key={a.name} title={a.name}>
               <div className="mb-2">
@@ -1027,7 +1449,7 @@ export function Agents() {
               )}
             </Card>
           ))}
-        </div>
+        </Grade>
       )}
     </Quadro>
   );

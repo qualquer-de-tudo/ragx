@@ -214,6 +214,84 @@ describe('segurança do transporte', () => {
   });
 });
 
+describe('CliRagClient — os argumentos que vão para a CLI', () => {
+  /**
+   * Estes testes existem por causa de dois bugs reais.
+   *
+   * O cliente chamava `ragx documents --filter <x>` e `ragx chunks <caminho>`.
+   * Nenhuma das duas formas existe: a flag é `--path` e o caminho vai em
+   * `--document`. O Typer recusava, o `execFile` falhava, e a UI mostrava
+   * "não indexado" — acusando o Security Gate de um bloqueio que nunca houve.
+   *
+   * Um teste sobre o RESULTADO não pegaria isso: a resposta de erro era
+   * plausível. Só verificar o argv pega.
+   *
+   * O par deste teste está em `tests/unit/test_plugin_contrato.py`, que
+   * confere os mesmos comandos contra a CLI de verdade.
+   */
+  const argv = async (fn: (c: CliRagClient) => Promise<unknown>, stdout = '[]') => {
+    instalar(() => ({ stdout }));
+    // Limpa DEPOIS de instalar: várias asserções por teste, e `calls[0]`
+    // traria a chamada anterior — o teste passaria verificando outra coisa.
+    vi.mocked(execFile).mockClear();
+    await fn(cliente());
+    return (vi.mocked(execFile).mock.calls[0]?.[1] as string[]) ?? [];
+  };
+
+  it('lista documentos com `--path` e curinga', async () => {
+    const args = await argv((c) => c.documents('@base/agents/'));
+    expect(args[0]).toBe('documents');
+    expect(args).toContain('--path');
+    // Sem `*`, o LIKE do SQLite casa só com o caminho inteiro e devolve vazio.
+    expect(args[args.indexOf('--path') + 1]).toBe('*@base/agents/*');
+    expect(args).not.toContain('--filter');
+  });
+
+  it('não duplica o curinga de quem já escreveu um glob', async () => {
+    const args = await argv((c) => c.documents('src/*.py'));
+    expect(args[args.indexOf('--path') + 1]).toBe('src/*.py');
+  });
+
+  it('pede os chunks de um documento por `--document`', async () => {
+    const args = await argv((c) => c.fileKnowledge('src/ragx/walk.py'));
+    expect(args.slice(0, 3)).toEqual(['chunks', '--document', 'src/ragx/walk.py']);
+  });
+
+  it('busca com escopo só quando ele não é o padrão', async () => {
+    const semEscopo = await argv(
+      (c) => c.search('x', 'hybrid', 5, { scope: 'current' }),
+      '{"results":[]}',
+    );
+    expect(semEscopo).not.toContain('--scope');
+
+    const comEscopo = await argv(
+      (c) => c.search('x', 'hybrid', 5, { scope: 'project:outro' }),
+      '{"results":[]}',
+    );
+    expect(comEscopo[comEscopo.indexOf('--scope') + 1]).toBe('project:outro');
+  });
+
+  it('usa os subcomandos de tarefa que existem', async () => {
+    expect((await argv((c) => c.tasks())).slice(0, 2)).toEqual(['task', 'list']);
+    expect((await argv((c) => c.task('T-1'))).slice(0, 3)).toEqual(['task', 'show', 'T-1']);
+    expect((await argv((c) => c.taskGraph())).slice(0, 2)).toEqual(['task', 'graph']);
+    expect((await argv((c) => c.taskPanel(), '{}')).slice(0, 2)).toEqual(['task', 'status']);
+    expect((await argv((c) => c.analyzeRequest('fazer x'), '{}')).slice(0, 3)).toEqual([
+      'task', 'analyze', 'fazer x',
+    ]);
+    expect((await argv((c) => c.chunk('abc'), '{}')).slice(0, 2)).toEqual(['chunk', 'abc']);
+  });
+
+  it('projeto sem orquestração não vira erro de tela', async () => {
+    // `ragx task status` falha quando o banco de orquestração não existe —
+    // e não ter plano de trabalho é o estado normal de quase todo projeto.
+    falha(Object.assign(new Error('no such table: tasks'), { stderr: 'no such table' }));
+    const r = await cliente().taskPanel();
+    expect(r.ok).toBe(true);
+    expect(r.data?.unavailable).toBeTruthy();
+  });
+});
+
 describe('propagate', () => {
   it('repassa a falha mudando só o tipo', () => {
     const r = propagate<number>({ ok: false, error: { code: 'x', message: 'y' } });

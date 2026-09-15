@@ -1,14 +1,20 @@
 /**
  * A casca: navegação lateral, barra de estado e a página ativa.
  *
- * A navegação colapsa abaixo de 520px (§31). O painel lateral do VS Code
- * costuma ter 300px — assumir 1200 seria projetar para uma tela que quase
- * ninguém usa.
+ * Três larguras, não duas (§31):
+ *
+ *   - **compacta** (<520px): navegação vira menu. É o painel lateral apertado.
+ *   - **normal** (520–1099px): navegação fixa com rótulo, uma coluna.
+ *   - **ampla** (≥1100px): as páginas ganham uma segunda coluna de detalhe.
+ *
+ * A decisão é pela LARGURA MEDIDA, não pela hospedagem: uma barra lateral
+ * arrastada até a metade da tela merece o mesmo layout da aba do editor. A
+ * hospedagem só decide se faz sentido oferecer "abrir em tela cheia".
  */
 
 import { useEffect, useState } from 'react';
 
-import type { PageId, UiSettings } from '../../../src/protocol';
+import type { HostMode, PageId, UiSettings } from '../../../src/protocol';
 import type { SystemState } from '../../../src/rag/types';
 import { onNavigate, onSettings, onState, persist, request, restore, send } from '../bridge';
 import { Button, EmptyState, Status } from '../components';
@@ -22,18 +28,22 @@ import {
   Overview,
   Search,
   Security,
+  Sources,
+  Tasks,
 } from '../pages';
 
-const PAGINAS: Array<{ id: PageId; label: string; icone: string }> = [
-  { id: 'overview', label: 'Overview', icone: '◱' },
-  { id: 'search', label: 'Search', icone: '⌕' },
-  { id: 'graph', label: 'Graph', icone: '◈' },
-  { id: 'dictionary', label: 'Dictionary', icone: '☰' },
-  { id: 'documents', label: 'Documents', icone: '▤' },
-  { id: 'context', label: 'Context', icone: '◫' },
-  { id: 'agents', label: 'Agents', icone: '◇' },
-  { id: 'monitor', label: 'Monitor', icone: '◉' },
-  { id: 'security', label: 'Security', icone: '⚿' },
+const PAGINAS: Array<{ id: PageId; label: string; icone: string; grupo: 1 | 2 | 3 }> = [
+  { id: 'overview', label: 'Overview', icone: '◱', grupo: 1 },
+  { id: 'search', label: 'Search', icone: '⌕', grupo: 1 },
+  { id: 'graph', label: 'Graph', icone: '◈', grupo: 1 },
+  { id: 'dictionary', label: 'Dictionary', icone: '☰', grupo: 1 },
+  { id: 'documents', label: 'Documents', icone: '▤', grupo: 2 },
+  { id: 'sources', label: 'Origens', icone: '⛁', grupo: 2 },
+  { id: 'context', label: 'Context', icone: '◫', grupo: 2 },
+  { id: 'tasks', label: 'Tasks', icone: '☑', grupo: 3 },
+  { id: 'agents', label: 'Agents', icone: '◇', grupo: 3 },
+  { id: 'monitor', label: 'Monitor', icone: '◉', grupo: 3 },
+  { id: 'security', label: 'Security', icone: '⚿', grupo: 3 },
 ];
 
 const PADRAO: UiSettings = {
@@ -43,14 +53,18 @@ const PADRAO: UiSettings = {
   contextTokenBudget: 4000,
 };
 
+const COMPACTO = 520;
+const AMPLO = 1100;
+
 export function App() {
   const [pagina, setPagina] = useState<PageId>(restore<PageId>('page', 'overview'));
   const [estado, setEstado] = useState<SystemState>('disconnected');
   const [projeto, setProjeto] = useState<string>();
   const [transporte, setTransporte] = useState<string>();
   const [mensagem, setMensagem] = useState<string>();
+  const [hospedagem, setHospedagem] = useState<HostMode>('sidebar');
   const [settings, setSettings] = useState<UiSettings>(PADRAO);
-  const [estreito, setEstreito] = useState(window.innerWidth < 520);
+  const [largura, setLargura] = useState(window.innerWidth);
   const [menuAberto, setMenuAberto] = useState(false);
   const [carga, setCarga] = useState<Record<string, string>>({});
 
@@ -60,16 +74,19 @@ export function App() {
       setProjeto(s.project?.name);
       setTransporte(s.project?.transport);
       setMensagem(s.message);
+      setHospedagem(s.host);
     });
     const offSettings = onSettings(setSettings);
     const offNav = onNavigate((p, payload) => {
       setPagina(p);
-      if (payload) setCarga(payload);
+      // Um payload vazio tem de LIMPAR a carga anterior: sem isso, ir para
+      // Search sem consulta reabriria a busca do comando anterior.
+      setCarga(payload ?? {});
     });
     void request({ type: 'ready' }, 'ack').catch(() => {
       /* o host responde quando estiver pronto */
     });
-    const onResize = () => setEstreito(window.innerWidth < 520);
+    const onResize = () => setLargura(window.innerWidth);
     window.addEventListener('resize', onResize);
     return () => {
       offEstado();
@@ -83,11 +100,16 @@ export function App() {
     persist({ page: pagina });
   }, [pagina]);
 
-  const irPara = (p: string) => {
+  const estreito = largura < COMPACTO;
+  const amplo = largura >= AMPLO;
+
+  const irPara = (p: string, payload?: Record<string, string>) => {
     setPagina(p as PageId);
+    setCarga(payload ?? {});
     setMenuAberto(false);
   };
 
+  const noGrafo = (nome: string) => irPara('graph', { entity: nome });
   const desconectado = estado === 'disconnected' || estado === 'error';
 
   return (
@@ -104,8 +126,24 @@ export function App() {
             ☰
           </button>
         )}
-        <h1 className="font-semibold">RAGX Knowledge</h1>
+        <h1 className="font-semibold truncate">RAGX Knowledge</h1>
+        {amplo && projeto && (
+          <span className="text-fg-muted truncate text-[0.9em]">· {projeto}</span>
+        )}
         <div className="ml-auto flex items-center gap-1">
+          {/* Só na lateral: dentro da aba do editor este botão apontaria para
+              a própria tela onde já se está. */}
+          {hospedagem === 'sidebar' && (
+            <button
+              type="button"
+              aria-label="Abrir em tela cheia"
+              title="Abrir em tela cheia, no editor"
+              onClick={() => send({ type: 'openEditor', page: pagina })}
+              className="px-1.5 hover:bg-hover rounded"
+            >
+              ⛶
+            </button>
+          )}
           <button
             type="button"
             aria-label="Configurações"
@@ -138,61 +176,78 @@ export function App() {
               aria-label="Seções"
               className={`${
                 estreito ? 'absolute z-10 bg-bg-side border-r border-border h-full' : ''
-              } w-36 shrink-0 border-r border-border p-1 overflow-y-auto`}
+              } ${amplo ? 'w-44' : 'w-36'} shrink-0 border-r border-border p-1 overflow-y-auto`}
             >
-              {PAGINAS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  aria-current={pagina === p.id ? 'page' : undefined}
-                  onClick={() => irPara(p.id)}
-                  className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left
-                              hover:bg-hover ${
-                                pagina === p.id ? 'bg-active text-active-fg' : ''
-                              }`}
-                >
-                  <span aria-hidden className="w-3 text-center opacity-70">
-                    {p.icone}
-                  </span>
-                  <span className="truncate">{p.label}</span>
-                </button>
+              {PAGINAS.map((p, i) => (
+                <div key={p.id}>
+                  {/* Um separador entre grupos: onze itens numa lista corrida
+                      viram uma parede de texto sem hierarquia nenhuma. */}
+                  {i > 0 && PAGINAS[i - 1].grupo !== p.grupo && (
+                    <hr className="my-1 border-border" />
+                  )}
+                  <button
+                    type="button"
+                    aria-current={pagina === p.id ? 'page' : undefined}
+                    onClick={() => irPara(p.id)}
+                    className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left
+                                hover:bg-hover ${
+                                  pagina === p.id ? 'bg-active text-active-fg' : ''
+                                }`}
+                  >
+                    <span aria-hidden className="w-3 text-center opacity-70">
+                      {p.icone}
+                    </span>
+                    <span className="truncate">{p.label}</span>
+                  </button>
+                </div>
               ))}
             </nav>
           )}
 
           <main className="flex-1 overflow-auto p-3 min-w-0">
-            {pagina === 'overview' && <Overview onGo={irPara} />}
+            {pagina === 'overview' && <Overview onGo={irPara} amplo={amplo} />}
             {pagina === 'search' && (
               <Search
                 settings={settings}
                 consultaInicial={carga.query}
-                onEntity={(nome) => {
-                  setCarga({ entity: nome });
-                  setPagina('graph');
-                }}
+                escopoInicial={carga.scope}
+                prefixoInicial={carga.prefix}
+                amplo={amplo}
+                onEntity={noGrafo}
               />
             )}
-            {pagina === 'graph' && <Graph settings={settings} entidadeInicial={carga.entity} />}
-            {pagina === 'dictionary' && (
-              <Dictionary
-                onEntity={(nome) => {
-                  setCarga({ entity: nome });
-                  setPagina('graph');
-                }}
+            {pagina === 'graph' && (
+              <Graph settings={settings} entidadeInicial={carga.entity} amplo={amplo} />
+            )}
+            {pagina === 'dictionary' && <Dictionary onEntity={noGrafo} amplo={amplo} />}
+            {pagina === 'documents' && (
+              <Documents
+                caminhoInicial={carga.path}
+                prefixoInicial={carga.prefix}
+                amplo={amplo}
               />
             )}
-            {pagina === 'documents' && <Documents caminhoInicial={carga.path} />}
+            {pagina === 'sources' && (
+              <Sources
+                amplo={amplo}
+                onBuscar={(escopo, prefixo) =>
+                  irPara('search', { scope: escopo, prefix: prefixo ?? '' })
+                }
+                onDocumentos={(prefixo) => irPara('documents', { prefix: prefixo })}
+              />
+            )}
             {pagina === 'context' && <Context settings={settings} />}
-            {pagina === 'agents' && <Agents />}
-            {pagina === 'monitor' && <Monitor />}
-            {pagina === 'security' && <Security />}
+            {pagina === 'tasks' && <Tasks amplo={amplo} pedidoInicial={carga.request} />}
+            {pagina === 'agents' && <Agents amplo={amplo} />}
+            {pagina === 'monitor' && <Monitor amplo={amplo} />}
+            {pagina === 'security' && <Security amplo={amplo} />}
           </main>
         </div>
       )}
 
       <footer className="flex items-center gap-3 px-3 py-1 border-t border-border text-[0.85em] shrink-0">
         <Status state={estado} detail={mensagem} />
-        {projeto && <span className="text-fg-muted truncate">{projeto}</span>}
+        {projeto && !amplo && <span className="text-fg-muted truncate">{projeto}</span>}
         {transporte && (
           <span className="ml-auto text-fg-muted" title="Transporte usado para falar com o RAGX">
             {transporte}

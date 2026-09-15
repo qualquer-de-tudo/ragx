@@ -8,6 +8,7 @@ funções por baixo e nunca a CLI. Aqui os comandos são EXECUTADOS.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -135,3 +136,39 @@ def test_watch_sem_indice_orienta(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     r = runner.invoke(app, ["watch"])
     assert r.exit_code == 1
     assert "ragx init" in r.output
+
+
+def test_curinga_nao_e_expandido_contra_o_diretorio_atual(
+    projeto: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`--path "*src*"` é um PADRÃO, não uma lista de arquivos.
+
+    No Windows o Click reescreve os argumentos antes de entregá-los ao comando
+    (`windows_expand_args=True`, o padrão): ele roda `glob` em cada um e troca
+    pelo que casar no diretório atual. Medido neste repositório: `--path
+    "*ragx*"` chegava como `ragx.toml` — um arquivo — e a listagem devolvia um
+    documento só; `--path "*src*"` virava `src` e devolvia zero.
+
+    O mesmo comando dava resultados diferentes conforme o que existisse na
+    pasta. Este teste PRECISA rodar a CLI como processo: o `CliRunner` chama o
+    Click por dentro e nunca passa pela expansão — foi por isso que o bug
+    sobreviveu à suíte inteira.
+    """
+    import subprocess
+    import sys
+
+    raiz, _fonte = projeto
+    # A isca: uma pasta com o nome que o curinga casaria.
+    (raiz / "src").mkdir()
+    (raiz / "src" / "servico.py").write_text("def s():\n    return 1\n", encoding="utf-8")
+    assert runner.invoke(app, ["index", "."]).exit_code == 0
+
+    saida = subprocess.run(
+        [sys.executable, "-m", "ragx.cli.main",
+         "documents", "--path", "*src*", "--limit", "50", "--json"],
+        capture_output=True, cwd=raiz, env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+    )
+    caminhos = [d["rel_path"] for d in json.loads(saida.stdout.decode("utf-8"))]
+    assert "src/servico.py" in caminhos, (
+        f"o curinga foi expandido contra o disco: {caminhos}"
+    )

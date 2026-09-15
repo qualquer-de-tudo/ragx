@@ -90,6 +90,65 @@ export interface SearchFilters {
   kind?: string;
   pathGlob?: string;
   minScore?: number;
+  /**
+   * `current` (só este projeto), `all` ou `project:<nome>`.
+   *
+   * O índice pode conter conhecimento de várias origens ao mesmo tempo — este
+   * projeto, fontes base compartilhadas e outros projetos do hub. Sem escopo,
+   * "buscar" mistura as três e a resposta deixa de dizer de onde veio.
+   */
+  scope?: string;
+}
+
+// ── origens do conhecimento ─────────────────────────────────────────────
+/**
+ * De onde vem cada pedaço do índice.
+ *
+ * Três origens distintas, que NÃO devem ser lidas como a mesma coisa:
+ *
+ *   - `project`: o repositório aberto. É o que o RAGX indexa e reindexa.
+ *   - `base`: conhecimento compartilhado (`@base/<nome>/…`), instalado na
+ *     máquina e declarado por este projeto. Vive fora do repositório.
+ *   - `peer`: outro projeto registrado no hub local. Pode nem estar clonado —
+ *     o que se sabe dele vem da superfície pública que ele publicou.
+ */
+export type SourceKind = 'project' | 'base' | 'peer';
+
+export interface KnowledgeSource {
+  id: string;
+  kind: SourceKind;
+  name: string;
+  /** URL do git ou caminho local, para fonte base. */
+  origin?: string;
+  commit?: string;
+  enabled: boolean;
+  /** Fonte base: este projeto a DECLARA em `[base] sources`? */
+  declared?: boolean;
+  /** Projeto do hub: existe em disco nesta máquina? */
+  cloned?: boolean;
+  visibility?: string;
+  status?: string;
+  path?: string;
+  /**
+   * Contagens quando o RAGX sabe. `undefined` significa "não sei", e a UI
+   * precisa dizer isso em vez de mostrar zero — zero é uma afirmação.
+   */
+  documents?: number;
+  chunks?: number;
+  entities?: number;
+  /** Prefixo que isola esta origem numa listagem de documentos. */
+  pathPrefix?: string;
+  /** Escopo correspondente na busca. */
+  scope?: string;
+}
+
+export interface SourcesOverview {
+  sources: KnowledgeSource[];
+  integrations: Array<{ from: string; to: string; kind: string; name?: string }>;
+  unresolved: string[];
+  divergences: string[];
+  /** Sem hub, só existem este projeto e as fontes base — e isso é o normal. */
+  hubAvailable: boolean;
 }
 
 export interface GraphNode {
@@ -159,7 +218,9 @@ export interface ChunkInfo {
   headingPath: string | null;
   lines: [number, number];
   tokens: number;
+  /** Só vem quando o chunk é pedido inteiro; a listagem por documento omite. */
   content?: string;
+  documentPath?: string;
 }
 
 export interface ContextFragment {
@@ -234,4 +295,93 @@ export interface FileKnowledge {
   chunks: ChunkInfo[];
   entities: string[];
   document?: DocumentInfo;
+}
+
+// ── orquestração (Fase 13) ──────────────────────────────────────────────
+/**
+ * Os estados vêm do RAGX, não desta lista.
+ *
+ * O tipo é aberto (`| string`) de propósito: um estado novo no servidor não
+ * pode fazer a tela sumir. A UI trata o que conhece e mostra o resto como
+ * texto — degradar é melhor que quebrar.
+ */
+export type TaskStatus =
+  | 'pending' | 'ready' | 'queued' | 'running' | 'blocked'
+  | 'completed' | 'failed' | 'cancelled' | 'needs_review'
+  | (string & {});
+
+export interface TaskInfo {
+  id: string;
+  projectId: string;
+  title: string;
+  status: TaskStatus;
+  priority: string;
+  track: string;
+  type: string;
+  requiresApproval: boolean;
+  acceptanceCriteria: string[];
+  filesScope: string[];
+  retryCount: number;
+}
+
+export interface TaskDetail {
+  task: TaskInfo & {
+    description?: string;
+    testRequirements?: string[];
+    securityRequirements?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+    leaseExpiresAt?: string;
+    assignee?: string;
+  };
+  dependencies: Array<{ id: string; title?: string; status?: TaskStatus }>;
+  dependents: Array<{ id: string; title?: string; status?: TaskStatus }>;
+  lastResult?: {
+    status?: string;
+    summary?: string;
+    filesChanged?: string[];
+    checks?: Array<{ name: string; passed: boolean; detail?: string }>;
+  };
+}
+
+export interface TaskGraph {
+  nodes: Array<{ id: string; title: string; status: TaskStatus; track?: string }>;
+  edges: Array<{ from: string; to: string; kind: string }>;
+}
+
+export interface TaskPanel {
+  /** Contagem por estado. Vazio significa "nenhuma tarefa", não "erro". */
+  counts: Record<string, number>;
+  projects: Array<{ id: string; name: string; status: string }>;
+  scheduler?: { total: number; enabled: number; next?: string | null };
+  /** O painel responde mesmo com o banco de orquestração ausente — e diz isso. */
+  unavailable?: string;
+}
+
+/**
+ * O que o Task Analyzer decidiu — sem escrever nada.
+ *
+ * `classification` é o veredito: executar agora ou documentar e decompor
+ * antes. O plugin só LÊ isso; aplicar o plano continua sendo `ragx task plan
+ * --apply`, que escreve, e escrita não sai de uma tela de exploração.
+ */
+export interface RequestAnalysis {
+  classification: string;
+  complexity: string;
+  strategy: string;
+  /** Total EFETIVO — o que decidiu, que pode diferir do bruto por redução. */
+  total: number;
+  rawTotal: number;
+  confidence: number;
+  reasoning: string;
+  requiresDocumentation: boolean;
+  requiresDecomposition: boolean;
+  requiresApproval: boolean;
+  /** As sete dimensões, cada uma de 0 a 100. */
+  scores: Record<string, number>;
+  matchedSignals: string[];
+  risks: string[];
+  dependencies: string[];
+  overriddenBy?: string;
+  overrideReason?: string;
 }

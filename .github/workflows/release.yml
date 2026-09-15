@@ -221,8 +221,9 @@ jobs:
           mkdir -p release
           cp baixados/pacote-python/* release/
           cp baixados/extensao-vscode/*.vsix release/
-          # Cópia binária: o `.ps1` tem BOM e o `.sh` precisa de LF. Qualquer
-          # reescrita de texto aqui desfaria os dois em silêncio.
+          # Cópia binária: o `.ps1` precisa continuar ASCII e SEM BOM, e o
+          # `.sh` precisa de LF. Qualquer reescrita de texto aqui desfaria os
+          # dois em silêncio — e um BOM no `.ps1` quebra o `irm | iex`.
           cp install/install.sh install/install.ps1 release/
 
           cd release

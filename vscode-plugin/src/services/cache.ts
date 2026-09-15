@@ -11,7 +11,12 @@
  *      lembrar de chamar `clear()` é invalidação que falha.
  */
 
-const CACHEABLE = new Set(['dictionary', 'stats', 'documents', 'graph', 'entity']);
+const CACHEABLE = new Set([
+  'dictionary', 'stats', 'documents', 'graph', 'entity',
+  // Origens: nome, commit e contagem de fontes base e projetos do hub. Muda
+  // raramente e custa três chamadas ao RAGX — mas nada de conteúdo entra aqui.
+  'sources',
+]);
 
 interface Entry<T> {
   value: T;

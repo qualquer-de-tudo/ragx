@@ -119,6 +119,49 @@ def test_secao_invalida_e_not_found(api: KnowledgeAPI) -> None:
     assert not out["ok"] and out["error"]["code"] == "not_found"
 
 
+def test_list_documents_inventaria_sem_conteudo(api: KnowledgeAPI) -> None:
+    """Inventário é metadado. Conteúdo tem ferramenta própria, com id de chunk.
+
+    Se a listagem devolvesse conteúdo, ela viraria um jeito de baixar o
+    repositório inteiro numa chamada — e o teto de resposta transformaria isso
+    num erro em vez de numa resposta.
+    """
+    out = api.list_documents()
+    assert out["ok"] is True
+    caminhos = {d["path"] for d in out["data"]["documents"]}
+    assert {"auth.py", "doc.md"} <= caminhos
+    assert all("content" not in d for d in out["data"]["documents"])
+    assert out["data"]["count"] == len(out["data"]["documents"])
+
+
+def test_list_documents_filtra_por_trecho_de_caminho(api: KnowledgeAPI) -> None:
+    """Quem chama pensa em prefixo, não em SQL.
+
+    O repositório recebe um LIKE cru: `auth` sem curinga casava com NADA, e a
+    resposta vazia era indistinguível de "não existe". Foi exatamente esse o
+    bug que deixou a lista de documentos do plugin vazia no transporte CLI.
+    """
+    out = api.list_documents(path_glob="auth")
+    assert out["ok"] is True
+    assert [d["path"] for d in out["data"]["documents"]] == ["auth.py"]
+
+    # Curinga explícito continua funcionando para quem já pensa em glob.
+    assert api.list_documents(path_glob="*.md")["data"]["documents"][0]["path"] == "doc.md"
+
+
+def test_list_documents_atribui_tudo_ao_projeto_quando_nao_ha_fonte_base(
+    api: KnowledgeAPI,
+) -> None:
+    """Sem fonte base, toda a contagem é do projeto — e soma o total.
+
+    A separação por origem com `@base/` está em
+    `tests/integration/test_base.py`, onde existe uma fonte base de verdade.
+    """
+    dados = api.list_documents()["data"]
+    assert set(dados["by_source"]) == {"demo"}
+    assert sum(dados["by_source"].values()) == dados["count"]
+
+
 def test_get_chunk_devolve_conteudo(api: KnowledgeAPI) -> None:
     doc = api.get_document("auth.py")
     cid = doc["data"]["chunks"][0]["chunk_id"]
@@ -194,7 +237,8 @@ def test_resposta_grande_e_recusada_nao_truncada() -> None:
 
 _LEITURA = {
     "get_playbook", "get_dictionary", "search_knowledge", "search_hybrid",
-    "get_document", "get_chunk", "get_entity", "search_graph", "build_context",
+    "get_document", "list_documents", "get_chunk", "get_entity", "search_graph",
+    "build_context",
     "list_projects", "get_contract", "list_base_sources",
     # Fase 13 — orquestração (leitura)
     "analyze_request", "list_tasks", "get_task", "task_graph", "next_task",

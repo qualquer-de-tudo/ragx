@@ -184,6 +184,70 @@ class KnowledgeAPI:
             self.cfg.mcp.max_response_bytes,
         )
 
+    def list_documents(
+        self, path_glob: str | None = None, lang: str | None = None,
+        kind: str | None = None, limit: int = 200,
+    ) -> dict[str, Any]:
+        """Inventário do que está indexado. METADADO, nunca conteúdo.
+
+        Existe para responder "o que exatamente há neste índice, e de qual
+        origem". Sem isto, a única forma de listar documentos pelo MCP era
+        deduzir os caminhos dos resultados de uma busca — o que devolve o que
+        casa com a consulta, não o que existe, e nunca o que tem zero relevância
+        para ela.
+
+        A separação por origem sai do próprio caminho: `@base/<fonte>/…` é
+        conhecimento compartilhado, o resto é deste repositório.
+        """
+        blocked = self._guard()
+        if blocked:
+            return blocked
+
+        from ragx.storage.db import open_db
+        from ragx.storage.repositories import DocumentRepo
+
+        teto = max(1, min(int(limit), 2000))
+        # O repositório recebe um LIKE. Quem chama pensa em prefixo ou trecho de
+        # caminho, não em SQL — traduzir aqui evita a busca que devolve vazio
+        # em silêncio porque faltou um `%`.
+        padrao = None
+        if path_glob:
+            padrao = path_glob if "*" in path_glob or "%" in path_glob else f"*{path_glob}*"
+
+        with open_db(self.cfg.db_path, read_only=True) as conn:
+            linhas = DocumentRepo(conn).list(
+                lang=lang, kind=kind, path_like=padrao, limit=teto
+            )
+
+        documentos = [
+            {
+                "path": d["rel_path"], "lang": d["lang"], "kind": d["doc_kind"],
+                "title": d["title"], "redacted": bool(d["redacted"]),
+                "size_bytes": d["size_bytes"],
+            }
+            for d in linhas
+        ]
+        por_origem: dict[str, int] = {}
+        for d in documentos:
+            caminho = d["path"]
+            origem = (
+                f"@base/{caminho.split('/')[1]}"
+                if caminho.startswith("@base/") and "/" in caminho[6:]
+                else self.project
+            )
+            por_origem[origem] = por_origem.get(origem, 0) + 1
+
+        return cap(
+            ok({
+                "project": self.project,
+                "documents": documentos,
+                "count": len(documentos),
+                "by_source": por_origem,
+                "truncated": len(documentos) >= teto,
+            }),
+            self.cfg.mcp.max_response_bytes,
+        )
+
     def get_chunk(self, chunk_id: str) -> dict[str, Any]:
         blocked = self._guard()
         if blocked:
@@ -461,6 +525,15 @@ def build_server(
     @server.tool(description="Metadados e lista de chunks de um documento JÁ INDEXADO (caminho relativo).")
     def get_document(path: str) -> dict[str, Any]:
         return _guarded(lambda: api.get_document(path), "get_document", cfg)
+
+    @server.tool(description="Inventário do índice: documentos e de que origem vêm (@base/... é conhecimento compartilhado). Metadado, sem conteúdo.")
+    def list_documents(
+        path_glob: str | None = None, lang: str | None = None,
+        kind: str | None = None, limit: int = 200,
+    ) -> dict[str, Any]:
+        return _guarded(
+            lambda: api.list_documents(path_glob, lang, kind, limit), "list_documents", cfg,
+        )
 
     @server.tool(description="Conteúdo completo de um chunk pelo seu id.")
     def get_chunk(chunk_id: str) -> dict[str, Any]:

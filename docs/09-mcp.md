@@ -45,6 +45,7 @@ store, por construção, não tem segredo dentro.
 | `search_knowledge` | `query`, `limit?`, `filters?` | resultados semânticos | Fase 2 |
 | `search_hybrid` | `query`, `limit?`, `filters?` | resultados fundidos | Fase 2 |
 | `get_document` | `path` | metadados + lista de chunks | Fase 1 |
+| `list_documents` | `path_glob?`, `lang?`, `kind?`, `limit?` | inventário do índice + contagem por origem | Fase 14 |
 | `get_chunk` | `chunk_id` | conteúdo completo de um chunk | Fase 1 |
 | `get_entity` | `name` ou `id` | entidade + relações diretas | Fase 3 |
 | `search_graph` | `query`, `depth?` | subgrafo relevante | Fase 3 |
@@ -148,6 +149,27 @@ detalhe vai para `.ragx/logs/`.
 | tamanho da resposta | 1 MiB | proteção de transporte |
 | `path_glob` | sem `..`, sem caminho absoluto | não é acesso a arquivo, mas o filtro não deve sugerir que é |
 | rate | 60 chamadas/min por sessão | proteção contra loop de agente |
+
+### Saber o que existe, e de qual origem
+
+`list_documents` responde “O QUE há neste índice” — pergunta diferente de
+“o que casa com esta consulta”, que é o que a busca responde. Devolve só
+metadado (caminho, linguagem, tipo, título, se foi redigido); conteúdo tem
+ferramenta própria, com id de chunk.
+
+O campo `by_source` separa o que é deste repositório do que veio de fora:
+
+```json
+{ "by_source": { "ragx": 312, "@base/agents": 36 } }
+```
+
+A regra sai do próprio caminho: `@base/<fonte>/…` é conhecimento base
+compartilhado, instalado na máquina e **declarado** por este projeto; o resto
+é o repositório aberto. A distinção importa na prática — um arquivo `@base/`
+não está no working tree, e procurá-lo no repositório não adianta.
+
+`path_glob` aceita tanto um trecho (`auth`) quanto um glob (`src/*.py`); sem
+curinga, o trecho é envolvido em `*…*`. Ver [18-conhecimento-base.md](18-conhecimento-base.md).
 
 `get_document` recebe um **caminho relativo já indexado**. Se o caminho não existir
 no store, a resposta é `not_found` — e não uma tentativa de leitura no disco. Essa

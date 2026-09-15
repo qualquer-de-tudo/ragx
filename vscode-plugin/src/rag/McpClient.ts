@@ -14,6 +14,16 @@ import { ChildProcess } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
+import {
+  toAnalysis,
+  toChunk,
+  toDocument,
+  toSources,
+  toTask,
+  toTaskDetail,
+  toTaskGraph,
+  toTaskPanel,
+} from './parse';
 import { done, fail, propagate, type RagClient } from './RagClient';
 import type {
   AgentInfo,
@@ -32,11 +42,17 @@ import type {
   MonitorSnapshot,
   ProjectInfo,
   RagResult,
+  RequestAnalysis,
   SearchFilters,
   SearchHit,
   SearchMode,
   SearchResponse,
   SecurityStatus,
+  SourcesOverview,
+  TaskDetail,
+  TaskGraph,
+  TaskInfo,
+  TaskPanel,
 } from './types';
 
 export interface McpOptions {
@@ -60,6 +76,8 @@ export class McpRagClient implements RagClient {
   private child?: ChildProcess;
   private options: McpOptions;
   private tools = new Set<string>();
+  /** Nome do projeto conectado; usado para separar o que é dele do que não é. */
+  private projeto = 'este projeto';
 
   constructor(options: McpOptions) {
     this.options = options;
@@ -85,7 +103,7 @@ export class McpRagClient implements RagClient {
       });
 
       this.client = new Client(
-        { name: 'ragx-vscode', version: '1.0.0-beta.1' },
+        { name: 'ragx-vscode', version: '1.0.0-beta.2' },
         { capabilities: {} },
       );
       await this.client.connect(transport);
@@ -100,6 +118,7 @@ export class McpRagClient implements RagClient {
       const playbook = await this.call<Json>('get_playbook', {});
       const project =
         (playbook.ok && (playbook.data?.project as string)) || 'projeto';
+      this.projeto = project;
 
       return done({
         name: project,
@@ -233,6 +252,9 @@ export class McpRagClient implements RagClient {
     if (filters?.lang) args.lang = filters.lang;
     if (filters?.kind) args.kind = filters.kind;
     if (filters?.pathGlob) args.path_glob = filters.pathGlob;
+    // O RAGX aceita `current`, `all` e `project:<nome>`. Mandar sempre deixa a
+    // origem explícita no servidor em vez de implícita no cliente.
+    if (filters?.scope) args.scope = filters.scope;
 
     const r = await this.call<Json>(tool, args, signal);
     if (!r.ok) return propagate<SearchResponse>(r);
@@ -363,9 +385,19 @@ export class McpRagClient implements RagClient {
   }
 
   async documents(query?: string, limit = 200): Promise<RagResult<DocumentInfo[]>> {
-    // Não existe "listar tudo" de propósito: em projeto grande isso é uma
-    // resposta de megabytes que o RAGX recusaria (§41). A navegação parte da
-    // busca, que já pagina.
+    // O inventário é a resposta certa: diz o que EXISTE no índice, não o que
+    // casa com uma consulta. A derivação por busca abaixo continua como
+    // reserva para instalações do RAGX anteriores a esta ferramenta.
+    if (this.tools.has('list_documents')) {
+      const inventario = await this.call<Json>('list_documents', {
+        path_glob: query || undefined,
+        limit: Math.min(limit, 2000),
+      });
+      if (inventario.ok) {
+        return done(((inventario.data?.documents as Json[]) ?? []).map(toDocument));
+      }
+    }
+
     const r = await this.search(query || '.', 'keyword', Math.min(limit, 100));
     if (!r.ok) return propagate<DocumentInfo[]>(r);
 
@@ -427,6 +459,78 @@ export class McpRagClient implements RagClient {
         redacted: Boolean(doc.redacted),
       },
     });
+  }
+
+  async sources(): Promise<RagResult<SourcesOverview>> {
+    const [base, projetos, stats] = await Promise.all([
+      this.call<Json>('list_base_sources', {}),
+      this.call<Json>('list_projects', {}),
+      this.stats(),
+    ]);
+    // Nenhuma das três é obrigatória: sem hub não há projetos, sem fonte base
+    // não há `@base/`, e o projeto atual continua sendo uma origem válida.
+    return done(
+      toSources(
+        base.ok ? base.data ?? {} : {},
+        projetos.ok ? projetos.data ?? {} : {},
+        {
+          name: this.projeto,
+          documents: stats.ok ? stats.data?.documents : undefined,
+          chunks: stats.ok ? stats.data?.chunks : undefined,
+          entities: stats.ok ? stats.data?.entities : undefined,
+        },
+      ),
+    );
+  }
+
+  async chunk(chunkId: string): Promise<RagResult<ChunkInfo>> {
+    const r = await this.call<Json>('get_chunk', { chunk_id: chunkId });
+    if (!r.ok) return propagate<ChunkInfo>(r);
+    const c = (r.data?.chunk as Json) ?? r.data ?? {};
+    return done(toChunk(c, chunkId));
+  }
+
+  // ── orquestração ──────────────────────────────────────────────────────
+  async tasks(project?: string, status?: string): Promise<RagResult<TaskInfo[]>> {
+    const args: Json = { limit: 200 };
+    if (project) args.project_id = project;
+    if (status) args.status = status;
+    const r = await this.call<Json>('list_tasks', args);
+    if (!r.ok) return propagate<TaskInfo[]>(r);
+    return done(((r.data?.tasks as Json[]) ?? []).map(toTask));
+  }
+
+  async task(taskId: string): Promise<RagResult<TaskDetail>> {
+    const r = await this.call<Json>('get_task', { task_id: taskId });
+    if (!r.ok) return propagate<TaskDetail>(r);
+    return done(toTaskDetail(r.data ?? {}, taskId));
+  }
+
+  async taskGraph(project?: string): Promise<RagResult<TaskGraph>> {
+    const r = await this.call<Json>('task_graph', project ? { project_id: project } : {});
+    if (!r.ok) return propagate<TaskGraph>(r);
+    return done(toTaskGraph(r.data ?? {}));
+  }
+
+  async taskPanel(): Promise<RagResult<TaskPanel>> {
+    const r = await this.call<Json>('task_status', {});
+    // Projeto sem banco de orquestração é o caso COMUM, não uma falha: quem
+    // nunca rodou `ragx task plan` não tem tarefa nenhuma. Devolver erro aqui
+    // pintaria a tela de vermelho por uma situação normal.
+    if (!r.ok) {
+      return done({
+        counts: {},
+        projects: [],
+        unavailable: r.error?.message ?? 'orquestração indisponível',
+      });
+    }
+    return done(toTaskPanel(r.data ?? {}));
+  }
+
+  async analyzeRequest(request: string): Promise<RagResult<RequestAnalysis>> {
+    const r = await this.call<Json>('analyze_request', { request });
+    if (!r.ok) return propagate<RequestAnalysis>(r);
+    return done(toAnalysis(r.data ?? {}));
   }
 
   async buildContext(query: string, tokens: number): Promise<RagResult<ContextPack>> {

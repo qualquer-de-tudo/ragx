@@ -72,6 +72,29 @@ def test_fonte_local_e_indexada_sob_prefixo(cenario: tuple) -> None:
     assert "app.py" in caminhos
 
 
+def test_inventario_separa_conhecimento_base_do_projeto(cenario: tuple) -> None:
+    """Quem lê o índice precisa saber o que NÃO é deste repositório.
+
+    Os dois conjuntos convivem no mesmo banco, e um arquivo `@base/` não está
+    no working tree — abrir o editor nele não funciona. Misturar os dois faz a
+    pessoa procurar no repositório algo que nunca esteve lá.
+    """
+    from ragx.mcp.server import KnowledgeAPI
+
+    cfg, fonte = cenario
+    base_source.add(cfg, str(fonte), name="casa")
+    index_project(cfg)
+
+    dados = KnowledgeAPI(cfg).list_documents()["data"]
+    assert dados["by_source"]["@base/casa"] == 2
+    assert dados["by_source"]["p"] >= 1
+
+    # E dá para pedir SÓ uma origem.
+    so_base = KnowledgeAPI(cfg).list_documents(path_glob="@base/casa/")["data"]
+    assert so_base["count"] == 2
+    assert all(d["path"].startswith("@base/casa/") for d in so_base["documents"])
+
+
 def test_conhecimento_base_aparece_na_busca(cenario: tuple) -> None:
     cfg, fonte = cenario
     base_source.add(cfg, str(fonte), name="casa")
