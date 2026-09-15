@@ -18,9 +18,24 @@ provedor do modelo, e RAG genérico trata código como texto puro.
 
 ## Instalação
 
+**Linux e macOS**
+
 ```bash
-uv tool install ragx      # binário `ragx` (alias histórico: `rag`)
-ragx --version
+curl -fsSL https://raw.githubusercontent.com/qualquer-de-tudo/ragx/main/install/install.sh | bash
+```
+
+**Windows**
+
+```powershell
+irm https://raw.githubusercontent.com/qualquer-de-tudo/ragx/main/install/install.ps1 | iex
+```
+
+Os dois colocam o `ragx` no PATH, registram o servidor MCP e verificam o
+resultado. Depois, **abra um terminal novo** — o PATH só vale na próxima
+sessão. Detalhes e instalação manual em [install/](install/README.md).
+
+```bash
+ragx --version      # binário `ragx` (alias histórico: `rag`)
 ```
 
 Desenvolvimento a partir do repositório:
@@ -85,6 +100,17 @@ ragx hub sync && ragx hub link
 ragx search "criar pagamento" --scope all
 ```
 
+## Extensão do VS Code
+
+```bash
+code --install-extension vscode-plugin/ragx-knowledge-explorer-1.0.0-beta.1.vsix
+```
+
+Busca semântica, grafo navegável, dicionário e Context Builder dentro do
+editor — do arquivo para o conhecimento e de volta para a linha exata. Não toca
+no banco: fala com o RAGX por MCP (processo quente) ou pela CLI. Ver
+[vscode-plugin/](vscode-plugin/README.md).
+
 ## Princípios
 
 1. **Nenhum segredo entra na base.** O gate roda *antes* do parser, não depois do
@@ -108,11 +134,13 @@ ragx search "criar pagamento" --scope all
 | [docs/14-cli.md](docs/14-cli.md) | referência de comandos |
 | [docs/19-watch-e-autonomia-do-agente.md](docs/19-watch-e-autonomia-do-agente.md) | o que o agente pode fazer sozinho |
 | [docs/20-task-analyzer.md](docs/20-task-analyzer.md) | executar agora ou documentar antes |
+| [install/](install/README.md) | instaladores para Windows e Linux |
+| [vscode-plugin/](vscode-plugin/README.md) | extensão do VS Code |
 | [task/](task/) | 96 tarefas, 14 fases |
 
 ## Estado
 
-MVP completo: 14 fases implementadas, 690 testes, **zero `xfail`** na suíte de
+MVP completo: 14 fases implementadas, 696 testes (+39 no plugin), **zero `xfail`** na suíte de
 segurança (8 superfícies de vazamento verificadas).
 
 **Ressalva importante:** a busca híbrida **não supera o keyword** neste corpus.

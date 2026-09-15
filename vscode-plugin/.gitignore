@@ -1,0 +1,16 @@
+# Dependências e build — nada disso vai para o Git.
+node_modules/
+dist/
+out/
+*.vsix
+*.tsbuildinfo
+
+# Ferramentas
+.vite/
+coverage/
+.eslintcache
+
+# Editor e sistema operacional
+.vscode-test/
+.DS_Store
+Thumbs.db

@@ -3,6 +3,56 @@
 Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [0.3.1] — 2026-09-15
+
+Instalação de verdade e interface visual.
+
+### Adicionado
+
+- **Extensão do VS Code** `ragx-knowledge-explorer` 1.0.0-beta.1
+  ([vscode-plugin/](vscode-plugin/README.md)) — busca semântica, grafo
+  navegável com expansão progressiva, dicionário, Context Builder, monitor e
+  status de segurança, dentro do editor. React + Tailwind sobre as variáveis de
+  tema do VS Code: Light, Dark e High Contrast saem de graça.
+- **Instaladores** para Windows (`install/install.ps1`) e Linux/macOS
+  (`install/install.sh`). Colocam o `ragx` no PATH, registram o servidor MCP e
+  **verificam** o resultado.
+- Extra `all` no pacote: servidor MCP, busca semântica e contagem de tokens.
+
+### Corrigido
+
+Três bugs de instalação achados testando os instaladores de verdade — o do
+Windows neste Windows, o do Linux num container Ubuntu 24.04:
+
+- **`uv` escolhia Python 3.10** e o RAGX usa `StrEnum` (3.11+). A falha
+  aparecia depois, como `ModuleNotFoundError: pydantic_core._pydantic_core`,
+  longe da causa. `--python` agora é explícito.
+- **`ragx mcp serve` falhava após instalar com sucesso**: o pacote `mcp` era um
+  extra que o instalador não pedia. Servir agentes por MCP é o propósito do
+  RAGX, não um acessório — daí o extra `all`.
+- **PowerShell 5.1** (padrão do Windows) tratava o stderr do `uv` como exceção
+  e lia o `.ps1` sem BOM como ANSI. Corrigido com um helper para chamada nativa
+  e BOM no arquivo.
+
+Há testes para os três: `tests/unit/test_documentacao.py` verifica que o extra
+`all` carrega `mcp`, que os instaladores fixam o Python e registram o MCP, e
+que o `.ps1` tem BOM.
+
+No plugin, dois bugs achados pelos próprios testes:
+
+- `humanize()` ecoava a mensagem crua do RAGX — um traceback de Python chegaria
+  à tela, exatamente o que a §39 do pedido proíbe.
+- `isBlocked()` só olhava a raiz do objeto; um resultado de busca com marcação
+  de bloqueio dentro de `content` passava direto para a UI.
+
+### Segurança
+
+- A webview roda sob CSP restrita: sem `eval`, sem script inline,
+  `connect-src 'none'`. Nenhum `dangerouslySetInnerHTML`.
+- A lista de arquivos bloqueados **nunca** chega à tela — só a contagem
+  agregada por regra. A agregação acontece no cliente, antes da webview.
+- Zero rede, zero telemetria, zero CDN: a extensão empacota tudo que usa.
+
 ## [0.3.0] — 2026-09-15
 
 Task Analyzer e orquestração. O RAGX deixa de só responder perguntas e passa a

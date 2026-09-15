@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ragx"
-version = "0.3.0"
+version = "0.3.1"
 description = "Knowledge Engine local para projetos de software: indexa, protege segredos, busca, monta contexto e serve agentes via MCP."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Conjunto de instalacao recomendado. Servir agentes por MCP e busca semantica
+# sao o proposito do RAGX, nao acessorios — e um `ragx mcp serve` que falha com
+# ModuleNotFoundError depois de uma instalacao bem-sucedida e o pior tipo de
+# surpresa. Os extras individuais continuam existindo para quem quer o minimo.
+all = ["fastembed>=0.3", "mcp>=1.2", "tiktoken>=0.7"]
 embed = ["fastembed>=0.3"]
 parse = ["markdown-it-py>=3.0", "tree-sitter-language-pack>=0.2", "sqlparse>=0.5", "ruamel.yaml>=0.18"]
 mcp = ["mcp>=1.2"]

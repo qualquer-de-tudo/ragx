@@ -1,0 +1,25 @@
+# Normalização de fim de linha.
+#
+# Sem isto, o `core.autocrlf` do Windows grava CRLF no `.sh` — e no Linux o
+# shebang vira `#!/usr/bin/env bash\r`, que o kernel não encontra. O erro é
+# "bad interpreter: No such file or directory", que não diz nada sobre a causa.
+
+* text=auto eol=lf
+
+# Precisa de LF, sempre: são executados por interpretadores POSIX.
+*.sh        text eol=lf
+*.bash      text eol=lf
+
+# Precisa de CRLF: o PowerShell 5.1 é mais feliz assim, e o arquivo já carrega
+# BOM para que os acentos apareçam certos.
+*.ps1       text eol=crlf working-tree-encoding=UTF-8
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+
+# Binários: nada de conversão.
+*.png       binary
+*.vsix      binary
+*.whl       binary
+*.i8        binary
+*.db        binary
+*.sqlite    binary

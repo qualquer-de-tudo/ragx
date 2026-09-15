@@ -88,3 +88,55 @@ def test_links_relativos_apontam_para_arquivo_existente(arquivo: Path) -> None:
         if not destino.exists():
             quebrados.append(alvo)
     assert not quebrados, f"links quebrados em {arquivo.name}: {quebrados}"
+
+
+# ── instalação ──────────────────────────────────────────────────────────
+def test_extra_all_cobre_o_que_o_ragx_promete() -> None:
+    """Instalar e o `ragx mcp serve` falhar é a pior surpresa possível.
+
+    Aconteceu de verdade: o instalador usava o extra `embed`, o pacote `mcp`
+    ficava de fora, e `ragx mcp tools` morria com `ModuleNotFoundError` depois
+    de uma instalação que se declarou bem-sucedida.
+    """
+    import tomllib
+
+    dados = tomllib.loads((RAIZ / "pyproject.toml").read_text(encoding="utf-8"))
+    extras = dados["project"]["optional-dependencies"]
+    assert "all" in extras, "o extra `all` é o conjunto recomendado"
+
+    pacotes = " ".join(extras["all"])
+    for obrigatorio in ("mcp", "fastembed"):
+        assert obrigatorio in pacotes, (
+            f"`all` precisa de {obrigatorio}: servir agentes por MCP e busca "
+            f"semântica são o propósito do RAGX, não acessórios"
+        )
+
+
+@pytest.mark.parametrize("script", ["install/install.sh", "install/install.ps1"])
+def test_instalador_poe_o_comando_no_path(script: str) -> None:
+    """O sintoma clássico é «instalei e o comando não existe».
+
+    `uv tool` instala em um diretório que nem Linux nem Windows têm no PATH por
+    padrão. O instalador precisa gravar isso no perfil — e dizer que só vale na
+    próxima sessão.
+    """
+    texto = (RAIZ / script).read_text(encoding="utf-8-sig")
+    assert "PATH" in texto
+    # Fixar o interpretador: sem isso o uv pode pegar um Python 3.10 e o RAGX,
+    # que usa StrEnum, quebra com um ImportError longe da causa.
+    assert "--python" in texto, "o instalador precisa fixar a versão do Python"
+    # Verificar em vez de prometer.
+    assert "doctor" in texto, "o instalador precisa verificar o que instalou"
+
+
+@pytest.mark.parametrize("script", ["install/install.sh", "install/install.ps1"])
+def test_instalador_registra_o_mcp(script: str) -> None:
+    texto = (RAIZ / script).read_text(encoding="utf-8-sig")
+    assert "mcpServers" in texto
+    assert "mcp" in texto and "serve" in texto
+
+
+def test_instalador_windows_tem_bom() -> None:
+    """O PowerShell 5.1 ainda é o padrão do Windows e lê `.ps1` sem BOM como
+    ANSI — todo acento vira mojibake na tela do instalador."""
+    assert (RAIZ / "install/install.ps1").read_bytes()[:3] == b"\xef\xbb\xbf"

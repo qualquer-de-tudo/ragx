@@ -32,6 +32,14 @@ htmlcov/
 .ruff_cache/
 .mypy_cache/
 
+# Node — a extensão do VS Code tem seu próprio ecossistema.
+node_modules/
+vscode-plugin/dist/
+vscode-plugin/out/
+*.vsix
+.vite/
+*.tsbuildinfo
+
 # Editor e sistema operacional
 .idea/
 .vscode/
