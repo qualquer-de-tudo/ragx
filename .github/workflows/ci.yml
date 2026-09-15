@@ -26,12 +26,13 @@ jobs:
         python: ['3.11', '3.12']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Instalar uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+          python-version: ${{ matrix.python }}
 
       - name: Instalar dependências
         run: uv sync --all-extras --dev
@@ -56,11 +57,11 @@ jobs:
         working-directory: vscode-plugin
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: vscode-plugin/package-lock.json
 
@@ -81,7 +82,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # O valor deste job é provar a instalação de ponta a ponta: os três bugs
       # corrigidos na 0.3.1 só apareceram rodando o instalador de verdade.
@@ -94,27 +95,46 @@ jobs:
         shell: pwsh
         run: .\install\install.ps1 -SemMcp
 
+      - name: Colocar o ragx no PATH deste job
+        shell: bash
+        run: |
+          set -euo pipefail
+          # O diretório vem do `uv`, não de um palpite: `setup-uv` e o
+          # instalador do uv podem apontar para lugares diferentes, e no
+          # Windows o `uv` devolve o caminho NATIVO (C:\...), que é o único
+          # formato que o GITHUB_PATH entende.
+          bin="$(uv tool dir --bin)"
+          echo "bin: $bin"
+          echo "$bin" >> "$GITHUB_PATH"
+
       - name: Verificar que o comando existe e funciona
         shell: bash
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
+          set -euo pipefail
           ragx --version
           # O MCP falhava com ModuleNotFoundError depois de uma instalação
           # "bem-sucedida". Este passo é o que impede isso de voltar.
           ragx mcp tools --json > /dev/null
-          echo "ferramentas MCP: $(ragx mcp tools --json | python -c 'import sys,json;print(len(json.load(sys.stdin)))')"
+          echo "MCP ok"
 
       - name: Ciclo completo num projeto novo
         shell: bash
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          mkdir -p /tmp/demo/src && cd /tmp/demo
+          set -euo pipefail
+          demo="${RUNNER_TEMP}/demo"
+          mkdir -p "$demo/src" && cd "$demo"
           printf 'class AuthService:\n    """Autenticacao via SSO."""\n    def login(self, c):\n        return c\n' > src/auth.py
           echo "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" > .env
-          ragx init && ragx index .
+          ragx init
+          ragx index .
           ragx search "autenticacao" --limit 2 --json > /dev/null
-          # O segredo NÃO pode estar no índice. Se algum dia estiver, o build
-          # precisa quebrar aqui — não numa máquina de usuário.
-          n=$(ragx search "wJalrXUtnFEMI" --mode keyword --json | python -c 'import sys,json;print(len(json.load(sys.stdin)["results"]))')
-          echo "resultados para o segredo: $n (esperado: 0)"
-          test "$n" = "0"
+
+          # O segredo NÃO pode estar no índice. Contamos `chunk_id` em vez de
+          # usar Python: `python` não é garantido no runner, e foi exatamente
+          # isso que derrubou este job antes.
+          n=$(ragx search "wJalrXUtnFEMI" --mode keyword --json | grep -c '"chunk_id"' || true)
+          echo "resultados para o segredo: $n (esperado 0)"
+          if [ "$n" != "0" ]; then
+            echo "::error::um segredo entrou no índice — o Security Gate falhou"
+            exit 1
+          fi

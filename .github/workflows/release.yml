@@ -38,8 +38,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
       - run: uv sync --all-extras --dev
@@ -57,18 +57,27 @@ jobs:
     outputs:
       versao: ${{ steps.versao.outputs.valor }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
 
       - name: Ler a versão do pyproject
         id: versao
+        shell: bash
         run: |
-          v=$(python -c "import tomllib,pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          set -euo pipefail
+          # `grep` em vez de Python: o interpretador não é garantido no runner,
+          # e derrubar a publicação por causa disso seria constrangedor.
+          v=$(grep -m1 '^version = ' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
+          if [ -z "$v" ]; then
+            echo "::error::não consegui ler a versão do pyproject.toml"
+            exit 1
+          fi
           echo "valor=$v" >> "$GITHUB_OUTPUT"
           echo "RAGX $v"
 
       - name: Conferir que a tag bate com o pyproject
         if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
         run: |
           tag="${GITHUB_REF_NAME#v}"
           arquivo="${{ steps.versao.outputs.valor }}"
@@ -81,7 +90,7 @@ jobs:
 
       - run: uv build
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: pacote-python
           path: dist/*
@@ -98,10 +107,10 @@ jobs:
       run:
         working-directory: vscode-plugin
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: vscode-plugin/package-lock.json
 
@@ -118,7 +127,7 @@ jobs:
       - run: npm run build
       - run: npx vsce package --no-dependencies --allow-missing-repository
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: extensao-vscode
           path: vscode-plugin/*.vsix
@@ -137,10 +146,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: pacote-python
           path: dist
@@ -148,29 +157,49 @@ jobs:
       - name: Instalar do wheel
         shell: bash
         run: |
+          set -euo pipefail
           whl=$(ls dist/*.whl | head -1)
           echo "instalando $whl"
-          uv tool install --force --python 3.12 "$whl[all]" || uv tool install --force --python 3.12 "$whl"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv tool install --force --python 3.12 "${whl}[all]"
+
+          # O diretório vem do `uv`, não de um palpite. Escrever
+          # "$HOME/.local/bin" aqui foi o que derrubou este job no Windows: em
+          # bash, `$HOME` vira /c/Users/... e o PATH do Windows não entende
+          # esse formato. O `uv` devolve o caminho nativo de cada sistema.
+          bin="$(uv tool dir --bin)"
+          echo "bin: $bin"
+          echo "$bin" >> "$GITHUB_PATH"
 
       - name: Verificar
         shell: bash
         run: |
+          set -euo pipefail
           ragx --version
+          # O MCP já falhou com ModuleNotFoundError depois de uma instalação
+          # "bem-sucedida". Este passo é o que impede isso de voltar.
           ragx mcp tools --json > /dev/null
           echo "MCP ok"
 
       - name: Ciclo completo
         shell: bash
         run: |
-          mkdir -p "$RUNNER_TEMP/demo/src" && cd "$RUNNER_TEMP/demo"
+          set -euo pipefail
+          demo="${RUNNER_TEMP}/demo"
+          mkdir -p "$demo/src" && cd "$demo"
           printf 'class AuthService:\n    """Autenticacao via SSO."""\n    def login(self, c):\n        return c\n' > src/auth.py
           echo "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" > .env
-          ragx init && ragx index .
+          ragx init
+          ragx index .
           ragx search "autenticacao" --limit 2 --json > /dev/null
-          n=$(ragx search "wJalrXUtnFEMI" --mode keyword --json | python -c 'import sys,json;print(len(json.load(sys.stdin)["results"]))')
+
+          # Contamos `chunk_id` em vez de usar Python: `python` não é garantido
+          # no runner, e foi exatamente isso que derrubou este job antes.
+          n=$(ragx search "wJalrXUtnFEMI" --mode keyword --json | grep -c '"chunk_id"' || true)
           echo "resultados para o segredo: $n (esperado 0)"
-          test "$n" = "0"
+          if [ "$n" != "0" ]; then
+            echo "::error::um segredo entrou no índice — o Security Gate falhou"
+            exit 1
+          fi
 
   # ── 5. publicar ───────────────────────────────────────────────────────
   publicar:
@@ -178,15 +207,17 @@ jobs:
     needs: [pacote, extensao, instalar]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: baixados
 
       - name: Reunir os artefatos
         id: reunir
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p release
           cp baixados/pacote-python/* release/
           cp baixados/extensao-vscode/*.vsix release/
@@ -201,11 +232,22 @@ jobs:
           echo "whl=$(ls *.whl | head -1)" >> "$GITHUB_OUTPUT"
 
       - name: Montar as notas
+        shell: bash
         run: |
+          set -euo pipefail
           RAGX="${{ needs.pacote.outputs.versao }}"
           PLUGIN="${{ needs.extensao.outputs.versao }}"
-          cat > NOTAS.md <<NOTAS
-          RAGX **$RAGX** · extensão do VS Code **$PLUGIN**
+          REPO="${{ github.repository }}"
+          TAG="${{ github.ref_name }}"
+          VSIX="${{ steps.reunir.outputs.vsix }}"
+          WHL="${{ steps.reunir.outputs.whl }}"
+
+          # Heredoc SEM expansão ('NOTAS' entre aspas): o corpo tem crases e
+          # cifrões de blocos de código, e deixá-lo expandir transformaria
+          # `$RAGX` dentro de um exemplo em texto vazio. As substituições
+          # acontecem depois, uma a uma, com `sed`.
+          cat > NOTAS.md <<'NOTAS'
+          RAGX **__RAGX__** · extensão do VS Code **__PLUGIN__**
 
           Knowledge Engine local: indexa o repositório, protege segredos por
           construção, responde busca híbrida, monta contexto dentro de um
@@ -216,48 +258,47 @@ jobs:
 
           **Linux e macOS**
 
-          \`\`\`bash
-          curl -fsSL https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/install.sh | bash
-          \`\`\`
+          ```bash
+          curl -fsSL https://github.com/__REPO__/releases/download/__TAG__/install.sh | bash
+          ```
 
           **Windows**
 
-          \`\`\`powershell
-          irm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/install.ps1 | iex
-          \`\`\`
+          ```powershell
+          irm https://github.com/__REPO__/releases/download/__TAG__/install.ps1 | iex
+          ```
 
           Depois, **abra um terminal novo** — o PATH só vale na próxima sessão.
 
           **Extensão do VS Code**
 
-          \`\`\`bash
-          code --install-extension ${{ steps.reunir.outputs.vsix }}
-          \`\`\`
+          ```bash
+          code --install-extension __VSIX__
+          ```
 
           **Do wheel, sem script**
 
-          \`\`\`bash
-          uv tool install --python 3.12 "${{ steps.reunir.outputs.whl }}[all]"
-          \`\`\`
+          ```bash
+          uv tool install --python 3.12 "__WHL__[all]"
+          ```
 
           ## Verificado nesta build
 
-          - testes em Ubuntu e Windows, Python 3.11 e 3.12
+          - testes em Ubuntu e Windows
           - instalação a partir do wheel nos dois sistemas
-          - ciclo completo num projeto novo: \`init\`, \`index\`, \`search\`, MCP
-          - um \`.env\` com credencial no projeto de teste **não** entra no
+          - ciclo completo num projeto novo: `init`, `index`, `search`, MCP
+          - um `.env` com credencial no projeto de teste **não** entra no
             índice — o build quebra se entrar
 
           ## Ressalva honesta
 
           A busca híbrida ainda não supera a busca por palavra-chave neste
           corpus (recall@5 0,65 contra 0,77). O critério documentado não foi
-          atingido; o diagnóstico está em \`docs/05-busca.md\`.
-
-          ---
-
-          Mudanças completas no [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md).
+          atingido; o diagnóstico está em `docs/05-busca.md`.
           NOTAS
+
+          sed -i "s|__RAGX__|$RAGX|g;  s|__PLUGIN__|$PLUGIN|g; s|__REPO__|$REPO|g; \
+                  s|__TAG__|$TAG|g;    s|__VSIX__|$VSIX|g;     s|__WHL__|$WHL|g" NOTAS.md
           cat NOTAS.md
 
       - name: Publicar

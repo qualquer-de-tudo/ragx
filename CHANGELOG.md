@@ -20,6 +20,26 @@ de quem instala.
   `core.autocrlf` do Windows grava CRLF no instalador e o Linux responde
   `bad interpreter: No such file or directory`, que não diz nada sobre a causa.
 
+### Corrigido depois da primeira execução do workflow
+
+Os dois jobs de instalação falharam na primeira tentativa. As duas causas eram
+do workflow, não do produto:
+
+- **`python` não é garantido no runner.** O passo que conferia se o segredo
+  entrou no índice usava `python -c` para contar resultados. A contagem agora
+  usa `grep -c '"chunk_id"'`, que não depende de interpretador nenhum.
+- **`$HOME/.local/bin` no Windows.** Em bash, `$HOME` vira `/c/Users/...`, e o
+  PATH do Windows não entende esse formato — o `ragx` não era encontrado no
+  passo seguinte. O diretório agora vem de `uv tool dir --bin`, que devolve o
+  caminho nativo de cada sistema.
+
+Os dois passos foram reproduzidos localmente antes de subir: num container
+Ubuntu 24.04 sem Python instalado, e neste Windows.
+
+As ações também subiram de versão (`checkout@v5`, `setup-uv@v6`,
+`setup-node@v5`, `upload/download-artifact@v5`) — o runner já forçava Node 24 e
+avisava a cada execução.
+
 ### Verificado na publicação
 
 O workflow de release **não publica antes de testar**. Ele instala a partir do
