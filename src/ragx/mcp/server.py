@@ -43,6 +43,18 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
     try:
         return fn()
     except Exception as exc:
+        # "Ainda não há índice aqui" NÃO é falha interna: é o estado normal de
+        # toda pasta que não é um projeto RAGX. Com o servidor registrado
+        # globalmente, isso acontece em boa parte das sessões — e responder
+        # `internal` mandando olhar um log que não existe faz o agente concluir
+        # que o RAGX está quebrado.
+        if not cfg.db_path.exists():
+            return err(
+                "not_indexed",
+                f"nenhum índice em {cfg.root}. Se este é o projeto certo, rode "
+                f"`ragx init && ragx index .` na raiz dele; se não, abra a "
+                f"sessão dentro de um projeto já indexado.",
+            )
         log_exception(cfg.state_dir, tool, exc)
         return err(
             "internal",

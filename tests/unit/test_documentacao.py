@@ -197,3 +197,28 @@ def test_instalador_sobrevive_a_execucao_por_pipe(script: str) -> None:
     else:
         assert "BASH_SOURCE[0]:-" in texto
         assert '-f "${BASH_SOURCE[0]}"' in texto
+
+
+@pytest.mark.parametrize("script", ["install/install.sh", "install/install.ps1"])
+def test_registro_do_mcp_nao_destroi_a_configuracao(script: str) -> None:
+    """Escrever no config de outro programa é a operação mais perigosa aqui.
+
+    Dois bugs reais, encontrados registrando de verdade:
+
+    1. `Set-Content -Encoding utf8` grava COM BOM no PowerShell 5.1, e o
+       `JSON.parse` do Node lança exceção ao ver BOM. O arquivo ficava com o
+       conteúdo certo e o cliente não conseguia abrir.
+    2. `ConvertFrom-Json '{}'` devolve `$null` no PS 5.1. O código chamava
+       `.PSObject` nele, estourava, e gravava um arquivo VAZIO — apagando os
+       outros servidores MCP da pessoa em silêncio.
+    """
+    texto = (RAIZ / script).read_text(encoding="utf-8")
+    if script.endswith(".ps1"):
+        assert "UTF8Encoding($false)" in texto, "o config precisa ser gravado SEM BOM"
+        assert "Set-Content -Path $Arquivo -Encoding utf8" not in texto
+        assert "ConvertTo-Tabela" in texto, "`{}` vira `$null` e precisa de guarda"
+    else:
+        # O `json.dump` do Python já grava sem BOM; o que importa aqui é não
+        # sobrescrever config ilegível.
+        assert "JSONDecodeError" in texto
+        assert "setdefault" in texto, "preservar o que já existe"

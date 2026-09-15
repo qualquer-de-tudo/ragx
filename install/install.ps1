@@ -197,17 +197,45 @@ function Instalar-Extensao {
     }
 }
 
+<#
+.SYNOPSIS
+    Objeto do ConvertFrom-Json vira tabela hash, para poder ser modificado.
+
+.DESCRIPTION
+    Duas armadilhas do PowerShell 5.1 que este helper resolve de uma vez:
+
+      - `ConvertFrom-Json '{}'` devolve $NULL, nao um objeto vazio. Chamar
+        `.PSObject` nele lanca excecao, e o registro gravava um arquivo vazio
+        em silencio - perdendo os outros servidores da pessoa.
+      - nao existe `-AsHashtable` nesta versao, entao a conversao e manual.
+#>
+function ConvertTo-Tabela {
+    param($Objeto)
+    $tabela = @{}
+    if ($null -eq $Objeto) { return $tabela }
+    if ($Objeto -is [System.Collections.IDictionary]) {
+        foreach ($chave in $Objeto.Keys) { $tabela[$chave] = $Objeto[$chave] }
+        return $tabela
+    }
+    foreach ($p in $Objeto.PSObject.Properties) { $tabela[$p.Name] = $p.Value }
+    return $tabela
+}
+
 function Registrar-Mcp {
-    param([string]$Nome, [string]$Arquivo)
+    param([string]$Nome, [string]$Arquivo, [string]$Comando)
 
     $pasta = Split-Path -Parent $Arquivo
     if (-not (Test-Path $pasta)) { return }
 
     try {
-        $dados = if (Test-Path $Arquivo) {
-            Get-Content $Arquivo -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
-        } else {
-            [PSCustomObject]@{}
+        $lido = $null
+        if (Test-Path $Arquivo) {
+            # `-Encoding UTF8` no PS 5.1 tolera BOM na LEITURA; o problema do
+            # BOM e so na escrita, tratada abaixo.
+            $bruto = Get-Content $Arquivo -Raw -Encoding UTF8
+            if ($bruto -and $bruto.Trim()) {
+                $lido = $bruto | ConvertFrom-Json -ErrorAction Stop
+            }
         }
     } catch {
         # Config corrompida: nao sobrescrever o que a pessoa tem. Melhor avisar
@@ -216,17 +244,23 @@ function Registrar-Mcp {
         return
     }
 
-    if (-not $dados.PSObject.Properties.Name.Contains('mcpServers')) {
-        $dados | Add-Member -NotePropertyName mcpServers -NotePropertyValue ([PSCustomObject]@{})
-    }
-    $servidor = [PSCustomObject]@{ command = 'ragx'; args = @('mcp', 'serve') }
-    if ($dados.mcpServers.PSObject.Properties.Name.Contains('ragx')) {
-        $dados.mcpServers.ragx = $servidor
-    } else {
-        $dados.mcpServers | Add-Member -NotePropertyName ragx -NotePropertyValue $servidor
-    }
+    $raiz = ConvertTo-Tabela $lido
+    $servidores = ConvertTo-Tabela $raiz['mcpServers']
 
-    $dados | ConvertTo-Json -Depth 20 | Set-Content -Path $Arquivo -Encoding utf8
+    # Caminho ABSOLUTO: aplicativo grafico nao herda o PATH do usuario em toda
+    # instalacao, e `ragx` sozinho pode nao ser encontrado pelo cliente.
+    $servidores['ragx'] = @{ command = $Comando; args = @('mcp', 'serve') }
+    $raiz['mcpServers'] = $servidores
+    $dados = $raiz
+
+    # `Set-Content -Encoding utf8` grava COM BOM no PowerShell 5.1, e o
+    # `JSON.parse` do Node - que e quem le este arquivo - lanca excecao ao ver
+    # BOM. O instalador chegou a corromper um config assim: o conteudo estava
+    # certo e o cliente nao conseguia abrir. `WriteAllText` com UTF8Encoding
+    # sem BOM e a unica forma confiavel nas duas versoes do PowerShell.
+    $json = $dados | ConvertTo-Json -Depth 20
+    $semBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Arquivo, $json + "`n", $semBom)
     Escreva-Nota "MCP registrado em $Nome"
 }
 
@@ -365,8 +399,15 @@ function Invoke-InstalacaoRagx {
 
     # -- 5. MCP ----------------------------------------------------------
     if (-not $SemMcp) {
-        Registrar-Mcp 'Claude Desktop' (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json')
-        Registrar-Mcp 'Claude Code'    (Join-Path $env:USERPROFILE '.claude.json')
+        # O executavel no PATH, resolvido agora: e o que os clientes vao
+        # chamar, e eles nao herdam o PATH do usuario de forma confiavel.
+        $exe = Join-Path $bin 'ragx.exe'
+        if (-not (Test-Path $exe)) { $exe = 'ragx' }
+
+        Registrar-Mcp 'Claude Desktop' `
+            (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json') $exe
+        Registrar-Mcp 'Claude Code' `
+            (Join-Path $env:USERPROFILE '.claude.json') $exe
         Escreva-Ok 'servidor MCP disponivel: ragx mcp serve'
     }
 

@@ -354,3 +354,32 @@ def test_toda_ferramenta_de_escrita_executa(api: KnowledgeAPI, op: str) -> None:
     if "operation" in out["data"]:  # as de índice carregam operação e duração
         assert out["data"]["operation"] == op
         assert out["data"]["duration_ms"] >= 0
+
+
+def test_pasta_sem_indice_nao_vira_erro_interno(tmp_path, monkeypatch) -> None:
+    """O servidor global sobe em TODA sessão, inclusive fora de um projeto.
+
+    "Ainda não há índice aqui" é o estado normal dessas pastas. Responder
+    `internal` e mandar olhar `.ragx/logs/errors.log` — que não existe — faz o
+    agente concluir que o RAGX está quebrado e parar de consultá-lo.
+    """
+    from ragx.config import load_config
+    from ragx.mcp.server import _guarded
+
+    vazio = tmp_path / "sem-projeto"
+    vazio.mkdir()
+    monkeypatch.chdir(vazio)
+    cfg = load_config(vazio)
+    assert not cfg.db_path.exists()
+
+    def explode():
+        from ragx.core.errors import EnvError
+
+        raise EnvError("banco não encontrado")
+
+    out = _guarded(explode, "search_hybrid", cfg)
+    assert out["ok"] is False
+    assert out["error"]["code"] == "not_indexed"
+    # A mensagem precisa dizer o que fazer, e não apontar para um log ausente.
+    assert "ragx init" in out["error"]["message"]
+    assert "errors.log" not in out["error"]["message"]

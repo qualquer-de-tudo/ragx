@@ -20,6 +20,39 @@ de quem instala.
   `core.autocrlf` do Windows grava CRLF no instalador e o Linux responde
   `bad interpreter: No such file or directory`, que não diz nada sobre a causa.
 
+### Registro do MCP: dois bugs de corrupção de configuração
+
+Encontrados registrando o servidor de verdade nesta máquina. Escrever no
+arquivo de configuração de outro programa é a operação mais perigosa que o
+instalador faz, e as duas falhas eram silenciosas:
+
+- **`Set-Content -Encoding utf8` grava COM BOM** no PowerShell 5.1, e o
+  `JSON.parse` do Node — que é quem lê esses arquivos — lança exceção ao ver
+  BOM. O `claude_desktop_config.json` ficou com o conteúdo certo e ilegível
+  para o cliente. Agora usa `WriteAllText` com `UTF8Encoding($false)`.
+- **`ConvertFrom-Json '{}'` devolve `$null`** no PS 5.1. O código chamava
+  `.PSObject` nele, estourava, e gravava um arquivo **vazio** — apagando os
+  outros servidores MCP da pessoa sem avisar. Agora a conversão passa por uma
+  tabela hash que trata nulo, dicionário e objeto.
+
+Verificado em cinco formatos de config: inexistente, vazio, `{}`, com outro
+servidor, e com um `ragx` anterior. Em todos, as chaves de topo, os outros
+servidores e os dados de projeto foram preservados.
+
+O registro passou a usar o **caminho absoluto** do executável: aplicativo
+gráfico não herda o PATH do usuário de forma confiável, e `ragx` sozinho pode
+não ser encontrado pelo cliente.
+
+### Pasta sem projeto não é falha interna
+
+Com o servidor MCP registrado globalmente, ele sobe em toda sessão — inclusive
+onde não existe projeto RAGX. A busca respondia `internal` e mandava olhar
+`.ragx/logs/errors.log`, que não existe ali. O agente concluiria que o RAGX
+está quebrado e pararia de consultá-lo.
+
+Agora responde `not_indexed`, dizendo o que fazer: rodar `ragx init` se for o
+projeto certo, ou abrir a sessão dentro de um projeto já indexado.
+
 ### Instalação com repositório privado
 
 O repositório não será público, então o comando único nunca vai funcionar para
