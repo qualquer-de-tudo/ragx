@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "37816526e4ac75302d31d11bd3e05dffe51d8961bd7a55b9c79094bd6116d273",
+  "doc_kind": "code",
+  "id": "684c23c00dbf4f02cc5233aa7c16d60a",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/context/dedup.py",
+  "size_bytes": 3415,
+  "title": "Deduplicação em três níveis.\n\n  1. duplicata literal      mesmo content_hash\n  2. quase-duplicata        cosseno acima do limiar, sobre vetores já gravados\n  3. redundância            MMR: troca um pouco de relevância por cobertura\n\nVer docs/07-context-engine.md."
+}

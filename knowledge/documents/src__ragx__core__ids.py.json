@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "3a4303c4211d48ff68b359142cfb7e78bf679c77f9ea8894fb0e94bfadb1f102",
+  "doc_kind": "code",
+  "id": "9f9f47689faceeb02f1537eaad1b5a72",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/core/ids.py",
+  "size_bytes": 2946,
+  "title": "IDs determinísticos.\n\nRequisito duro: mesmo input + mesma versão do chunker = mesmo ID, em qualquer\nmáquina e qualquer sistema operacional. Sem isso não existe indexação incremental,\nnem merge no Git, nem reidratação.\n\nVer docs/03-modelo-de-dados.md."
+}

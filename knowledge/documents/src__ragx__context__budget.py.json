@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "409d6e87c51e1740cf43cb3202dbfc4c2bf5342a5763e528229a9b6ff7f5f1c2",
+  "doc_kind": "code",
+  "id": "18e9e1d54f0f2cde92b0966da3a28875",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/context/budget.py",
+  "size_bytes": 3097,
+  "title": "Alocação de orçamento de tokens.\n\nKnapsack aproximado por densidade de valor, com reservas fixas. A reserva por\nfonte existe para evitar o modo de falha clássico: 3.000 tokens todos vindos de\num único arquivo, sem a documentação que explica o porquê.\n\nVer docs/07-context-engine.md."
+}

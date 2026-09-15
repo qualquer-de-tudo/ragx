@@ -1,0 +1,66 @@
+[
+  {
+    "evidence": [
+      "@base/agents/ai/ragx-integration.md",
+      "README.md"
+    ],
+    "seen": 94,
+    "term": "RAGX"
+  },
+  {
+    "evidence": [
+      "docs/adr/ADR-0001-python-e-toolchain.md",
+      "docs/adr/ADR-0002-sqlite-como-store-unico.md"
+    ],
+    "seen": 35,
+    "term": "ADR"
+  },
+  {
+    "evidence": [
+      "docs/09-mcp.md",
+      "docs/adr/ADR-0006-mcp-casca-fina.md"
+    ],
+    "seen": 15,
+    "term": "MCP"
+  },
+  {
+    "evidence": [
+      "docs/14-cli.md",
+      "src/ragx/cli/__init__.py"
+    ],
+    "seen": 14,
+    "term": "CLI"
+  },
+  {
+    "evidence": [
+      "src/ragx/agents/profile.py",
+      "src/ragx/base/source.py"
+    ],
+    "seen": 8,
+    "term": "NÃO"
+  },
+  {
+    "evidence": [
+      "src/ragx/agents/evaluator.py",
+      "src/ragx/cli/commands/search_cmd.py"
+    ],
+    "seen": 5,
+    "term": "MVP"
+  },
+  {
+    "evidence": [
+      "src/ragx/config.py",
+      "src/ragx/mcp/server.py"
+    ],
+    "seen": 4,
+    "term": "API"
+  },
+  {
+    "evidence": [
+      "src/ragx/agents/evaluator.py",
+      "src/ragx/context/compress.py"
+    ],
+    "seen": 4,
+    "term": "LLM"
+  }
+]

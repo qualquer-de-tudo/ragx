@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "ed5f778e1c9e2869ad7e217d52d2874c3a41abf62d17db2fd48e1404ddc61ea9",
+  "doc_kind": "code",
+  "id": "5532b7db8287cb63c11e614d9f714c34",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/embed.py",
+  "size_bytes": 5235,
+  "title": "Geração de embeddings dos chunks já indexados.\n\nEtapa separada do pipeline de propósito: embedder fora do ar não pode derrubar\na indexação. Os chunks ficam gravados sem vetor e `ragx index --embed-only`\ncompleta depois (ADR-0004)."
+}

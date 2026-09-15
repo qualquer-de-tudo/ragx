@@ -1,0 +1,167 @@
+# Catálogo curado de tecnologias.
+#
+# Reconhecer tecnologia por DEPENDÊNCIA DECLARADA é muito mais confiável do que
+# por menção em texto — por isso `packages` vale confiança 1.0 e `mentions`
+# vale bem menos. Ver docs/06-grafo.md.
+
+version: 1
+
+technologies:
+  - name: PostgreSQL
+    aliases: [postgres, postgresql, psql, pgsql]
+    packages: [psycopg, psycopg2, psycopg2-binary, pg, node-postgres, doctrine/dbal]
+    files: ["**/postgresql.conf"]
+    imports: [psycopg, psycopg2, asyncpg]
+
+  - name: MySQL
+    aliases: [mysql, mariadb]
+    packages: [mysqlclient, pymysql, mysql2, mysql-connector-python]
+    imports: [pymysql, MySQLdb]
+
+  - name: SQLite
+    aliases: [sqlite, sqlite3]
+    packages: [aiosqlite, better-sqlite3]
+    imports: [sqlite3, aiosqlite]
+
+  - name: Redis
+    aliases: [redis, valkey]
+    packages: [redis, ioredis, predis/predis, redis-py]
+    imports: [redis, aioredis]
+
+  - name: MongoDB
+    aliases: [mongo, mongodb]
+    packages: [pymongo, mongoose, mongodb, motor]
+    imports: [pymongo, motor]
+
+  - name: RabbitMQ
+    aliases: [rabbitmq, amqp]
+    packages: [pika, amqplib, php-amqplib/php-amqplib, aio-pika]
+    imports: [pika, aio_pika]
+
+  - name: Kafka
+    aliases: [kafka]
+    packages: [kafka-python, kafkajs, confluent-kafka, aiokafka]
+    imports: [kafka, aiokafka, confluent_kafka]
+
+  - name: Docker
+    aliases: [docker]
+    files: ["**/Dockerfile", "**/docker-compose*.yml", "**/docker-compose*.yaml"]
+
+  - name: Kubernetes
+    aliases: [kubernetes, k8s]
+    files: ["**/k8s/**", "**/kustomization.yaml", "**/helm/**"]
+
+  - name: Terraform
+    aliases: [terraform]
+    files: ["**/*.tf"]
+
+  - name: Laravel
+    aliases: [laravel]
+    packages: [laravel/framework]
+    files: ["**/artisan"]
+
+  - name: Symfony
+    aliases: [symfony]
+    packages: [symfony/framework-bundle, symfony/console]
+
+  - name: Django
+    aliases: [django]
+    packages: [django, Django]
+    imports: [django]
+    files: ["**/manage.py"]
+
+  - name: FastAPI
+    aliases: [fastapi]
+    packages: [fastapi]
+    imports: [fastapi]
+
+  - name: Flask
+    aliases: [flask]
+    packages: [flask, Flask]
+    imports: [flask]
+
+  - name: Express
+    aliases: [express, expressjs]
+    packages: [express]
+
+  - name: React
+    aliases: [react, reactjs]
+    packages: [react, react-dom]
+
+  - name: Vue
+    aliases: [vue, vuejs]
+    packages: [vue]
+
+  - name: Next.js
+    aliases: [nextjs, "next.js"]
+    packages: [next]
+
+  - name: TypeScript
+    aliases: [typescript]
+    packages: [typescript]
+    files: ["**/tsconfig.json"]
+
+  - name: Pydantic
+    aliases: [pydantic]
+    packages: [pydantic, pydantic-settings]
+    imports: [pydantic, pydantic_settings]
+
+  - name: NumPy
+    aliases: [numpy]
+    packages: [numpy]
+    imports: [numpy]
+
+  - name: pytest
+    aliases: [pytest]
+    packages: [pytest, pytest-cov]
+    imports: [pytest]
+
+  - name: Ollama
+    aliases: [ollama]
+    packages: [ollama]
+
+  - name: Typer
+    aliases: [typer]
+    packages: [typer]
+    imports: [typer]
+
+  - name: Rich
+    aliases: [rich]
+    packages: [rich]
+    imports: [rich]
+
+  - name: OAuth
+    aliases: [oauth, oauth2, "oauth 2.0"]
+
+  - name: SSO
+    aliases: [sso, "single sign-on", "single sign on"]
+
+  - name: JWT
+    aliases: [jwt, "json web token"]
+    packages: [pyjwt, jsonwebtoken, firebase/php-jwt]
+    imports: [jwt]
+
+  - name: GraphQL
+    aliases: [graphql]
+    packages: [graphql, graphene, strawberry-graphql]
+
+  - name: gRPC
+    aliases: [grpc]
+    packages: [grpcio, "@grpc/grpc-js"]
+
+# Onde procurar dependências declaradas, por ecossistema.
+manifests:
+  - path: "**/composer.json"
+    kind: json
+    sections: [require, require-dev]
+  - path: "**/package.json"
+    kind: json
+    sections: [dependencies, devDependencies, peerDependencies]
+  - path: "**/pyproject.toml"
+    kind: toml
+  - path: "**/requirements.txt"
+    kind: lines
+  - path: "**/go.mod"
+    kind: lines
+  - path: "**/Gemfile"
+    kind: lines

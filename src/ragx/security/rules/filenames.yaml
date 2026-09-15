@@ -1,0 +1,95 @@
+# Deny-list por NOME de arquivo — avaliada antes de qualquer leitura de conteúdo.
+# Arquivo que casa é bloqueado: zero bytes seguem adiante.
+# Ver docs/02-seguranca.md.
+
+version: 1
+
+# Templates sem valor real. Passam a fase 1, mas o conteúdo ainda é verificado
+# na fase 2 — template com segredo real vira BLOCK.
+allow:
+  - "**/.env.example"
+  - "**/.env.sample"
+  - "**/.env.template"
+  - "**/.env.dist"
+  - "**/.env.test"
+  - "**/*.example"
+  - "**/*.sample"
+  - "**/*.template"
+  - "**/*.dist"
+  - "**/credentials.example*"
+  - "**/secrets.example*"
+
+deny:
+  - id: dotenv
+    severity: critical
+    patterns: ["**/.env", "**/.env.*", "**/*.env"]
+    reason: "arquivo de variáveis de ambiente"
+
+  - id: pem
+    severity: critical
+    patterns: ["**/*.pem", "**/*.p12", "**/*.pfx", "**/*.jks", "**/*.keystore", "**/*.asc"]
+    reason: "material criptográfico"
+
+  - id: private-key
+    severity: critical
+    patterns: ["**/*.key", "**/*.ppk"]
+    reason: "chave privada"
+
+  - id: ssh-private-key
+    severity: critical
+    patterns:
+      - "**/id_rsa"
+      - "**/id_dsa"
+      - "**/id_ecdsa"
+      - "**/id_ed25519"
+      - "**/id_rsa.*"
+      - "**/id_ed25519.*"
+      - "**/.ssh/**"
+    reason: "chave SSH"
+
+  - id: credentials
+    severity: critical
+    patterns: ["**/credentials", "**/credentials.*", "**/*credential*"]
+    reason: "arquivo de credenciais"
+
+  - id: secrets
+    severity: critical
+    patterns: ["**/secret", "**/secret.*", "**/secrets", "**/secrets.*", "**/*secrets*"]
+    reason: "arquivo de segredos"
+
+  - id: tokens
+    severity: critical
+    patterns: ["**/token", "**/token.*", "**/tokens", "**/tokens.*", "**/*_token*", "**/*-token*"]
+    reason: "arquivo de tokens"
+
+  - id: password-file
+    severity: critical
+    patterns: ["**/password*", "**/passwd*", "**/.htpasswd"]
+    reason: "arquivo de senha"
+
+  - id: shell-credentials
+    severity: critical
+    patterns: ["**/.netrc", "**/_netrc", "**/.pgpass", "**/.my.cnf"]
+    reason: "credencial de ferramenta de linha de comando"
+
+  - id: cloud-credentials
+    severity: critical
+    patterns:
+      - "**/.aws/**"
+      - "**/.gnupg/**"
+      - "**/.docker/config.json"
+      - "**/service-account*.json"
+      - "**/gcp-*.json"
+      - "**/aws-credentials*"
+      - "**/azure-credentials*"
+    reason: "credencial de provedor de nuvem"
+
+  - id: password-manager
+    severity: critical
+    patterns: ["**/*.kdbx", "**/*.agilekeychain", "**/*.opvault"]
+    reason: "base de gerenciador de senhas"
+
+  - id: terraform-state
+    severity: high
+    patterns: ["**/*.tfstate", "**/*.tfstate.backup", "**/*.tfvars"]
+    reason: "state do Terraform carrega segredo em claro"

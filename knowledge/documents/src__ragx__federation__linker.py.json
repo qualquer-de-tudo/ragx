@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "aa0d7a149e97e03d048396aa981fdd3dc3fe3c501c492ea67da5e379456f9af3",
+  "doc_kind": "code",
+  "id": "f114e981bb7960ddf66f0ba5b371388c",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/federation/linker.py",
+  "size_bytes": 9270,
+  "title": "Resolução de vínculos: cruza `consumes` de um projeto com `provides` dos outros.\n\nConsumo sem provedor e divergência de método são os achados mais úteis da\nfederação — a federação encontra erro de integração que nenhum dos dois\nrepositórios enxerga sozinho. Por isso `unresolved` é tabela de primeira\nclasse, não log.\n\nVer docs/17-multiprojeto-e-federacao.md."
+}

@@ -1,0 +1,783 @@
+{
+  "event": [
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "serve",
+      "normalized": "--allow-index",
+      "raw": "--allow-index",
+      "source": "src/ragx/cli/commands/mcp_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "eval_#part-1",
+      "normalized": "--case",
+      "raw": "--case",
+      "source": "src/ragx/cli/commands/agent_cmd.py:109"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "size#part-1",
+      "normalized": "--check",
+      "raw": "--check",
+      "source": "src/ragx/cli/commands/size.py:17"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "watch#part-1",
+      "normalized": "--consolidate-every",
+      "raw": "--consolidate-every",
+      "source": "src/ragx/cli/commands/watch_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "watch#part-1",
+      "normalized": "--debounce",
+      "raw": "--debounce",
+      "source": "src/ragx/cli/commands/watch_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "context#part-1",
+      "normalized": "--depth",
+      "raw": "--depth",
+      "source": "src/ragx/cli/commands/context_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "show",
+      "normalized": "--direction",
+      "raw": "--direction",
+      "source": "src/ragx/cli/commands/federation_cmd.py:56"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "chunks",
+      "normalized": "--document",
+      "raw": "--document",
+      "source": "src/ragx/cli/commands/index_cmd.py:174"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "index#part-1",
+      "normalized": "--dry-run",
+      "raw": "--dry-run",
+      "source": "src/ragx/cli/commands/index_cmd.py:23"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "index#part-1",
+      "normalized": "--embed-only",
+      "raw": "--embed-only",
+      "source": "src/ragx/cli/commands/index_cmd.py:23"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "index#part-1",
+      "normalized": "--exclude",
+      "raw": "--exclude",
+      "source": "src/ragx/cli/commands/index_cmd.py:23"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "context#part-1",
+      "normalized": "--explain",
+      "raw": "--explain",
+      "source": "src/ragx/cli/commands/context_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "scan#part-1",
+      "normalized": "--fail-on",
+      "raw": "--fail-on",
+      "source": "src/ragx/cli/commands/security.py:27"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "eval_cmd#part-1",
+      "normalized": "--failures",
+      "raw": "--failures",
+      "source": "src/ragx/cli/commands/eval_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "init#part-1",
+      "normalized": "--force",
+      "raw": "--force",
+      "source": "src/ragx/cli/commands/init.py:52"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "context#part-1",
+      "normalized": "--format",
+      "raw": "--format",
+      "source": "src/ragx/cli/commands/context_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "sync#part-1",
+      "normalized": "--from-commit",
+      "raw": "--from-commit",
+      "source": "src/ragx/cli/commands/sync_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "register",
+      "normalized": "--from-federation",
+      "raw": "--from-federation",
+      "source": "src/ragx/cli/commands/federation_cmd.py:93"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "doctor#part-1",
+      "normalized": "--full",
+      "raw": "--full",
+      "source": "src/ragx/cli/commands/doctor.py:31"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "export",
+      "normalized": "--full-vectors",
+      "raw": "--full-vectors",
+      "source": "src/ragx/cli/commands/portability_cmd.py:19"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "reset",
+      "normalized": "--hard",
+      "raw": "--hard",
+      "source": "src/ragx/cli/commands/maintenance_cmd.py:76"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "index#part-1",
+      "normalized": "--include",
+      "raw": "--include",
+      "source": "src/ragx/cli/commands/index_cmd.py:23"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "export",
+      "normalized": "--include-agents",
+      "raw": "--include-agents",
+      "source": "src/ragx/cli/commands/portability_cmd.py:19"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "watch#part-1",
+      "normalized": "--interval",
+      "raw": "--interval",
+      "source": "src/ragx/cli/commands/watch_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "train#part-1",
+      "normalized": "--json",
+      "raw": "--json",
+      "source": "src/ragx/cli/commands/agent_cmd.py:33"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "contract",
+      "normalized": "--kind",
+      "raw": "--kind",
+      "source": "src/ragx/cli/commands/federation_cmd.py:268"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "context#part-1",
+      "normalized": "--lang",
+      "raw": "--lang",
+      "source": "src/ragx/cli/commands/context_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "rebuild#part-1",
+      "normalized": "--layers",
+      "raw": "--layers",
+      "source": "src/ragx/cli/commands/graph_cmd.py:174"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "entities",
+      "normalized": "--limit",
+      "raw": "--limit",
+      "source": "src/ragx/cli/commands/graph_cmd.py:41"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "search#part-1",
+      "normalized": "--min-score",
+      "raw": "--min-score",
+      "source": "src/ragx/cli/commands/search_cmd.py:21"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "eval_cmd#part-1",
+      "normalized": "--mode",
+      "raw": "--mode",
+      "source": "src/ragx/cli/commands/eval_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "register",
+      "normalized": "--name",
+      "raw": "--name",
+      "source": "src/ragx/cli/commands/federation_cmd.py:93"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "context#part-1",
+      "normalized": "--no-cache",
+      "raw": "--no-cache",
+      "source": "src/ragx/cli/commands/context_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "index#part-1",
+      "normalized": "--no-embed",
+      "raw": "--no-embed",
+      "source": "src/ragx/cli/commands/index_cmd.py:23"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "watch#part-1",
+      "normalized": "--once",
+      "raw": "--once",
+      "source": "src/ragx/cli/commands/watch_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "export",
+      "normalized": "--out",
+      "raw": "--out",
+      "source": "src/ragx/cli/commands/agent_cmd.py:158"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "context#part-1",
+      "normalized": "--path",
+      "raw": "--path",
+      "source": "src/ragx/cli/commands/context_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "watch#part-1",
+      "normalized": "--plain",
+      "raw": "--plain",
+      "source": "src/ragx/cli/commands/watch_cmd.py:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "hub_sync",
+      "normalized": "--project",
+      "raw": "--project",
+      "source": "src/ragx/cli/commands/federation_cmd.py:139"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "eval_cmd#part-1",
+      "normalized": "--queries",
+      "raw": "--queries",
+      "source": "src/ragx/cli/commands/eval_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "index#part-1",
+      "normalized": "--quiet",
+      "raw": "--quiet",
+      "source": "src/ragx/cli/commands/index_cmd.py:23"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "search#part-1",
+      "normalized": "--raw",
+      "raw": "--raw",
+      "source": "src/ragx/cli/commands/search_cmd.py:21"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "add_cmd#part-1",
+      "normalized": "--ref",
+      "raw": "--ref",
+      "source": "src/ragx/cli/commands/base_cmd.py:25"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "graph#part-1",
+      "normalized": "--relations",
+      "raw": "--relations",
+      "source": "src/ragx/cli/commands/graph_cmd.py:65"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "sync#part-1",
+      "normalized": "--report",
+      "raw": "--report",
+      "source": "src/ragx/cli/commands/sync_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "sync#part-1",
+      "normalized": "--resolve",
+      "raw": "--resolve",
+      "source": "src/ragx/cli/commands/sync_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "sync#part-1",
+      "normalized": "--resolve-file",
+      "raw": "--resolve-file",
+      "source": "src/ragx/cli/commands/sync_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "scan#part-1",
+      "normalized": "--rule",
+      "raw": "--rule",
+      "source": "src/ragx/cli/commands/security.py:27"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "create",
+      "normalized": "--scope",
+      "raw": "--scope",
+      "source": "src/ragx/cli/commands/agent_cmd.py:19"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "show",
+      "normalized": "--section",
+      "raw": "--section",
+      "source": "src/ragx/cli/commands/agent_cmd.py:88"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "generate#part-1",
+      "normalized": "--semantic",
+      "raw": "--semantic",
+      "source": "src/ragx/cli/commands/dictionary_cmd.py:19"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "rules",
+      "normalized": "--show-disabled",
+      "raw": "--show-disabled",
+      "source": "src/ragx/cli/commands/security.py:130"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "import_",
+      "normalized": "--skip-embeddings",
+      "raw": "--skip-embeddings",
+      "source": "src/ragx/cli/commands/portability_cmd.py:44"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "scan#part-1",
+      "normalized": "--staged",
+      "raw": "--staged",
+      "source": "src/ragx/cli/commands/security.py:27"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "chunks",
+      "normalized": "--symbol",
+      "raw": "--symbol",
+      "source": "src/ragx/cli/commands/index_cmd.py:174"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "create",
+      "normalized": "--template",
+      "raw": "--template",
+      "source": "src/ragx/cli/commands/agent_cmd.py:19"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "train#part-1",
+      "normalized": "--tokens",
+      "raw": "--tokens",
+      "source": "src/ragx/cli/commands/agent_cmd.py:33"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "serve",
+      "normalized": "--transport",
+      "raw": "--transport",
+      "source": "src/ragx/cli/commands/mcp_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "entities",
+      "normalized": "--type",
+      "raw": "--type",
+      "source": "src/ragx/cli/commands/graph_cmd.py:41"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "register",
+      "normalized": "--visibility",
+      "raw": "--visibility",
+      "source": "src/ragx/cli/commands/federation_cmd.py:93"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "chunk",
+      "normalized": "--with-context",
+      "raw": "--with-context",
+      "source": "src/ragx/cli/commands/index_cmd.py:205"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "train#part-1",
+      "normalized": "--with-examples",
+      "raw": "--with-examples",
+      "source": "src/ragx/cli/commands/agent_cmd.py:33"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "hub_reset",
+      "normalized": "--yes",
+      "raw": "--yes",
+      "source": "src/ragx/cli/commands/federation_cmd.py:254"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "test_entropia_de_chave_aleatoria_e_alta",
+      "normalized": "hq7vn2mk9pl4xr8tw3za6by1cd5ef0gj",
+      "raw": "hQ7vN2mK9pL4xR8tW3zA6bY1cD5eF0gJ",
+      "source": "tests/unit/test_entropy.py:14"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "payment.captured",
+      "raw": "payment.captured",
+      "source": "tests/integration/test_federation.py:63"
+    }
+  ],
+  "http": [
+    {
+      "confidence": 0.95,
+      "contract": null,
+      "detected_by": "http-client-literal",
+      "handler": null,
+      "normalized": "POST /api/payments",
+      "raw": "POST /api/payments",
+      "source": "tests/integration/test_federation.py:1"
+    },
+    {
+      "confidence": 0.95,
+      "contract": null,
+      "detected_by": "http-client-literal",
+      "handler": null,
+      "normalized": "POST /api/tracking/register",
+      "raw": "POST /api/tracking/register",
+      "source": "tests/integration/test_federation.py:63"
+    },
+    {
+      "confidence": 0.6,
+      "contract": null,
+      "detected_by": "http-client-literal",
+      "handler": null,
+      "normalized": "PUT /api/payments/{}/refund",
+      "raw": "PUT /api/payments/{order_id}/refund",
+      "source": "tests/integration/test_federation.py:63"
+    }
+  ],
+  "package": [
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "fastembed",
+      "raw": "fastembed",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "markdown-it-py",
+      "raw": "markdown-it-py",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "mcp",
+      "raw": "mcp",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "mypy",
+      "raw": "mypy",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "numpy",
+      "raw": "numpy",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "pathspec",
+      "raw": "pathspec",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "pydantic",
+      "raw": "pydantic",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "pydantic-settings",
+      "raw": "pydantic-settings",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "pytest",
+      "raw": "pytest",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "pytest-cov",
+      "raw": "pytest-cov",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "pyyaml",
+      "raw": "pyyaml",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "rich",
+      "raw": "rich",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "ruamel.yaml",
+      "raw": "ruamel.yaml",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "ruff",
+      "raw": "ruff",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "sqlparse",
+      "raw": "sqlparse",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "tiktoken",
+      "raw": "tiktoken",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "tree-sitter-language-pack",
+      "raw": "tree-sitter-language-pack",
+      "source": "pyproject.toml"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "typer",
+      "raw": "typer",
+      "source": "pyproject.toml"
+    }
+  ],
+  "table": []
+}

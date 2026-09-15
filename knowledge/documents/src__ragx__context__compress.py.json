@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "804d5bd3531adfa4b8fbda2fd1237c2558d3f417142d6c2ab695cdd987578584",
+  "doc_kind": "code",
+  "id": "5b8a9853985bb8b35cf31658e21db033",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/context/compress.py",
+  "size_bytes": 6572,
+  "title": "Compressão extrativa e determinística.\n\nNada de resumo gerado por LLM no MVP: resumo alucinado dentro do contexto é\npior que contexto truncado. As quatro estratégias são aplicadas em ordem, até\ncaber no alvo.\n\nInvariante: a FONTE nunca é perdida. Todo trecho, comprimido ou não, mantém o\ncaminho e o intervalo de linhas.\n\nVer docs/07-context-engine.md."
+}

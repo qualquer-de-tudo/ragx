@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c1bf9d8035b499ece90e0914bcd01fbcf0b6cb671d0702ec1af5f1ac4b7ec67b",
+  "doc_kind": "code",
+  "id": "f8a310e4156a2afa13f685da62e0348f",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/mcp/operations.py",
+  "size_bytes": 10618,
+  "title": "Operações de ESCRITA expostas ao agente (ADR-0012).\n\nO agente manda no índice: reindexar, sincronizar, reconstruir grafo e\ndicionário, ligar e desligar o watcher, instalar conhecimento base. O que ele\ncontinua sem poder fazer é exatamente o que o ADR-0006 proíbe e nada mais:\n\n    PERMITIDO (novo)               CONTINUA PROIBIDO\n    reindexar o projeto            ler um arquivo do disco\n    sincronizar knowledge/         escapar do Security Gate\n    reconstruir grafo/dicionário   indexar fora da raiz do projeto\n    instalar fonte base            executar comando arbitrário\n\nA diferença entre as duas colunas não é \"quanto o agente pode\", é QUE CAMINHO\no byte percorre. Toda escrita aqui chama o MESMO serviço que a CLI chama, e\ntodo conteúdo continua entrando por `iter_files` -> `SecurityGate.admit`. Um\nagente com escrita liberada não consegue extrair um segredo do `.env`: não\nexiste função que devolva isso.\n\nEste módulo não importa `os`, `pathlib`, `subprocess` nem cliente HTTP — o\nteste arquitetural falha se alguém tentar. Ele orquestra serviços."
+}

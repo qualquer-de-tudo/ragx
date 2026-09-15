@@ -1,0 +1,84 @@
+# Conjunto de avaliação sobre o PRÓPRIO repositório do RAGX.
+# É o que impede "melhorei a busca" virar opinião.
+
+- query: "como o gate de segurança decide bloquear um arquivo"
+  relevant_paths: ["src/ragx/security/gate.py", "docs/02-seguranca.md"]
+
+- query: "onde ficam as regras de detecção de segredo"
+  relevant_paths: ["src/ragx/security/rules/patterns.yaml", "src/ragx/security/scanner.py"]
+
+- query: "SecurityGate"
+  relevant_paths: ["src/ragx/security/gate.py"]
+
+- query: "entropia de Shannon"
+  relevant_paths: ["src/ragx/security/entropy.py"]
+
+- query: "como os identificadores dos chunks são gerados"
+  relevant_paths: ["src/ragx/core/ids.py", "docs/03-modelo-de-dados.md"]
+
+- query: "por que o conteúdo do chunk não vai para o Git"
+  relevant_paths:
+    - "docs/adr/ADR-0010-conteudo-nao-versionado-e-embeddings-quantizados.md"
+    - "docs/16-orcamento-de-tamanho.md"
+
+- query: "quantização int8 dos vetores"
+  relevant_paths: ["src/ragx/embeddings/base.py", "docs/16-orcamento-de-tamanho.md"]
+
+- query: "fusão RRF"
+  relevant_paths: ["src/ragx/search/hybrid.py", "docs/05-busca.md"]
+
+- query: "IgnoreEngine"
+  relevant_paths: ["src/ragx/security/ignore_engine.py"]
+
+- query: "como funciona a indexação incremental"
+  relevant_paths: ["src/ragx/indexing/pipeline.py", "docs/04-indexacao.md"]
+
+- query: "orçamento de tamanho do conhecimento versionado"
+  relevant_paths: ["src/ragx/sizing/budget.py", "docs/16-orcamento-de-tamanho.md"]
+
+- query: "prefixos search_document e search_query"
+  relevant_paths: ["src/ragx/embeddings/ollama.py", "docs/adr/ADR-0004-embeddings.md"]
+
+- query: "migrações do banco de dados"
+  relevant_paths: ["src/ragx/storage/db.py", "docs/03-modelo-de-dados.md"]
+
+- query: "chunker de código classe e método"
+  relevant_paths: ["src/ragx/indexing/chunkers/__init__.py", "docs/04-indexacao.md"]
+
+- query: "por que o MCP não acessa o filesystem"
+  relevant_paths: ["docs/adr/ADR-0006-mcp-casca-fina.md", "docs/09-mcp.md"]
+
+- query: "federação entre projetos e contratos"
+  relevant_paths:
+    - "docs/17-multiprojeto-e-federacao.md"
+    - "docs/adr/ADR-0011-federacao-entre-projetos.md"
+
+- query: "hub multiprojeto na máquina do desenvolvedor"
+  relevant_paths: ["docs/17-multiprojeto-e-federacao.md"]
+
+- query: "redactor preview mascarado do segredo"
+  relevant_paths: ["src/ragx/security/redactor.py"]
+
+- query: "BM25 pesos por coluna"
+  relevant_paths: ["src/ragx/search/keyword.py", "docs/05-busca.md"]
+
+- query: "walker recusa symlink fora da raiz"
+  relevant_paths: ["src/ragx/walk.py", "docs/04-indexacao.md"]
+
+- query: "contagem de tokens"
+  relevant_paths: ["src/ragx/tokens.py"]
+
+- query: "parser de markdown e headings"
+  relevant_paths: ["src/ragx/indexing/parsers/markdown.py"]
+
+- query: "context engine e orçamento de tokens"
+  relevant_paths: ["docs/07-context-engine.md"]
+
+- query: "reidratação de conteúdo a partir do working tree"
+  relevant_paths: ["docs/12-git-sync.md", "docs/16-orcamento-de-tamanho.md"]
+
+- query: "dicionário de conhecimento do projeto"
+  relevant_paths: ["docs/08-dictionary.md"]
+
+- query: "política strict e balanced de segurança"
+  relevant_paths: ["src/ragx/security/gate.py", "docs/02-seguranca.md"]

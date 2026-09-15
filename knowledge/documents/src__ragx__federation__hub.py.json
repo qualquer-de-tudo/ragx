@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "818393cf0fbb10f1829e88da79e26d09219248c73c9958496e735532b79b09b0",
+  "doc_kind": "code",
+  "id": "414750f1615a0ed9acbfad17570bb55c",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/federation/hub.py",
+  "size_bytes": 12678,
+  "title": "Hub local — agrega N projetos na máquina do dev.\n\nRegra dura (ADR-0009): o hub NUNCA lê o filesystem de projeto nenhum. Ele lê\napenas artefatos DERIVADOS (`knowledge/`, `federation/`), que já passaram pelo\ngate do projeto de origem — e os re-escaneia na entrada, porque o ruleset local\npode ser mais estrito.\n\nVer docs/17-multiprojeto-e-federacao.md."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "2e89342718d7f18244edde8d569e4cb7fe9c039bca9e1eb8b5e805261dbc66e9",
+  "doc_kind": "code",
+  "id": "38d0dec73e8fb1237a4b1240a05fc091",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/security/ignore_engine.py",
+  "size_bytes": 3647,
+  "title": "IgnoreEngine — reduz ruído, NÃO protege segredo.\n\nUm .env não listado no .gitignore continua sendo bloqueado pelo scanner.\nPrecedência (o último vence): defaults -> .gitignore (inclusive aninhados)\n-> .dockerignore -> .ragignore -> ragx.toml -> flags da CLI.\n\nVer docs/02-seguranca.md."
+}

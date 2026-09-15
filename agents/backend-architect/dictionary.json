@@ -1,0 +1,903 @@
+{
+  "concepts": {
+    "budget": [
+      "Budget",
+      "BudgetExceededError",
+      "BudgetPlan"
+    ],
+    "chunk": [
+      "Chunk",
+      "ChunkCfg",
+      "ChunkKind",
+      "ChunkOptions",
+      "ChunkRepo",
+      "chunks"
+    ],
+    "context": [
+      "BuildContextRequest",
+      "ContextCfg",
+      "ContextFragment",
+      "ContextPack"
+    ],
+    "document": [
+      "Document",
+      "DocumentRepo",
+      "documents"
+    ],
+    "embed": [
+      "EmbedReport",
+      "Embedder",
+      "EmbeddingCache",
+      "EmbeddingCfg",
+      "FastEmbedEmbedder",
+      "HashingEmbedder",
+      "OllamaEmbedder",
+      "_EmbedOnlyDoneError",
+      "embedding_models",
+      "embeddings"
+    ],
+    "embedder": [
+      "Embedder",
+      "FastEmbedEmbedder",
+      "HashingEmbedder",
+      "OllamaEmbedder"
+    ],
+    "embedding": [
+      "EmbeddingCache",
+      "EmbeddingCfg",
+      "embedding_models",
+      "embeddings"
+    ],
+    "error": [
+      "BudgetExceededError",
+      "EnvError",
+      "ParseError",
+      "RagxError",
+      "SecurityBlockedError",
+      "UsageError",
+      "_EmbedOnlyDoneError"
+    ],
+    "federation": [
+      "FederationCfg",
+      "federation_items",
+      "federation_surface"
+    ],
+    "gate": [
+      "GateDecision",
+      "GatePolicy",
+      "SecurityGate"
+    ],
+    "graph": [
+      "GraphCfg",
+      "GraphSearchOutcome",
+      "GraphStats",
+      "GraphStore",
+      "_GraphGroup"
+    ],
+    "index": [
+      "IndexCfg",
+      "IndexReport",
+      "IndexStats",
+      "VectorIndex",
+      "index_runs"
+    ],
+    "parse": [
+      "MarkdownParser",
+      "ParseError",
+      "ParseNode",
+      "ParseResult",
+      "PythonParser",
+      "StructuredParser",
+      "TextParser"
+    ],
+    "parser": [
+      "MarkdownParser",
+      "ParseResult",
+      "PythonParser",
+      "StructuredParser",
+      "TextParser"
+    ],
+    "repo": [
+      "ChunkRepo",
+      "DictionaryReport",
+      "DocumentRepo",
+      "EmbedReport",
+      "IndexReport",
+      "RebuildReport",
+      "RehydrateReport",
+      "RunRepo",
+      "SecurityEventRepo",
+      "SerializeReport",
+      "SyncReport"
+    ],
+    "report": [
+      "DictionaryReport",
+      "EmbedReport",
+      "IndexReport",
+      "RebuildReport",
+      "RehydrateReport",
+      "SerializeReport",
+      "SyncReport"
+    ],
+    "result": [
+      "DedupResult",
+      "ParseResult",
+      "ReferenceResult",
+      "SearchResult"
+    ],
+    "search": [
+      "GraphSearchOutcome",
+      "SearchCfg",
+      "SearchFilters",
+      "SearchHit",
+      "SearchOutcome",
+      "SearchRequest",
+      "SearchResult"
+    ],
+    "security": [
+      "SecurityBlockedError",
+      "SecurityCfg",
+      "SecurityEventRepo",
+      "SecurityFinding",
+      "SecurityGate",
+      "SecurityScanner",
+      "security_events"
+    ],
+    "sync": [
+      "SyncCfg",
+      "SyncReport",
+      "sync_state"
+    ]
+  },
+  "conventions": [
+    {
+      "confidence": 1.0,
+      "evidence": [
+        "README.md",
+        "docs/00-visao-geral.md",
+        "docs/01-arquitetura.md"
+      ],
+      "occurrences": 114,
+      "rule": "Extensão predominante: .md"
+    },
+    {
+      "confidence": 0.9,
+      "evidence": [
+        "docs/13-testes-hardening.md",
+        "task/fase-06-mcp/RAGX-0049-testes-arquiteturais-e-de-seguranca-do-mcp.md",
+        "tests/e2e/test_cli_fase0.py",
+        "tests/eval/queries.yaml"
+      ],
+      "occurrences": 22,
+      "rule": "Testes ficam em tests/"
+    },
+    {
+      "confidence": 0.95,
+      "evidence": [
+        "src/ragx/indexing/parsers/markdown.py",
+        "src/ragx/indexing/parsers/python_ast.py",
+        "src/ragx/indexing/parsers/structured.py",
+        "src/ragx/indexing/parsers/text.py"
+      ],
+      "occurrences": 4,
+      "rule": "Classes com sufixo Parser ficam em src/ragx/indexing/parsers/"
+    }
+  ],
+  "data_stores": [
+    {
+      "defined_in": "src/ragx/storage/migrations/0002_documents.sql",
+      "kind": "table",
+      "name": "chunks"
+    },
+    {
+      "defined_in": "docs/03-modelo-de-dados.md",
+      "kind": "table",
+      "name": "cross_links"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0002_documents.sql",
+      "kind": "table",
+      "name": "documents"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0003_embeddings.sql",
+      "kind": "table",
+      "name": "embedding_models"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0003_embeddings.sql",
+      "kind": "table",
+      "name": "embeddings"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0004_graph.sql",
+      "kind": "table",
+      "name": "entities"
+    },
+    {
+      "defined_in": "docs/03-modelo-de-dados.md",
+      "kind": "table",
+      "name": "federation_items"
+    },
+    {
+      "defined_in": "docs/03-modelo-de-dados.md",
+      "kind": "table",
+      "name": "federation_surface"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0001_init.sql",
+      "kind": "table",
+      "name": "index_runs"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0001_init.sql",
+      "kind": "table",
+      "name": "meta"
+    },
+    {
+      "defined_in": "docs/03-modelo-de-dados.md",
+      "kind": "table",
+      "name": "projects"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0004_graph.sql",
+      "kind": "table",
+      "name": "relations"
+    },
+    {
+      "defined_in": "src/ragx/storage/migrations/0001_init.sql",
+      "kind": "table",
+      "name": "security_events"
+    },
+    {
+      "defined_in": "tests/integration/test_graph.py",
+      "kind": "table",
+      "name": "sessions"
+    },
+    {
+      "defined_in": "docs/03-modelo-de-dados.md",
+      "kind": "table",
+      "name": "sync_state"
+    },
+    {
+      "defined_in": "docs/03-modelo-de-dados.md",
+      "kind": "table",
+      "name": "unresolved"
+    },
+    {
+      "defined_in": "tests/unit/test_parsers.py",
+      "kind": "table",
+      "name": "users"
+    }
+  ],
+  "docs": [
+    {
+      "path": "README.md",
+      "title": "RAGX"
+    },
+    {
+      "path": "docs/00-visao-geral.md",
+      "title": "00 — Visão geral"
+    },
+    {
+      "path": "docs/01-arquitetura.md",
+      "title": "01 — Arquitetura"
+    },
+    {
+      "path": "docs/03-modelo-de-dados.md",
+      "title": "03 — Modelo de dados"
+    },
+    {
+      "path": "docs/04-indexacao.md",
+      "title": "04 — Indexação (Fase 1)"
+    },
+    {
+      "path": "docs/05-busca.md",
+      "title": "05 — Busca (Fase 2)"
+    },
+    {
+      "path": "docs/06-grafo.md",
+      "title": "06 — Grafo de conhecimento (Fase 3)"
+    },
+    {
+      "path": "docs/07-context-engine.md",
+      "title": "07 — Context Engine (Fase 4)"
+    },
+    {
+      "path": "docs/08-dictionary.md",
+      "title": "08 — Knowledge Dictionary (Fase 5)"
+    },
+    {
+      "path": "docs/09-mcp.md",
+      "title": "09 — MCP (Fase 6)"
+    },
+    {
+      "path": "docs/10-agent-training.md",
+      "title": "10 — Agent Knowledge Training (Fase 7)"
+    },
+    {
+      "path": "docs/11-export-import.md",
+      "title": "11 — Export / Import (Fase 8)"
+    },
+    {
+      "path": "docs/12-git-sync.md",
+      "title": "12 — Git Sync e conhecimento versionado (Fase 9)"
+    },
+    {
+      "path": "docs/13-testes-hardening.md",
+      "title": "13 — Testes e Hardening (Fase 10)"
+    },
+    {
+      "path": "docs/14-cli.md",
+      "title": "14 — Referência da CLI"
+    },
+    {
+      "path": "docs/15-configuracao.md",
+      "title": "15 — Configuração"
+    },
+    {
+      "path": "docs/16-orcamento-de-tamanho.md",
+      "title": "16 — Orçamento de tamanho (restrição de Git)"
+    },
+    {
+      "path": "docs/17-multiprojeto-e-federacao.md",
+      "title": "17 — Multiprojeto e federação"
+    },
+    {
+      "path": "docs/README.md",
+      "title": "Documentação — RAGX"
+    },
+    {
+      "path": "docs/adr/ADR-0001-python-e-toolchain.md",
+      "title": "ADR-0001 — Python 3.11+, uv, Typer, Pydantic"
+    },
+    {
+      "path": "docs/adr/ADR-0002-sqlite-como-store-unico.md",
+      "title": "ADR-0002 — SQLite como store único"
+    },
+    {
+      "path": "docs/adr/ADR-0003-busca-vetorial.md",
+      "title": "ADR-0003 — Busca vetorial por força bruta até 100k chunks"
+    },
+    {
+      "path": "docs/adr/ADR-0004-embeddings.md",
+      "title": "ADR-0004 — Ollama `nomic-embed-text` como provider padrão"
+    },
+    {
+      "path": "docs/adr/ADR-0005-parsing-e-chunking.md",
+      "title": "ADR-0005 — Chunking estrutural com AST e tree-sitter"
+    },
+    {
+      "path": "docs/adr/ADR-0006-mcp-casca-fina.md",
+      "title": "ADR-0006 — MCP sem acesso a filesystem"
+    },
+    {
+      "path": "docs/adr/ADR-0007-nome-do-binario.md",
+      "title": "ADR-0007 — Binário `rag`, pacote `ragx`"
+    }
+  ],
+  "entrypoints": [
+    {
+      "kind": "http",
+      "source": "tests/integration/test_graph.py",
+      "value": "GET /api/users/{}"
+    },
+    {
+      "kind": "http",
+      "source": "tests/integration/test_dictionary.py",
+      "value": "POST /api/login"
+    }
+  ],
+  "modules": [
+    {
+      "chunks": 604,
+      "files": 94,
+      "name": "src/ragx"
+    },
+    {
+      "chunks": 207,
+      "files": 19,
+      "name": "docs"
+    },
+    {
+      "chunks": 129,
+      "files": 10,
+      "name": "tests/unit"
+    },
+    {
+      "chunks": 106,
+      "files": 5,
+      "name": "tests/integration"
+    },
+    {
+      "chunks": 84,
+      "files": 14,
+      "name": "task/fase-01-indexacao"
+    },
+    {
+      "chunks": 72,
+      "files": 11,
+      "name": "task/fase-00-fundacao-seguranca"
+    },
+    {
+      "chunks": 59,
+      "files": 12,
+      "name": "docs/adr"
+    },
+    {
+      "chunks": 57,
+      "files": 9,
+      "name": "task/fase-02-busca"
+    },
+    {
+      "chunks": 56,
+      "files": 9,
+      "name": "task/fase-11-multiprojeto-federacao"
+    },
+    {
+      "chunks": 33,
+      "files": 6,
+      "name": "task/fase-03-grafo"
+    },
+    {
+      "chunks": 30,
+      "files": 6,
+      "name": "task/fase-10-hardening"
+    },
+    {
+      "chunks": 28,
+      "files": 2,
+      "name": "task"
+    },
+    {
+      "chunks": 27,
+      "files": 5,
+      "name": "task/fase-07-agent-training"
+    },
+    {
+      "chunks": 27,
+      "files": 1,
+      "name": "tests/e2e"
+    },
+    {
+      "chunks": 25,
+      "files": 4,
+      "name": "task/fase-09-git-sync"
+    },
+    {
+      "chunks": 23,
+      "files": 4,
+      "name": "task/fase-04-context-engine"
+    },
+    {
+      "chunks": 23,
+      "files": 4,
+      "name": "task/fase-06-mcp"
+    },
+    {
+      "chunks": 22,
+      "files": 4,
+      "name": "task/fase-08-export-import"
+    },
+    {
+      "chunks": 18,
+      "files": 3,
+      "name": "task/fase-05-dictionary"
+    },
+    {
+      "chunks": 14,
+      "files": 3,
+      "name": "."
+    },
+    {
+      "chunks": 12,
+      "files": 1,
+      "name": "tests/security"
+    },
+    {
+      "chunks": 9,
+      "files": 4,
+      "name": "tests/fixtures"
+    },
+    {
+      "chunks": 3,
+      "files": 1,
+      "name": "tests/eval"
+    }
+  ],
+  "project": {
+    "generated_at": "2026-09-15T16:27:18Z",
+    "id": "2a0786031710",
+    "kind": "other",
+    "name": "ragx",
+    "ragx_schema": 5
+  },
+  "services": [
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/03-modelo-de-dados.md",
+        "docs/04-indexacao.md",
+        "docs/06-grafo.md"
+      ],
+      "name": "Config",
+      "path": "src/ragx/config.py",
+      "referenced_by": 32,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "ChunkKind",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 21,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/07-context-engine.md",
+        "docs/13-testes-hardening.md",
+        "docs/README.md"
+      ],
+      "name": "Budget",
+      "path": "src/ragx/sizing/budget.py",
+      "referenced_by": 14,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/00-visao-geral.md",
+        "docs/01-arquitetura.md",
+        "docs/03-modelo-de-dados.md",
+        "docs/04-indexacao.md"
+      ],
+      "name": "Chunk",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 13,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "GraphStore",
+      "path": "src/ragx/graph/store.py",
+      "referenced_by": 12,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/04-indexacao.md",
+        "task/fase-01-indexacao/RAGX-0012-modelos-de-dominio-e-ids-deterministicos.md"
+      ],
+      "name": "ParseNode",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 10,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "SearchFilters",
+      "path": "src/ragx/search/service.py",
+      "referenced_by": 10,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/09-mcp.md"
+      ],
+      "name": "SearchRequest",
+      "path": "src/ragx/mcp/tools.py",
+      "referenced_by": 8,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/03-modelo-de-dados.md",
+        "task/fase-00-fundacao-seguranca/RAGX-0006-securityscanner-fase-2-deteccao-de-segredo-em-conteudo.md"
+      ],
+      "name": "Severity",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 8,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "UsageError",
+      "path": "src/ragx/core/errors.py",
+      "referenced_by": 8,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/04-indexacao.md",
+        "docs/README.md",
+        "docs/adr/ADR-0008-security-gate-antes-do-parser.md"
+      ],
+      "name": "IgnoreEngine",
+      "path": "src/ragx/security/ignore_engine.py",
+      "referenced_by": 7,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "task/fase-01-indexacao/RAGX-0014-migracao-e-repositorios-de-documents-chunks-fts5.md"
+      ],
+      "name": "ChunkRepo",
+      "path": "src/ragx/storage/repositories.py",
+      "referenced_by": 6,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "DocKind",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 6,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "EntityType",
+      "path": "src/ragx/graph/store.py",
+      "referenced_by": 6,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/05-busca.md",
+        "task/fase-01-indexacao/RAGX-0012-modelos-de-dominio-e-ids-deterministicos.md"
+      ],
+      "name": "SearchResult",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 6,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/04-indexacao.md",
+        "docs/adr/ADR-0008-security-gate-antes-do-parser.md",
+        "task/BACKLOG.md"
+      ],
+      "name": "SecurityGate",
+      "path": "src/ragx/security/gate.py",
+      "referenced_by": 6,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/06-grafo.md"
+      ],
+      "name": "Entity",
+      "path": "src/ragx/graph/store.py",
+      "referenced_by": 5,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "EnvError",
+      "path": "src/ragx/core/errors.py",
+      "referenced_by": 5,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/07-context-engine.md"
+      ],
+      "name": "Expansion",
+      "path": "src/ragx/graph/traversal.py",
+      "referenced_by": 5,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/04-indexacao.md",
+        "docs/06-grafo.md",
+        "task/fase-03-grafo/RAGX-0033-extrator-estrutural-camada-1.md"
+      ],
+      "name": "ParseResult",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 5,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "task/fase-00-fundacao-seguranca/RAGX-0008-securitygate-fachada-e-invariante-arquitetural.md"
+      ],
+      "name": "Verdict",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 5,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/03-modelo-de-dados.md",
+        "task/fase-00-fundacao-seguranca/RAGX-0006-securityscanner-fase-2-deteccao-de-segredo-em-conteudo.md"
+      ],
+      "name": "Action",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 4,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "task/fase-01-indexacao/RAGX-0014-migracao-e-repositorios-de-documents-chunks-fts5.md"
+      ],
+      "name": "DocumentRepo",
+      "path": "src/ragx/storage/repositories.py",
+      "referenced_by": 4,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/03-modelo-de-dados.md",
+        "docs/04-indexacao.md",
+        "docs/05-busca.md"
+      ],
+      "name": "Embedder",
+      "path": "src/ragx/embeddings/base.py",
+      "referenced_by": 4,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "task/fase-00-fundacao-seguranca/RAGX-0008-securitygate-fachada-e-invariante-arquitetural.md"
+      ],
+      "name": "GateDecision",
+      "path": "src/ragx/core/models.py",
+      "referenced_by": 4,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/03-modelo-de-dados.md",
+        "docs/06-grafo.md"
+      ],
+      "name": "Relation",
+      "path": "src/ragx/graph/store.py",
+      "referenced_by": 4,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "RelationType",
+      "path": "src/ragx/graph/store.py",
+      "referenced_by": 4,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/09-mcp.md"
+      ],
+      "name": "BuildContextRequest",
+      "path": "src/ragx/mcp/tools.py",
+      "referenced_by": 3,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "ChunkOptions",
+      "path": "src/ragx/indexing/chunkers/__init__.py",
+      "referenced_by": 3,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "OllamaEmbedder",
+      "path": "src/ragx/embeddings/ollama.py",
+      "referenced_by": 3,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [],
+      "name": "TraversalLimits",
+      "path": "src/ragx/graph/traversal.py",
+      "referenced_by": 3,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/01-arquitetura.md",
+        "docs/README.md",
+        "src/ragx/security/rules/default_ignore.txt",
+        "task/BACKLOG.md"
+      ],
+      "name": "SecurityScanner",
+      "path": "src/ragx/security/scanner.py",
+      "referenced_by": 1,
+      "summary": null
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
+        "docs/17-multiprojeto-e-federacao.md"
+      ],
+      "name": "OrderService",
+      "path": "tests/fixtures/secret_project/src/app.py",
+      "referenced_by": 0,
+      "summary": null
+    }
+  ],
+  "technologies": [
+    {
+      "confidence": 1.0,
+      "evidence": [
+        "pyproject.toml"
+      ],
+      "name": "NumPy"
+    },
+    {
+      "confidence": 1.0,
+      "evidence": [
+        "pyproject.toml"
+      ],
+      "name": "Pydantic"
+    },
+    {
+      "confidence": 1.0,
+      "evidence": [
+        "pyproject.toml"
+      ],
+      "name": "Rich"
+    },
+    {
+      "confidence": 1.0,
+      "evidence": [
+        "pyproject.toml"
+      ],
+      "name": "Typer"
+    },
+    {
+      "confidence": 1.0,
+      "evidence": [
+        "pyproject.toml"
+      ],
+      "name": "pytest"
+    },
+    {
+      "confidence": 0.9,
+      "evidence": [
+        "tests/integration/test_graph.py"
+      ],
+      "name": "SQLite"
+    }
+  ]
+}

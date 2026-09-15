@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "4b33c81cfe3bcee3d159dd4a155cf4fa00082f8b5ca66294af2baa9282a4c886",
+  "doc_kind": "code",
+  "id": "c57389b6b7354f199ddd67b221eb0bea",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/federation/slice.py",
+  "size_bytes": 7524,
+  "title": "Fatia de federação — a superfície pública, versionada e AUTOSSUFICIENTE.\n\nAo contrário de `knowledge/`, a fatia carrega os contratos POR VALOR: é o que\npermite outro projeto usar `POST /api/payments` sem ter este repositório clonado.\nCabe em poucos KB porque contém só a superfície, nunca a implementação.\n\nVer docs/17-multiprojeto-e-federacao.md e ADR-0011."
+}

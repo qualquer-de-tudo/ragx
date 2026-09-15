@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "d9338205e82d09373a45711b2d6939ab43927967b9671c6de3f02fb02c00812b",
+  "doc_kind": "code",
+  "id": "f73ccefb94dd00a034ff0047f439043e",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/graph/extractors/structural.py",
+  "size_bytes": 2887,
+  "title": "Camada 1 — estrutural. Determinística, custo ~zero, precisão ~100%.\n\nNão re-parseia nada: a hierarquia já está persistida em `chunks`\n(kind, symbol, parent_id, document_id). É isso que faz `ragx graph rebuild`\nrodar em segundos.\n\nVer docs/06-grafo.md."
+}

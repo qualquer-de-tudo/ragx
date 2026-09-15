@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "5127a4aa672996ac31723447f2d8e169e6e6bb832061337ad218bdfa0456605c",
+  "doc_kind": "code",
+  "id": "f4088ba713de6bb351c2afbd58547d57",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/portability/package.py",
+  "size_bytes": 11870,
+  "title": "Pacote `.rag` — conhecimento portátil.\n\nZIP (não tar.gz) porque permite ler o `manifest.json` sem descompactar o\narquivo inteiro: `ragx inspect` depende disso.\n\nDuas diferenças deliberadas em relação a `knowledge/`:\n  - o pacote INCLUI o conteúdo dos chunks (precisa ser autossuficiente para\n    quem não tem o repositório);\n  - embeddings viajam em int8 por padrão — `--full-vectors` multiplica por 12.\n\nVer docs/11-export-import.md."
+}

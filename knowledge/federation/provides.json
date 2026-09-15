@@ -1,0 +1,226 @@
+{
+  "event": [
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "payment.captured",
+      "raw": "payment.captured",
+      "source": "tests/integration/test_federation.py:1"
+    }
+  ],
+  "http": [
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "GET /api/users/{}",
+      "raw": "GET /api/users/{}",
+      "source": "tests/integration/test_graph.py:1"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "POST /api/login",
+      "raw": "POST /api/login",
+      "source": "tests/integration/test_dictionary.py:1"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "POST /api/payments",
+      "raw": "POST /api/payments",
+      "source": "tests/integration/test_federation.py:1"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "POST /api/payments/{}/refund",
+      "raw": "POST /api/payments/{}/refund",
+      "source": "tests/integration/test_federation.py:1"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "POST /api/shipping/quote",
+      "raw": "POST /api/shipping/quote",
+      "source": "tests/integration/test_federation.py:63"
+    }
+  ],
+  "package": [
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "manifest",
+      "handler": null,
+      "normalized": "ragx",
+      "raw": "ragx",
+      "source": "pyproject.toml"
+    }
+  ],
+  "table": [
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "chunks",
+      "raw": "chunks",
+      "source": "src/ragx/storage/migrations/0002_documents.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "cross_links",
+      "raw": "cross_links",
+      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "documents",
+      "raw": "documents",
+      "source": "src/ragx/storage/migrations/0002_documents.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "embedding_models",
+      "raw": "embedding_models",
+      "source": "src/ragx/storage/migrations/0003_embeddings.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "embeddings",
+      "raw": "embeddings",
+      "source": "src/ragx/storage/migrations/0003_embeddings.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "entities",
+      "raw": "entities",
+      "source": "src/ragx/storage/migrations/0004_graph.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "federation_items",
+      "raw": "federation_items",
+      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "federation_surface",
+      "raw": "federation_surface",
+      "source": "src/ragx/storage/migrations/0005_federation.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "index_runs",
+      "raw": "index_runs",
+      "source": "src/ragx/storage/migrations/0001_init.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "meta",
+      "raw": "meta",
+      "source": "src/ragx/storage/migrations/0001_init.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "projects",
+      "raw": "projects",
+      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "relations",
+      "raw": "relations",
+      "source": "src/ragx/storage/migrations/0004_graph.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "security_events",
+      "raw": "security_events",
+      "source": "src/ragx/storage/migrations/0001_init.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "sessions",
+      "raw": "sessions",
+      "source": "tests/integration/test_graph.py"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "sync_state",
+      "raw": "sync_state",
+      "source": "docs/03-modelo-de-dados.md"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "unresolved",
+      "raw": "unresolved",
+      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "users",
+      "raw": "users",
+      "source": "tests/unit/test_parsers.py"
+    }
+  ]
+}

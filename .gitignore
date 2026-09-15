@@ -1,0 +1,43 @@
+# RAGX — derivado e descartável, nunca versionar.
+#
+# `.ragx/` guarda o índice (reconstruível com `ragx sync`) e o banco de
+# orquestração. Nenhum dos dois entra no Git: o índice porque é derivado, e a
+# execução porque versionar histórico de run produziria conflito de merge em
+# todo pull request, sobre um arquivo que ninguém revisa. Ver ADR-0014.
+.ragx/
+*.rag
+*.sqlite
+*.sqlite3
+*.db
+
+# O que É versionado, de propósito:
+#   knowledge/        conhecimento do projeto + board de tarefas
+#   base-knowledge/   origem das regras compartilhadas
+#   ragx.toml         configuração
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Ferramentas
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editor e sistema operacional
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Artefatos locais do Claude Code
+.claude/

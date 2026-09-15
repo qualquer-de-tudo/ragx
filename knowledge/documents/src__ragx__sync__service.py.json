@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "b31c3a64bbc7bd0c2ce8bad7e7740315e28f09f0107aa21d6009c5e22d089ab3",
+  "doc_kind": "code",
+  "id": "9949d741520cc4eaaf0b83899deff951",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/sync/service.py",
+  "size_bytes": 6646,
+  "title": "`ragx sync` — reconstrói o índice local a partir do conhecimento versionado.\n\n    git pull && ragx sync\n\nDetecção de delta em duas vias (docs/12-git-sync.md):\n  1. Git — `git diff --name-status <ultimo_sync> HEAD`, rápido e exato\n  2. Fallback por `content_hash`, quando não há Git ou o commit sumiu\n     (rebase, shallow clone). Cai sozinho, sem falhar."
+}

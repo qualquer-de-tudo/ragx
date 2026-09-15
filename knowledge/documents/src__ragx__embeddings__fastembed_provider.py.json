@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "67fdc0965e36308f6cb4d0d8074fbcfd1fc60e38cd412c3dae3dc92df6e4ac5a",
+  "doc_kind": "code",
+  "id": "c5c4993d0e177bd426e96e929ed0fe36",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/embeddings/fastembed_provider.py",
+  "size_bytes": 2878,
+  "title": "Provider fastembed — embeddings locais SEM daemon.\n\nAlternativa ao Ollama quando não se quer (ou não se pode) rodar um serviço:\nONNX Runtime embarcado, modelo baixado uma vez e cacheado no projeto. Depois\ndo primeiro download, funciona offline.\n\nDependência opcional: `uv pip install \"ragx[embed]\"`.\n\nPadrão multilíngue de propósito — o corpus típico aqui é documentação em\nportuguês misturada com código. Um modelo só-inglês perderia metade do sinal."
+}

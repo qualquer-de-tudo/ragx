@@ -1,0 +1,100 @@
+# Roteamento do conhecimento base.
+#
+# Carregar os 35 arquivos em toda tarefa gasta o contexto inteiro antes de
+# começar. Este manifesto diz o que é obrigatório sempre e o que é carregado
+# por gatilho — e é legível tanto por humano quanto por agente.
+#
+# Regra de precedência, da mais forte para a mais fraca:
+#   1. instrução explícita do humano nesta conversa
+#   2. código e convenções do projeto (o que já existe ganha)
+#   3. este conhecimento base
+#   4. conhecimento geral do agente
+
+schema_version: 1
+name: agents
+description: Regras, comportamento e guardrails do agente de IA.
+
+# Sempre em contexto. Juntos, cabem em poucos milhares de tokens.
+always:
+  - ai/agent-behavior.md      # o fluxo de 6 passos
+  - ai/guardrails.md          # o que nunca acontece sem humano
+  - ai/approval-flow.md       # DRAFT -> APPROVED -> EXECUTION
+  - ai/ragx-integration.md    # como consultar o índice antes de agir
+
+# Carregados quando o gatilho aparece.
+on_demand:
+  - path: core/architecture.md
+    when: [criar módulo, criar feature, mover arquivo, decidir camada]
+  - path: core/patterns.md
+    when: [escrever código, revisar código]
+  - path: core/standards.md
+    when: [escrever código, revisar código]
+  - path: core/plans.md
+    when: [planejar, abrir DRAFT]
+
+  - path: ai/module-context-reader.md
+    when: [mexer em módulo existente]
+  - path: ai/new-project.md
+    when: [projeto novo do zero]
+  - path: ai/import-project.md
+    when: [projeto existente sem contexto consolidado]
+  - path: ai/triggers.md
+    when: [rotear intenção da mensagem]
+  - path: ai/skills.md
+    when: [escolher habilidade]
+  - path: ai/prompts.md
+    when: [inicializar sessão]
+  - path: ai/library-references.md
+    when: [avaliar dependência, consultar doc oficial]
+  - path: ai/dba.md
+    when: [schema, query, índice, cache, busca, migration]
+  - path: ai/dpo.md
+    when: [dado pessoal, privacidade, LGPD, GDPR, consentimento]
+  - path: ai/security-red-team.md
+    when: [expor superfície, antes de release, auditoria]
+  - path: ai/security-blue-team.md
+    when: [achado de segurança, alerta de CVE, incidente]
+  - path: ai/module-doc-generator.md
+    when: [documentar módulo, fronteira mudou]
+
+  - path: engineering/validations.md
+    when: [criar ponto de entrada, endpoint, webhook, upload]
+  - path: engineering/testing.md
+    when: [escrever ou alterar código]
+  - path: engineering/security.md
+    when: [autenticação, autorização, entrada externa, segredo]
+  - path: engineering/performance.md
+    when: [query, laço sobre coleção, listagem, job em lote]
+  - path: engineering/refactoring.md
+    when: [mudar forma sem mudar comportamento]
+
+  - path: quality/code-review.md
+    when: [revisar, pós-execução]
+  - path: quality/risk-analysis.md
+    when: [abrir DRAFT, migration, contrato, produção]
+  - path: quality/tech-debt.md
+    when: [registrar pendência]
+  - path: quality/decision-log.md
+    when: [registrar decisão, decisão recusada]
+  - path: quality/observability.md
+    when: [endpoint novo, job novo, integração, incidente]
+  - path: quality/auto-improvements.md
+    when: [concluir tarefa, escrever review]
+
+# Ações que exigem aprovação humana explícita, sem exceção.
+# Espelha ai/guardrails.md — duplicado de propósito, para que um agente que
+# leia só o manifesto ainda conheça os bloqueios.
+blocking:
+  - ação destrutiva (deletar arquivo, tabela, coluna, endpoint)
+  - alteração de contrato de API
+  - migração ou alteração de schema de banco
+  - qualquer operação em produção
+  - instalação ou atualização de dependência
+  - alteração em autenticação, autorização ou dado pessoal
+
+# Artefatos gerados no projeto, nunca aqui.
+artifacts:
+  plan:     "{YYYY-MM-DD}_{slug}.plan.md"
+  review:   "{YYYY-MM-DD}_{slug}_{@programador}.review.md"
+  decision: "{YYYY-MM-DD}_{slug}.decision.md"
+  techdebt: "{YYYY-MM-DD}_{slug}.techdebt.md"

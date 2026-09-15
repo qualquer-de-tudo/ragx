@@ -1,0 +1,307 @@
+# Sinais do Task Analyzer — declarativos, auditáveis, sem LLM.
+#
+# Mesmo idioma de `context/intents.yaml`: padrão léxico -> efeito nomeado.
+# Quem quiser contestar uma classificação lê este arquivo, não código.
+#
+# `weight` soma ao score da dimensão, com teto em 100.
+# `reduce: true` marca sinal de REDUÇÃO — ver a regra de trivialidade no fim.
+#
+# Ver docs/20-task-analyzer.md.
+
+version: 1
+
+signals:
+  # ── arquitetura ───────────────────────────────────────────────────────
+  - id: novo-modulo
+    dimension: architecture
+    weight: 60
+    label: "cria módulo novo"
+    patterns:
+      - '\b(nov[oa]|criar|adicionar)\s+(m[óo]dulo|dom[íi]nio|servi[çc]o|microsservi[çc]o|pacote|subsistema)\b'
+      - '\b(new|create|add)\s+(module|domain|service|microservice|package)\b'
+
+  - id: mudanca-estrutural
+    dimension: architecture
+    weight: 40
+    label: "altera a estrutura"
+    patterns:
+      - '\b(reestrutur|reorganiz|reescrev|migrar|mover)\w*\b'
+      - '\b(mudan[çc]a|altera[çc][ãa]o)\s+(de\s+)?(arquitetura|estrutura)\b'
+      - '\b(refactor|restructure|migrate|rewrite)\b'
+
+  - id: integracao
+    dimension: architecture
+    weight: 35
+    label: "nova integração"
+    patterns:
+      - '\b(integra[çc][ãa]o|integrar|conectar)\s+(com|ao|à|a)\b'
+      - '\b(webhook|gateway|broker|fila|queue|kafka|rabbitmq|sqs|grpc)\b'
+      - '\b(integrate|integration)\s+with\b'
+
+  - id: mudanca-de-banco
+    dimension: architecture
+    weight: 50
+    label: "toca o banco"
+    patterns:
+      - '\b(migration|migra[çc][ãa]o\s+de\s+banco|schema|tabela\s+nova|nova\s+tabela)\b'
+      - '\b(alterar|mudar|trocar)\s+(o\s+)?banco\b'
+      - '\b(coluna|[íi]ndice|index|constraint|foreign\s+key)\b'
+
+  - id: infraestrutura
+    dimension: architecture
+    weight: 30
+    label: "toca infraestrutura"
+    patterns:
+      - '\b(docker|kubernetes|k8s|terraform|deploy|pipeline|ci/?cd|infra)\w*\b'
+      - '\b(ambiente|environment)\s+(de\s+)?(produ[çc][ãa]o|staging|homologa[çc][ãa]o)\b'
+
+  - id: comunicacao-entre-servicos
+    dimension: architecture
+    weight: 35
+    label: "muda comunicação entre serviços"
+    patterns:
+      - '\b(contrato\s+de\s+api|api\s+contract|endpoint\s+nov[oa]|breaking\s+change)\b'
+      - '\b(comunica[çc][ãa]o)\s+entre\s+(servi[çc]os|m[óo]dulos)\b'
+
+  # ── produto e regra de negócio ────────────────────────────────────────
+  - id: nova-funcionalidade
+    dimension: business_rule
+    weight: 50
+    label: "funcionalidade nova"
+    patterns:
+      - '\b(nov[ao])\s+(funcionalidade|feature|recurso|tela|fluxo|processo)\b'
+      - '\b(implementar|desenvolver|construir)\s+\w*\s*(funcionalidade|feature|m[óo]dulo|sistema)\b'
+      - '\b(new|implement)\s+(feature|flow|screen)\b'
+
+  - id: regra-de-negocio
+    dimension: business_rule
+    weight: 50
+    label: "muda regra de negócio"
+    patterns:
+      - '\b(regra\s+de\s+neg[óo]cio|business\s+rule)\b'
+      - '\b(c[áa]lculo|cobran[çc]a|faturamento|imposto|desconto|comiss[ãa]o|pre[çc]o|tarifa)\b'
+      - '\b(jornada|onboarding|checkout|carrinho)\b'
+
+  - id: perfil-de-usuario
+    dimension: business_rule
+    weight: 30
+    label: "novo perfil de usuário"
+    patterns:
+      - '\b(nov[oa])\s+(perfil|papel|role|tipo\s+de\s+usu[áa]rio)\b'
+      - '\b(permiss[õo]es|n[íi]veis\s+de\s+acesso)\b'
+
+  # ── segurança ─────────────────────────────────────────────────────────
+  - id: autenticacao
+    dimension: security
+    weight: 65
+    label: "toca autenticação"
+    patterns:
+      - '\b(autentica[çc][ãa]o|login|logout|sess[ãa]o|senha|password|sso|oauth|jwt|token|2fa|mfa)\b'
+      - '\b(auth|authentication|sign\s?in)\b'
+
+  - id: autorizacao
+    dimension: security
+    weight: 50
+    label: "toca autorização"
+    patterns:
+      - '\b(autoriza[çc][ãa]o|permiss[ãa]o|permission|acl|rbac|policy|guard|middleware\s+de\s+acesso)\b'
+      - '\b(quem\s+pode|controle\s+de\s+acesso|access\s+control)\b'
+
+  - id: dado-pessoal
+    dimension: security
+    weight: 60
+    hard: true
+    label: "toca dado pessoal (LGPD/GDPR)"
+    patterns:
+      - '\b(lgpd|gdpr|dado\s+pessoal|dados\s+pessoais|privacidade|anonimiza|consentimento)\w*\b'
+      - '\b(cpf|cnpj|rg|cart[ãa]o\s+de\s+cr[ée]dito|prontu[áa]rio|dado\s+sens[íi]vel)\b'
+      - '\b(paciente|m[ée]dico|sa[úu]de|telemedicina)\b'
+
+  - id: segredo
+    dimension: security
+    weight: 55
+    hard: true
+    label: "toca segredo ou credencial"
+    patterns:
+      - '\b(secret|segredo|credencial|chave\s+de\s+api|api\s+key|criptografia|encryption|vault)\b'
+      - '\b(rotacionar|rotation)\s+(chave|credencial|token)\b'
+
+  - id: vulnerabilidade
+    dimension: security
+    weight: 70
+    hard: true
+    label: "vulnerabilidade"
+    patterns:
+      - '\b(vulnerabilidade|cve|injection|xss|csrf|idor|ssrf|exploit|exposi[çc][ãa]o\s+de\s+dados)\b'
+
+  # ── risco ─────────────────────────────────────────────────────────────
+  - id: irreversivel
+    dimension: risk
+    weight: 70
+    hard: true
+    label: "operação irreversível"
+    patterns:
+      - '\b(apagar|deletar|remover|drop|truncate|excluir)\s+(a\s+|as\s+|o\s+|os\s+|uma\s+|um\s+)?(tabela|coluna|dados|registros|arquivo|endpoint|banco)\b'
+      - '\b(delete|drop)\s+(table|column|database)\b'
+      - '\b(migra[çc][ãa]o\s+destrutiva|destructive)\b'
+
+  - id: producao
+    dimension: risk
+    weight: 60
+    hard: true
+    label: "toca produção"
+    patterns:
+      - '\b(em\s+)?produ[çc][ãa]o\b'
+      - '\b(hotfix|rollback|incidente|outage)\b'
+
+  - id: quebra-de-contrato
+    dimension: risk
+    weight: 45
+    label: "quebra contrato existente"
+    patterns:
+      - '\b(breaking\s+change|quebra\s+de\s+compatibilidade|deprecar|remover\s+endpoint)\b'
+      - '\b(mudar|alterar)\s+(o\s+)?(retorno|payload|resposta)\s+(da\s+)?api\b'
+
+  - id: dependencia-externa
+    dimension: risk
+    weight: 30
+    label: "instala ou atualiza dependência"
+    patterns:
+      - '\b(instalar|adicionar|atualizar|upgrade)\s+(pacote|depend[êe]ncia|biblioteca|lib|framework)\b'
+      - '\b(install|upgrade)\s+(package|dependency|library)\b'
+
+  # ── performance ───────────────────────────────────────────────────────
+  - id: performance
+    dimension: complexity
+    weight: 30
+    label: "toca performance"
+    patterns:
+      - '\b(performance|otimiz|lentid[ãa]o|lento|n\+1|cache|[íi]ndice|latenc|throughput)\w*\b'
+      - '\b(optimize|slow|bottleneck)\b'
+
+  # ── complexidade ──────────────────────────────────────────────────────
+  - id: multiplas-camadas
+    dimension: complexity
+    weight: 40
+    label: "atravessa várias camadas"
+    patterns:
+      - '\b(backend|frontend|api|banco|interface|tela)\b.*\b(backend|frontend|api|banco|interface|tela)\b'
+      - '\b(ponta\s+a\s+ponta|end[\s-]?to[\s-]?end|full\s?stack)\b'
+
+  - id: verbo-de-construcao
+    dimension: complexity
+    weight: 25
+    label: "constrói algo novo"
+    patterns:
+      - '\b(implementar|desenvolver|construir|criar|montar|elaborar)\b'
+      - '\b(implement|develop|build|create)\b'
+
+  - id: escopo-amplo
+    dimension: complexity
+    weight: 30
+    label: "escopo amplo"
+    patterns:
+      - '\b(todo\s+o\s+sistema|em\s+todos\s+os|sistema\s+inteiro|geral|completo)\b'
+      - '\b(v[áa]rios|m[úu]ltipl[oa]s|diversos)\s+\w+'
+
+  # ── investigação: pergunta, não mudança ───────────────────────────────
+  - id: entender
+    dimension: complexity
+    weight: 15
+    label: "pergunta sobre o sistema"
+    patterns:
+      - '\b(entender|compreender|explicar|documentar\s+como|como\s+funciona|onde\s+fica|o\s+que\s+faz)\b'
+      - '\b(understand|explain|how\s+does|where\s+is)\b'
+
+  # ── redução: o que NÃO é projeto ──────────────────────────────────────
+  - id: typo
+    dimension: complexity
+    weight: -60
+    reduce: true
+    label: "correção trivial de texto"
+    patterns:
+      - '\b(typo|erro\s+de\s+digita[çc][ãa]o|grafia|acentua[çc][ãa]o)\b'
+      - '\b(corrigir|ajustar|trocar|mudar|alterar|atualizar)\s+(o\s+|a\s+)?(texto|mensagem|label|t[íi]tulo|coment[áa]rio|string|descri[çc][ãa]o|r[óo]tulo)\b'
+
+  - id: renomear-local
+    dimension: complexity
+    weight: -50
+    reduce: true
+    label: "renomeação local"
+    patterns:
+      - '\b(renomear|renomeie)\s+(a\s+)?(vari[áa]vel|par[âa]metro|m[ée]todo\s+privado|fun[çc][ãa]o\s+local)\b'
+      - '\b(rename)\s+(variable|parameter|local)\b'
+
+  - id: ajuste-visual
+    dimension: complexity
+    weight: -40
+    reduce: true
+    label: "ajuste visual pequeno"
+    patterns:
+      - '\b(ajust\w+|pequen[oa])\s+(o\s+|a\s+)?\w*\s*(visual|css|estilo|espa[çc]amento|cor|margem|padding|layout|alinhamento)\b'
+      - '\b(alinhar|centralizar|mudar\s+a\s+cor)\b'
+
+  - id: teste-pontual
+    dimension: complexity
+    weight: -35
+    reduce: true
+    label: "teste para código existente"
+    patterns:
+      - '\b(criar|adicionar|escrever)\s+(um\s+)?teste\s+(para|de|do|da)\b'
+      - '\b(add|write)\s+(a\s+)?test\s+for\b'
+
+  - id: bug-isolado
+    dimension: complexity
+    weight: -30
+    reduce: true
+    label: "bug pequeno e isolado"
+    patterns:
+      - '\b(bug|erro)\s+(pequen[oa]|simples|isolad[oa]|pontual)\b'
+      - '\b(corrigir|consertar)\s+\w+\s+(n[ãa]o\s+est[áa]|que\s+n[ãa]o)\b'
+
+  - id: config-simples
+    dimension: complexity
+    weight: -30
+    reduce: true
+    label: "configuração simples"
+    patterns:
+      - '\b(alterar|mudar|ajustar)\s+(uma\s+)?(configura[çc][ãa]o|config|vari[áa]vel\s+de\s+ambiente|timeout|limite)\b'
+
+  - id: campo-simples
+    dimension: complexity
+    weight: -25
+    reduce: true
+    label: "campo simples"
+    patterns:
+      - '\b(adicionar|criar)\s+(um\s+)?campo\s+(simples|opcional|novo)\b'
+      - '\b(add)\s+(a\s+)?(simple|optional)\s+field\b'
+
+# Portas que ignoram a faixa de score. Errar nelas é caro demais para confiar
+# numa média (docs/20-task-analyzer.md).
+gates:
+  # Nada que toque autenticação, autorização ou dado pessoal sai como
+  # DIRECT_EXECUTION — mesmo que o resto do pedido pareça trivial.
+  security_never_direct: 40
+  # Irreversível exige humano, sempre.
+  risk_needs_approval: 60
+  security_needs_approval: 50
+  # Território onde a faixa de score subestima: mudar autenticação ou apagar
+  # dado em produção é pequeno de escrever e caro de errar. A média não captura
+  # isso porque o pedido cabe em uma linha.
+  security_needs_documentation: 60
+  risk_needs_documentation: 70
+
+# Faixas de decisão. O total combina pico, média dos ativos e amplitude
+# (ver models.Scores.total — e o comentário que explica por que não é média).
+bands:
+  - { max: 25,  classification: DIRECT_EXECUTION }
+  - { max: 50,  classification: ANALYSIS_REQUIRED }
+  - { max: 75,  classification: DOCUMENTATION_REQUIRED }
+  - { max: 100, classification: TASK_DECOMPOSITION_REQUIRED }
+
+# Um pedido só de redução (typo, renomear) é trivial mesmo que uma palavra
+# solta tenha disparado um sinal de aumento fraco.
+trivial:
+  # Se algum sinal de redução disparou e nenhum sinal forte (>= este peso)
+  # disparou, o pedido é trivial.
+  strong_weight: 40

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "92dd739d9e98a1b8dc62a7c1598cfccb8554f476a601440b5bb4aa618c6b921c",
+  "doc_kind": "code",
+  "id": "5e75531142c33f32a5706e3a1c91c1bc",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/agents/evaluator.py",
+  "size_bytes": 4395,
+  "title": "`ragx agent eval` — mede RECUPERAÇÃO, não geração.\n\nÉ honesto: o RAGX não avalia a qualidade da resposta do modelo, avalia se\nentregou o contexto certo. Avaliar geração exigiria LLM-as-judge, registrado\ncomo evolução pós-MVP.\n\nVer docs/10-agent-training.md."
+}

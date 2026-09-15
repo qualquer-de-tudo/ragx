@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "899b95a5dfbba6e9eaff9c3d63fb3416571ea56a6a17f5fc74c1101d511cd87a",
+  "doc_kind": "code",
+  "id": "b5951eb9f6d83724cb1a3bafb4e09956",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/embeddings/base.py",
+  "size_bytes": 4139,
+  "title": "Embedder: interface, quantização e cache.\n\nDuas representações por chunk (ADR-0010):\n  float32 @ dim           local, rescoring exato — 3.072 B\n  int8    @ versioned_dim versionado no Git      —   256 B\n\nA truncagem Matryoshka exige RENORMALIZAR depois de cortar: sem isso o produto\nescalar deixa de aproximar cosseno e o ranking degrada em silêncio."
+}

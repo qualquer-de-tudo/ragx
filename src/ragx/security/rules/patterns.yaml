@@ -1,0 +1,171 @@
+# Regras de CONTEÚDO, declarativas para serem auditáveis por alguém de segurança
+# sem ler Python. Ver docs/02-seguranca.md.
+#
+#   action: block   -> arquivo inteiro descartado
+#   action: redact  -> valor trocado por placeholder antes do chunking
+#   action: warn    -> indexa e registra
+#
+# high_precision: true  -> jamais rebaixada por contexto de arquivo (um AKIA
+#                          dentro de tests/ continua sendo BLOCK).
+
+version: 1
+
+rules:
+  # ── Provedores com formato reconhecível: bloqueio direto, sem heurística ──
+  - id: aws-access-key-id
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\b(?:AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b'
+
+  - id: aws-secret-access-key
+    severity: critical
+    action: block
+    pattern: '(?i)aws[_-]?secret[_-]?access[_-]?key\s*[:=]\s*["'']?([A-Za-z0-9/+=]{40})'
+    capture_group: 1
+    high_precision: true
+
+  - id: github-token
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b|\bgithub_pat_[A-Za-z0-9_]{60,}\b'
+
+  - id: google-api-key
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\bAIza[0-9A-Za-z_\-]{35}\b'
+
+  - id: slack-token
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\bxox[baprs]-[0-9A-Za-z\-]{10,}\b'
+
+  - id: stripe-secret-key
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\b(?:sk|rk)_(?:live|test)_[0-9A-Za-z]{20,}\b'
+
+  - id: openai-or-anthropic-key
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\bsk-(?:ant-)?(?:api[0-9]{2}-)?[A-Za-z0-9_\-]{32,}\b'
+
+  - id: npm-token
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\bnpm_[A-Za-z0-9]{36}\b'
+
+  - id: sendgrid-key
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\bSG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43}\b'
+
+  - id: twilio-key
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '\b(?:AC|SK)[0-9a-fA-F]{32}\b'
+
+  - id: private-key-block
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '-----BEGIN (?:RSA |DSA |EC |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----'
+
+  - id: jwt
+    severity: high
+    action: redact
+    high_precision: true
+    pattern: '\beyJ[A-Za-z0-9_\-]{8,}\.eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\b'
+
+  - id: azure-connection-string
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '(?i)(?:AccountKey|SharedAccessKey)\s*=\s*([A-Za-z0-9/+=]{40,})'
+    capture_group: 1
+
+  - id: db-uri-with-password
+    severity: critical
+    action: block
+    high_precision: true
+    pattern: '(?i)\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp|mssql)://[^:/\s]+:([^@/\s]{6,})@'
+    capture_group: 1
+
+  # ── Atribuição + entropia: recall, com allowlist de placeholder ──
+  - id: generic-secret-assignment
+    severity: high
+    action: redact
+    pattern: '(?i)(?:[A-Za-z0-9]+[_-])*(?:api[_-]?key|apikey|api[_-]?secret|secret[_-]?key|secret|access[_-]?token|auth[_-]?token|private[_-]?key|client[_-]?secret)\b["'']?\s*[:=>]+\s*["'']?([^\s"'',;{}()\[\]]{12,})'
+    capture_group: 1
+    min_entropy: 3.0
+    min_length: 12
+
+  - id: password-assignment
+    severity: high
+    action: redact
+    pattern: '(?i)(?:[A-Za-z0-9]+[_-])*(?:password|passwd|pwd|db[_-]?pass)\b["'']?\s*[:=>]+\s*["'']?([^\s"'',;{}()\[\]]{8,})'
+    capture_group: 1
+    min_entropy: 2.2
+    min_length: 8
+
+# Valores que NÃO são segredo, por mais entropia que tenham.
+placeholders:
+  - 'changeme'
+  - 'change_me'
+  - 'change-me'
+  - 'yourkey'
+  - 'your_key'
+  - 'your-api-key'
+  - 'your_api_key'
+  - 'example'
+  - 'sample'
+  - 'dummy'
+  - 'placeholder'
+  - 'redacted'
+  - 'secret'
+  - 'password'
+  - 'test'
+  - 'testing'
+  - 'foo'
+  - 'bar'
+  - 'baz'
+  - 'localhost'
+  - 'none'
+  - 'null'
+  - 'undefined'
+  - 'todo'
+  - 'xxx'
+
+placeholder_patterns:
+  - '^\$\{[^}]*\}$'          # ${VAR}
+  - '^\{\{[^}]*\}\}$'        # {{ var }}
+  - '^%[a-zA-Z_]+%$'         # %env(VAR)%
+  - '^<[^>]*>$'              # <your-key>
+  - '^\$[A-Z_][A-Z0-9_]*$'   # $API_KEY
+  - '^os\.environ.*'
+  - '^process\.env\..*'
+  - '^env\(.*\)$'
+  - '^getenv\(.*\)$'
+  - '^[xX*.\-_]+$'           # xxxx, ****, ----
+  - '^(?:0+|1+)$'
+  - '^[a-f0-9]{7,8}$'        # sha curto de commit
+
+# Multiplicadores de severidade por contexto de arquivo.
+context:
+  raise:
+    patterns: ["**/docker-compose*.yml", "**/docker-compose*.yaml", "**/*.tfvars",
+               "**/*.ini", "**/*.cfg", "**/*.properties", "**/Dockerfile*", "**/*.env.*"]
+    delta: 1
+  lower:
+    patterns: ["**/test/**", "**/tests/**", "**/fixtures/**", "**/__tests__/**",
+               "**/spec/**", "**/*_test.*", "**/*.test.*", "**/*.spec.*", "**/mocks/**"]
+    delta: -1
+    floor: medium

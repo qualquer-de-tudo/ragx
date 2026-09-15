@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "aadf65d73e40578e7022a95ee2b59c5860372edbc999f2421c5d589f43048fc7",
+  "doc_kind": "code",
+  "id": "2dbed58fc6b0faf42f95caf3cb73ab6e",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/mcp/playbook.py",
+  "size_bytes": 5557,
+  "title": "O procedimento operacional que o agente recebe via `get_playbook`.\n\nExiste porque \"dar poder ao agente\" sem dizer COMO usá-lo produz o pior dos\nmundos: um agente que pode reindexar o repositório inteiro e faz isso a cada\npergunta. As ferramentas dizem o que é possível; este texto diz o que é\nsensato, e em que ordem.\n\nFica em Python, e não num `.md` solto, por um motivo de arquitetura: `ragx.mcp`\nnão pode abrir arquivo (ADR-0006). Um playbook que precisasse ser lido do disco\nabriria exatamente o buraco que o resto do módulo fecha."
+}

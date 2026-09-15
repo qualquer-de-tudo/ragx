@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "4c5860a02ecd54a36b9168961b82f9ad86c3fb45bfc83679c1d7452e45da875a",
+  "doc_kind": "code",
+  "id": "5f4205fbfa18b011c0c7334e8046cf69",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/agents/profile.py",
+  "size_bytes": 8825,
+  "title": "Perfil de agente — curadoria de conhecimento, NÃO treinamento de modelo.\n\nNão há gradiente, peso ajustado nem fine-tuning. O que se produz é um conjunto\nversionável de instruções, regras, skills e exemplos que condiciona o\ncomportamento de um agente neste projeto. Chamar de \"treinar modelo\" criaria\nexpectativa errada sobre custo, tempo e resultado.\n\nVer docs/10-agent-training.md."
+}

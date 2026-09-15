@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "9dc8bbc2a055a8cf790df707e706f29ebad6f9c73f1db647b5a0890fcbce72af",
+  "doc_kind": "code",
+  "id": "5b53b075205767455159bbb7397f0545",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/e2e/test_cli_fase12.py",
+  "size_bytes": 4500,
+  "title": "E2E da Fase 12: `ragx base`, `ragx watch`, `ragx --version`.\n\nExiste porque um bug de formatação escapou de 600 testes: `ragx base list`\nestourava o parser de markup do Rich e nada pegava, já que a suíte chamava as\nfunções por baixo e nunca a CLI. Aqui os comandos são EXECUTADOS."
+}

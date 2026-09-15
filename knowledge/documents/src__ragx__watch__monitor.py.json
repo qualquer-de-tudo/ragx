@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c6b2bf4e2e01cb5ba42c1bf8f4a72995c56f228707a76f2751cde6ef4797b6e1",
+  "doc_kind": "code",
+  "id": "7a150d1b0f0f80b583916bd159598f81",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/watch/monitor.py",
+  "size_bytes": 5368,
+  "title": "`ragx watch` — mantém o índice acompanhando o working tree.\n\nPor polling de `size+mtime`, não por API do sistema operacional. Três razões:\n\n  1. ZERO dependência nova. `watchdog` traria uma árvore de pacotes e um\n     backend diferente por plataforma.\n  2. É o MESMO sinal que o indexador incremental já usa para decidir o que\n     reprocessar — watcher e indexador nunca discordam sobre o que mudou.\n  3. Editor que salva via arquivo temporário + rename (quase todos) gera\n     eventos confusos em API nativa; `stat` mostra só o resultado final.\n\nO custo é o de um `stat` por arquivo não ignorado a cada ciclo — em um\nrepositório de alguns milhares de arquivos, milissegundos.\n\nDuas velocidades, de propósito:\n  • a cada mudança → reindexa (barato; mantém busca e documentos frescos)\n  • a cada `full_sync_every` mudanças → consolida (grafo, dicionário,\n    `knowledge/`), que é caro demais para rodar a cada Ctrl+S."
+}

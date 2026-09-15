@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "46fbdee29932d6de15d7f6c4c06e87af505083db0cb4aafd5727d1e57792a434",
+  "doc_kind": "code",
+  "id": "aaea6760e6e6bd78d656f96f28f2a1ce",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/diagnostics.py",
+  "size_bytes": 1370,
+  "title": "Registro de diagnóstico em `.ragx/logs/`.\n\nVive fora de `ragx.mcp` de propósito. A invariante do ADR-0006 é que o servidor\nMCP não fale com o filesystem; o teste arquitetural verifica isso proibindo\n`open` naquele pacote. Um gravador de log é uma capacidade separada e auditável\n— e fica aqui, num módulo que faz só isso e nada mais.\n\nNada do que passa por aqui vai para o agente: o que ele recebe é um código de\nerro e uma mensagem genérica."
+}

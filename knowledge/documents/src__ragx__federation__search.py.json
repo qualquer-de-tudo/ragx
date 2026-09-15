@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "11a7ba04921fdcdffe85704a68256e92c145d4a46f945b0d7d495bb2b21257f2",
+  "doc_kind": "code",
+  "id": "a894e82a8c485c0385b53e6537820c19",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/federation/search.py",
+  "size_bytes": 6529,
+  "title": "Busca cross-project.\n\n    projeto atual        busca híbrida completa\n    projetos clonados    busca no .ragx/knowledge.db de cada um\n    projetos só-federação busca na fatia pública (contratos)\n\nTodo resultado carrega `project` — obrigatório, sem exceção: conhecimento sem\norigem identificada não é entregue.\n\nVer docs/17-multiprojeto-e-federacao.md."
+}

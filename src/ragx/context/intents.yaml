@@ -1,0 +1,48 @@
+# Detecção de intenção por padrões léxicos declarados.
+# É heurística explícita, não mágica — e `--explain` mostra o que foi inferido.
+# Ver docs/07-context-engine.md.
+
+version: 1
+
+intents:
+  - id: implement
+    label: "implementar"
+    patterns:
+      - '\b(implementar|criar|adicionar|construir|desenvolver|fazer)\b'
+      - '\b(implement|create|add|build)\b'
+    prefer: [code, doc]
+    weights: { code: 1.25, doc: 1.1, config: 0.9 }
+    graph_depth: 2
+
+  - id: locate
+    label: "localizar / entender"
+    patterns:
+      - '\b(onde|como funciona|o que (e|é)|por que|quando|qual)\b'
+      - '\b(where|how does|what is|why)\b'
+    prefer: [doc, code]
+    weights: { doc: 1.3, code: 1.0, config: 0.9 }
+    graph_depth: 1
+
+  - id: fix
+    label: "corrigir bug"
+    patterns:
+      - '\b(corrigir|consertar|bug|erro|falha|quebrad[oa]|exception|traceback)\b'
+      - '\b(fix|broken|failing|error)\b'
+    prefer: [code, test]
+    weights: { code: 1.3, doc: 0.9, config: 1.0 }
+    graph_depth: 2
+
+  - id: review
+    label: "revisar"
+    patterns:
+      - '\b(revisar|review|auditar|avaliar|refatorar|melhorar)\b'
+    prefer: [code, doc]
+    weights: { code: 1.2, doc: 1.15, config: 1.0 }
+    graph_depth: 1
+
+default:
+  id: general
+  label: "geral"
+  prefer: [doc, code]
+  weights: { code: 1.0, doc: 1.0, config: 1.0 }
+  graph_depth: 1

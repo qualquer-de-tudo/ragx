@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "425ce3090a244983c32ca6243076c25398876fc8a2f7f5f06d1aad2da9cbabcd",
+  "doc_kind": "code",
+  "id": "77211d381a07f55b08aed1d00737086c",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/search/hybrid.py",
+  "size_bytes": 1002,
+  "title": "Fusão híbrida por RRF.\n\nCosseno vive em [-1,1] e BM25 é ilimitado e dependente do corpus. Normalizar os\ndois exigiria calibração por projeto; RRF usa só a POSIÇÃO e dispensa tuning."
+}

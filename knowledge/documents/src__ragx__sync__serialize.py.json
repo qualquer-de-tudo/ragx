@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "e1be1d621fe496c68f350c2bef4a1f16fc0290f35516828f2534a2ab23c1605b",
+  "doc_kind": "code",
+  "id": "c89a310054cdd2282225c43049c146cd",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/sync/serialize.py",
+  "size_bytes": 14191,
+  "title": "Serialização de `knowledge/` — texto estável, diffável, dentro do orçamento.\n\nDuas decisões governam este módulo (ADR-0010):\n\n  1. `chunks/*.jsonl` NÃO carrega `content`. É redundante: já está no\n     repositório, no caminho e nas linhas registradas.\n  2. embeddings vão em int8@versioned_dim, shardados por PREFIXO DO ID — é o que\n     mantém 15 de 16 shards byte-idênticos quando um chunk muda.\n\nVer docs/12-git-sync.md e docs/16-orcamento-de-tamanho.md."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "17feecf6749287c67aa98a0d4c16beda3b109b1c9bc8944f747d57c318311a3e",
+  "doc_kind": "code",
+  "id": "99ef45b2019b3060dbf62efdca75f31e",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/base/source.py",
+  "size_bytes": 10586,
+  "title": "Conhecimento base — fontes externas que valem para TODOS os projetos.\n\nRegras de arquitetura, guardrails, padrões de código: coisas que não pertencem\na um repositório específico, mas que o agente precisa conhecer em qualquer um.\n\nFicam em `~/.ragx/base/<nome>/`, baixadas **uma vez por máquina**, e são\nindexadas em cada projeto sob o prefixo `@base/<nome>/` — nunca colidem com\narquivo do projeto e aparecem marcadas em toda busca.\n\nConteúdo de terceiro é ENTRADA NÃO CONFIÁVEL: passa pelo mesmo Security Gate\nque o código do projeto."
+}

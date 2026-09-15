@@ -1,0 +1,204 @@
+# Tipos de documento que o planner sabe produzir.
+#
+# `requires` declara a ordem: architecture antes de technical, technical antes
+# de database. É o que impede o planner de propor o detalhe antes da decisão
+# que o governa.
+#
+# `triggers` são as dimensões do Task Analyzer que pedem este documento.
+# `sections` são obrigatórias — documento sem elas não é o tipo que diz ser.
+#
+# Ver docs/20-task-analyzer.md.
+
+version: 1
+
+types:
+  - id: product
+    label: "Visão de produto"
+    folder: product
+    requires: []
+    triggers: [business_rule]
+    min_score: 45
+    sections:
+      - Problema
+      - Quem é afetado
+      - Resultado esperado
+      - Fora de escopo
+      - Como saberemos que funcionou
+
+  - id: business
+    label: "Regras de negócio"
+    folder: business
+    requires: [product]
+    triggers: [business_rule]
+    min_score: 50
+    sections:
+      - Regras
+      - Exceções
+      - Invariantes
+      - Glossário
+
+  - id: requirements
+    label: "Requisitos"
+    folder: requirements
+    requires: [product]
+    triggers: [business_rule, complexity]
+    min_score: 55
+    sections:
+      - Requisitos funcionais
+      - Requisitos não funcionais
+      - Restrições
+      - Critérios de aceite
+
+  - id: architecture
+    label: "Arquitetura"
+    folder: architecture
+    requires: []
+    triggers: [architecture]
+    min_score: 40
+    sections:
+      - Contexto atual
+      - Decisão
+      - Componentes
+      - Fronteiras e contratos
+      - Alternativas consideradas
+      - Consequências
+
+  - id: technical
+    label: "Desenho técnico"
+    folder: technical
+    requires: [architecture]
+    triggers: [architecture, complexity]
+    min_score: 45
+    sections:
+      - Abordagem
+      - Módulos afetados
+      - Fluxo principal
+      - Tratamento de erro
+      - Impacto no existente
+
+  - id: database
+    label: "Modelo de dados"
+    folder: database
+    requires: [technical]
+    triggers: [architecture]
+    min_score: 45
+    sections:
+      - Entidades
+      - Relacionamentos
+      - Índices
+      - Migração
+      - Rollback
+
+  - id: api
+    label: "Contrato de API"
+    folder: api
+    requires: [technical]
+    triggers: [architecture]
+    min_score: 40
+    sections:
+      - Endpoints
+      - Payloads
+      - Erros
+      - Versionamento
+      - Compatibilidade
+
+  - id: security
+    label: "Análise de segurança"
+    folder: security
+    requires: []
+    triggers: [security]
+    min_score: 40
+    sections:
+      - Superfície de ataque
+      - Autenticação e autorização
+      - Dados sensíveis
+      - Ameaças consideradas
+      - Mitigações
+
+  - id: performance
+    label: "Análise de performance"
+    folder: performance
+    requires: [technical]
+    triggers: [complexity]
+    min_score: 60
+    sections:
+      - Medição atual
+      - Gargalo identificado
+      - Meta
+      - Estratégia
+      - Como medir depois
+
+  - id: testing
+    label: "Estratégia de testes"
+    folder: testing
+    requires: [requirements]
+    triggers: [complexity, business_rule]
+    min_score: 55
+    sections:
+      - O que testar
+      - Casos de borda
+      - Dados de teste
+      - Cobertura mínima
+
+  - id: integration
+    label: "Integração"
+    folder: integration
+    requires: [architecture]
+    triggers: [architecture]
+    min_score: 50
+    sections:
+      - Sistemas envolvidos
+      - Contrato
+      - Falhas e retentativa
+      - Idempotência
+
+  - id: migration
+    label: "Plano de migração"
+    folder: migration
+    requires: [database]
+    triggers: [risk, architecture]
+    min_score: 55
+    sections:
+      - Estado atual
+      - Estado alvo
+      - Etapas
+      - Janela e reversão
+      - Validação
+
+  - id: deployment
+    label: "Implantação"
+    folder: deployment
+    requires: [technical]
+    triggers: [risk]
+    min_score: 60
+    sections:
+      - Pré-requisitos
+      - Passos
+      - Rollback
+      - Verificação
+
+  - id: operations
+    label: "Operação"
+    folder: operations
+    requires: [deployment]
+    triggers: [risk]
+    min_score: 65
+    sections:
+      - Observabilidade
+      - Alertas
+      - Runbook
+      - Limites conhecidos
+
+  - id: decision
+    label: "Registro de decisão"
+    folder: decisions
+    requires: []
+    triggers: [architecture, risk, security]
+    min_score: 55
+    sections:
+      - Contexto
+      - Problema
+      - Opções
+      - Decisão
+      - Consequências
+      - Status

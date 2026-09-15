@@ -1,0 +1,6 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: pG7x2Qm9ZvLk4Rt8
+      POSTGRES_USER: app

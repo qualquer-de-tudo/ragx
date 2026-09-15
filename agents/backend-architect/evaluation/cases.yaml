@@ -1,0 +1,5 @@
+# Avalia RECUPERAÇÃO, não geração — é o que o RAGX controla.
+- id: eval-001
+  task: "onde fica a configuração do projeto"
+  expect_sources: ["ragx.toml"]
+  must_not_mention: ["senha", "secret"]

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "bd92ce7641dba975df83464c6f1aaf10b8d3e10f9667c844b3a5af5cf058d7ad",
+  "doc_kind": "code",
+  "id": "02710aae2ebd1e7c154e0a9ef46b5541",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/cli/__init__.py",
+  "size_bytes": 858,
+  "title": "Pacote da CLI.\n\nA reconfiguração de encoding vive aqui porque precisa acontecer ANTES de\nqualquer `rich.Console` ser construído nos módulos de comando — e importar\n`ragx.cli.commands.*` passa necessariamente por este __init__."
+}

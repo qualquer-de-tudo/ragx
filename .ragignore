@@ -1,0 +1,9 @@
+# .ragignore — o que o RAGX não deve indexar.
+# Segredos já são bloqueados pelo scanner, independente deste arquivo.
+
+dist/
+build/
+coverage/
+*.csv
+*.parquet
+**/*.generated.*

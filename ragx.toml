@@ -1,0 +1,40 @@
+[project]
+name = "ragx"
+id = "2a0786031710"
+kind = "other"
+visibility = "workspace"
+
+[security]
+policy = "strict"
+
+[index]
+max_file_bytes = 1048576
+# `base-knowledge/` é a ORIGEM do conhecimento base — ele já entra no índice
+# sob `@base/agents/`, via `ragx base`. Indexar também como arquivo do projeto
+# duplicaria cada documento e poluiria toda busca com dois resultados iguais.
+exclude = ["base-knowledge/"]
+
+[embedding]
+# Sem Ollama nesta maquina: fastembed roda o modelo localmente via ONNX,
+# sem daemon. Multilingue porque o corpus e portugues + codigo.
+provider = "fastembed"
+model = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+dim = 384
+versioned_dim = 192
+
+[base]
+enabled = true
+# Declarado aqui para que qualquer clone deste repositório receba a mesma base
+# rodando `ragx base sync`.
+sources = ["https://github.com/renan-s-oliveira/agents"]
+
+[mcp]
+# O agente manda no ÍNDICE: reindexar, sincronizar, reconstruir grafo e
+# dicionário. O Security Gate continua igual — ver ADR-0012.
+allow_write = true
+
+[watch]
+enabled = true
+interval_s = 2.0
+debounce_s = 1.5
+full_sync_every = 25

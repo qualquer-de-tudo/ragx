@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "backend-architect",
+  "version": "2",
+  "description": "Desenho e implementação de serviços backend neste projeto.",
+  "scope": {
+    "include_paths": [
+      "**"
+    ],
+    "exclude_paths": [],
+    "languages": [],
+    "projects": []
+  },
+  "knowledge": {
+    "index_run": 5,
+    "dictionary_hash": "96c1499b4f12659e",
+    "chunks": 1668,
+    "entities": 988
+  },
+  "context_policy": {
+    "default_tokens": 6000,
+    "graph_depth": 2,
+    "prefer": [
+      "src",
+      "docs/architecture"
+    ]
+  },
+  "generated_at": "2026-09-15T16:27:18Z",
+  "generated_by": "ragx"
+}

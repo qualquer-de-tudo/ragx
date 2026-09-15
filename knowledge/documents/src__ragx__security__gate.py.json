@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "07643b93bf2dcec0c931e0515aad0ea1c7c4d650d58f910e2fa7ecb58eaffc50",
+  "doc_kind": "code",
+  "id": "8f0377bb2911e271039e5eb7922e27d3",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/security/gate.py",
+  "size_bytes": 4566,
+  "title": "SecurityGate — a única porta de entrada de conteúdo no sistema.\n\nFica ENTRE o leitor de arquivos e o parser. Nenhum componente fora de\nragx.security recebe bytes que não tenham passado por gate.admit().\n\nVer docs/02-seguranca.md e ADR-0008."
+}

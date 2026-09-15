@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "a194d2776e1bb0845b91346af4bf62e357e92fa893620cc6e297960c6d400f0e",
+  "doc_kind": "code",
+  "id": "376195e833198f61a1adcaad9be31b32",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/pipeline.py",
+  "size_bytes": 11701,
+  "title": "Pipeline de indexação incremental.\n\nwalker -> gate -> parser -> chunker -> store\n\nTransação por LOTE (não uma gigante): Ctrl+C deixa o banco consistente com os\nlotes já confirmados. Ver docs/04-indexacao.md."
+}
