@@ -136,7 +136,43 @@ def test_instalador_registra_o_mcp(script: str) -> None:
     assert "mcp" in texto and "serve" in texto
 
 
-def test_instalador_windows_tem_bom() -> None:
-    """O PowerShell 5.1 ainda é o padrão do Windows e lê `.ps1` sem BOM como
-    ANSI — todo acento vira mojibake na tela do instalador."""
-    assert (RAIZ / "install/install.ps1").read_bytes()[:3] == b"\xef\xbb\xbf"
+def test_instalador_windows_e_ascii_sem_bom() -> None:
+    """O `.ps1` precisa sobreviver a `irm | iex`.
+
+    Esta regra substituiu a anterior, que exigia BOM. O BOM resolvia a leitura
+    do arquivo em DISCO pelo PowerShell 5.1, mas quebrava o caminho que importa
+    mais: o `Invoke-RestMethod` não recebe charset num asset de release
+    (`application/octet-stream`), decodifica o corpo como Latin-1, e o script
+    chega corrompido — o parser cospe dezenas de "Token inesperado".
+
+    ASCII puro resolve os dois de uma vez. Verificado servindo o script por
+    HTTP: com acentos o `irm | iex` falha; em ASCII, instala.
+    """
+    bruto = (RAIZ / "install/install.ps1").read_bytes()
+    assert bruto[:3] != b"\xef\xbb\xbf", "BOM quebra `irm | iex`"
+
+    fora = sorted({b for b in bruto if b > 127})
+    assert not fora, (
+        f"bytes não-ASCII no instalador: {fora[:8]} — o `irm` do PowerShell 5.1 "
+        f"os decodifica como Latin-1 e o script não parseia"
+    )
+
+
+@pytest.mark.parametrize("script", ["install/install.sh", "install/install.ps1"])
+def test_instalador_sobrevive_a_execucao_por_pipe(script: str) -> None:
+    """`curl | bash` e `irm | iex` não têm arquivo em disco.
+
+    Nesse modo `${BASH_SOURCE[0]}` e `$PSScriptRoot` vêm VAZIOS. A versão
+    anterior fazia `Split-Path -Parent ''` e morria logo depois de instalar o
+    `uv`, com uma mensagem sem nenhuma relação com a causa.
+    """
+    texto = (RAIZ / script).read_text(encoding="utf-8")
+    if script.endswith(".ps1"):
+        # Detecta a ausência do arquivo ANTES de usar o caminho.
+        assert "Obter-RaizLocal" in texto
+        assert "if (-not $arquivo) { return '' }" in texto
+        # `exit` fecharia o terminal de quem rodou por `iex`.
+        assert "exit 1" not in texto, "use `throw`: `exit` mata a sessão de quem rodou"
+    else:
+        assert "BASH_SOURCE[0]:-" in texto
+        assert '-f "${BASH_SOURCE[0]}"' in texto

@@ -40,8 +40,19 @@ command -v uv >/dev/null 2>&1 || { erro "uv não ficou disponível no PATH"; exi
 ok "uv $(uv --version 2>/dev/null | awk '{print $2}')"
 
 # ── 2. RAGX ─────────────────────────────────────────────────────────────
-AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [ -f "$AQUI/pyproject.toml" ] && grep -q 'name = "ragx"' "$AQUI/pyproject.toml" 2>/dev/null; then
+# Por `curl | bash` NÃO existe arquivo em disco: `${BASH_SOURCE[0]}` vem vazio,
+# `dirname ""` devolve "." e o script passaria a procurar um `pyproject.toml`
+# no diretório de onde a pessoa chamou — instalando o projeto errado, em
+# silêncio. Só tratamos como repositório local quando há mesmo um arquivo.
+AQUI=""
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+  AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+
+if [ -n "${RAGX_ORIGEM:-}" ]; then
+  nota "instalando a partir de $RAGX_ORIGEM"
+  ORIGEM="$RAGX_ORIGEM"
+elif [ -n "$AQUI" ] && [ -f "$AQUI/pyproject.toml" ]      && grep -q 'name = "ragx"' "$AQUI/pyproject.toml" 2>/dev/null; then
   nota "instalando a partir deste repositório: $AQUI"
   ORIGEM="$AQUI"
 else
@@ -66,6 +77,13 @@ elif uv tool install --force --python "$PY" "$ORIGEM"; then
 else
   erro "falha ao instalar o ragx"
   nota "rode à mão para ver o erro: uv tool install --python $PY '$ORIGEM'"
+  case "$ORIGEM" in
+    git+*)
+      nota "se o repositório for privado, o clone precisa de credencial"
+      nota "alternativa: baixe o .whl e rode"
+      nota "  RAGX_ORIGEM=/caminho/ragx-1.0.0-py3-none-any.whl ./install.sh"
+      ;;
+  esac
   exit 1
 fi
 

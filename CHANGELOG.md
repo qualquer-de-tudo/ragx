@@ -20,6 +20,32 @@ de quem instala.
   `core.autocrlf` do Windows grava CRLF no instalador e o Linux responde
   `bad interpreter: No such file or directory`, que não diz nada sobre a causa.
 
+### Corrigido depois de tentar o comando único de verdade
+
+O `irm ... | iex` não instalava. Três camadas de falha, empilhadas:
+
+1. **TLS.** O PowerShell 5.1 negocia TLS 1.0 por padrão e o GitHub recusa. O
+   erro é `A conexão foi fechada de modo inesperado`, que não menciona TLS. O
+   comando documentado agora traz a linha que ajusta isso — ela não é opcional.
+2. **Encoding.** O `Invoke-RestMethod` não recebe charset num asset de release
+   (`application/octet-stream`) e decodifica o corpo como Latin-1. Com acentos,
+   o script chegava corrompido e o parser cuspia dezenas de "Token inesperado".
+   O `install.ps1` passou a ser **ASCII puro, sem BOM** — o oposto da regra
+   anterior, que existia para a leitura em disco.
+3. **Execução por pipe.** Sem arquivo em disco, `$PSScriptRoot` e
+   `${BASH_SOURCE[0]}` vêm vazios. Os dois instaladores morriam ao derivar a
+   raiz do repositório. Agora detectam a ausência do arquivo antes de usá-la.
+
+Também: o `install.ps1` deixou de usar `exit` — por `iex` ele roda dentro da
+sessão de quem chamou, e `exit` fecharia o terminal da pessoa no meio do
+trabalho. Falha virou `throw`, com a mensagem impressa e a sessão intacta.
+
+Novo: `RAGX_ORIGEM` / `-Origem` para instalar de um wheel baixado, sem clone e
+sem acesso ao repositório.
+
+Verificado servindo os scripts por HTTP e rodando `irm | iex` neste Windows e
+`curl | bash` num container Ubuntu 24.04.
+
 ### Corrigido depois da primeira execução do workflow
 
 Os dois jobs de instalação falharam na primeira tentativa. As duas causas eram
