@@ -1,0 +1,272 @@
+name: Release
+
+# Dispara com a tag:
+#
+#     git tag v1.0.0 && git push origin v1.0.0
+#
+# Ou manualmente, pela aba Actions, informando a versão.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão (ex.: 1.0.0)'
+        required: true
+        type: string
+      draft:
+        description: 'Publicar como rascunho'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── 1. os testes correm ANTES de qualquer artefato ────────────────────
+  # Publicar primeiro e testar depois é como uma versão quebrada chega ao
+  # usuário. Se este job falhar, nada é construído e nada é publicado.
+  verificar:
+    name: Testes (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --dev
+      - run: uv run ruff check .
+      - run: uv run pytest -q
+
+  # ── 2. pacote Python ──────────────────────────────────────────────────
+  # O wheel é `py3-none-any`: um único arquivo serve Windows, Linux e macOS.
+  # Construir um por sistema seria desperdício e daria três hashes para a
+  # mesma coisa.
+  pacote:
+    name: Pacote Python
+    needs: verificar
+    runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.versao.outputs.valor }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Ler a versão do pyproject
+        id: versao
+        run: |
+          v=$(python -c "import tomllib,pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "valor=$v" >> "$GITHUB_OUTPUT"
+          echo "RAGX $v"
+
+      - name: Conferir que a tag bate com o pyproject
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          arquivo="${{ steps.versao.outputs.valor }}"
+          if [ "$tag" != "$arquivo" ]; then
+            echo "::error::a tag é v$tag mas o pyproject diz $arquivo"
+            echo "Publicar com os dois em desacordo produz um release que"
+            echo "instala uma versão diferente da que o nome promete."
+            exit 1
+          fi
+
+      - run: uv build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pacote-python
+          path: dist/*
+          retention-days: 7
+
+  # ── 3. extensão do VS Code ────────────────────────────────────────────
+  extensao:
+    name: Extensão do VS Code
+    needs: verificar
+    runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.versao.outputs.valor }}
+    defaults:
+      run:
+        working-directory: vscode-plugin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: vscode-plugin/package-lock.json
+
+      - name: Ler a versão do package.json
+        id: versao
+        run: |
+          v=$(node -p "require('./package.json').version")
+          echo "valor=$v" >> "$GITHUB_OUTPUT"
+          echo "plugin $v"
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx vsce package --no-dependencies --allow-missing-repository
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extensao-vscode
+          path: vscode-plugin/*.vsix
+          retention-days: 7
+
+  # ── 4. o instalador funciona? ─────────────────────────────────────────
+  # Instalar a partir do WHEEL recém-construído, nos dois sistemas. É o teste
+  # que pega o que testar código não pega: PATH, versão de interpretador,
+  # extras faltando.
+  instalar:
+    name: Instalar em ${{ matrix.os }}
+    needs: pacote
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pacote-python
+          path: dist
+
+      - name: Instalar do wheel
+        shell: bash
+        run: |
+          whl=$(ls dist/*.whl | head -1)
+          echo "instalando $whl"
+          uv tool install --force --python 3.12 "$whl[all]" || uv tool install --force --python 3.12 "$whl"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verificar
+        shell: bash
+        run: |
+          ragx --version
+          ragx mcp tools --json > /dev/null
+          echo "MCP ok"
+
+      - name: Ciclo completo
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/demo/src" && cd "$RUNNER_TEMP/demo"
+          printf 'class AuthService:\n    """Autenticacao via SSO."""\n    def login(self, c):\n        return c\n' > src/auth.py
+          echo "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" > .env
+          ragx init && ragx index .
+          ragx search "autenticacao" --limit 2 --json > /dev/null
+          n=$(ragx search "wJalrXUtnFEMI" --mode keyword --json | python -c 'import sys,json;print(len(json.load(sys.stdin)["results"]))')
+          echo "resultados para o segredo: $n (esperado 0)"
+          test "$n" = "0"
+
+  # ── 5. publicar ───────────────────────────────────────────────────────
+  publicar:
+    name: Publicar release
+    needs: [pacote, extensao, instalar]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: baixados
+
+      - name: Reunir os artefatos
+        id: reunir
+        run: |
+          mkdir -p release
+          cp baixados/pacote-python/* release/
+          cp baixados/extensao-vscode/*.vsix release/
+          # Cópia binária: o `.ps1` tem BOM e o `.sh` precisa de LF. Qualquer
+          # reescrita de texto aqui desfaria os dois em silêncio.
+          cp install/install.sh install/install.ps1 release/
+
+          cd release
+          sha256sum * > SHA256SUMS.txt
+          ls -la
+          echo "vsix=$(ls *.vsix | head -1)" >> "$GITHUB_OUTPUT"
+          echo "whl=$(ls *.whl | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Montar as notas
+        run: |
+          RAGX="${{ needs.pacote.outputs.versao }}"
+          PLUGIN="${{ needs.extensao.outputs.versao }}"
+          cat > NOTAS.md <<NOTAS
+          RAGX **$RAGX** · extensão do VS Code **$PLUGIN**
+
+          Knowledge Engine local: indexa o repositório, protege segredos por
+          construção, responde busca híbrida, monta contexto dentro de um
+          orçamento de tokens e serve agentes via MCP. Sem servidor, sem nuvem,
+          sem chave de API.
+
+          ## Instalar
+
+          **Linux e macOS**
+
+          \`\`\`bash
+          curl -fsSL https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/install.sh | bash
+          \`\`\`
+
+          **Windows**
+
+          \`\`\`powershell
+          irm https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/install.ps1 | iex
+          \`\`\`
+
+          Depois, **abra um terminal novo** — o PATH só vale na próxima sessão.
+
+          **Extensão do VS Code**
+
+          \`\`\`bash
+          code --install-extension ${{ steps.reunir.outputs.vsix }}
+          \`\`\`
+
+          **Do wheel, sem script**
+
+          \`\`\`bash
+          uv tool install --python 3.12 "${{ steps.reunir.outputs.whl }}[all]"
+          \`\`\`
+
+          ## Verificado nesta build
+
+          - testes em Ubuntu e Windows, Python 3.11 e 3.12
+          - instalação a partir do wheel nos dois sistemas
+          - ciclo completo num projeto novo: \`init\`, \`index\`, \`search\`, MCP
+          - um \`.env\` com credencial no projeto de teste **não** entra no
+            índice — o build quebra se entrar
+
+          ## Ressalva honesta
+
+          A busca híbrida ainda não supera a busca por palavra-chave neste
+          corpus (recall@5 0,65 contra 0,77). O critério documentado não foi
+          atingido; o diagnóstico está em \`docs/05-busca.md\`.
+
+          ---
+
+          Mudanças completas no [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md).
+          NOTAS
+          cat NOTAS.md
+
+      - name: Publicar
+        uses: softprops/action-gh-release@v2
+        with:
+          name: RAGX ${{ needs.pacote.outputs.versao }}
+          tag_name: ${{ github.ref_name || format('v{0}', inputs.version) }}
+          body_path: NOTAS.md
+          files: release/*
+          draft: ${{ inputs.draft || false }}
+          prerelease: ${{ contains(needs.extensao.outputs.versao, 'beta') }}
+          fail_on_unmatched_files: true

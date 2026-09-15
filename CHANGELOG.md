@@ -3,6 +3,38 @@
 Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.0.0] — 2026-09-15
+
+Primeira versão publicada. Nada de funcionalidade nova em relação à 0.3.1 — o
+que muda é que agora existe um caminho verificado do repositório até a máquina
+de quem instala.
+
+### Adicionado
+
+- **GitHub Actions**: `ci.yml` roda testes em Ubuntu e Windows, Python 3.11 e
+  3.12, mais o build do plugin e a **instalação de ponta a ponta** nos dois
+  sistemas. `release.yml` constrói e publica com a tag.
+- **`scripts/release.py`** — gera wheel, sdist, `.vsix`, instaladores e
+  `SHA256SUMS.txt` em `release/`, num comando, nos três sistemas.
+- **`.gitattributes`** — `.sh` sempre com LF, `.ps1` com CRLF. Sem isto, o
+  `core.autocrlf` do Windows grava CRLF no instalador e o Linux responde
+  `bad interpreter: No such file or directory`, que não diz nada sobre a causa.
+
+### Verificado na publicação
+
+O workflow de release **não publica antes de testar**. Ele instala a partir do
+wheel recém-construído, nos dois sistemas, roda o ciclo completo num projeto
+novo e confere que um `.env` com credencial não entra no índice. Se entrar, o
+build quebra ali — não na máquina de alguém.
+
+### Ressalva que continua valendo
+
+A busca híbrida ainda não supera a busca por palavra-chave neste corpus
+(recall@5 0,65 contra 0,77). O critério documentado `híbrida > semântica >
+keyword` não foi atingido, e o diagnóstico com evidência está em
+`docs/05-busca.md`. Trate a busca como auxílio à descoberta, não como fonte
+única de verdade.
+
 ## [0.3.1] — 2026-09-15
 
 Instalação de verdade e interface visual.

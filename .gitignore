@@ -32,6 +32,10 @@ htmlcov/
 .ruff_cache/
 .mypy_cache/
 
+# Artefatos de release: são gerados por `scripts/release.py` e publicados
+# pelo GitHub Actions. Versionar binário produz diff ilegível a cada build.
+release/
+
 # Node — a extensão do VS Code tem seu próprio ecossistema.
 node_modules/
 vscode-plugin/dist/

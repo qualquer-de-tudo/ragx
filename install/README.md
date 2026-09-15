@@ -97,7 +97,7 @@ uv tool install --python 3.12 "ragx[all]"
 Ou de um wheel local:
 
 ```bash
-uv tool install --python 3.12 dist/ragx-0.3.1-py3-none-any.whl
+uv tool install --python 3.12 release/ragx-1.0.0-py3-none-any.whl
 ```
 
 O diretório dos executáveis sai de `uv tool dir --bin` — acrescente ao PATH.

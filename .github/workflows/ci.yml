@@ -1,0 +1,120 @@
+name: CI
+
+# Roda em cada push e PR. É o portão que impede uma tag de release sair de um
+# commit quebrado.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ragx:
+    name: RAGX (${{ matrix.os }} · py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Os dois sistemas que o projeto promete suportar, e a versão mínima
+        # junto com uma atual. IDs de chunk precisam bater entre plataformas —
+        # rodar só em Linux esconderia exatamente esse tipo de bug.
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Instalar dependências
+        run: uv sync --all-extras --dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Testes
+        run: uv run pytest -q
+
+      - name: Suíte de segurança (isolada)
+        # Roda de novo sozinha: se um teste de segurança começar a depender de
+        # ordem ou de estado deixado por outro, isto quebra e nós ficamos
+        # sabendo antes de publicar.
+        run: uv run pytest tests/security -q
+
+  plugin:
+    name: Extensão do VS Code
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vscode-plugin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: vscode-plugin/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Empacotar (prova que o .vsix sai)
+        run: npx vsce package --no-dependencies --allow-missing-repository
+
+  instalador:
+    name: Instalador (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # O valor deste job é provar a instalação de ponta a ponta: os três bugs
+      # corrigidos na 0.3.1 só apareceram rodando o instalador de verdade.
+      - name: Instalar (Linux)
+        if: runner.os == 'Linux'
+        run: bash install/install.sh
+
+      - name: Instalar (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\install\install.ps1 -SemMcp
+
+      - name: Verificar que o comando existe e funciona
+        shell: bash
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          ragx --version
+          # O MCP falhava com ModuleNotFoundError depois de uma instalação
+          # "bem-sucedida". Este passo é o que impede isso de voltar.
+          ragx mcp tools --json > /dev/null
+          echo "ferramentas MCP: $(ragx mcp tools --json | python -c 'import sys,json;print(len(json.load(sys.stdin)))')"
+
+      - name: Ciclo completo num projeto novo
+        shell: bash
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          mkdir -p /tmp/demo/src && cd /tmp/demo
+          printf 'class AuthService:\n    """Autenticacao via SSO."""\n    def login(self, c):\n        return c\n' > src/auth.py
+          echo "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" > .env
+          ragx init && ragx index .
+          ragx search "autenticacao" --limit 2 --json > /dev/null
+          # O segredo NÃO pode estar no índice. Se algum dia estiver, o build
+          # precisa quebrar aqui — não numa máquina de usuário.
+          n=$(ragx search "wJalrXUtnFEMI" --mode keyword --json | python -c 'import sys,json;print(len(json.load(sys.stdin)["results"]))')
+          echo "resultados para o segredo: $n (esperado: 0)"
+          test "$n" = "0"
