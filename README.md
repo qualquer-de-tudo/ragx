@@ -18,31 +18,24 @@ provedor do modelo, e RAG genérico trata código como texto puro.
 
 ## Instalação
 
-**Linux e macOS**
+O repositório é privado, então o caminho é baixar a release e instalar na pasta
+dos arquivos. **Dois comandos.**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qualquer-de-tudo/ragx/main/install/install.sh | bash
+gh release download v1.0.0 --repo qualquer-de-tudo/ragx --dir ragx-1.0.0
+cd ragx-1.0.0 && bash install.sh          # Windows: .\install.ps1
 ```
 
-**Windows**
+Sem o `gh`, baixe pelo navegador (logado) e rode o instalador na pasta — ele
+encontra o wheel e a extensão do VS Code sozinho.
 
-```powershell
-irm https://raw.githubusercontent.com/qualquer-de-tudo/ragx/main/install/install.ps1 | iex
-```
-
-Os dois colocam o `ragx` no PATH, registram o servidor MCP e verificam o
-resultado. Depois, **abra um terminal novo** — o PATH só vale na próxima
-sessão. Detalhes e instalação manual em [install/](install/README.md).
+Depois, **abra um terminal novo** (o PATH só vale na próxima sessão):
 
 ```bash
-ragx --version      # binário `ragx` (alias histórico: `rag`)
+ragx --version
 ```
 
-Desenvolvimento a partir do repositório:
-
-```bash
-uv venv && uv pip install -e ".[dev]"
-```
+Passo a passo, comando a comando e opções em [install/](install/README.md).
 
 ## Primeiro uso
 
@@ -102,8 +95,11 @@ ragx search "criar pagamento" --scope all
 
 ## Extensão do VS Code
 
+O instalador já a instala, se o `.vsix` estiver na pasta e o `code` no PATH.
+À mão:
+
 ```bash
-code --install-extension vscode-plugin/ragx-knowledge-explorer-1.0.0-beta.1.vsix
+code --install-extension ragx-knowledge-explorer-1.0.0-beta.1.vsix
 ```
 
 Busca semântica, grafo navegável, dicionário e Context Builder dentro do

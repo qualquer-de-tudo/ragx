@@ -25,6 +25,9 @@
 .PARAMETER SemMcp
     Nao registra o servidor MCP nos clientes.
 
+.PARAMETER SemVsCode
+    Nao instala a extensao do VS Code, mesmo que o .vsix esteja junto.
+
 .PARAMETER Extra
     Extra do pacote a instalar. Padrao: all (MCP + busca semantica + tokens).
 
@@ -32,12 +35,19 @@
     Versao do interpretador. Padrao: 3.12. O RAGX exige 3.11 ou mais novo.
 
 .PARAMETER Origem
-    De onde instalar: caminho local, URL de wheel, ou `git+https://...`.
-    Por padrao usa o repositorio clonado, se houver; senao, $env:RAGX_REPO.
+    De onde instalar. Por padrao o instalador procura, nesta ordem:
+
+      1. o que voce passar aqui (ou $env:RAGX_ORIGEM)
+      2. um `ragx-*.whl` NA PASTA DESTE SCRIPT  <- e o caso do download
+      3. um `ragx-*.whl` na pasta atual
+      4. um `ragx-*.whl` em ~\Downloads
+      5. o repositorio clonado, se este script estiver dentro dele
+      6. `git+$env:RAGX_REPO` (exige repositorio publico ou credencial)
 #>
 [CmdletBinding()]
 param(
     [switch]$SemMcp,
+    [switch]$SemVsCode,
     [string]$Extra = 'all',
     [string]$Python = '3.12',
     [string]$Origem = ''
@@ -119,6 +129,74 @@ function Obter-RaizLocal {
     return (Split-Path -Parent $pasta)
 }
 
+<#
+.SYNOPSIS
+    Procura um wheel do RAGX nos lugares onde ele costuma estar.
+
+.DESCRIPTION
+    O caso que importa: a pessoa baixou os arquivos da release para uma pasta e
+    abriu o terminal ali. Fazer ela digitar o caminho do .whl e um passo a mais
+    para errar - o instalador acha sozinho.
+
+    Se houver mais de um, pega o de nome mais alto (ordem alfabetica), que para
+    versoes com o mesmo numero de digitos e a mais nova.
+#>
+function Encontrar-Wheel {
+    param([string]$PastaDoScript)
+
+    $lugares = @()
+    if ($PastaDoScript) { $lugares += $PastaDoScript }
+    $lugares += (Get-Location).Path
+    $lugares += (Join-Path $env:USERPROFILE 'Downloads')
+
+    foreach ($pasta in $lugares) {
+        if (-not $pasta -or -not (Test-Path $pasta)) { continue }
+        $achado = Get-ChildItem -Path $pasta -Filter 'ragx-*.whl' -File -ErrorAction SilentlyContinue |
+                  Sort-Object Name -Descending | Select-Object -First 1
+        if ($achado) { return $achado.FullName }
+    }
+    return ''
+}
+
+<#
+.SYNOPSIS
+    Instala a extensao do VS Code, se o .vsix estiver por perto.
+
+.DESCRIPTION
+    Sem `code` no PATH nao ha o que fazer, e isso NAO e erro: muita gente usa
+    outro editor. Avisa e segue.
+#>
+function Instalar-Extensao {
+    param([string]$PastaDoScript)
+
+    $lugares = @()
+    if ($PastaDoScript) { $lugares += $PastaDoScript }
+    $lugares += (Get-Location).Path
+    $lugares += (Join-Path $env:USERPROFILE 'Downloads')
+
+    $vsix = ''
+    foreach ($pasta in $lugares) {
+        if (-not $pasta -or -not (Test-Path $pasta)) { continue }
+        $achado = Get-ChildItem -Path $pasta -Filter '*.vsix' -File -ErrorAction SilentlyContinue |
+                  Sort-Object Name -Descending | Select-Object -First 1
+        if ($achado) { $vsix = $achado.FullName; break }
+    }
+    if (-not $vsix) { return }
+
+    if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
+        Escreva-Nota "extensao encontrada mas `code` nao esta no PATH:"
+        Escreva-Nota "  code --install-extension `"$vsix`""
+        return
+    }
+
+    if ((Invoke-Nativo code @('--install-extension', $vsix, '--force')) -eq 0) {
+        Escreva-Ok "extensao do VS Code instalada"
+    } else {
+        Escreva-Aviso 'falha ao instalar a extensao; instale a mao:'
+        Escreva-Nota "  code --install-extension `"$vsix`""
+    }
+}
+
 function Registrar-Mcp {
     param([string]$Nome, [string]$Arquivo)
 
@@ -162,7 +240,8 @@ function Registrar-Mcp {
     terminal dela no meio do trabalho.
 #>
 function Invoke-InstalacaoRagx {
-    param([switch]$SemMcp, [string]$Extra, [string]$Python, [string]$Origem)
+    param([switch]$SemMcp, [switch]$SemVsCode, [string]$Extra,
+          [string]$Python, [string]$Origem)
 
     Write-Host ''
     Write-Host 'RAGX - instalacao' -ForegroundColor White
@@ -187,6 +266,22 @@ function Invoke-InstalacaoRagx {
     Escreva-Ok "uv $((($versaoUv -split '\s+') | Select-Object -Index 1))"
 
     # -- 2. de onde instalar ---------------------------------------------
+    $pastaScript = ''
+    if ($PSCommandPath) { $pastaScript = Split-Path -Parent $PSCommandPath }
+
+    if (-not $Origem -and $env:RAGX_ORIGEM) { $Origem = $env:RAGX_ORIGEM }
+
+    if (-not $Origem) {
+        # O wheel baixado vem PRIMEIRO. Com repositorio privado ele e o unico
+        # caminho que funciona sem credencial, e e o que a pessoa acabou de
+        # fazer: baixou os arquivos e abriu o terminal na pasta deles.
+        $wheel = Encontrar-Wheel -PastaDoScript $pastaScript
+        if ($wheel) {
+            Escreva-Nota "wheel encontrado: $wheel"
+            $Origem = $wheel
+        }
+    }
+
     if (-not $Origem) {
         $raiz = Obter-RaizLocal
         $local = if ($raiz) { Join-Path $raiz 'pyproject.toml' } else { '' }
@@ -232,8 +327,10 @@ function Invoke-InstalacaoRagx {
         Escreva-Nota "Rode a mao para ver o erro:"
         Escreva-Nota "  uv tool install --python $Python `"$Origem`""
         if ($Origem -like 'git+*') {
-            Escreva-Nota 'Se o repositorio for privado, o clone precisa de credencial.'
-            Escreva-Nota 'Alternativa: baixe o .whl e rode com -Origem caminho\do\arquivo.whl'
+            Escreva-Nota 'O repositorio e privado: o clone precisa de credencial.'
+            Escreva-Nota 'Baixe os arquivos da release e rode este script na pasta deles:'
+            Escreva-Nota '  gh release download v1.0.0 --repo OWNER/REPO --dir ragx'
+            Escreva-Nota '  cd ragx; .\install.ps1'
         }
         throw 'instalacao falhou'
     }
@@ -273,7 +370,12 @@ function Invoke-InstalacaoRagx {
         Escreva-Ok 'servidor MCP disponivel: ragx mcp serve'
     }
 
-    # -- 6. verificacao --------------------------------------------------
+    # -- 6. extensao do VS Code, se o .vsix veio junto --------------------
+    if (-not $SemVsCode) {
+        Instalar-Extensao -PastaDoScript $pastaScript
+    }
+
+    # -- 7. verificacao --------------------------------------------------
     Write-Host ''
     if (-not (Get-Command ragx -ErrorAction SilentlyContinue)) {
         Escreva-Erro 'ragx nao esta no PATH desta sessao'
@@ -314,11 +416,18 @@ function Invoke-InstalacaoRagx {
 $prefAnterior = $ErrorActionPreference
 $ErrorActionPreference = 'Stop'
 try {
-    Invoke-InstalacaoRagx -SemMcp:$SemMcp -Extra $Extra -Python $Python -Origem $Origem
+    Invoke-InstalacaoRagx -SemMcp:$SemMcp -SemVsCode:$SemVsCode -Extra $Extra `
+                          -Python $Python -Origem $Origem
+    # O `ragx doctor` sai com codigo != 0 quando ainda nao ha indice, que e o
+    # esperado numa instalacao nova. Sem zerar isto, o codigo dele vaza como
+    # resultado do INSTALADOR e qualquer automacao conclui que a instalacao
+    # falhou - depois de ela ter dado certo.
+    $global:LASTEXITCODE = 0
 } catch {
     Write-Host ''
     Escreva-Erro "instalacao interrompida: $($_.Exception.Message)"
     Escreva-Nota 'Nada foi deixado pela metade: o `uv tool install` e atomico.'
+    $global:LASTEXITCODE = 1
 } finally {
     $ErrorActionPreference = $prefAnterior
 }

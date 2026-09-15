@@ -49,9 +49,38 @@ if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
   AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
+# Procura um wheel do RAGX onde ele costuma estar. O caso que importa: a
+# pessoa baixou os arquivos da release para uma pasta e abriu o terminal ali.
+# Fazer ela digitar o caminho do .whl é um passo a mais para errar.
+encontrar_wheel() {
+  local pasta
+  for pasta in "${1:-}" "$PWD" "$HOME/Downloads" "$HOME/Descargas"; do
+    [ -n "$pasta" ] && [ -d "$pasta" ] || continue
+    # `ls | sort -r | head` em vez de glob: com zero arquivos o glob viraria
+    # o próprio padrão e o teste `-f` daria falso negativo silencioso.
+    local achado
+    achado="$(ls -1 "$pasta"/ragx-*.whl 2>/dev/null | sort -r | head -1)"
+    if [ -n "$achado" ] && [ -f "$achado" ]; then
+      printf '%s' "$achado"
+      return 0
+    fi
+  done
+  return 1
+}
+
+PASTA_SCRIPT=""
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+  PASTA_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
 if [ -n "${RAGX_ORIGEM:-}" ]; then
   nota "instalando a partir de $RAGX_ORIGEM"
   ORIGEM="$RAGX_ORIGEM"
+elif WHEEL="$(encontrar_wheel "$PASTA_SCRIPT")"; then
+  # O wheel baixado vem ANTES do clone: com repositório privado é o único
+  # caminho que funciona sem credencial, e é o que a pessoa acabou de fazer.
+  nota "wheel encontrado: $WHEEL"
+  ORIGEM="$WHEEL"
 elif [ -n "$AQUI" ] && [ -f "$AQUI/pyproject.toml" ]      && grep -q 'name = "ragx"' "$AQUI/pyproject.toml" 2>/dev/null; then
   nota "instalando a partir deste repositório: $AQUI"
   ORIGEM="$AQUI"
@@ -79,9 +108,10 @@ else
   nota "rode à mão para ver o erro: uv tool install --python $PY '$ORIGEM'"
   case "$ORIGEM" in
     git+*)
-      nota "se o repositório for privado, o clone precisa de credencial"
-      nota "alternativa: baixe o .whl e rode"
-      nota "  RAGX_ORIGEM=/caminho/ragx-1.0.0-py3-none-any.whl ./install.sh"
+      nota "o repositório é privado: o clone precisa de credencial"
+      nota "baixe os arquivos da release e rode este script na pasta deles:"
+      nota "  gh release download v1.0.0 --repo OWNER/REPO --dir ragx"
+      nota "  cd ragx && bash install.sh"
       ;;
   esac
   exit 1
@@ -140,7 +170,36 @@ if [ "$COM_MCP" = "1" ]; then
   ok "servidor MCP disponível: ragx mcp serve"
 fi
 
-# ── 5. verificação ──────────────────────────────────────────────────────
+# ── 5. extensão do VS Code, se o .vsix veio junto ───────────────────────
+instalar_extensao() {
+  local pasta vsix=""
+  for pasta in "$PASTA_SCRIPT" "$PWD" "$HOME/Downloads" "$HOME/Descargas"; do
+    [ -n "$pasta" ] && [ -d "$pasta" ] || continue
+    vsix="$(ls -1 "$pasta"/*.vsix 2>/dev/null | sort -r | head -1)"
+    [ -n "$vsix" ] && break
+  done
+  [ -n "$vsix" ] || return 0
+
+  # Sem `code` no PATH não há o que fazer, e isso NÃO é erro: muita gente usa
+  # outro editor. Avisa e segue.
+  if ! command -v code >/dev/null 2>&1; then
+    nota "extensão encontrada, mas \`code\` não está no PATH:"
+    nota "  code --install-extension \"$vsix\""
+    return 0
+  fi
+  if code --install-extension "$vsix" --force >/dev/null 2>&1; then
+    ok "extensão do VS Code instalada"
+  else
+    aviso "falha ao instalar a extensão; instale à mão:"
+    nota "  code --install-extension \"$vsix\""
+  fi
+}
+
+if [ "${RAGX_INSTALL_VSCODE:-1}" = "1" ]; then
+  instalar_extensao
+fi
+
+# ── 6. verificação ──────────────────────────────────────────────────────
 printf '\n'
 if ! command -v ragx >/dev/null 2>&1; then
   erro "ragx não está no PATH deste shell"

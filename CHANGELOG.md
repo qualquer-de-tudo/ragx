@@ -20,6 +20,30 @@ de quem instala.
   `core.autocrlf` do Windows grava CRLF no instalador e o Linux responde
   `bad interpreter: No such file or directory`, que não diz nada sobre a causa.
 
+### Instalação com repositório privado
+
+O repositório não será público, então o comando único nunca vai funcionar para
+quem não tem credencial. O caminho passa a ser **baixar a release e rodar o
+instalador na pasta dos arquivos** — e o instalador faz o resto:
+
+- **encontra o `ragx-*.whl` sozinho**, na pasta do próprio script, na pasta
+  atual ou em `~/Downloads`. O wheel vem ANTES do clone na ordem de busca:
+  com repositório privado ele é o único caminho sem credencial, e é o que a
+  pessoa acabou de fazer.
+- **encontra o `.vsix` e instala a extensão**, se o `code` estiver no PATH.
+  Sem ele, imprime o comando em vez de falhar — muita gente usa outro editor.
+- `RAGX_ORIGEM` / `-Origem` continua disponível para apontar um caminho.
+- `RAGX_INSTALL_VSCODE=0` / `-SemVsCode` pula a extensão.
+
+Corrigido junto: **o instalador saía com código != 0 mesmo dando certo.** O
+`ragx doctor` sai diferente de zero enquanto não existe índice — o que é
+esperado numa instalação nova — e esse código vazava como resultado do script.
+Qualquer automação concluiria que a instalação falhou depois de ela ter dado
+certo.
+
+Verificado nos dois sistemas simulando o download de verdade: os cinco assets
+numa pasta, terminal aberto ali, um comando. Saída 0 em ambos.
+
 ### Corrigido depois de tentar o comando único de verdade
 
 O `irm ... | iex` não instalava. Três camadas de falha, empilhadas:

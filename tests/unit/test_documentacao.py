@@ -159,6 +159,27 @@ def test_instalador_windows_e_ascii_sem_bom() -> None:
 
 
 @pytest.mark.parametrize("script", ["install/install.sh", "install/install.ps1"])
+def test_instalador_encontra_o_wheel_baixado(script: str) -> None:
+    """Com repositório privado, o download é o ÚNICO caminho sem credencial.
+
+    A pessoa baixa os arquivos da release para uma pasta e roda o instalador
+    ali. Fazê-la digitar o caminho do `.whl` é um passo a mais para errar — e
+    procurar o clone antes do wheel inverteria a probabilidade do caso real.
+    """
+    texto = (RAIZ / script).read_text(encoding="utf-8")
+    if script.endswith(".ps1"):
+        assert "Encontrar-Wheel" in texto
+        assert "Instalar-Extensao" in texto
+        # O código de saída precisa ser 0 no sucesso: o `ragx doctor` sai
+        # diferente de zero enquanto não há índice, e isso vazava.
+        assert "$global:LASTEXITCODE = 0" in texto
+    else:
+        assert "encontrar_wheel" in texto
+        assert "instalar_extensao" in texto
+    assert "ragx-*.whl" in texto
+
+
+@pytest.mark.parametrize("script", ["install/install.sh", "install/install.ps1"])
 def test_instalador_sobrevive_a_execucao_por_pipe(script: str) -> None:
     """`curl | bash` e `irm | iex` não têm arquivo em disco.
 
