@@ -7,7 +7,7 @@ para agentes — tudo local, sem internet, sem enviar nada para lugar nenhum.
 ## Instalação
 
 ```bash
-code --install-extension ragx-knowledge-explorer-1.0.1.vsix
+code --install-extension ragx-knowledge-explorer-1.0.2.vsix
 ```
 
 Depois abra um projeto que tenha `ragx.toml`, `knowledge/` ou `.ragx/`. A

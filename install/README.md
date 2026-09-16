@@ -18,14 +18,14 @@ funciona com repositório privado.
 
 ```bash
 gh auth login                      # uma vez, se ainda não fez
-gh release download v1.0.1 --repo qualquer-de-tudo/ragx --dir ragx-1.0.1
+gh release download v1.0.2 --repo qualquer-de-tudo/ragx --dir ragx-1.0.2
 ```
 
 Windows é idêntico:
 
 ```powershell
 gh auth login
-gh release download v1.0.1 --repo qualquer-de-tudo/ragx --dir ragx-1.0.1
+gh release download v1.0.2 --repo qualquer-de-tudo/ragx --dir ragx-1.0.2
 ```
 
 ### Pelo navegador
@@ -35,19 +35,19 @@ Abra a página da release logado no GitHub e baixe os arquivos para uma pasta:
 ```text
 install.sh                                  instalador Linux/macOS
 install.ps1                                 instalador Windows
-ragx-1.0.1-py3-none-any.whl                 o RAGX
-ragx-knowledge-explorer-1.0.1.vsix          extensão do VS Code
+ragx-1.0.2-py3-none-any.whl                 o RAGX
+ragx-knowledge-explorer-1.0.2.vsix          extensão do VS Code
 SHA256SUMS.txt                              para conferir o download
 ```
 
 ### Conferir o download (opcional)
 
 ```bash
-cd ragx-1.0.1 && sha256sum -c SHA256SUMS.txt
+cd ragx-1.0.2 && sha256sum -c SHA256SUMS.txt
 ```
 
 ```powershell
-cd ragx-1.0.1
+cd ragx-1.0.2
 Get-Content SHA256SUMS.txt | ForEach-Object {
     $esperado, $arquivo = $_ -split '\s+', 2
     $real = (Get-FileHash $arquivo.Trim() -Algorithm SHA256).Hash.ToLower()
@@ -64,14 +64,14 @@ Entre na pasta e rode. **Um comando.**
 ### Linux e macOS
 
 ```bash
-cd ragx-1.0.1
+cd ragx-1.0.2
 bash install.sh
 ```
 
 ### Windows
 
 ```powershell
-cd ragx-1.0.1
+cd ragx-1.0.2
 .\install.ps1
 ```
 
@@ -96,7 +96,7 @@ O instalador:
 causa número um de "instalei e o comando não existe".
 
 ```bash
-ragx --version          # ragx 1.0.1
+ragx --version          # ragx 1.0.2
 ragx mcp tools --json   # 32 ferramentas
 ```
 
@@ -121,11 +121,11 @@ Se preferir fazer à mão, ou automatizar:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 
-uv tool install --python 3.12 "$PWD/ragx-1.0.1-py3-none-any.whl[all]"
+uv tool install --python 3.12 "$PWD/ragx-1.0.2-py3-none-any.whl[all]"
 
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc     # ou ~/.zshrc
 
-code --install-extension ./ragx-knowledge-explorer-1.0.1.vsix
+code --install-extension ./ragx-knowledge-explorer-1.0.2.vsix
 ```
 
 ### Windows
@@ -133,7 +133,7 @@ code --install-extension ./ragx-knowledge-explorer-1.0.1.vsix
 ```powershell
 irm https://astral.sh/uv/install.ps1 | iex
 
-uv tool install --python 3.12 "$PWD\ragx-1.0.1-py3-none-any.whl[all]"
+uv tool install --python 3.12 "$PWD\ragx-1.0.2-py3-none-any.whl[all]"
 
 $bin = (uv tool dir --bin).Trim()
 $p = [Environment]::GetEnvironmentVariable('Path','User')
@@ -141,7 +141,7 @@ if (-not ($p -split ';' | Where-Object { $_.TrimEnd('\') -ieq $bin.TrimEnd('\') 
     [Environment]::SetEnvironmentVariable('Path', "$p;$bin", 'User')
 }
 
-code --install-extension .\ragx-knowledge-explorer-1.0.1.vsix
+code --install-extension .\ragx-knowledge-explorer-1.0.2.vsix
 ```
 
 > `--python 3.12` **não é decoração**. Sem ele o `uv` pode reaproveitar um
@@ -212,12 +212,12 @@ ver [ADR-0012](../docs/adr/ADR-0012-poder-do-agente-sobre-o-indice.md).
 Aí o comando único passa a funcionar:
 
 ```bash
-curl -fsSL https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.1/install.sh | bash
+curl -fsSL https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.2/install.sh | bash
 ```
 
 ```powershell
 [Net.ServicePointManager]::SecurityProtocol = 3072
-irm https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.1/install.ps1 | iex
+irm https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.2/install.ps1 | iex
 ```
 
 A primeira linha do Windows **não é opcional** no PowerShell 5.1, que ainda é o
