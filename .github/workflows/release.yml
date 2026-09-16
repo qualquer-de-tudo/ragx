@@ -250,67 +250,114 @@ jobs:
           cat > NOTAS.md <<'NOTAS'
           RAGX **__RAGX__** · extensão do VS Code **__PLUGIN__**
 
-          Knowledge Engine local: indexa o repositório, protege segredos por
-          construção, responde busca híbrida, monta contexto dentro de um
-          orçamento de tokens e serve agentes via MCP. Sem servidor, sem nuvem,
-          sem chave de API.
-
-          O que mudou nesta versão está no
-          [CHANGELOG](https://github.com/__REPO__/blob/__TAG__/CHANGELOG.md).
+          Knowledge Engine local para projetos de software: indexa o
+          repositório, **protege segredos por construção**, responde busca
+          híbrida, monta contexto dentro de um orçamento de tokens e serve
+          agentes via MCP. Sem servidor, sem nuvem, sem chave de API.
 
           ## Instalar
 
-          O repositório é **privado**: `curl | bash` numa URL de release não
-          funciona aqui, porque o download anônimo devolve 404. Baixe os
-          arquivos autenticado e rode o instalador na pasta deles.
-
-          **1. Baixar** — com o [GitHub CLI](https://cli.github.com), que usa a
-          autenticação que você já tem:
+          **Um comando.**
 
           ```bash
-          gh auth login                 # uma vez, se ainda não fez
-          gh release download __TAG__ --repo __REPO__ --dir ragx-__TAG__
-          cd ragx-__TAG__
-          ```
-
-          Sem o `gh`, abra esta página logado no GitHub e baixe os arquivos
-          para uma pasta — o instalador encontra o wheel e o `.vsix` sozinho.
-
-          **2. Instalar** — na pasta dos arquivos baixados:
-
-          ```bash
-          bash install.sh
+          curl -fsSL https://raw.githubusercontent.com/__REPO__/main/install/install.sh | bash
           ```
 
           ```powershell
-          .\install.ps1
+          irm https://raw.githubusercontent.com/__REPO__/main/install/install.ps1 | iex
           ```
 
-          Depois, **abra um terminal novo** — o PATH só vale na próxima sessão.
-
-          **Já tem uma versão instalada?** O instalador atualiza por cima; é o
-          mesmo comando. Para forçar à mão:
+          Isso instala a partir do `main`. Para pregar **esta** versão — e
+          levar junto a extensão do VS Code, que não vem pelo comando único —
+          baixe os arquivos desta página e rode o instalador na pasta deles:
 
           ```bash
-          uv tool install --force --python 3.12 "__WHL__[all]"
+          gh release download __TAG__ --repo __REPO__ --dir ragx
+          cd ragx && bash install.sh        # Windows: .\install.ps1
           ```
 
-          **Extensão do VS Code** — o instalador já a registra se encontrar o
-          `code` no PATH. À mão, na pasta dos arquivos:
+          O instalador põe o `uv` no lugar se não houver, instala o RAGX
+          isolado, grava o PATH, registra o servidor MCP no Claude Desktop e no
+          Claude Code, e instala a extensão se achar o `code`. Depois,
+          **abra um terminal novo** — o PATH só vale na próxima sessão.
+
+          ```bash
+          ragx --version
+          ```
+
+          ## Usar
+
+          ```bash
+          cd seu-projeto
+          ragx init
+          ragx security scan .    # veja o que será bloqueado ANTES de indexar
+          ragx index .
+          ragx search "como funciona a autenticação"
+          ```
+
+          A partir daí:
+
+          ```bash
+          ragx context "implementar SSO" --tokens 3000   # contexto no orçamento
+          ragx graph rebuild                             # entidades e relações
+          ragx dictionary generate                       # mapa barato do projeto
+          ragx watch                                     # o índice segue suas edições
+          ragx doctor                                    # o que está fora do lugar
+          ```
+
+          **Para o seu agente**, o RAGX é um servidor MCP:
+
+          ```bash
+          ragx mcp serve
+          ```
+
+          O instalador já o registra no Claude Desktop e no Claude Code. A
+          ordem que rende: `get_dictionary` (orientação barata) →
+          `search_hybrid` (localizar) → `build_context` (montar o contexto) →
+          `get_chunk` (aprofundar).
+
+          **No VS Code**, a extensão abre o índice numa barra lateral ou em
+          tela cheia: busca, documentos, grafo de entidades, dicionário,
+          origens e tarefas. À mão:
 
           ```bash
           code --install-extension __VSIX__
           ```
 
-          Depois de atualizar, **recarregue a janela do VS Code**
+          Depois de atualizar, **recarregue a janela**
           (`Developer: Reload Window`): a extensão mantém um servidor MCP vivo
           e só fala com o RAGX novo na próxima conexão.
 
-          **Conferir o download** (opcional):
+          ## Segredo não entra no índice
+
+          Não é filtro na saída, é portão na entrada: o Security Gate examina o
+          arquivo **antes** de indexar. O que ele bloqueia não existe no banco,
+          então não há consulta, ferramenta MCP nem agente que o alcance.
+
+          Este build **quebra** se um `.env` com credencial entrar no índice do
+          projeto de teste. Veja com seus próprios olhos antes de confiar:
 
           ```bash
-          sha256sum -c SHA256SUMS.txt
+          ragx security scan .
           ```
+
+          ## Novidades desta versão
+
+          - **Extensão do VS Code** — busca, documentos, grafo, dicionário,
+            origens e tarefas, em barra lateral ou tela cheia.
+          - **`list_documents`** — inventário do índice por MCP: o que existe e
+            de que origem vem, sem trazer conteúdo.
+          - **Erro de argumento agora é `invalid_argument`**, com campo, limite
+            e valor recebido na mensagem. Antes virava `internal` e mandava
+            caçar num traceback.
+          - **Instaladores para Linux, macOS e Windows**, com registro do MCP,
+            PATH e verificação no fim — e que **dizem em que linha pararam** se
+            algo der errado.
+          - **Conhecimento compartilhado entre projetos** (`@base/...`), com a
+            origem sempre explícita no resultado.
+
+          Detalhe de tudo no
+          [CHANGELOG](https://github.com/__REPO__/blob/__TAG__/CHANGELOG.md).
 
           ## Verificado nesta build
 
@@ -320,11 +367,19 @@ jobs:
           - um `.env` com credencial no projeto de teste **não** entra no
             índice — o build quebra se entrar
 
-          ## Ressalva honesta
+          ## Ressalvas honestas
 
-          A busca híbrida ainda não supera a busca por palavra-chave neste
-          corpus (recall@5 0,65 contra 0,77). O critério documentado não foi
-          atingido; o diagnóstico está em `docs/05-busca.md`.
+          - **É uma beta.** A interface de linha de comando e o formato do
+            índice ainda podem mudar sem cerimônia entre betas.
+          - **A busca híbrida ainda não supera a busca por palavra-chave** neste
+            corpus (recall@5 0,65 contra 0,77). O critério documentado não foi
+            atingido; o diagnóstico está em `docs/05-busca.md`.
+
+          ## Conferir o download
+
+          ```bash
+          sha256sum -c SHA256SUMS.txt
+          ```
           NOTAS
 
           sed -i "s|__RAGX__|$RAGX|g;  s|__PLUGIN__|$PLUGIN|g; s|__REPO__|$REPO|g; \

@@ -3,7 +3,28 @@
 Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
-## [1.0.2] — 2026-09-16
+## [1.0.0-beta.1] — 2026-09-16
+
+Relançamento. As releases **1.0.0, 1.0.1 e 1.0.2 foram retiradas**: saíram
+enquanto o repositório era privado, e todas as instruções de instalação delas
+partiam dessa premissa. O repositório agora é público, o caminho de instalação
+mudou, e manter releases que ensinam o caminho errado é pior do que não ter
+release nenhuma.
+
+Nada foi perdido: esta beta reúne tudo o que as três traziam, com o histórico
+de cada correção preservado abaixo. O número volta a `1.0.0-beta.1` porque é o
+que a maturidade honesta do projeto comporta — veja as ressalvas no fim.
+
+### Mudado
+
+- **Instalar voltou a ser um comando.** Com o repositório público, o
+  `curl | bash` e o `irm | iex` funcionam de novo: o instalador cai no caminho
+  `git+`, que até aqui nunca tinha sido exercitado porque o clone anônimo
+  falhava por credencial. Verificado de ponta a ponta com `UV_TOOL_DIR`
+  isolado — instala e responde com as 33 ferramentas MCP.
+
+  Continua valendo baixar os arquivos da release: é o único caminho que traz a
+  **extensão do VS Code** junto, e o único que prega uma versão exata.
 
 ### Corrigido
 
@@ -33,13 +54,6 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   O `install.ps1` não tem o problema: usa `Get-ChildItem -ErrorAction
   SilentlyContinue`, que devolve vazio em vez de lançar.
 
-## [1.0.1] — 2026-09-16
-
-Correção. A aba **Documents** da extensão do VS Code quebrava inteira, e a
-mensagem de erro não dizia o motivo.
-
-### Corrigido
-
 - **A extensão pedia mais resultados do que o RAGX aceita.** O `SearchRequest`
   do servidor limita `limit` a 50 e **recusa** acima disso — não trunca. O
   inventário de documentos pedia 100 quando caía na derivação por busca, e a
@@ -66,22 +80,15 @@ mensagem de erro não dizia o motivo.
 
 ### Notas
 
-- **A ferramenta não mudou de comportamento além do erro acima.** O que motivou
-  publicar esta versão é que o wheel da 1.0.0 em circulação foi construído
-  antes de `list_documents` existir — instalações a partir dele caem na
-  derivação por busca, que é o caminho degradado. Quem atualizar passa a ter o
-  inventário de verdade.
-- A extensão sai do ciclo beta: `1.0.0-beta.2` → `1.0.1`, o mesmo número da
-  ferramenta.
-- As notas de release ensinavam `curl | bash` numa URL de release. O
-  repositório é **privado** e o download anônimo devolve 404 — as instruções
-  agora usam `gh release download`, que é o caminho que funciona.
-
-## [1.0.0] — 2026-09-15
-
-Primeira versão publicada. Nada de funcionalidade nova em relação à 0.3.1 — o
-que muda é que agora existe um caminho verificado do repositório até a máquina
-de quem instala.
+- **O wheel da 1.0.0 que chegou a circular foi construído antes de
+  `list_documents` existir.** Instalações a partir dele caem na derivação por
+  busca, que é o caminho degradado. Como aquela release foi retirada, o
+  problema some com ela — mas se você instalou de um wheel `1.0.0` baixado
+  antes, reinstale.
+- Ferramenta e extensão passam a andar no mesmo número: `1.0.0-beta.1`.
+- As notas de release e os dois READMEs foram reescritos para o repositório
+  público: comando único primeiro, download da release como o caminho que
+  prega a versão e traz a extensão.
 
 ### Adicionado
 
@@ -127,16 +134,18 @@ está quebrado e pararia de consultá-lo.
 Agora responde `not_indexed`, dizendo o que fazer: rodar `ragx init` se for o
 projeto certo, ou abrir a sessão dentro de um projeto já indexado.
 
-### Instalação com repositório privado
+### Instalação a partir dos arquivos baixados
 
-O repositório não será público, então o comando único nunca vai funcionar para
-quem não tem credencial. O caminho passa a ser **baixar a release e rodar o
-instalador na pasta dos arquivos** — e o instalador faz o resto:
+> Escrito quando o repositório ainda seria privado. O comando único voltou a
+> funcionar (veja **Mudado**, no topo); o que está abaixo continua valendo como
+> o caminho que prega uma versão e traz a extensão do VS Code.
+
+O instalador faz o resto sozinho:
 
 - **encontra o `ragx-*.whl` sozinho**, na pasta do próprio script, na pasta
   atual ou em `~/Downloads`. O wheel vem ANTES do clone na ordem de busca:
-  com repositório privado ele é o único caminho sem credencial, e é o que a
-  pessoa acabou de fazer.
+  quem baixou os arquivos de uma release quer AQUELA versão, não o que
+  estiver no `main` hoje.
 - **encontra o `.vsix` e instala a extensão**, se o `code` estiver no PATH.
   Sem ele, imprime o comando em vez de falhar — muita gente usa outro editor.
 - `RAGX_ORIGEM` / `-Origem` continua disponível para apontar um caminho.

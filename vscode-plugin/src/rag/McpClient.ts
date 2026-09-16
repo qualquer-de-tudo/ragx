@@ -110,7 +110,7 @@ export class McpRagClient implements RagClient {
       });
 
       this.client = new Client(
-        { name: 'ragx-vscode', version: '1.0.2' },
+        { name: 'ragx-vscode', version: '1.0.0-beta.1' },
         { capabilities: {} },
       );
       await this.client.connect(transport);

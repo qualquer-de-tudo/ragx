@@ -96,8 +96,8 @@ if [ -n "${RAGX_ORIGEM:-}" ]; then
   nota "instalando a partir de $RAGX_ORIGEM"
   ORIGEM="$RAGX_ORIGEM"
 elif WHEEL="$(encontrar_wheel "$PASTA_SCRIPT")"; then
-  # O wheel baixado vem ANTES do clone: com repositório privado é o único
-  # caminho que funciona sem credencial, e é o que a pessoa acabou de fazer.
+  # O wheel baixado vem ANTES do clone: quem baixou os arquivos de uma release
+  # quer AQUELA versão, não o que estiver no `main` hoje.
   nota "wheel encontrado: $WHEEL"
   ORIGEM="$WHEEL"
 elif [ -n "$AQUI" ] && [ -f "$AQUI/pyproject.toml" ]      && grep -q 'name = "ragx"' "$AQUI/pyproject.toml" 2>/dev/null; then
@@ -127,9 +127,10 @@ else
   nota "rode à mão para ver o erro: uv tool install --python $PY '$ORIGEM'"
   case "$ORIGEM" in
     git+*)
-      nota "o repositório é privado: o clone precisa de credencial"
-      nota "baixe os arquivos da release e rode este script na pasta deles:"
-      nota "  gh release download v1.0.0 --repo OWNER/REPO --dir ragx"
+      nota "instalar do git precisa do próprio git instalado e de rede"
+      nota "se falhar, baixe os arquivos da release e rode este script na"
+      nota "pasta deles — ele encontra o wheel sem precisar clonar:"
+      nota "  gh release download <tag> --repo qualquer-de-tudo/ragx --dir ragx"
       nota "  cd ragx && bash install.sh"
       ;;
   esac

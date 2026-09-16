@@ -18,16 +18,27 @@ provedor do modelo, e RAG genérico trata código como texto puro.
 
 ## Instalação
 
-O repositório é privado, então o caminho é baixar a release e instalar na pasta
-dos arquivos. **Dois comandos.**
+**Um comando.**
 
 ```bash
-gh release download v1.0.2 --repo qualquer-de-tudo/ragx --dir ragx-1.0.2
-cd ragx-1.0.2 && bash install.sh          # Windows: .\install.ps1
+curl -fsSL https://raw.githubusercontent.com/qualquer-de-tudo/ragx/main/install/install.sh | bash
 ```
 
-Sem o `gh`, baixe pelo navegador (logado) e rode o instalador na pasta — ele
-encontra o wheel e a extensão do VS Code sozinho.
+```powershell
+irm https://raw.githubusercontent.com/qualquer-de-tudo/ragx/main/install/install.ps1 | iex
+```
+
+Isso instala a partir do `main`. Para pregar a versão de uma release — e levar
+junto a **extensão do VS Code**, que não vem por este caminho — baixe os
+arquivos e rode o instalador na pasta deles:
+
+```bash
+gh release download v1.0.0-beta.1 --repo qualquer-de-tudo/ragx --dir ragx
+cd ragx && bash install.sh                # Windows: .\install.ps1
+```
+
+Sem o `gh`, baixe pelo navegador e rode o instalador na pasta — ele encontra o
+wheel e o `.vsix` sozinho.
 
 Depois, **abra um terminal novo** (o PATH só vale na próxima sessão):
 
@@ -54,7 +65,7 @@ ragx graph rebuild                        # grafo de entidades e relações
 ragx dictionary generate                  # mapa barato do projeto
 ragx context "implementar SSO" --tokens 3000
 ragx watch                                # o índice acompanha o que você edita
-ragx mcp serve                            # 19 ferramentas para o agente
+ragx mcp serve                            # 33 ferramentas para o agente
 ```
 
 Regras compartilhadas entre todos os seus projetos:
@@ -95,11 +106,12 @@ ragx search "criar pagamento" --scope all
 
 ## Extensão do VS Code
 
-O instalador já a instala, se o `.vsix` estiver na pasta e o `code` no PATH.
-À mão:
+O instalador já a instala, se o `.vsix` estiver na pasta e o `code` no PATH —
+por isso o comando único **não** a traz: ele não baixa arquivo nenhum. À mão,
+na pasta dos arquivos da release:
 
 ```bash
-code --install-extension ragx-knowledge-explorer-1.0.2.vsix
+code --install-extension ragx-knowledge-explorer-1.0.0-beta.1.vsix
 ```
 
 Busca semântica, grafo navegável, dicionário e Context Builder dentro do
