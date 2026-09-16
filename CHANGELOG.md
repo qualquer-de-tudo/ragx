@@ -3,6 +3,36 @@
 Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Corrigido
+
+- **O instalador do Linux abortava mudo, com código 2.** `instalar_extensao`
+  procura o `.vsix` com `ls -1 "$pasta"/*.vsix | sort -r | head -1`. Sem
+  correspondência o `ls` sai com 2, o `pipefail` propaga isso pelo pipe, a
+  atribuição herda o status e o `set -e` mata o script — **depois** de já ter
+  instalado o RAGX, configurado o PATH e registrado o MCP, e sem imprimir uma
+  linha de erro. O job de instalação do CI em Ubuntu vinha caindo assim desde
+  que a função foi introduzida.
+
+  `encontrar_wheel` tem o mesmo padrão e escapou por acidente: é chamada dentro
+  de um `elif`, onde o `set -e` fica suspenso. As duas passam a terminar em
+  `|| true`, porque depender do ponto de chamada é armadilha para quem mexer
+  depois.
+
+  A instalação a partir dos arquivos de uma release **não** era afetada: com o
+  `.vsix` na pasta, o `ls` encontra algo e não falha. Quem instalava de um
+  clone do repositório, sim.
+
+- **O instalador agora diz onde parou.** Uma parada silenciosa foi o que fez o
+  bug acima sobreviver a um ciclo de release: no log, três linhas de sucesso e
+  então `exit code 2`. O script ganhou `set -E` e um `trap ... ERR` — sem o
+  `-E` o trap não vale dentro de função, que é justamente onde a falha
+  acontecia. Agora a saída é `✗ o instalador parou na linha N (codigo 2)`.
+
+  O `install.ps1` não tem o problema: usa `Get-ChildItem -ErrorAction
+  SilentlyContinue`, que devolve vazio em vez de lançar.
+
 ## [1.0.1] — 2026-09-16
 
 Correção. A aba **Documents** da extensão do VS Code quebrava inteira, e a

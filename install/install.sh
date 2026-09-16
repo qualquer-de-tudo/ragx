@@ -15,13 +15,28 @@
 #   4. registra o servidor MCP nos clientes que encontrar
 #   5. verifica que tudo funciona, em vez de prometer
 
-set -euo pipefail
+# O `-E` faz o `trap ERR` valer TAMBEM dentro de funcao. Sem ele, o `set -e`
+# mata o instalador em silencio quando o erro acontece dentro de uma funcao
+# — que foi exatamente o que aconteceu no passo da extensao do VS Code: o
+# CI reportou "exit code 2" depois de tres linhas de sucesso, sem uma
+# palavra sobre onde parou.
+set -Eeuo pipefail
 
 VERDE=$'\033[32m'; AMARELO=$'\033[33m'; VERMELHO=$'\033[31m'; CINZA=$'\033[90m'; FIM=$'\033[0m'
 ok()    { printf '%s✓%s %s\n' "$VERDE" "$FIM" "$1"; }
 aviso() { printf '%s!%s %s\n' "$AMARELO" "$FIM" "$1"; }
 erro()  { printf '%s✗%s %s\n' "$VERMELHO" "$FIM" "$1" >&2; }
 nota()  { printf '  %s%s%s\n' "$CINZA" "$1" "$FIM"; }
+
+# Uma parada inesperada tem de DIZER onde parou. Um instalador que sai mudo
+# ensina quem o roda a nao confiar nem no sucesso.
+ao_falhar() {
+  local codigo=$?
+  erro "o instalador parou na linha ${1:-?} (codigo $codigo)"
+  nota "nada foi desfeito; o que ja instalou continua instalado"
+  exit "$codigo"
+}
+trap 'ao_falhar $LINENO' ERR
 
 RAGX_REPO="${RAGX_REPO:-https://github.com/qualquer-de-tudo/ragx}"
 COM_MCP="${RAGX_INSTALL_MCP:-1}"
@@ -59,7 +74,11 @@ encontrar_wheel() {
     # `ls | sort -r | head` em vez de glob: com zero arquivos o glob viraria
     # o próprio padrão e o teste `-f` daria falso negativo silencioso.
     local achado
-    achado="$(ls -1 "$pasta"/ragx-*.whl 2>/dev/null | sort -r | head -1)"
+    # `|| true` pelo mesmo motivo de `instalar_extensao`. Hoje esta função é
+    # chamada dentro de um `elif`, onde o `set -e` fica suspenso, e por isso
+    # escapou; depender do ponto de chamada para não derrubar o script é
+    # armadilha para quem mexer depois.
+    achado="$(ls -1 "$pasta"/ragx-*.whl 2>/dev/null | sort -r | head -1 || true)"
     if [ -n "$achado" ] && [ -f "$achado" ]; then
       printf '%s' "$achado"
       return 0
@@ -175,7 +194,11 @@ instalar_extensao() {
   local pasta vsix=""
   for pasta in "$PASTA_SCRIPT" "$PWD" "$HOME/Downloads" "$HOME/Descargas"; do
     [ -n "$pasta" ] && [ -d "$pasta" ] || continue
-    vsix="$(ls -1 "$pasta"/*.vsix 2>/dev/null | sort -r | head -1)"
+    # O `|| true` NÃO é decoração: sem correspondência o `ls` sai com 2, o
+    # `pipefail` propaga isso pelo pipe e o `set -e` mata o instalador inteiro
+    # — depois de já ter instalado tudo, sem imprimir uma linha de erro. Foi
+    # assim que o job de instalação do CI passou a sair com código 2.
+    vsix="$(ls -1 "$pasta"/*.vsix 2>/dev/null | sort -r | head -1 || true)"
     [ -n "$vsix" ] && break
   done
   [ -n "$vsix" ] || return 0
