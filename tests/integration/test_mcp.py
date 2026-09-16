@@ -12,7 +12,7 @@ from ragx.graph.service import rebuild
 from ragx.indexing.pipeline import index_project
 from ragx.mcp.operations import WriteAPI
 from ragx.mcp.playbook import playbook
-from ragx.mcp.server import KnowledgeAPI, RateLimiter, build_server
+from ragx.mcp.server import KnowledgeAPI, RateLimiter, _guarded, build_server
 from ragx.mcp.tools import BuildContextRequest, SearchRequest, cap, validate_path
 
 pytestmark = pytest.mark.integration
@@ -220,6 +220,26 @@ def test_scope_invalido_e_rejeitado() -> None:
         SearchRequest(query="x", scope="tudo")
     SearchRequest(query="x", scope="all")
     SearchRequest(query="x", scope="project:outro")
+
+
+def test_limite_estourado_diz_o_que_corrigir(api: KnowledgeAPI) -> None:
+    """A mensagem tem de bastar para consertar a chamada.
+
+    Antes, `limit=100` chegava ao usuário como "search_hybrid falhou:
+    ValidationError. Detalhe em .ragx/logs/errors.log" — sem campo, sem teto e
+    sem valor. Foi assim que a aba Documents da extensão do VS Code quebrou
+    inteira sem dizer o motivo.
+    """
+    out = _guarded(
+        lambda: SearchRequest(query="x", limit=100), "search_hybrid", api.cfg,
+    )
+
+    assert out["ok"] is False
+    # `internal` manda caçar log; `invalid_argument` diz de quem é o erro.
+    assert out["error"]["code"] == "invalid_argument"
+    msg = out["error"]["message"]
+    assert "limit" in msg and "50" in msg and "100" in msg
+    assert "Traceback" not in msg
 
 
 def test_rate_limit_ativa_e_se_recupera() -> None:

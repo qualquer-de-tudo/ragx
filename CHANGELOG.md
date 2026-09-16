@@ -3,6 +3,50 @@
 Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.0.1] — 2026-09-16
+
+Correção. A aba **Documents** da extensão do VS Code quebrava inteira, e a
+mensagem de erro não dizia o motivo.
+
+### Corrigido
+
+- **A extensão pedia mais resultados do que o RAGX aceita.** O `SearchRequest`
+  do servidor limita `limit` a 50 e **recusa** acima disso — não trunca. O
+  inventário de documentos pedia 100 quando caía na derivação por busca, e a
+  aba inteira respondia `search_hybrid falhou: ValidationError`. O teto do
+  servidor agora é uma constante no cliente (`MAX_SEARCH_LIMIT`), aplicada
+  dentro do `search()`, de modo que **todo** chamador fica coberto — não só o
+  que estourou desta vez.
+- **`ValidationError` virava `internal`.** Argumento fora do contrato é erro de
+  quem chamou, não falha interna do servidor. Tratá-lo como `internal`
+  produzia "`<ferramenta>` falhou: ValidationError. Detalhe em
+  `.ragx/logs/errors.log`" — uma mensagem que manda caçar num traceback o que
+  ela mesma poderia dizer. Agora o código é `invalid_argument` e a mensagem
+  nomeia campo, limite e valor recebido:
+
+  ```text
+  search_hybrid: `limit` input should be less than or equal to 50 (recebido: 100)
+  ```
+
+- **A extensão não tinha texto para dois códigos de erro.** `invalid_argument`
+  e `unsupported` caíam no ramo padrão e apareciam como "Falha ao falar com o
+  RAGX", que culpa o transporte por um erro de chamada ou por uma instalação
+  velha. Cada um tem agora título próprio; o de `unsupported` traz o comando de
+  atualização.
+
+### Notas
+
+- **A ferramenta não mudou de comportamento além do erro acima.** O que motivou
+  publicar esta versão é que o wheel da 1.0.0 em circulação foi construído
+  antes de `list_documents` existir — instalações a partir dele caem na
+  derivação por busca, que é o caminho degradado. Quem atualizar passa a ter o
+  inventário de verdade.
+- A extensão sai do ciclo beta: `1.0.0-beta.2` → `1.0.1`, o mesmo número da
+  ferramenta.
+- As notas de release ensinavam `curl | bash` numa URL de release. O
+  repositório é **privado** e o download anônimo devolve 404 — as instruções
+  agora usam `gh release download`, que é o caminho que funciona.
+
 ## [1.0.0] — 2026-09-15
 
 Primeira versão publicada. Nada de funcionalidade nova em relação à 0.3.1 — o

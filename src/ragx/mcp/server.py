@@ -16,6 +16,8 @@ import time
 from collections import deque
 from typing import Any
 
+from pydantic import ValidationError
+
 from ragx.config import Config, load_config
 from ragx.diagnostics import log_exception
 from ragx.dictionary import builder as dictionary_builder
@@ -33,6 +35,20 @@ from ragx.mcp.tools import (
 )
 
 
+def _explain(exc: ValidationError) -> str:
+    """A validação do pydantic em uma linha que diz o que corrigir.
+
+    O `str()` de um `ValidationError` traz traceback, url de documentação e
+    quebras de linha — ilegível numa caixa de erro de UI.
+    """
+    partes = []
+    for e in exc.errors():
+        campo = ".".join(str(x) for x in e["loc"]) or "argumento"
+        recebido = e.get("input")
+        partes.append(f"`{campo}` {e['msg'].lower()} (recebido: {recebido!r})")
+    return "; ".join(partes)
+
+
 def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
     """Falha de ferramenta vira erro ESTRUTURADO, não exceção crua.
 
@@ -42,6 +58,13 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
     """
     try:
         return fn()
+    except ValidationError as exc:
+        # Argumento fora do contrato é erro de QUEM CHAMOU, não falha interna.
+        # Tratá-lo como `internal` mandava o agente (e a extensão do VS Code)
+        # caçar num log de traceback o que a própria mensagem já sabe dizer:
+        # qual campo, qual limite, qual valor veio. Quem recebe "ValidationError.
+        # Detalhe em .ragx/logs/errors.log" não tem como corrigir a chamada.
+        return err("invalid_argument", f"{tool}: {_explain(exc)}")
     except Exception as exc:
         # "Ainda não há índice aqui" NÃO é falha interna: é o estado normal de
         # toda pasta que não é um projeto RAGX. Com o servidor registrado

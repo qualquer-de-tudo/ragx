@@ -199,6 +199,24 @@ export function humanize(error: { code: string; message: string }): {
           'segundos. Se voltar a acontecer, veja os logs.',
         actions: ['retry', 'logs'],
       };
+    case 'invalid_argument':
+      return {
+        // Chamar isto de "falha ao falar com o RAGX" culpa o transporte por um
+        // erro da extensão. A mensagem do servidor já nomeia campo, teto e
+        // valor recebido — repassá-la é mais útil do que qualquer paráfrase.
+        title: 'Pedido fora do que o RAGX aceita',
+        reason: resumir(error.message),
+        actions: ['logs'],
+      };
+    case 'unsupported':
+      return {
+        title: 'Esta instalação do RAGX é antiga demais',
+        reason:
+          `${resumir(error.message)} Atualize com ` +
+          '`uv tool install --force --python 3.12 "<wheel>[all]"` e recarregue ' +
+          'a janela.',
+        actions: ['logs'],
+      };
     case 'write_disabled':
       return {
         title: 'Servidor em modo somente-leitura',

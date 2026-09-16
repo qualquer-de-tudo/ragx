@@ -255,32 +255,61 @@ jobs:
           orçamento de tokens e serve agentes via MCP. Sem servidor, sem nuvem,
           sem chave de API.
 
+          O que mudou nesta versão está no
+          [CHANGELOG](https://github.com/__REPO__/blob/__TAG__/CHANGELOG.md).
+
           ## Instalar
 
-          **Linux e macOS**
+          O repositório é **privado**: `curl | bash` numa URL de release não
+          funciona aqui, porque o download anônimo devolve 404. Baixe os
+          arquivos autenticado e rode o instalador na pasta deles.
+
+          **1. Baixar** — com o [GitHub CLI](https://cli.github.com), que usa a
+          autenticação que você já tem:
 
           ```bash
-          curl -fsSL https://github.com/__REPO__/releases/download/__TAG__/install.sh | bash
+          gh auth login                 # uma vez, se ainda não fez
+          gh release download __TAG__ --repo __REPO__ --dir ragx-__TAG__
+          cd ragx-__TAG__
           ```
 
-          **Windows**
+          Sem o `gh`, abra esta página logado no GitHub e baixe os arquivos
+          para uma pasta — o instalador encontra o wheel e o `.vsix` sozinho.
+
+          **2. Instalar** — na pasta dos arquivos baixados:
+
+          ```bash
+          bash install.sh
+          ```
 
           ```powershell
-          irm https://github.com/__REPO__/releases/download/__TAG__/install.ps1 | iex
+          .\install.ps1
           ```
 
           Depois, **abra um terminal novo** — o PATH só vale na próxima sessão.
 
-          **Extensão do VS Code**
+          **Já tem uma versão instalada?** O instalador atualiza por cima; é o
+          mesmo comando. Para forçar à mão:
+
+          ```bash
+          uv tool install --force --python 3.12 "__WHL__[all]"
+          ```
+
+          **Extensão do VS Code** — o instalador já a registra se encontrar o
+          `code` no PATH. À mão, na pasta dos arquivos:
 
           ```bash
           code --install-extension __VSIX__
           ```
 
-          **Do wheel, sem script**
+          Depois de atualizar, **recarregue a janela do VS Code**
+          (`Developer: Reload Window`): a extensão mantém um servidor MCP vivo
+          e só fala com o RAGX novo na próxima conexão.
+
+          **Conferir o download** (opcional):
 
           ```bash
-          uv tool install --python 3.12 "__WHL__[all]"
+          sha256sum -c SHA256SUMS.txt
           ```
 
           ## Verificado nesta build

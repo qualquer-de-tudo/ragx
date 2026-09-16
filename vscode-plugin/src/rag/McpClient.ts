@@ -55,6 +55,13 @@ import type {
   TaskPanel,
 } from './types';
 
+/**
+ * Teto de `limit` do `SearchRequest` do RAGX (`MAX_LIMIT` em `mcp/tools.py`).
+ * O servidor RECUSA acima disso com ValidationError em vez de truncar, então
+ * quem pede mais do que cabe não recebe menos: não recebe nada.
+ */
+const MAX_SEARCH_LIMIT = 50;
+
 export interface McpOptions {
   command: string;
   args: string[];
@@ -103,7 +110,7 @@ export class McpRagClient implements RagClient {
       });
 
       this.client = new Client(
-        { name: 'ragx-vscode', version: '1.0.0-beta.2' },
+        { name: 'ragx-vscode', version: '1.0.1' },
         { capabilities: {} },
       );
       await this.client.connect(transport);
@@ -248,7 +255,7 @@ export class McpRagClient implements RagClient {
     signal?: AbortSignal,
   ): Promise<RagResult<SearchResponse>> {
     const tool = mode === 'semantic' ? 'search_knowledge' : 'search_hybrid';
-    const args: Json = { query, limit };
+    const args: Json = { query, limit: Math.min(limit, MAX_SEARCH_LIMIT) };
     if (filters?.lang) args.lang = filters.lang;
     if (filters?.kind) args.kind = filters.kind;
     if (filters?.pathGlob) args.path_glob = filters.pathGlob;
@@ -398,7 +405,7 @@ export class McpRagClient implements RagClient {
       }
     }
 
-    const r = await this.search(query || '.', 'keyword', Math.min(limit, 100));
+    const r = await this.search(query || '.', 'keyword', limit);
     if (!r.ok) return propagate<DocumentInfo[]>(r);
 
     const porCaminho = new Map<string, DocumentInfo>();
