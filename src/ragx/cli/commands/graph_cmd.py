@@ -11,7 +11,7 @@ from rich.console import Console
 from ragx.config import load_config
 from ragx.graph.service import graph_search as run_graph_search
 from ragx.graph.service import rebuild as run_rebuild
-from ragx.graph.store import GraphStore
+from ragx.graph.store import GraphStore, confidence_tier
 from ragx.graph.traversal import neighborhood
 from ragx.search.service import SearchFilters
 from ragx.storage.db import open_db
@@ -57,7 +57,11 @@ def entities(
         raise typer.Exit(1)
     console.print()
     for r in rows:
-        conf = "" if r["confidence"] >= 1.0 else f"  [dim]{r['confidence']:.2f}[/]"
+        conf = (
+            ""
+            if r["confidence"] >= 1.0
+            else f"  [dim]{r['confidence']:.2f} ({confidence_tier(r['confidence'])})[/]"
+        )
         console.print(f"  [cyan]{r['type']:<11}[/] {r['name']:<34} [dim]{r['qualified_name']}[/]{conf}")
     console.print(f"\n  {len(rows)} de {stats.entities} entidades\n")
 
