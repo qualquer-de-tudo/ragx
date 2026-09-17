@@ -174,10 +174,11 @@ Graphify chamam de `EXTRACTED`/`INFERRED`:
 | `reference` (Camada 2 — regex/heurística) | 0.6 – 0.8 | `inferred` |
 | `semantic` (Camada 3, custa dinheiro — ver nota acima) | variável | depende |
 
-`get_entity` (MCP) e `ragx graph show` (CLI) expõem os três campos. Um agente
-que recebe `tier: "inferred"` sabe que aquela relação foi deduzida, não lida
-direto da fonte — trate com a mesma cautela que trataria um `INFERRED` de
-qualquer outra ferramenta de grafo.
+`get_entity` (MCP) expõe os três campos; `ragx entities` (CLI) mostra o tier ao
+lado da confiança quando ela é menor que 1.0. Um agente que recebe
+`tier: "inferred"` sabe que aquela relação foi deduzida, não lida direto da
+fonte — trate com a mesma cautela que trataria um `INFERRED` de qualquer outra
+ferramenta de grafo.
 
 ## Critério de aceite da Fase 3
 

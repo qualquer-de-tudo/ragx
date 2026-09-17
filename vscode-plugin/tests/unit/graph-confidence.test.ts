@@ -42,7 +42,7 @@ describe('confidence e tier na entidade e nas relacoes', () => {
       },
       relations: [
         {
-          type: 'uses', direction: 'out', target: 'Redis', target_id: 'e2',
+          type: 'uses', direction: 'out', other: 'Redis', other_type: 'technology',
           confidence: 0.75, source: 'reference', tier: 'inferred',
         },
       ],

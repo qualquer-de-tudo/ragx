@@ -6,7 +6,7 @@ import sqlite3
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from ragx.core.ids import entity_id, relation_id
 
@@ -75,7 +75,7 @@ class Relation:
 _EXTRACTED_THRESHOLD = 0.95
 
 
-def confidence_tier(confidence: float) -> str:
+def confidence_tier(confidence: float) -> Literal["extracted", "inferred"]:
     return "extracted" if confidence >= _EXTRACTED_THRESHOLD else "inferred"
 
 

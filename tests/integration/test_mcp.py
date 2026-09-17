@@ -173,6 +173,8 @@ def test_get_entity(api: KnowledgeAPI) -> None:
     out = api.get_entity("AuthService")
     assert out["ok"] and out["data"]["entity"]["name"] == "AuthService"
     assert out["data"]["relations"]
+    assert out["data"]["entity"]["tier"] in {"extracted", "inferred"}
+    assert all({"source", "tier"} <= r.keys() for r in out["data"]["relations"])
 
 
 def test_entidade_inexistente(api: KnowledgeAPI) -> None:
