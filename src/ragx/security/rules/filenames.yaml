@@ -121,8 +121,37 @@ deny:
 
   - id: tokens
     severity: critical
+    # Os dois mecanismos juntos, porque resolvem metades diferentes:
+    #
+    # - a lista abaixo é precisa e mantém bloqueado o que é DADO
+    #   (`tokens.json`, `api_token.txt`, `refresh-tokens.yaml`);
+    # - `content_decides` libera o que é CÓDIGO e ainda casa (`auth_token.py`,
+    #   `refresh-token.go` batem em `**/*_token.*` e `**/*-token.*`).
+    #
+    # Sozinha, a lista ainda bloqueia módulo legítimo; sozinho, o
+    # `content_decides` precisaria de globs largos demais.
     content_decides: true
-    patterns: ["**/token", "**/token.*", "**/tokens", "**/tokens.*", "**/*_token*", "**/*-token*"]
+    patterns:
+      - "**/token"
+      - "**/tokens"
+      - "**/token.txt"
+      - "**/token.json"
+      - "**/token.yaml"
+      - "**/token.yml"
+      - "**/token.toml"
+      - "**/tokens.txt"
+      - "**/tokens.json"
+      - "**/tokens.yaml"
+      - "**/tokens.yml"
+      - "**/tokens.toml"
+      - "**/*_token"
+      - "**/*-token"
+      - "**/*_tokens"
+      - "**/*-tokens"
+      - "**/*_token.*"
+      - "**/*-token.*"
+      - "**/*_tokens.*"
+      - "**/*-tokens.*"
     reason: "arquivo de tokens"
 
   - id: password-file

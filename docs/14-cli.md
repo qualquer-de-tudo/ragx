@@ -91,6 +91,11 @@ ragx search "<query>"
 ragx eval
     --queries tests/eval/queries.yaml
     --mode all|hybrid|semantic|keyword
+
+ragx trial
+    --queries tests/eval/queries.yaml
+    --budget N                          (padrão: 3000)
+    --json
 ```
 
 ## Fase 3 — grafo

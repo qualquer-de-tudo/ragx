@@ -265,7 +265,7 @@ export class CliRagClient implements RagClient {
         target: String(outro?.name ?? (e as Json).other_name ?? outroId),
         targetId: outroId,
         confidence: aresta.confidence,
-        provenance: aresta.provenance,
+        tier: aresta.tier,
       }];
     });
     const doc = (centro.document_path as string) ?? null;

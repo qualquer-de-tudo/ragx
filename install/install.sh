@@ -164,27 +164,90 @@ fi
 ok "PATH: $BIN"
 
 # ── 4. MCP ──────────────────────────────────────────────────────────────
-# Quem registra é o próprio RAGX: `ragx mcp install`.
+registrar_mcp() {
+  local nome="$1" arquivo="$2"
+  [ -d "$(dirname "$arquivo")" ] || return 0
+  python3 - "$arquivo" <<'PY' 2>/dev/null && nota "MCP registrado em $nome" || true
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+try:
+    dados = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
+except json.JSONDecodeError:
+    # Config corrompida: não sobrescrever o que a pessoa tem. Melhor falhar
+    # e deixar ela registrar à mão que apagar a configuração dela.
+    sys.exit(1)
+servidores = dados.setdefault("mcpServers", {})
+servidores["ragx"] = {"command": "ragx", "args": ["mcp", "serve"]}
+p.parent.mkdir(parents=True, exist_ok=True)
+p.write_text(json.dumps(dados, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+PY
+}
+
+# Codex CLI usa TOML, nao JSON: `[mcp_servers.<nome>]` em vez de "mcpServers".
+# Sem biblioteca de ESCRITA de TOML na stdlib (so leitura, via tomllib desde o
+# Python 3.11), editar uma tabela EXISTENTE sem quebrar o resto do arquivo nao
+# e seguro de fazer as cegas. Por isso: se o TOML parseado ja tem `ragx` em
+# `mcp_servers` — seja como tabela `[mcp_servers.ragx]`, seja como chave
+# inline dentro de `[mcp_servers]` —, nao mexe: a pessoa que edite a mao se o
+# caminho do binario mudou. Se nao existe, so ANEXA uma tabela nova no fim do
+# arquivo, e valida que o resultado final (o que ja havia + o bloco novo)
+# ainda parseia antes de gravar — um `tomllib.loads` de sobra e mais barato
+# que corromper o config.toml de alguem.
 #
-# Este passo já foi um script Python embutido entre aspas aqui dentro, com um
-# gêmeo reescrito em PowerShell no install.ps1 — duas implementações, nenhuma
-# testada, e só uma delas sabia fazer backup. Agora existe uma, coberta por
-# `tests/integration/test_mcp_install.py`, e ela cobre Claude Desktop, Claude
-# Code, Cursor, Windsurf, Gemini CLI e Codex CLI.
-#
-# Também não precisa mais de `python3` no PATH: o interpretador que interessa
-# é o que o `uv` usou para instalar o RAGX.
+# Codigos de saida: 0 = escreveu (registrou agora), 2 = ja estava registrado
+# (nao escreveu nada), 1 = config ilegivel ou resultado invalido (nao
+# escreveu nada). O chamador so anuncia "registrado" no caso 0.
+registrar_mcp_toml() {
+  local nome="$1" arquivo="$2" status=0
+  [ -d "$(dirname "$arquivo")" ] || return 0
+  python3 - "$arquivo" <<'PY' 2>/dev/null || status=$?
+import pathlib, sys, tomllib
+
+p = pathlib.Path(sys.argv[1])
+texto = p.read_text(encoding="utf-8") if p.is_file() else ""
+dados = {}
+if texto.strip():
+    try:
+        dados = tomllib.loads(texto)
+    except tomllib.TOMLDecodeError:
+        sys.exit(1)
+if "ragx" in dados.get("mcp_servers", {}):
+    sys.exit(2)
+bloco = "\n[mcp_servers.ragx]\ncommand = \"ragx\"\nargs = [\"mcp\", \"serve\"]\n"
+separador = "\n" if (texto and not texto.endswith("\n")) else ""
+try:
+    tomllib.loads(texto + separador + bloco)
+except tomllib.TOMLDecodeError:
+    sys.exit(1)
+p.parent.mkdir(parents=True, exist_ok=True)
+with p.open("a", encoding="utf-8") as f:
+    f.write(separador + bloco)
+PY
+  if [ "$status" -eq 0 ]; then
+    nota "MCP registrado em $nome"
+  fi
+  return 0
+}
+
 if [ "$COM_MCP" = "1" ]; then
-  # Caminho ABSOLUTO no `--command`: aplicativo grafico (o Claude Desktop, por
-  # exemplo) nao herda o PATH do shell de forma confiavel, e `ragx` sozinho
-  # pode nao ser encontrado pelo cliente.
-  if "$BIN/ragx" mcp install --command "$BIN/ragx"; then
-    ok "servidor MCP registrado nos clientes encontrados"
+  # macOS "de fábrica" (sem Xcode Command Line Tools) não tem `python3` — e sem
+  # ele o registro abaixo não faz nada, em silêncio, porque o `|| true` existe
+  # para não derrubar o instalador por causa de uma config ilegível. Avisar
+  # aqui é a diferença entre "MCP não configurado, e a pessoa sabe" e "MCP não
+  # configurado, e a pessoa só descobre quando o Claude não achar o ragx".
+  if command -v python3 >/dev/null 2>&1; then
+    registrar_mcp "Claude Desktop" "$HOME/.config/Claude/claude_desktop_config.json"
+    registrar_mcp "Claude Desktop (macOS)" "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+    registrar_mcp "Claude Code" "$HOME/.claude.json"
+    registrar_mcp "Cursor" "$HOME/.cursor/mcp.json"
+    registrar_mcp "Windsurf" "$HOME/.codeium/windsurf/mcp_config.json"
+    registrar_mcp "Gemini CLI" "$HOME/.gemini/settings.json"
+    registrar_mcp_toml "Codex CLI" "$HOME/.codex/config.toml"
+    ok "servidor MCP disponível: ragx mcp serve"
   else
-    # Falhar aqui não invalida a instalação: o RAGX está no lugar e funciona.
-    # Registrar em cliente nenhum é inconveniente, não é motivo para desfazer
-    # tudo que já deu certo.
-    aviso "não consegui registrar em algum cliente MCP — rode 'ragx mcp install' para ver o motivo"
+    aviso "python3 não encontrado; MCP não registrado automaticamente"
+    nota "instale as Command Line Tools (xcode-select --install) e rode de novo,"
+    nota "ou registre à mão — ver install/README.md#registrar-o-mcp-à-mão"
   fi
 fi
 

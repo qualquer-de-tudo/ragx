@@ -303,7 +303,7 @@ class KnowledgeAPI:
         blocked = self._guard()
         if blocked:
             return blocked
-        from ragx.graph.store import GraphStore
+        from ragx.graph.store import GraphStore, confidence_tier
         from ragx.graph.traversal import neighborhood
         from ragx.storage.db import open_db
 
@@ -322,7 +322,8 @@ class KnowledgeAPI:
                         "id": target["id"], "type": target["type"], "name": target["name"],
                         "qualified_name": target["qualified_name"],
                         "confidence": target["confidence"],
-                        "provenance": target["source"],
+                        "source": target["source"],
+                        "tier": confidence_tier(target["confidence"]),
                     },
                     # Cada relação carrega a aresta ORIENTADA (`src`/`dst`, os
                     # mesmos nomes da tabela `relations`) e o nó do outro lado
@@ -339,7 +340,8 @@ class KnowledgeAPI:
                             "other_qualified_name": e["other_qname"],
                             "weight": e["weight"],
                             "confidence": e["confidence"],
-                            "provenance": e["provenance"],
+                            "source": e["source"],
+                            "tier": confidence_tier(e["confidence"]),
                         }
                         for e in edges
                     ],

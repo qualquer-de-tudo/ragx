@@ -19,7 +19,7 @@ import {
   toChunk,
   toDocument,
   toEdge,
-  toProvenance,
+  toTier as tierOf,
   toSources,
   toTask,
   toTaskDetail,
@@ -381,7 +381,8 @@ export class McpRagClient implements RagClient {
       documentPath: str(centro.document_path) || null,
       summary: str(centro.summary) || null,
       confidence: numOrUndef(centro.confidence),
-      provenance: toProvenance(centro.provenance),
+      source: str(centro.source) || undefined,
+      tier: tierOf(centro.tier),
       expanded: true,
     });
 
@@ -395,6 +396,10 @@ export class McpRagClient implements RagClient {
       // dois símbolos homônimos em arquivos diferentes têm o MESMO nome.
       const outroId = aresta.source === centroId ? aresta.target : aresta.source;
       if (!nodes.has(outroId)) {
+        // `rel` só carrega a confiança da ARESTA, não a da entidade vizinha.
+        // Esse nó fica sem `confidence`/`tier` até ser expandido como centro
+        // (uma futura chamada `get_entity` nele) — inventar um valor aqui
+        // atribuiria à entidade uma confiança que na verdade é da relação.
         nodes.set(outroId, {
           id: outroId,
           name: str(rel.other) || str(rel.other_name) || outroId,
@@ -423,10 +428,14 @@ export class McpRagClient implements RagClient {
     const relacoes = ((r.data?.relations as Json[]) ?? []).map((rel) => ({
       type: str(rel.type) || 'related',
       direction: (str(rel.direction) === 'in' ? 'in' : 'out') as 'in' | 'out',
+      // `other` é o campo que o servidor manda. Ler `target`/`name` aqui
+      // mostrava "?" em toda relação, porque nenhum dos dois existe na
+      // resposta; os antigos ficam como reserva, e só.
       target: str(rel.other) || str(rel.other_name) || str(rel.target) || '?',
       targetId: str(rel.other_id) || str(rel.target_id) || undefined,
       confidence: numOrUndef(rel.confidence),
-      provenance: toProvenance(rel.provenance),
+      source: str(rel.source) || undefined,
+      tier: tierOf(rel.tier),
     }));
     const fontes: Array<{ path: string; line?: number }> = [];
     const doc = str(e.document_path);
@@ -444,7 +453,8 @@ export class McpRagClient implements RagClient {
         documentPath: doc || null,
         summary: str(e.summary) || null,
         confidence: numOrUndef(e.confidence),
-        provenance: toProvenance(e.provenance),
+        source: str(e.source) || undefined,
+        tier: tierOf(e.tier),
       },
       relations: relacoes,
       sources: fontes,
@@ -719,6 +729,7 @@ function pair(v: unknown): [number, number] {
   if (Array.isArray(v) && v.length >= 2) return [num(v[0]), num(v[1])];
   return [0, 0];
 }
+
 
 function toHit(r: Record<string, unknown>): SearchHit {
   return {

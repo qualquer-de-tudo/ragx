@@ -181,3 +181,31 @@ no `db_version`).
 4. `estimated_tokens <= budget` em 100% dos casos do conjunto de avaliação.
 5. Pelo menos 2 documentos distintos representados quando existem 2 relevantes.
 6. `--explain` justifica cada fragmento incluído e cada descartado.
+
+## Trial — economia de tokens (honesta)
+
+```bash
+ragx trial                          # usa tests/eval/queries.yaml
+ragx trial --budget 1500 --json
+```
+
+Para cada consulta do corpus de avaliação, compara dois números medidos com o
+mesmo `TokenCounter`:
+
+- **baseline** — tokens do conteúdo INTEIRO de cada arquivo em `relevant_paths`
+  (o que um agente leria sem o RAGX);
+- **ragx** — `estimated_tokens` do `ContextPack` que o `build_context` entrega
+  para o mesmo orçamento.
+
+**O que isto NÃO é**: uma sessão de agente real reproduzida com e sem RAGX.
+É um proxy — mede o que o RAGX controla (o tamanho do que ele entrega), não o
+que o agente realmente teria lido sozinho. Por isso `ragx trial` sempre reporta
+também a **cobertura de fonte** (`sources_hit / sources_total`): economia de
+token sem a fonte relevante dentro do pacote não é economia, é perda de
+informação disfarçada de otimização.
+
+Um `saved_ratio` negativo é esperado, não é bug: acontece quando o arquivo
+relevante já é menor que o orçamento de tokens, então "ler o arquivo inteiro"
+(baseline) já é mais barato que o pacote orçado do `build_context`. No corpus
+deste próprio repositório, cerca de 10 das 26 consultas mostram economia
+negativa por exatamente esse motivo.

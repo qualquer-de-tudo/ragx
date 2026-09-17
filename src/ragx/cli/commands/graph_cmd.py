@@ -39,7 +39,7 @@ def entities(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Lista entidades do grafo."""
-    from ragx.graph.store import GraphStore
+    from ragx.graph.store import GraphStore, confidence_tier
     from ragx.storage.db import open_db
 
     cfg = load_config()
@@ -54,7 +54,11 @@ def entities(
         raise typer.Exit(1)
     console.print()
     for r in rows:
-        conf = "" if r["confidence"] >= 1.0 else f"  [dim]{r['confidence']:.2f}[/]"
+        conf = (
+            ""
+            if r["confidence"] >= 1.0
+            else f"  [dim]{r['confidence']:.2f} ({confidence_tier(r['confidence'])})[/]"
+        )
         console.print(f"  [cyan]{r['type']:<11}[/] {r['name']:<34} [dim]{r['qualified_name']}[/]{conf}")
     console.print(f"\n  {len(rows)} de {stats.entities} entidades\n")
 

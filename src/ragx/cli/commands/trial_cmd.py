@@ -1,96 +1,108 @@
-"""`ragx trial` — a economia estimada de contexto, com a ressalva junto."""
+"""`ragx trial` — compara tokens do build_context contra ler o arquivo inteiro."""
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Annotated
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 from ragx.config import load_config
-from ragx.core.errors import UsageError
+from ragx.search.evaluation import load_cases
+from ragx.search.trial import run_trial
 
 console = Console()
 
-_SCOPES = ("sources", "project")
+CAVEAT_LINES = (
+    'Isto é um proxy — compara com "ler o arquivo inteiro", não com uma',
+    "sessão de agente real. Se a cobertura de fonte cair muito, a economia",
+    "de token não vale nada: RAGX estaria economizando tokens jogando fora",
+    "a resposta.",
+)
+CAVEAT = " ".join(CAVEAT_LINES)
 
 
-def trial(
-    query: Annotated[str, typer.Argument(help="A pergunta que o contexto deve responder.")],
-    tokens: Annotated[int, typer.Option("--tokens", help="Orçamento do contexto.")] = 3000,
-    scope: Annotated[
-        str,
-        typer.Option(
-            "--scope",
-            help="Basal: `sources` (os arquivos que o contexto usou) ou `project` (tudo).",
-        ),
-    ] = "sources",
-    path: Annotated[
-        list[str] | None,
-        typer.Option("--path", help="Basal explícito por glob (repetível)."),
-    ] = None,
+def trial_cmd(
+    queries: Annotated[Path, typer.Option("--queries")] = Path("tests/eval/queries.yaml"),
+    budget: Annotated[int, typer.Option("--budget")] = 3000,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Compara o contexto montado com a leitura integral dos arquivos.
-
-    O resultado é uma ESTIMATIVA de ordem de grandeza — não uma previsão do que
-    um modelo vai cobrar. Ver `ragx trial --help` e docs/07-context-engine.md.
-    """
-    from ragx import trial as motor
-
-    if scope not in _SCOPES:
-        raise UsageError(f"escopo inválido: {scope!r} (use {' | '.join(_SCOPES)})")
-    if tokens < 200:
-        raise UsageError(f"--tokens mínimo é 200 (recebido: {tokens})")
-
+    """Compara tokens do build_context contra o baseline de ler o arquivo inteiro."""
     cfg = load_config()
-    # Os globs são filtrados contra o que o walker emite, e não expandidos
-    # contra o disco: assim `--path "*"` não passa a alcançar o `.env`, e
-    # `--path "../../etc/*"` não sai da raiz do projeto.
-    r = motor.run(cfg, query, tokens=tokens, scope=scope, globs=list(path) if path else None)
-    if path and r.baseline.files == 0 and not r.baseline.excluded:
-        raise UsageError(f"nenhum arquivo indexável casou com {path!r} em {cfg.root}")
+    path = queries if queries.is_absolute() else cfg.root / queries
+    cases = load_cases(path)
+    results = run_trial(cfg, cases, budget=budget)
+
+    total_baseline = sum(r.baseline_tokens for r in results)
+    total_ragx = sum(r.ragx_tokens for r in results)
+    total_hit = sum(r.sources_hit for r in results)
+    total_sources = sum(r.sources_total for r in results)
 
     if as_json:
-        console.print_json(json.dumps(r.to_dict(), ensure_ascii=False))
+        console.print_json(
+            json.dumps(
+                {
+                    "budget": budget,
+                    "cases": len(results),
+                    "results": [
+                        {
+                            "query": r.query,
+                            "baseline_tokens": r.baseline_tokens,
+                            "ragx_tokens": r.ragx_tokens,
+                            "saved_tokens": r.saved_tokens,
+                            "saved_ratio": round(r.saved_ratio, 4),
+                            "sources_hit": r.sources_hit,
+                            "sources_total": r.sources_total,
+                            "missing_paths": r.missing_paths,
+                        }
+                        for r in results
+                    ],
+                    "totals": {
+                        "baseline_tokens": total_baseline,
+                        "ragx_tokens": total_ragx,
+                        "saved_ratio": round(
+                            (total_baseline - total_ragx) / total_baseline, 4
+                        )
+                        if total_baseline
+                        else 0.0,
+                        "source_coverage": round(total_hit / total_sources, 4)
+                        if total_sources
+                        else 0.0,
+                    },
+                    "caveat": CAVEAT,
+                },
+                ensure_ascii=False,
+            )
+        )
         return
 
-    b = r.baseline
-    console.print(f'\n[bold]Contexto para[/] "{r.query}"\n')
+    console.print(f"\n[bold]Trial de tokens[/] — {len(results)} consultas, orçamento {budget}\n")
+    console.print(f"  {'Consulta':<40}{'Baseline':>10}{'RAGX':>8}{'Economia':>10}{'Fonte':>7}")
+    console.print(f"  {'-' * 75}")
+    for r in results:
+        economia = f"{r.saved_ratio:.0%}"
+        fonte = f"{r.sources_hit}/{r.sources_total}"
+        consulta = escape(f"{r.query[:38]:<40}")
+        console.print(
+            f"  {consulta}{r.baseline_tokens:>10}{r.ragx_tokens:>8}{economia:>10}{fonte:>7}"
+        )
+        if r.missing_paths:
+            console.print(
+                f"    [yellow]aviso:[/] {r.missing_paths} caminho(s) em relevant_paths "
+                "não encontrado(s) — corpus desatualizado, não contado no baseline"
+            )
+
+    coverage = total_hit / total_sources if total_sources else 0.0
+    saved = (total_baseline - total_ragx) / total_baseline if total_baseline else 0.0
+    direcao = "menos" if saved >= 0 else "mais"
     console.print(
-        f"  contexto montado   [green]{r.context_tokens:>9,}[/] tokens  "
-        f"[dim]({r.context_fragments} trecho(s) de {r.context_sources} arquivo(s), "
-        f"orçamento {r.budget:,})[/]"
+        f"\n  Total: {abs(saved):.0%} {direcao} tokens · "
+        f"fonte relevante coberta em {coverage:.0%} dos casos"
     )
-    console.print(
-        f"  leitura integral   [yellow]{b.tokens:>9,}[/] tokens  "
-        f"[dim]({b.files} arquivo(s), {b.bytes_read:,} bytes)[/]"
-    )
-
-    if r.saved_ratio is None:
-        # Sem basal não há razão; imprimir "0%" afirmaria o que não se sabe.
-        console.print(
-            "\n  [yellow]sem basal para comparar[/] — nenhum arquivo legível no escopo "
-            f"[dim]({scope})[/]\n"
-        )
-    else:
-        sinal = "menos" if r.saved_tokens >= 0 else "[red]A MAIS[/]"
-        console.print(
-            f"\n  diferença          [bold]{abs(r.saved_tokens):>9,}[/] tokens {sinal}  "
-            f"[bold]({r.saved_ratio:.1%})[/]\n"
-        )
-
-    if b.empty_files:
-        console.print(f"  [dim]{b.empty_files} arquivo(s) vazio(s) — lidos, 0 tokens[/]")
-    if b.excluded:
-        console.print("  [dim]fora do basal:[/]")
-        for motivo, n in sorted(b.excluded.items()):
-            console.print(f"    [dim]{n:>5} × {motivo}[/]")
-        console.print(
-            "    [dim]exclusão SUBESTIMA a economia — é o lado seguro do erro[/]"
-        )
-
-    # A ressalva é impressa por último, que é onde o olho para.
-    console.print(f"\n  [yellow]![/] [dim]{motor.RESSALVA}[/]")
-    console.print(f"  [dim]contador de tokens: {r.counter}[/]\n")
+    console.print()
+    for line in CAVEAT_LINES:
+        console.print(f"  [dim]{line}[/]")
+    console.print()

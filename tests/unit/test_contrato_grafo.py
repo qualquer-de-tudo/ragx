@@ -24,7 +24,7 @@ from ragx.graph.traversal import neighborhood
 #: quem desenha o grafo; por isso a lista está escrita, e não inferida.
 CAMPOS_DA_RELACAO = {
     "direction", "type", "src_id", "dst_id", "other_id", "other_name",
-    "other_type", "other_qname", "weight", "confidence", "provenance", "depth",
+    "other_type", "other_qname", "weight", "confidence", "source", "depth",
 }
 
 
@@ -72,7 +72,7 @@ def test_a_relacao_tem_todos_os_campos_do_contrato(store: GraphStore) -> None:
     )
 
 
-def test_confidence_e_provenance_chegam_sem_perda(store: GraphStore) -> None:
+def test_confidence_e_source_chegam_sem_perda(store: GraphStore) -> None:
     """`structural` (extraído do AST) e `reference` (inferido) precisam ser
     distinguíveis de fora — é o que separa "A importa B" de "A talvez cite B"."""
     a, b, c = _entidade("A"), _entidade("B"), _entidade("C")
@@ -86,9 +86,9 @@ def test_confidence_e_provenance_chegam_sem_perda(store: GraphStore) -> None:
 
     por_destino = {r["dst_id"]: r for r in neighborhood(store, a.id, depth=1)}
     assert por_destino[b.id]["confidence"] == 1.0
-    assert por_destino[b.id]["provenance"] == "structural"
+    assert por_destino[b.id]["source"] == "structural"
     assert por_destino[c.id]["confidence"] == 0.6
-    assert por_destino[c.id]["provenance"] == "reference"
+    assert por_destino[c.id]["source"] == "reference"
 
 
 def test_direcao_de_entrada_nao_inverte_a_aresta(store: GraphStore) -> None:
@@ -178,5 +178,9 @@ def test_mcp_get_entity_expoe_o_contrato_canonico(tmp_path, monkeypatch) -> None
     assert rel["src"] == a.id and rel["dst"] == b.id, "a aresta orientada"
     assert rel["other"] == "Beta" and rel["other_id"] == b.id, "o nó do outro lado"
     assert rel["confidence"] == 0.75
-    assert rel["provenance"] == "reference"
-    assert out["data"]["entity"]["provenance"] == "structural"
+    # `source` diz de que camada veio; `tier` traduz a confiança para a
+    # distinção que a interface mostra.
+    assert rel["source"] == "reference"
+    assert rel["tier"] == "inferred"
+    assert out["data"]["entity"]["source"] == "structural"
+    assert out["data"]["entity"]["tier"] == "extracted"

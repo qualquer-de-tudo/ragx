@@ -126,8 +126,9 @@ def neighborhood(
                     "confidence": e["confidence"],
                     # `structural` saiu do AST; `reference` e `semantic` são
                     # inferência. Sem este campo, quem lê o grafo não consegue
-                    # separar o que foi extraído do que foi deduzido.
-                    "provenance": e["source"],
+                    # separar o que foi extraído do que foi deduzido — é o que
+                    # o `tier` extracted/inferred traduz para a interface.
+                    "source": e["source"],
                     "depth": level + 1,
                 }
             )

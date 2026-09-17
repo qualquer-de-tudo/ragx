@@ -209,18 +209,122 @@ function Instalar-Extensao {
         em silencio - perdendo os outros servidores da pessoa.
       - nao existe `-AsHashtable` nesta versao, entao a conversao e manual.
 #>
-# O registro do MCP saiu daqui: agora e `ragx mcp install`.
-#
-# Este arquivo mantinha uma reimplementacao em PowerShell do mesmo script que o
-# install.sh embutia em Python. Duas implementacoes do mesmo contrato, nenhuma
-# com teste, e cada uma conhecendo um conjunto diferente de clientes. A logica
-# vive em `src/ragx/clients/`, coberta por
-# `tests/integration/test_mcp_install.py`, e cobre Claude Desktop, Claude Code,
-# Cursor, Windsurf, Gemini CLI e Codex CLI.
-#
-# O cuidado com BOM que morava aqui continua valendo e foi para la: o
-# `JSON.parse` do Node, que e quem le esses arquivos, lanca excecao ao ver BOM.
-# O registro grava UTF-8 sem BOM.
+function ConvertTo-Tabela {
+    param($Objeto)
+    $tabela = @{}
+    if ($null -eq $Objeto) { return $tabela }
+    if ($Objeto -is [System.Collections.IDictionary]) {
+        foreach ($chave in $Objeto.Keys) { $tabela[$chave] = $Objeto[$chave] }
+        return $tabela
+    }
+    foreach ($p in $Objeto.PSObject.Properties) { $tabela[$p.Name] = $p.Value }
+    return $tabela
+}
+
+function Registrar-Mcp {
+    param([string]$Nome, [string]$Arquivo, [string]$Comando)
+
+    $pasta = Split-Path -Parent $Arquivo
+    if (-not (Test-Path $pasta)) { return }
+
+    try {
+        $lido = $null
+        if (Test-Path $Arquivo) {
+            # `-Encoding UTF8` no PS 5.1 tolera BOM na LEITURA; o problema do
+            # BOM e so na escrita, tratada abaixo.
+            $bruto = Get-Content $Arquivo -Raw -Encoding UTF8
+            if ($bruto -and $bruto.Trim()) {
+                $lido = $bruto | ConvertFrom-Json -ErrorAction Stop
+            }
+        }
+    } catch {
+        # Config corrompida: nao sobrescrever o que a pessoa tem. Melhor avisar
+        # que apagar a configuracao dela.
+        Escreva-Aviso "$Nome tem configuracao ilegivel; registre o MCP a mao"
+        return
+    }
+
+    $raiz = ConvertTo-Tabela $lido
+    $servidores = ConvertTo-Tabela $raiz['mcpServers']
+
+    # Caminho ABSOLUTO: aplicativo grafico nao herda o PATH do usuario em toda
+    # instalacao, e `ragx` sozinho pode nao ser encontrado pelo cliente.
+    $servidores['ragx'] = @{ command = $Comando; args = @('mcp', 'serve') }
+    $raiz['mcpServers'] = $servidores
+    $dados = $raiz
+
+    # `Set-Content -Encoding utf8` grava COM BOM no PowerShell 5.1, e o
+    # `JSON.parse` do Node - que e quem le este arquivo - lanca excecao ao ver
+    # BOM. O instalador chegou a corromper um config assim: o conteudo estava
+    # certo e o cliente nao conseguia abrir. `WriteAllText` com UTF8Encoding
+    # sem BOM e a unica forma confiavel nas duas versoes do PowerShell.
+    $json = $dados | ConvertTo-Json -Depth 20
+    $semBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Arquivo, $json + "`n", $semBom)
+    Escreva-Nota "MCP registrado em $Nome"
+}
+
+<#
+.SYNOPSIS
+    Registra o MCP em clientes que usam TOML (Codex CLI), nao JSON.
+
+.DESCRIPTION
+    Sem biblioteca de ESCRITA de TOML no PowerShell 5.1/7, editar uma tabela
+    EXISTENTE sem quebrar o resto do arquivo nao e seguro de fazer as cegas.
+    Por isso: se `[mcp_servers.ragx]` ja existe, nao mexe - a pessoa que edite
+    a mao se o caminho do binario mudou. Se nao existe, so ANEXA uma tabela
+    nova no fim do arquivo, que e sempre TOML valido independente do que vier
+    antes. Mesmo contrato idempotente e append-only da versao bash
+    (registrar_mcp_toml em install.sh) - MAS sem a mesma garantia: o bash tem
+    `tomllib` para validar o TOML resultante antes de gravar, e o PowerShell
+    nao tem parser de TOML nenhum na stdlib para fazer o mesmo aqui.
+#>
+function Registrar-Mcp-Toml {
+    param([string]$Nome, [string]$Arquivo, [string]$Comando)
+
+    $pasta = Split-Path -Parent $Arquivo
+    if (-not (Test-Path $pasta)) { return }
+
+    $texto = ''
+    if (Test-Path $Arquivo) {
+        $texto = Get-Content $Arquivo -Raw -Encoding UTF8
+    }
+    if ($texto -match [regex]::Escape('[mcp_servers.ragx]')) {
+        return
+    }
+
+    # String BASICA do TOML (aspas duplas), nao literal (aspas simples): a
+    # literal nao tem NENHUM mecanismo de escape, e uma conta do Windows pode
+    # ter apostrofo no nome (ex.: "O'Brien") - o que produziria um `'` dentro
+    # de `$Comando` e fecharia a string literal no meio do caminho, corrompendo
+    # o TOML inteiro. Com aspas duplas, escapamos `\` e `"` a mao antes de
+    # montar o bloco, o que cobre tanto o backslash do caminho Windows quanto
+    # um eventual apostrofo/aspas no nome da conta.
+    $comandoEscapado = $Comando.Replace('\', '\\').Replace('"', '\"')
+    $bloco = "`n[mcp_servers.ragx]`ncommand = ""$comandoEscapado""`nargs = [""mcp"", ""serve""]`n"
+    # `AppendAllText` ja escreve a partir do FIM do arquivo: o que vai nesta
+    # chamada e so o sufixo novo (a quebra de linha, se faltar, mais o bloco).
+    # Prefixar com `$texto` de novo - o conteudo que acabou de ser LIDO do
+    # mesmo arquivo - duplicaria tudo que a pessoa ja tinha no config.toml.
+    $sufixo = if (-not $texto) {
+        # Arquivo novo/vazio: sem conteudo antes, entao sem linha em branco
+        # antes da tabela - so o `$bloco` sem o `\n` inicial dele.
+        $bloco.TrimStart("`n")
+    } elseif (-not $texto.EndsWith("`n")) {
+        "`n" + $bloco
+    } else {
+        $bloco
+    }
+    New-Item -ItemType Directory -Force -Path $pasta | Out-Null
+    # Sem BOM: `AppendAllText` com `[System.Text.Encoding]::UTF8` GRAVA um BOM
+    # quando o arquivo e novo (a preamble so e omitida se o arquivo ja existir
+    # e nao estiver vazio) - confirmado na pratica ao escrever este trecho.
+    # `UTF8Encoding($false)`, mesma solucao do `Registrar-Mcp` acima, e a
+    # unica forma confiavel de nao gravar BOM em nenhum dos dois casos.
+    $semBomToml = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::AppendAllText($Arquivo, $sufixo, $semBomToml)
+    Escreva-Nota "MCP registrado em $Nome"
+}
 
 <#
 .SYNOPSIS
@@ -362,15 +466,19 @@ function Invoke-InstalacaoRagx {
         $exe = Join-Path $bin 'ragx.exe'
         if (-not (Test-Path $exe)) { $exe = 'ragx' }
 
-        & $exe mcp install --command $exe
-        if ($LASTEXITCODE -eq 0) {
-            Escreva-Ok 'servidor MCP registrado nos clientes encontrados'
-        } else {
-            # Falhar aqui nao invalida a instalacao: o RAGX esta no lugar e
-            # funciona. Nao registrar em um cliente e inconveniente, nao e
-            # motivo para desfazer o que ja deu certo.
-            Escreva-Aviso "nao consegui registrar em algum cliente MCP - rode 'ragx mcp install' para ver o motivo"
-        }
+        Registrar-Mcp 'Claude Desktop' `
+            (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json') $exe
+        Registrar-Mcp 'Claude Code' `
+            (Join-Path $env:USERPROFILE '.claude.json') $exe
+        Registrar-Mcp 'Cursor' `
+            (Join-Path $env:USERPROFILE '.cursor\mcp.json') $exe
+        Registrar-Mcp 'Windsurf' `
+            (Join-Path $env:USERPROFILE '.codeium\windsurf\mcp_config.json') $exe
+        Registrar-Mcp 'Gemini CLI' `
+            (Join-Path $env:USERPROFILE '.gemini\settings.json') $exe
+        Registrar-Mcp-Toml 'Codex CLI' `
+            (Join-Path $env:USERPROFILE '.codex\config.toml') $exe
+        Escreva-Ok 'servidor MCP disponivel: ragx mcp serve'
     }
 
     # -- 6. extensao do VS Code, se o .vsix veio junto --------------------

@@ -191,6 +191,27 @@ def test_graph_entidade_inexistente_sugere(projeto: Path) -> None:
     assert r.exit_code == 1 and "não encontrada" in r.output
 
 
+def test_entities_mostra_tier_quando_confianca_menor_que_um(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`ragx entities` mostra `(inferred)` ao lado da confiança de entidades
+    com confidence < 1.0 — aqui, a tecnologia Redis detectada por `import`
+    (confiança 0.9, camada 2/referencial), não por manifesto declarado."""
+    monkeypatch.setenv("RAGX_EMBEDDING_PROVIDER", "hashing")
+    monkeypatch.setenv("RAGX_EMBEDDING_DIM", "128")
+    monkeypatch.setenv("RAGX_EMBEDDING_VERSIONED_DIM", "64")
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "app.py").write_text(
+        "import redis\n\n\ndef connect():\n    return redis.Redis()\n", encoding="utf-8"
+    )
+    runner.invoke(app, ["init", "."])
+    runner.invoke(app, ["index", "."])
+    runner.invoke(app, ["graph", "rebuild"])
+    r = runner.invoke(app, ["entities"])
+    assert r.exit_code == 0, r.output
+    assert "inferred" in r.output
+
+
 def test_context_respeita_orcamento(projeto: Path) -> None:
     import json
     import re

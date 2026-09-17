@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { toEdge, toProvenance } from '../../src/rag/parse';
+import { toEdge, toTier } from '../../src/rag/parse';
 
 /** Uma relação como o `get_entity` do RAGX a devolve hoje. */
 function relacao(over: Record<string, unknown> = {}) {
@@ -28,7 +28,8 @@ function relacao(over: Record<string, unknown> = {}) {
     other_qualified_name: 'src/b.py::B',
     weight: 1.0,
     confidence: 0.8,
-    provenance: 'reference',
+    source: 'reference',
+    tier: 'inferred',
     ...over,
   };
 }
@@ -42,7 +43,7 @@ describe('aresta orientada', () => {
       type: 'imports',
       weight: 1.0,
       confidence: 0.8,
-      provenance: 'reference',
+      tier: 'inferred',
     });
   });
 
@@ -54,12 +55,21 @@ describe('aresta orientada', () => {
     expect(e?.target).toBe('id-B');
   });
 
-  it('preserva confidence e provenance sem perda', () => {
-    for (const p of ['structural', 'reference', 'semantic'] as const) {
-      const e = toEdge(relacao({ provenance: p, confidence: 0.42 }), 'id-A');
-      expect(e?.provenance).toBe(p);
+  it('preserva confidence e tier sem perda', () => {
+    for (const t of ['extracted', 'inferred'] as const) {
+      const e = toEdge(relacao({ tier: t, confidence: 0.42 }), 'id-A');
+      expect(e?.tier).toBe(t);
       expect(e?.confidence).toBe(0.42);
     }
+  });
+
+  it('a procedência da aresta NÃO sobrescreve o nó de origem', () => {
+    // `GraphEdge.source` é a ponta da aresta. O servidor também manda um campo
+    // `source` com a CAMADA (`structural`/`reference`) — se ele vazasse para a
+    // aresta com o mesmo nome, `source` deixaria de ser um id de nó e o grafo
+    // voltaria a não desenhar.
+    const e = toEdge(relacao({ source: 'reference' }), 'id-A');
+    expect(e?.source).toBe('id-A');
   });
 
   it('confidence 0 é ZERO, não "ausente"', () => {
@@ -68,10 +78,10 @@ describe('aresta orientada', () => {
     expect(toEdge(relacao({ confidence: 0 }), 'id-A')?.confidence).toBe(0);
   });
 
-  it('provenance desconhecida vira undefined em vez de virar selo inventado', () => {
-    expect(toEdge(relacao({ provenance: 'chutometro' }), 'id-A')?.provenance).toBeUndefined();
-    expect(toProvenance(null)).toBeUndefined();
-    expect(toProvenance('structural')).toBe('structural');
+  it('tier desconhecido vira undefined em vez de virar selo inventado', () => {
+    expect(toEdge(relacao({ tier: 'chutometro' }), 'id-A')?.tier).toBeUndefined();
+    expect(toTier(null)).toBeUndefined();
+    expect(toTier('extracted')).toBe('extracted');
   });
 });
 

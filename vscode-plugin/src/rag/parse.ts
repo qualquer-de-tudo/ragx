@@ -14,7 +14,6 @@ import type {
   ChunkInfo,
   DocumentInfo,
   GraphEdge,
-  GraphProvenance,
   KnowledgeSource,
   RequestAnalysis,
   SourcesOverview,
@@ -359,26 +358,29 @@ export function toEdge(rel: unknown, centroId: string): GraphEdge | undefined {
     type: tipo,
     weight: typeof r.weight === 'number' ? r.weight : undefined,
     confidence: typeof r.confidence === 'number' ? r.confidence : undefined,
-    provenance: toProvenance(r.provenance),
+    // A procedência da ARESTA vai só como `tier`. O campo `source` da
+    // `GraphEdge` é o nó de ORIGEM — pôr a procedência ali com o mesmo nome
+    // sobrescreveria a ponta da aresta, que é o bug que este arquivo corrige.
+    tier: toTier(r.tier),
   };
 
   // 1. contrato canônico
   const src = str(r.src) || str(r.src_id);
   const dst = str(r.dst) || str(r.dst_id);
-  if (src && dst) return { source: src, target: dst, ...comum };
+  if (src && dst) return { ...comum, source: src, target: dst };
 
   // 2. compatibilidade: RAGX antigo mandava só o nó do outro lado
   const outro = str(r.other_id) || str(r.other) || str(r.target) || str(r.dst);
   if (!outro || !centroId) return undefined;
   const saindo = str(r.direction) !== 'in';
   return {
+    ...comum,
     source: saindo ? centroId : outro,
     target: saindo ? outro : centroId,
-    ...comum,
   };
 }
 
-/** Procedência desconhecida vira `undefined`: a UI não inventa um selo. */
-export function toProvenance(v: unknown): GraphProvenance | undefined {
-  return v === 'structural' || v === 'reference' || v === 'semantic' ? v : undefined;
+/** Tier desconhecido vira `undefined`: a UI não inventa um selo. */
+export function toTier(v: unknown): 'extracted' | 'inferred' | undefined {
+  return v === 'extracted' || v === 'inferred' ? v : undefined;
 }
