@@ -184,10 +184,21 @@ PY
 }
 
 if [ "$COM_MCP" = "1" ]; then
-  registrar_mcp "Claude Desktop" "$HOME/.config/Claude/claude_desktop_config.json"
-  registrar_mcp "Claude Desktop (macOS)" "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-  registrar_mcp "Claude Code" "$HOME/.claude.json"
-  ok "servidor MCP disponível: ragx mcp serve"
+  # macOS "de fábrica" (sem Xcode Command Line Tools) não tem `python3` — e sem
+  # ele o registro abaixo não faz nada, em silêncio, porque o `|| true` existe
+  # para não derrubar o instalador por causa de uma config ilegível. Avisar
+  # aqui é a diferença entre "MCP não configurado, e a pessoa sabe" e "MCP não
+  # configurado, e a pessoa só descobre quando o Claude não achar o ragx".
+  if command -v python3 >/dev/null 2>&1; then
+    registrar_mcp "Claude Desktop" "$HOME/.config/Claude/claude_desktop_config.json"
+    registrar_mcp "Claude Desktop (macOS)" "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+    registrar_mcp "Claude Code" "$HOME/.claude.json"
+    ok "servidor MCP disponível: ragx mcp serve"
+  else
+    aviso "python3 não encontrado; MCP não registrado automaticamente"
+    nota "instale as Command Line Tools (xcode-select --install) e rode de novo,"
+    nota "ou registre à mão — ver install/README.md#registrar-o-mcp-à-mão"
+  fi
 fi
 
 # ── 5. extensão do VS Code, se o .vsix veio junto ───────────────────────
