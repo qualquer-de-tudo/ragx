@@ -303,7 +303,7 @@ class KnowledgeAPI:
         blocked = self._guard()
         if blocked:
             return blocked
-        from ragx.graph.store import GraphStore
+        from ragx.graph.store import GraphStore, confidence_tier
         from ragx.graph.traversal import neighborhood
         from ragx.storage.db import open_db
 
@@ -322,12 +322,16 @@ class KnowledgeAPI:
                         "id": target["id"], "type": target["type"], "name": target["name"],
                         "qualified_name": target["qualified_name"],
                         "confidence": target["confidence"],
+                        "source": target["source"],
+                        "tier": confidence_tier(target["confidence"]),
                     },
                     "relations": [
                         {
                             "direction": e["direction"], "type": e["type"],
                             "other": e["other_name"], "other_type": e["other_type"],
                             "confidence": e["confidence"],
+                            "source": e["source"],
+                            "tier": confidence_tier(e["confidence"]),
                         }
                         for e in edges
                     ],

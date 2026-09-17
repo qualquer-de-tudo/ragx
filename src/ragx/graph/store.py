@@ -67,6 +67,18 @@ class Relation:
         return relation_id(self.src_id, self.type.value, self.dst_id)
 
 
+# Fronteira entre "lido direto da fonte" e "resolvido por heurística/inferência" —
+# mesma distinção que o Graphify chama de EXTRACTED/INFERRED. `structural.py`
+# grava confidence=1.0 (hierarquia já está no chunk, sem ambiguidade);
+# `reference.py` grava 0.6-0.8 (regex/heurística pode errar). 0.95 separa os
+# dois sem depender de o valor exato ser 1.0 (float de ponto flutuante).
+_EXTRACTED_THRESHOLD = 0.95
+
+
+def confidence_tier(confidence: float) -> str:
+    return "extracted" if confidence >= _EXTRACTED_THRESHOLD else "inferred"
+
+
 @dataclass
 class GraphStats:
     entities: int = 0

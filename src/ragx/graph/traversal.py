@@ -107,6 +107,7 @@ def neighborhood(
                     "other_type": e["other_type"],
                     "other_qname": e["other_qname"],
                     "confidence": e["confidence"],
+                    "source": e["source"],
                     "depth": level + 1,
                 }
             )
