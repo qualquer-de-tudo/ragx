@@ -96,6 +96,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     statusBar,
     { dispose: disposeLogger },
+    { dispose: cancelarReconexao },
     { dispose: () => void cliente?.dispose() },
   );
 
@@ -112,7 +113,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await conectar(true);
       }
     }),
-    vscode.workspace.onDidChangeWorkspaceFolders(() => void conectar(true)),
+    // Trocar de pasta só justifica reconectar se a RAIZ do projeto mudou.
+    // Adicionar uma pasta de anotações ao workspace derrubava a conexão e
+    // pagava o boot do Python de novo, sem nada ter mudado para o RAGX.
+    vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+      const antes = descoberta.root?.toString();
+      const agora = (await discover()).root?.toString();
+      if (antes === agora) {
+        log('workspace mudou, mas a raiz do projeto é a mesma — conexão mantida');
+        return;
+      }
+      log(`raiz do projeto mudou (${antes ?? 'nenhuma'} -> ${agora ?? 'nenhuma'})`);
+      tentativasFalhas = 0;
+      await conectar(true);
+    }),
   );
 
   registrarAutoSync(context);
@@ -120,6 +134,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export async function deactivate(): Promise<void> {
+  // Cancelar ANTES de soltar o cliente: um timer que dispara depois do
+  // shutdown sobe um processo Python que ninguém mais vai fechar.
+  cancelarReconexao();
   await cliente?.dispose();
   cliente = undefined;
 }
@@ -145,16 +162,83 @@ function avisarTodas(detalhe?: string): void {
   ExplorerPanel.ativo?.pushState(detalhe);
 }
 
+/**
+ * Reconexão com espera crescente.
+ *
+ * Um RAGX que não sobe (não instalado, fora do PATH) falha em ~50 ms. Tentar
+ * de novo imediatamente vira um laço que consome CPU sem chance nenhuma de
+ * sucesso — e com `spawn` de processo a cada volta. A espera dobra até o teto
+ * e zera assim que uma conexão dá certo.
+ */
+const ESPERA_INICIAL_MS = 1_000;
+const ESPERA_MAXIMA_MS = 60_000;
+const MAX_TENTATIVAS = 6;
+
+let tentativasFalhas = 0;
+let timerReconexao: NodeJS.Timeout | undefined;
+/** Conexão em andamento. Existe para que duas chamadas não subam DOIS RAGX. */
+let conexaoEmCurso: Promise<void> | undefined;
+
+function cancelarReconexao(): void {
+  if (timerReconexao) clearTimeout(timerReconexao);
+  timerReconexao = undefined;
+}
+
+function agendarReconexao(motivo: string): void {
+  cancelarReconexao();
+  if (tentativasFalhas >= MAX_TENTATIVAS) {
+    log(`desisti de reconectar após ${tentativasFalhas} tentativas (${motivo})`);
+    mudarEstado('error', `RAGX indisponível: ${motivo}. Use "RAGX: Reconnect".`);
+    return;
+  }
+  const espera = Math.min(ESPERA_INICIAL_MS * 2 ** tentativasFalhas, ESPERA_MAXIMA_MS);
+  tentativasFalhas += 1;
+  log(`reconectando em ${espera}ms (tentativa ${tentativasFalhas}) — ${motivo}`);
+  timerReconexao = setTimeout(() => void conectar(true), espera);
+}
+
+/**
+ * O processo do RAGX caiu sozinho. Não é o mesmo que uma conexão que falhou:
+ * aqui já houve um RAGX funcionando, então vale tentar de novo.
+ */
+function aoCairOProcesso(motivo: string): void {
+  cliente = undefined;
+  projeto = undefined;
+  mudarEstado('warning', `conexão com o RAGX perdida: ${motivo}`);
+  agendarReconexao(motivo);
+}
+
 async function conectar(forcar: boolean): Promise<void> {
   if (cliente && !forcar) return;
+  // Ativação, troca de pasta e mudança de configuração podem chegar juntas.
+  // Sem esta fila, cada uma sobe seu próprio processo Python e só o último
+  // fica referenciado — os outros viram processos órfãos de ~100 MB.
+  if (conexaoEmCurso) {
+    await conexaoEmCurso;
+    if (cliente && !forcar) return;
+  }
+  conexaoEmCurso = conectarAgora();
+  try {
+    await conexaoEmCurso;
+  } finally {
+    conexaoEmCurso = undefined;
+  }
+}
+
+async function conectarAgora(): Promise<void> {
+  cancelarReconexao();
   await cliente?.dispose();
   cliente = undefined;
   projeto = undefined;
   cache?.clear();
 
+  const tDescoberta = Date.now();
   descoberta = await discover();
+  log(`[RAGX VSCode] Discovering RAGX — ${Date.now() - tDescoberta}ms`);
   if (!descoberta.found || !descoberta.root) {
     log('nenhum projeto RAGX encontrado no workspace');
+    // Não há o que reconectar: sem projeto, tentar de novo não muda nada.
+    tentativasFalhas = 0;
     mudarEstado('disconnected', 'nenhum projeto RAGX neste workspace');
     return;
   }
@@ -176,6 +260,7 @@ async function conectar(forcar: boolean): Promise<void> {
           cwd,
           write: false,
           log,
+          onCrash: aoCairOProcesso,
         }),
     );
   }
@@ -183,13 +268,15 @@ async function conectar(forcar: boolean): Promise<void> {
     tentativas.push(() => new CliRagClient({ command: comando, cwd, log }));
   }
 
+  const t0 = Date.now();
   for (const criar of tentativas) {
     const candidato = criar();
     const r = await candidato.connect();
     if (r.ok && r.data) {
       cliente = candidato;
       projeto = r.data;
-      log(`conectado por ${r.data.transport}`);
+      tentativasFalhas = 0;
+      log(`[RAGX VSCode] Ready — por ${r.data.transport} em ${Date.now() - t0}ms`);
       mudarEstado(descoberta.needsIndex ? 'outdated' : 'ready');
       return;
     }
@@ -198,6 +285,7 @@ async function conectar(forcar: boolean): Promise<void> {
   }
 
   mudarEstado('error', 'não foi possível conectar ao RAGX — veja os logs');
+  agendarReconexao('nenhum transporte respondeu');
 }
 
 function lerSettings(): UiSettings {
@@ -228,7 +316,7 @@ function registrarComandos(context: vscode.ExtensionContext): void {
     ['ragx.status', ir('overview')],
     ['ragx.securityScan', ir('security')],
     ['ragx.sync', sincronizar],
-    ['ragx.reconnect', () => conectar(true)],
+    ['ragx.reconnect', reconectarAgora],
     ['ragx.showLogs', showLogs],
     ['ragx.knowledgeForFile', conhecimentoDoArquivo],
     ['ragx.trainAgent', () => avisarNaoDisponivel('Train Agent')],
@@ -238,6 +326,17 @@ function registrarComandos(context: vscode.ExtensionContext): void {
   for (const [id, handler] of comandos) {
     context.subscriptions.push(vscode.commands.registerCommand(id, handler));
   }
+}
+
+/**
+ * "Reconnect" do menu. Zera o contador de falhas porque é um pedido
+ * explícito: se a pessoa acabou de instalar o RAGX, fazê-la esperar o próximo
+ * passo do backoff (até um minuto) pareceria que o comando não funcionou.
+ */
+async function reconectarAgora(): Promise<void> {
+  tentativasFalhas = 0;
+  cancelarReconexao();
+  await conectar(true);
 }
 
 async function abrirBusca(): Promise<void> {

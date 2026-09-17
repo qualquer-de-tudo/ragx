@@ -18,6 +18,8 @@ import {
   toAnalysis,
   toChunk,
   toDocument,
+  toEdge,
+  toProvenance,
   toSources,
   toTask,
   toTaskDetail,
@@ -70,6 +72,29 @@ export interface McpOptions {
   write?: boolean;
   timeoutMs?: number;
   log?: (line: string) => void;
+  /**
+   * Chamado quando o processo do RAGX cai SOZINHO — crash do Python, pipe
+   * fechado, `kill` de fora. Sem isto, a extensão só descobria na próxima
+   * consulta, que falhava com um erro de transporte sem explicação; o estado
+   * continuava "Ready" enquanto não havia mais ninguém do outro lado.
+   *
+   * Não dispara em `dispose()`: desligar de propósito não é queda.
+   */
+  onCrash?: (motivo: string) => void;
+}
+
+/**
+ * Quanto tempo levou cada etapa até o RAGX ficar pronto.
+ *
+ * Existe para responder "por que demorou?" com medida em vez de palpite. O
+ * gargalo medido neste projeto é `spawnBootHandshakeMs` — o boot do Python e
+ * o import do SDK de MCP —, e não o transporte nem as consultas.
+ */
+export interface ConnectTimings {
+  spawnBootHandshakeMs: number;
+  listToolsMs: number;
+  handshakeMs: number;
+  totalMs: number;
 }
 
 type Json = Record<string, unknown>;
@@ -85,6 +110,9 @@ export class McpRagClient implements RagClient {
   private tools = new Set<string>();
   /** Nome do projeto conectado; usado para separar o que é dele do que não é. */
   private projeto = 'este projeto';
+  /** `true` entre um `connect()` que deu certo e o fim da conexão. */
+  private vivo = false;
+  private timings?: ConnectTimings;
 
   constructor(options: McpOptions) {
     this.options = options;
@@ -95,6 +123,15 @@ export class McpRagClient implements RagClient {
   }
 
   async connect(): Promise<RagResult<ProjectInfo>> {
+    const t0 = Date.now();
+    let marca = t0;
+    const desde = () => {
+      const agora = Date.now();
+      const dt = agora - marca;
+      marca = agora;
+      return dt;
+    };
+
     try {
       const args = [...this.options.args];
       if (this.options.write && !args.includes('--write')) args.push('--write');
@@ -114,18 +151,40 @@ export class McpRagClient implements RagClient {
         { capabilities: {} },
       );
       await this.client.connect(transport);
+      const spawnBootHandshakeMs = desde();
 
       const listed = await this.client.listTools();
       this.tools = new Set(listed.tools.map((t) => t.name));
-      this.log(`MCP conectado — ${this.tools.size} ferramentas`);
+      const listToolsMs = desde();
 
       const stderr = (transport as unknown as { stderr?: NodeJS.ReadableStream }).stderr;
       stderr?.on('data', (buf: Buffer) => this.log(`[ragx] ${buf.toString().trim()}`));
 
       const playbook = await this.call<Json>('get_playbook', {});
+      const handshakeMs = desde();
       const project =
         (playbook.ok && (playbook.data?.project as string)) || 'projeto';
       this.projeto = project;
+
+      // Só agora a queda passa a ser inesperada: antes disto, um fechamento é
+      // uma tentativa de conexão que falhou, e quem chamou já trata.
+      this.vivo = true;
+      transport.onclose = () => this.aoFechar('o processo do RAGX encerrou');
+      transport.onerror = (e: Error) => this.aoFechar(e.message);
+
+      this.timings = {
+        spawnBootHandshakeMs,
+        listToolsMs,
+        handshakeMs,
+        totalMs: Date.now() - t0,
+      };
+      // Uma linha por conexão, com a repartição. É o que transforma "o RAGX
+      // está lento" em "o boot do Python leva 1,6 s" sem precisar de profiler.
+      this.log(
+        `MCP pronto em ${this.timings.totalMs}ms — ${this.tools.size} ferramentas ` +
+          `(spawn+boot+handshake ${spawnBootHandshakeMs}ms · ` +
+          `listTools ${listToolsMs}ms · playbook ${handshakeMs}ms)`,
+      );
 
       return done({
         name: project,
@@ -134,12 +193,29 @@ export class McpRagClient implements RagClient {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.log(`falha ao conectar: ${message}`);
+      this.log(`falha ao conectar após ${Date.now() - t0}ms: ${message}`);
       return fail('spawn_failed', message);
     }
   }
 
+  /** Repartição da última conexão bem-sucedida. */
+  medidas(): ConnectTimings | undefined {
+    return this.timings;
+  }
+
+  private aoFechar(motivo: string): void {
+    // `dispose()` zera `vivo` ANTES de fechar: desligar de propósito não é
+    // queda, e avisar que caiu dispararia uma reconexão contra um cliente que
+    // acabou de ser trocado.
+    if (!this.vivo) return;
+    this.vivo = false;
+    this.client = undefined;
+    this.log(`conexão perdida: ${motivo}`);
+    this.options.onCrash?.(motivo);
+  }
+
   async dispose(): Promise<void> {
+    this.vivo = false;
     try {
       await this.client?.close();
     } catch {
@@ -299,30 +375,30 @@ export class McpRagClient implements RagClient {
       qualifiedName: str(centro.qualified_name) || null,
       documentPath: str(centro.document_path) || null,
       summary: str(centro.summary) || null,
+      confidence: numOrUndef(centro.confidence),
+      provenance: toProvenance(centro.provenance),
       expanded: true,
     });
 
     const edges: GraphEdge[] = [];
     for (const rel of relacoes) {
       if (nodes.size >= maxNodes) break;
-      const alvo = str(rel.target) || str(rel.dst) || str(rel.name);
-      if (!alvo) continue;
-      const alvoId = str(rel.target_id) || alvo;
-      if (!nodes.has(alvoId)) {
-        nodes.set(alvoId, {
-          id: alvoId,
-          name: alvo,
-          type: str(rel.target_type) || 'entity',
+      const aresta = toEdge(rel, centroId);
+      if (!aresta) continue;
+
+      // O nó do outro lado. `other_id` é quem identifica; o nome é rótulo, e
+      // dois símbolos homônimos em arquivos diferentes têm o MESMO nome.
+      const outroId = aresta.source === centroId ? aresta.target : aresta.source;
+      if (!nodes.has(outroId)) {
+        nodes.set(outroId, {
+          id: outroId,
+          name: str(rel.other) || str(rel.other_name) || outroId,
+          type: str(rel.other_type) || 'entity',
+          qualifiedName: str(rel.other_qualified_name) || null,
           expanded: false,
         });
       }
-      const saida = str(rel.direction) !== 'in';
-      edges.push({
-        source: saida ? centroId : alvoId,
-        target: saida ? alvoId : centroId,
-        type: str(rel.type) || 'related',
-        weight: typeof rel.weight === 'number' ? rel.weight : undefined,
-      });
+      edges.push(aresta);
     }
 
     return done({
@@ -336,11 +412,16 @@ export class McpRagClient implements RagClient {
     const r = await this.call<Json>('get_entity', { name, depth: 1 });
     if (!r.ok) return propagate<EntityDetail>(r);
     const e = (r.data?.entity as Json) ?? {};
+    // `other` é o nó do outro lado — o campo que o servidor manda. Ler
+    // `target`/`name` aqui mostrava "?" em toda relação, porque nenhum dos
+    // dois existe na resposta. Os antigos ficam como reserva, e só.
     const relacoes = ((r.data?.relations as Json[]) ?? []).map((rel) => ({
       type: str(rel.type) || 'related',
       direction: (str(rel.direction) === 'in' ? 'in' : 'out') as 'in' | 'out',
-      target: str(rel.target) || str(rel.name) || '?',
-      targetId: str(rel.target_id) || undefined,
+      target: str(rel.other) || str(rel.other_name) || str(rel.target) || '?',
+      targetId: str(rel.other_id) || str(rel.target_id) || undefined,
+      confidence: numOrUndef(rel.confidence),
+      provenance: toProvenance(rel.provenance),
     }));
     const fontes: Array<{ path: string; line?: number }> = [];
     const doc = str(e.document_path);
@@ -357,6 +438,8 @@ export class McpRagClient implements RagClient {
         qualifiedName: str(e.qualified_name) || null,
         documentPath: doc || null,
         summary: str(e.summary) || null,
+        confidence: numOrUndef(e.confidence),
+        provenance: toProvenance(e.provenance),
       },
       relations: relacoes,
       sources: fontes,
@@ -616,6 +699,11 @@ export class McpRagClient implements RagClient {
 // ── conversões ──────────────────────────────────────────────────────────
 function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
+}
+
+/** Número ausente é AUSENTE, não zero: `confidence: 0` significa outra coisa. */
+function numOrUndef(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 }
 
 function num(v: unknown): number {
