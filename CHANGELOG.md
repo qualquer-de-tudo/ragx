@@ -7,7 +7,7 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 > MESMA alteração que a produz. Deixar para depois é como uma correção some do
 > histórico — quem a escreveu lembra do porquê; a próxima pessoa, não.
 
-## [Não lançado]
+## [1.0.0-beta.2] — 2026-09-17
 
 ### Corrigido
 
