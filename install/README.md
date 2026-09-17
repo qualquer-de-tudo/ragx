@@ -223,8 +223,8 @@ Codex CLI usa TOML, não JSON, em `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.ragx]
-command = "ragx"
-args = ["mcp", "serve"]
+command = 'ragx'
+args = ['mcp', 'serve']
 ```
 
 Acrescente `"--write"` aos argumentos para que o agente possa reindexar e
