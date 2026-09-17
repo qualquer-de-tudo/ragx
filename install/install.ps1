@@ -209,60 +209,18 @@ function Instalar-Extensao {
         em silencio - perdendo os outros servidores da pessoa.
       - nao existe `-AsHashtable` nesta versao, entao a conversao e manual.
 #>
-function ConvertTo-Tabela {
-    param($Objeto)
-    $tabela = @{}
-    if ($null -eq $Objeto) { return $tabela }
-    if ($Objeto -is [System.Collections.IDictionary]) {
-        foreach ($chave in $Objeto.Keys) { $tabela[$chave] = $Objeto[$chave] }
-        return $tabela
-    }
-    foreach ($p in $Objeto.PSObject.Properties) { $tabela[$p.Name] = $p.Value }
-    return $tabela
-}
-
-function Registrar-Mcp {
-    param([string]$Nome, [string]$Arquivo, [string]$Comando)
-
-    $pasta = Split-Path -Parent $Arquivo
-    if (-not (Test-Path $pasta)) { return }
-
-    try {
-        $lido = $null
-        if (Test-Path $Arquivo) {
-            # `-Encoding UTF8` no PS 5.1 tolera BOM na LEITURA; o problema do
-            # BOM e so na escrita, tratada abaixo.
-            $bruto = Get-Content $Arquivo -Raw -Encoding UTF8
-            if ($bruto -and $bruto.Trim()) {
-                $lido = $bruto | ConvertFrom-Json -ErrorAction Stop
-            }
-        }
-    } catch {
-        # Config corrompida: nao sobrescrever o que a pessoa tem. Melhor avisar
-        # que apagar a configuracao dela.
-        Escreva-Aviso "$Nome tem configuracao ilegivel; registre o MCP a mao"
-        return
-    }
-
-    $raiz = ConvertTo-Tabela $lido
-    $servidores = ConvertTo-Tabela $raiz['mcpServers']
-
-    # Caminho ABSOLUTO: aplicativo grafico nao herda o PATH do usuario em toda
-    # instalacao, e `ragx` sozinho pode nao ser encontrado pelo cliente.
-    $servidores['ragx'] = @{ command = $Comando; args = @('mcp', 'serve') }
-    $raiz['mcpServers'] = $servidores
-    $dados = $raiz
-
-    # `Set-Content -Encoding utf8` grava COM BOM no PowerShell 5.1, e o
-    # `JSON.parse` do Node - que e quem le este arquivo - lanca excecao ao ver
-    # BOM. O instalador chegou a corromper um config assim: o conteudo estava
-    # certo e o cliente nao conseguia abrir. `WriteAllText` com UTF8Encoding
-    # sem BOM e a unica forma confiavel nas duas versoes do PowerShell.
-    $json = $dados | ConvertTo-Json -Depth 20
-    $semBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($Arquivo, $json + "`n", $semBom)
-    Escreva-Nota "MCP registrado em $Nome"
-}
+# O registro do MCP saiu daqui: agora e `ragx mcp install`.
+#
+# Este arquivo mantinha uma reimplementacao em PowerShell do mesmo script que o
+# install.sh embutia em Python. Duas implementacoes do mesmo contrato, nenhuma
+# com teste, e cada uma conhecendo um conjunto diferente de clientes. A logica
+# vive em `src/ragx/clients/`, coberta por
+# `tests/integration/test_mcp_install.py`, e cobre Claude Desktop, Claude Code,
+# Cursor, Windsurf, Gemini CLI e Codex CLI.
+#
+# O cuidado com BOM que morava aqui continua valendo e foi para la: o
+# `JSON.parse` do Node, que e quem le esses arquivos, lanca excecao ao ver BOM.
+# O registro grava UTF-8 sem BOM.
 
 <#
 .SYNOPSIS
@@ -404,11 +362,15 @@ function Invoke-InstalacaoRagx {
         $exe = Join-Path $bin 'ragx.exe'
         if (-not (Test-Path $exe)) { $exe = 'ragx' }
 
-        Registrar-Mcp 'Claude Desktop' `
-            (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json') $exe
-        Registrar-Mcp 'Claude Code' `
-            (Join-Path $env:USERPROFILE '.claude.json') $exe
-        Escreva-Ok 'servidor MCP disponivel: ragx mcp serve'
+        & $exe mcp install --command $exe
+        if ($LASTEXITCODE -eq 0) {
+            Escreva-Ok 'servidor MCP registrado nos clientes encontrados'
+        } else {
+            # Falhar aqui nao invalida a instalacao: o RAGX esta no lugar e
+            # funciona. Nao registrar em um cliente e inconveniente, nao e
+            # motivo para desfazer o que ja deu certo.
+            Escreva-Aviso "nao consegui registrar em algum cliente MCP - rode 'ragx mcp install' para ver o motivo"
+        }
     }
 
     # -- 6. extensao do VS Code, se o .vsix veio junto --------------------

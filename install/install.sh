@@ -164,30 +164,28 @@ fi
 ok "PATH: $BIN"
 
 # ── 4. MCP ──────────────────────────────────────────────────────────────
-registrar_mcp() {
-  local nome="$1" arquivo="$2"
-  [ -d "$(dirname "$arquivo")" ] || return 0
-  python3 - "$arquivo" <<'PY' 2>/dev/null && nota "MCP registrado em $nome" || true
-import json, pathlib, sys
-p = pathlib.Path(sys.argv[1])
-try:
-    dados = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
-except json.JSONDecodeError:
-    # Config corrompida: não sobrescrever o que a pessoa tem. Melhor falhar
-    # e deixar ela registrar à mão que apagar a configuração dela.
-    sys.exit(1)
-servidores = dados.setdefault("mcpServers", {})
-servidores["ragx"] = {"command": "ragx", "args": ["mcp", "serve"]}
-p.parent.mkdir(parents=True, exist_ok=True)
-p.write_text(json.dumps(dados, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-PY
-}
-
+# Quem registra é o próprio RAGX: `ragx mcp install`.
+#
+# Este passo já foi um script Python embutido entre aspas aqui dentro, com um
+# gêmeo reescrito em PowerShell no install.ps1 — duas implementações, nenhuma
+# testada, e só uma delas sabia fazer backup. Agora existe uma, coberta por
+# `tests/integration/test_mcp_install.py`, e ela cobre Claude Desktop, Claude
+# Code, Cursor, Windsurf, Gemini CLI e Codex CLI.
+#
+# Também não precisa mais de `python3` no PATH: o interpretador que interessa
+# é o que o `uv` usou para instalar o RAGX.
 if [ "$COM_MCP" = "1" ]; then
-  registrar_mcp "Claude Desktop" "$HOME/.config/Claude/claude_desktop_config.json"
-  registrar_mcp "Claude Desktop (macOS)" "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-  registrar_mcp "Claude Code" "$HOME/.claude.json"
-  ok "servidor MCP disponível: ragx mcp serve"
+  # Caminho ABSOLUTO no `--command`: aplicativo grafico (o Claude Desktop, por
+  # exemplo) nao herda o PATH do shell de forma confiavel, e `ragx` sozinho
+  # pode nao ser encontrado pelo cliente.
+  if "$BIN/ragx" mcp install --command "$BIN/ragx"; then
+    ok "servidor MCP registrado nos clientes encontrados"
+  else
+    # Falhar aqui não invalida a instalação: o RAGX está no lugar e funciona.
+    # Registrar em cliente nenhum é inconveniente, não é motivo para desfazer
+    # tudo que já deu certo.
+    aviso "não consegui registrar em algum cliente MCP — rode 'ragx mcp install' para ver o motivo"
+  fi
 fi
 
 # ── 5. extensão do VS Code, se o .vsix veio junto ───────────────────────

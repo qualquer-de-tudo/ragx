@@ -131,9 +131,19 @@ def test_instalador_poe_o_comando_no_path(script: str) -> None:
 
 @pytest.mark.parametrize("script", ["install/install.sh", "install/install.ps1"])
 def test_instalador_registra_o_mcp(script: str) -> None:
+    """O registro é DELEGADO ao `ragx mcp install`.
+
+    Antes cada instalador trazia a sua própria implementação — Python embutido
+    entre aspas no `.sh`, PowerShell no `.ps1`. Duas implementações do mesmo
+    contrato, nenhuma testada, conhecendo conjuntos diferentes de clientes.
+    A garantia de verdade agora está em `tests/integration/test_mcp_install.py`,
+    que exercita o comportamento em vez de procurar palavra em script de shell.
+    """
     texto = (RAIZ / script).read_text(encoding="utf-8-sig")
-    assert "mcpServers" in texto
-    assert "mcp" in texto and "serve" in texto
+    assert "mcp install" in texto, (
+        f"{script} não chama `ragx mcp install` — se a lógica voltou para "
+        f"dentro do instalador, ela voltou sem teste junto"
+    )
 
 
 def test_instalador_windows_e_ascii_sem_bom() -> None:
@@ -211,14 +221,15 @@ def test_registro_do_mcp_nao_destroi_a_configuracao(script: str) -> None:
     2. `ConvertFrom-Json '{}'` devolve `$null` no PS 5.1. O código chamava
        `.PSObject` nele, estourava, e gravava um arquivo VAZIO — apagando os
        outros servidores MCP da pessoa em silêncio.
+
+    Os dois foram resolvidos de vez ao mover a escrita para o Python, que grava
+    UTF-8 sem BOM e RECUSA configuração ilegível em vez de sobrescrevê-la. O
+    que este teste protege agora é que nenhum instalador volte a escrever nesse
+    arquivo por conta própria — o caminho que não tinha teste.
     """
     texto = (RAIZ / script).read_text(encoding="utf-8")
-    if script.endswith(".ps1"):
-        assert "UTF8Encoding($false)" in texto, "o config precisa ser gravado SEM BOM"
-        assert "Set-Content -Path $Arquivo -Encoding utf8" not in texto
-        assert "ConvertTo-Tabela" in texto, "`{}` vira `$null` e precisa de guarda"
-    else:
-        # O `json.dump` do Python já grava sem BOM; o que importa aqui é não
-        # sobrescrever config ilegível.
-        assert "JSONDecodeError" in texto
-        assert "setdefault" in texto, "preservar o que já existe"
+    assert "mcpServers" not in texto, (
+        f"{script} voltou a mexer no config de outro programa por conta "
+        f"própria. Essa escrita é a operação mais perigosa do instalador e "
+        f"precisa continuar em `ragx mcp install`, onde há teste."
+    )

@@ -8,6 +8,7 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 from ragx.config import load_config
 
@@ -71,3 +72,82 @@ def tools(
         console.print(f"  [cyan]{t['name']}[/]")
         console.print(f"    [dim]{t['description']}[/]")
     console.print()
+
+
+@app.command("install")
+def install(
+    client: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--client",
+            help="Registrar só nestes clientes (repetível): "
+            "claude-desktop, claude-code, cursor, windsurf, gemini, codex.",
+        ),
+    ] = None,
+    command: Annotated[
+        str, typer.Option("--command", help="Executável do RAGX gravado na configuração.")
+    ] = "ragx",
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Mostra o que mudaria, sem escrever nada.")
+    ] = False,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Registra o RAGX como servidor MCP nos clientes instalados.
+
+    Idempotente: rodar de novo não duplica entrada nem reescreve o que já está
+    certo. A configuração existente é preservada — só a entrada `ragx` é
+    tocada, e há backup datado antes de qualquer mudança.
+    """
+    from ragx.clients import Outcome, register_all
+
+    resultados = register_all(command=command, dry_run=dry_run, only=client)
+
+    if as_json:
+        console.print_json(
+            json.dumps(
+                [
+                    {
+                        "client": r.client.id,
+                        "label": r.client.label,
+                        "config": str(r.client.config),
+                        "outcome": r.outcome.value,
+                        "detail": r.detail,
+                        "backup": str(r.backup) if r.backup else None,
+                    }
+                    for r in resultados
+                ],
+                ensure_ascii=False,
+            )
+        )
+        raise typer.Exit(0 if all(r.ok for r in resultados) else 1)
+
+    icones = {
+        Outcome.CREATED: "[green]+[/]",
+        Outcome.UPDATED: "[green]~[/]",
+        Outcome.UNCHANGED: "[dim]=[/]",
+        Outcome.ABSENT: "[dim]·[/]",
+        Outcome.FAILED: "[red]x[/]",
+    }
+    console.print(f"\n[bold]Registro do servidor MCP[/]{'  [yellow](simulação)[/]' if dry_run else ''}\n")
+    # `escape`: as mensagens carregam coisas como `[mcp_servers.ragx]`, e o Rich
+    # leria isso como marcação e apagaria o texto — o resultado era a linha
+    # "tabela `` registrada", sem dizer QUAL tabela.
+    for r in resultados:
+        console.print(f"  {icones[r.outcome]} [cyan]{r.client.label:<16}[/] {escape(r.detail)}")
+        if r.outcome in (Outcome.CREATED, Outcome.UPDATED, Outcome.FAILED):
+            console.print(f"      [dim]{escape(str(r.client.config))}[/]")
+        if r.backup:
+            console.print(f"      [dim]backup: {r.backup.name}[/]")
+
+    mudou = [r for r in resultados if r.outcome in (Outcome.CREATED, Outcome.UPDATED)]
+    falhou = [r for r in resultados if r.outcome is Outcome.FAILED]
+    ausentes = [r for r in resultados if r.outcome is Outcome.ABSENT]
+
+    console.print(
+        f"\n  {len(mudou)} alterado(s) · "
+        f"{len(resultados) - len(mudou) - len(falhou) - len(ausentes)} já em dia · "
+        f"{len(ausentes)} não instalado(s) · {len(falhou)} com falha\n"
+    )
+    if mudou and not dry_run:
+        console.print("  [dim]Reinicie o cliente para que ele leia a configuração nova.[/]\n")
+    raise typer.Exit(1 if falhou else 0)
