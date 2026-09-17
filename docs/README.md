@@ -34,6 +34,8 @@ responde busca híbrida, monta contexto para agentes e expõe tudo via MCP.
 | [19 — Watch e autonomia do agente](19-watch-e-autonomia-do-agente.md) | `ragx watch`, escrita via MCP, playbook | 11 |
 | [20 — Task Analyzer](20-task-analyzer.md) | Classificar a solicitação: executar ou documentar antes | 13 |
 | [21 — Orquestração de tarefas](21-orquestracao-de-tarefas.md) | SQLite, DAG, lease, retry, scheduler, worker | 13 |
+| [22 — VS Code e desempenho](22-vscode-e-desempenho.md) | Conexão, prontidão, reconexão, onde o tempo vai | 14 |
+| [23 — Auditoria do RAG](23-auditoria-e-evolucao-do-rag.md) | Onde a recuperação perde precisão e tempo, e a proposta | — |
 | [Roadmap](roadmap.md) | Fases, dependências, critérios de aceite | todas |
 | [ADRs](adr/) | Decisões arquiteturais registradas | — |
 
