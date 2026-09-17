@@ -219,6 +219,9 @@ ou no `claude_desktop_config.json`:
 }
 ```
 
+Cursor e Windsurf usam o mesmo formato, em `~/.cursor/mcp.json` e
+`~/.codeium/windsurf/mcp_config.json`, respectivamente.
+
 Codex CLI usa TOML, não JSON, em `~/.codex/config.toml`:
 
 ```toml

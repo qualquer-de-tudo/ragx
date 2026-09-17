@@ -134,6 +134,10 @@ def test_instalador_registra_o_mcp(script: str) -> None:
     texto = (RAIZ / script).read_text(encoding="utf-8-sig")
     assert "mcpServers" in texto
     assert "mcp" in texto and "serve" in texto
+    # Codex CLI usa TOML, com uma chave diferente das dos clientes que usam
+    # JSON — sem isto o teste passaria mesmo se o registro no Codex CLI
+    # sumisse do instalador.
+    assert "mcp_servers.ragx" in texto
 
 
 def test_instalador_windows_e_ascii_sem_bom() -> None:
