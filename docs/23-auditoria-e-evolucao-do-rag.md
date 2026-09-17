@@ -30,7 +30,7 @@ Os cinco achados que mudam alguma coisa:
 | 2 | O conjunto de avaliação (n=26) não distingue os modos | IC95% de `keyword` [0,58–0,89] e `hybrid` [0,43–0,78] se sobrepõem | Médio |
 | 3 | A métrica `nDCG@10` está errada — pode passar de 1,0 | Medido: **2,131** com 3 chunks do mesmo arquivo | Baixo |
 | 4 | 22% do corpus é `task/`, e ele ganha do código na busca | `task/` 543 chunks > `docs/` 321; hit #1 de "como o gate bloqueia" é um arquivo de task | Baixo |
-| 5 | O braço semântico só subtrai, neste corpus | Varredura de pesos: semantic=0 → recall 0,77; qualquer peso > 0 → ≤ 0,69 | Médio |
+| 5 | O braço semântico é fraco **por escolha de modelo** | Trocando o modelo: híbrido 0,62 → **0,77** de recall, MRR 0,51 → **0,58** | Médio |
 
 O achado 1 é o mais barato e o de maior efeito: hoje **99% da latência da busca
 semântica é carregar o modelo**, não buscar. O achado 3 invalida uma das três
@@ -41,6 +41,10 @@ sustentada pelo tamanho da amostra**, embora possa vir a ser.
 A recomendação central não é trocar a arquitetura. É **consertar o instrumento
 de medida e o caminho quente antes de mexer no algoritmo** — porque, do jeito
 que está, nenhuma mudança de retrieval é falsificável.
+
+Uma exceção mereceu ser medida agora, e o resultado justifica: **trocar o
+modelo de embedding resolve, sozinho, a ressalva publicada no README.** Ver
+3.5.1.
 
 ---
 
@@ -303,6 +307,55 @@ Empiricamente o prefiltro não está machucando (96% de cobertura), então isto 
 dívida conceitual, não incêndio. Mas é o motivo para o modelo ser o primeiro
 lugar a olhar.
 
+#### 3.5.1 Medido: trocar o modelo resolve a ressalva do README 🟢
+
+Reembuti **os mesmos 2.473 chunks** numa cópia isolada do índice, trocando
+apenas o modelo — mesmo corpus, mesmo chunking, mesmas 26 consultas, mesmo
+código de busca:
+
+| | recall@5 | MRR | nDCG@10 |
+|---|---:|---:|---:|
+| **MiniLM (atual)** | | | |
+| keyword | 0,77 | 0,47 | 0,76 |
+| semantic | 0,54 | 0,44 | 0,66 |
+| hybrid | 0,62 | 0,51 | 0,76 |
+| **nomic-embed-text-v1.5** | | | |
+| keyword | 0,77 | 0,47 | 0,76 |
+| semantic | **0,62** | **0,47** | 0,81 |
+| hybrid | **0,77** | **0,58** | 0,87 |
+
+O `keyword` é o **controle** e ficou idêntico nos três indicadores — prova de
+que a única variável que mudou foi o modelo.
+
+O que muda:
+
+- **O híbrido empata com o keyword em recall@5** (0,77) e **passa à frente em
+  MRR** (0,58 contra 0,47). O critério documentado do projeto —
+  `híbrida > semântica > keyword` — passa a ser atingido **em MRR**, que é
+  o único dos três indicadores em que ele pode ser afirmado hoje (ver
+  abaixo).
+- **MRR é o indicador limpo aqui.** Ele usa a posição do PRIMEIRO acerto, então
+  não é inflado pelo defeito de caminhos duplicados do achado 3.3 — ao
+  contrário do nDCG, cujo salto (0,76 → 0,87) está medido com um instrumento
+  quebrado e **não deve ser citado** até 1.2 estar feito.
+- O estágio grosseiro passa a ser **legítimo**: o nomic é treinado com
+  Matryoshka, então truncar 768 → 256 preserva semântica. A arquitetura da
+  ADR-0010 volta a fazer sentido como escrita.
+
+Duas ressalvas que impedem chamar isto de conclusão fechada:
+
+1. **n continua 26.** O IC95% do recall híbrido é [0,58 – 0,89] — o mesmo do
+   keyword. A melhora de recall é consistente com o esperado, mas não é
+   estatisticamente separável. **O ganho de MRR é o mais sólido**, por ser
+   média contínua e não proporção binária.
+2. **A troca tem custo** (ver a caixa em 4.3.1): `batch=32` estoura memória, o
+   índice dobra de tamanho (768 contra 384 dimensões) e a indexação fica mais
+   lenta.
+
+Mesmo assim, é o achado com melhor relação entre esforço e efeito depois do
+3.1 — e o único que ataca diretamente a ressalva que o projeto publica sobre
+si mesmo.
+
 ### 3.6 `score` tem três escalas incompatíveis, e vaza para o agente 🟠
 
 A mesma consulta, os mesmos três modos:
@@ -537,7 +590,7 @@ Candidatos disponíveis no `fastembed` já instalado:
 o qual a ADR-0004 foi escrita) e `intfloat/multilingual-e5-large` (1024d,
 multilíngue, prefixos `query:`/`passage:`).
 
-> **A troca não é gratuita, e isto foi medido.** Reembutindo este repositório
+> **4.3.1 — A troca não é gratuita, e isto foi medido.** Reembutindo este repositório
 > com `nomic-embed-text-v1.5` no `batch` padrão (32), o ONNX Runtime aborta:
 >
 > ```text
@@ -550,13 +603,20 @@ multilíngue, prefixos `query:`/`passage:`).
 > comprimento, e `batch=32` multiplica isso por 32. Modelo de janela grande
 > exige `batch` pequeno e/ou teto de tokens por chunk — e o `[embedding] batch`
 > default do RAGX está calibrado para o modelo atual, não para o candidato.
+> Com `batch=4` os 2.473 chunks foram embutidos sem erro.
+>
+> Some-se a isso o índice dobrar de tamanho: 768 dimensões contra 384.
 >
 > Ou seja: a onda 3.1 carrega uma mudança de configuração obrigatória junto, e
 > um custo de indexação maior. Não é só trocar o nome do modelo no `ragx.toml`.
 
-*Aceite:* recall@5 semântico sobe acima do keyword, ou a troca é registrada
-como tentada e sem efeito — com o número. E o tempo de indexação completa entra
-no registro, porque ele é parte do custo da decisão.
+**Medido (ver 3.5.1):** com `nomic-embed-text-v1.5`, o híbrido vai de 0,62 para
+**0,77** de recall@5 e de 0,51 para **0,58** de MRR, com o keyword inalterado
+como controle. A recomendação deixa de ser hipótese.
+
+*Aceite:* confirmar o ganho no conjunto ampliado da onda 1.3 — com n=26 o
+resultado é promissor, não conclusivo — e publicar junto o custo: tamanho do
+índice, tempo de indexação e o `batch` necessário.
 
 **3.2 Reconhecer a assimetria no código.**
 O `Embedder` já tem `embed_query` separado de `embed_documents`; o provider
@@ -633,11 +693,14 @@ diz se o índice está atrás. Um agente que recebe `stale: true` pode chamar
 
 Para não passar hipótese como resultado:
 
-- **A troca de modelo (onda 3.1) não foi medida.** Montei o experimento
-  (cópia isolada do índice, reembutimento com `nomic-embed-text-v1.5`), mas o
-  reembutimento completou apenas 992 dos 2473 chunks dentro do tempo desta
-  sessão. Medir com 40% do índice daria um número **enganoso**, então não o
-  reporto. O script está descrito e é reexecutável; falta rodá-lo até o fim.
+- **A troca de modelo foi medida** (3.5.1), mas com n=26. O ganho de MRR é
+  sólido; o de recall@5 é consistente e não separável estatisticamente. Precisa
+  do conjunto ampliado (1.3) para virar decisão fechada. Não comparei outros
+  candidatos (`multilingual-e5-large`, `jina-embeddings-v2-base-code`), e o de
+  código pode ser melhor ainda num corpus com mais código que prosa.
+- **Não medi o custo de indexação da troca.** Sei que `batch=32` estoura e que
+  `batch=4` funciona, mas não cronometrei a indexação completa nem medi o
+  tamanho final do índice.
 - **Não avaliei qualidade de geração**, só de recuperação — que é o que o RAGX
   controla, e é a escolha certa do projeto.
 - **Não medi em outro corpus.** Tudo aqui é sobre o RAGX indexando a si mesmo:
@@ -663,5 +726,12 @@ Se só houver espaço para três coisas:
 3. **Separar `task/` do conhecimento** (2.1) — maior ganho de precisão por
    linha alterada.
 
-As ondas 3 a 6 só valem depois, e cada uma deve entrar com o número que a
+E logo em seguida, porque já está medido e ataca a ressalva que o projeto
+publica sobre si mesmo:
+
+4. **Trocar o modelo de embedding** (3.1) — híbrido de 0,62 para 0,77 de
+   recall, MRR de 0,51 para 0,58, com `batch` ajustado. Confirmar no conjunto
+   ampliado antes de anunciar.
+
+As ondas 4 a 6 só valem depois, e cada uma deve entrar com o número que a
 justifica ao lado.
