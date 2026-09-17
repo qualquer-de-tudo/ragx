@@ -291,12 +291,27 @@ function Registrar-Mcp-Toml {
         return
     }
 
-    $bloco = "`n[mcp_servers.ragx]`ncommand = ""$Comando""`nargs = [""mcp"", ""serve""]`n"
+    # String LITERAL do TOML (aspas simples), nao basica (aspas duplas): numa
+    # string basica, `\` inicia um escape (`\n`, `\uXXXX`, etc.), e `$Comando`
+    # e um caminho Windows cheio de backslash (`Join-Path` produz algo como
+    # `C:\Users\...\ragx.exe`). Com aspas duplas, `\U` de `\Users\` seria lido
+    # como inicio de escape Unicode de 8 digitos hex e o parse do TOML falha -
+    # deixando o arquivo INTEIRO ilegivel pro Codex CLI, nao so o bloco novo.
+    # Aspas simples aceitam o backslash como literal, sem processar escape.
+    $bloco = "`n[mcp_servers.ragx]`ncommand = '$Comando'`nargs = [""mcp"", ""serve""]`n"
     # `AppendAllText` ja escreve a partir do FIM do arquivo: o que vai nesta
     # chamada e so o sufixo novo (a quebra de linha, se faltar, mais o bloco).
     # Prefixar com `$texto` de novo - o conteudo que acabou de ser LIDO do
     # mesmo arquivo - duplicaria tudo que a pessoa ja tinha no config.toml.
-    $sufixo = if ($texto -and -not $texto.EndsWith("`n")) { "`n" + $bloco } else { $bloco }
+    $sufixo = if (-not $texto) {
+        # Arquivo novo/vazio: sem conteudo antes, entao sem linha em branco
+        # antes da tabela - so o `$bloco` sem o `\n` inicial dele.
+        $bloco.TrimStart("`n")
+    } elseif (-not $texto.EndsWith("`n")) {
+        "`n" + $bloco
+    } else {
+        $bloco
+    }
     New-Item -ItemType Directory -Force -Path $pasta | Out-Null
     # Sem BOM: `AppendAllText` com `[System.Text.Encoding]::UTF8` GRAVA um BOM
     # quando o arquivo e novo (a preamble so e omitida se o arquivo ja existir
@@ -305,7 +320,7 @@ function Registrar-Mcp-Toml {
     # unica forma confiavel de nao gravar BOM em nenhum dos dois casos.
     $semBomToml = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::AppendAllText($Arquivo, $sufixo, $semBomToml)
-    Escreva-Ok "MCP registrado em $Nome"
+    Escreva-Nota "MCP registrado em $Nome"
 }
 
 <#
