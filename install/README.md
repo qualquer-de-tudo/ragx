@@ -101,7 +101,9 @@ O instalador:
    (servidor MCP, busca semântica, contagem de tokens);
 3. grava o diretório no **PATH** do seu perfil;
 4. **encontra o `.vsix` na pasta** e instala a extensão, se o `code` existir;
-5. registra o servidor MCP no Claude Desktop e no Claude Code;
+5. registra o servidor MCP no Claude Desktop, Claude Code, Cursor, Windsurf,
+   Gemini CLI e Codex CLI — nos que encontrar, sem sobrescrever configuração
+   que não conseguir ler;
 6. verifica com `ragx --version` e `ragx doctor`.
 
 ---
@@ -215,6 +217,14 @@ ou no `claude_desktop_config.json`:
     }
   }
 }
+```
+
+Codex CLI usa TOML, não JSON, em `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.ragx]
+command = 'ragx'
+args = ['mcp', 'serve']
 ```
 
 Acrescente `"--write"` aos argumentos para que o agente possa reindexar e

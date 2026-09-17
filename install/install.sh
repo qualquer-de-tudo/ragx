@@ -183,6 +183,37 @@ p.write_text(json.dumps(dados, indent=2, ensure_ascii=False) + "\n", encoding="u
 PY
 }
 
+# Codex CLI usa TOML, nao JSON: `[mcp_servers.<nome>]` em vez de "mcpServers".
+# Sem biblioteca de ESCRITA de TOML na stdlib (so leitura, via tomllib desde o
+# Python 3.11), editar uma tabela EXISTENTE sem quebrar o resto do arquivo nao
+# e seguro de fazer as cegas. Por isso: se `[mcp_servers.ragx]` ja existe,
+# nao mexe — a pessoa que edite a mao se o caminho do binario mudou. Se nao
+# existe, so ANEXA uma tabela nova no fim do arquivo, que e sempre TOML valido
+# independente do que vier antes.
+registrar_mcp_toml() {
+  local nome="$1" arquivo="$2"
+  [ -d "$(dirname "$arquivo")" ] || return 0
+  python3 - "$arquivo" <<'PY' 2>/dev/null && nota "MCP registrado em $nome" || true
+import pathlib, sys, tomllib
+
+p = pathlib.Path(sys.argv[1])
+texto = p.read_text(encoding="utf-8") if p.is_file() else ""
+if texto.strip():
+    try:
+        tomllib.loads(texto)
+    except tomllib.TOMLDecodeError:
+        sys.exit(1)
+if "[mcp_servers.ragx]" in texto:
+    sys.exit(0)
+bloco = "\n[mcp_servers.ragx]\ncommand = \"ragx\"\nargs = [\"mcp\", \"serve\"]\n"
+p.parent.mkdir(parents=True, exist_ok=True)
+with p.open("a", encoding="utf-8") as f:
+    if texto and not texto.endswith("\n"):
+        f.write("\n")
+    f.write(bloco)
+PY
+}
+
 if [ "$COM_MCP" = "1" ]; then
   # macOS "de fábrica" (sem Xcode Command Line Tools) não tem `python3` — e sem
   # ele o registro abaixo não faz nada, em silêncio, porque o `|| true` existe
@@ -193,6 +224,10 @@ if [ "$COM_MCP" = "1" ]; then
     registrar_mcp "Claude Desktop" "$HOME/.config/Claude/claude_desktop_config.json"
     registrar_mcp "Claude Desktop (macOS)" "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
     registrar_mcp "Claude Code" "$HOME/.claude.json"
+    registrar_mcp "Cursor" "$HOME/.cursor/mcp.json"
+    registrar_mcp "Windsurf" "$HOME/.codeium/windsurf/mcp_config.json"
+    registrar_mcp "Gemini CLI" "$HOME/.gemini/settings.json"
+    registrar_mcp_toml "Codex CLI" "$HOME/.codex/config.toml"
     ok "servidor MCP disponível: ragx mcp serve"
   else
     aviso "python3 não encontrado; MCP não registrado automaticamente"

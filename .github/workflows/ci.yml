@@ -86,16 +86,42 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Preparar diretorios de clientes MCP (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p "$HOME/.cursor" "$HOME/.codeium/windsurf" "$HOME/.gemini" "$HOME/.codex"
+
       # O valor deste job é provar a instalação de ponta a ponta: os três bugs
       # corrigidos na 0.3.1 só apareceram rodando o instalador de verdade.
       - name: Instalar (Linux/macOS)
         if: runner.os != 'Windows'
         run: bash install/install.sh
 
+      - name: Preparar diretorios de clientes MCP (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.cursor" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codeium\windsurf" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.gemini" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codex" | Out-Null
+
       - name: Instalar (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: .\install\install.ps1 -SemMcp
+        run: .\install\install.ps1
+
+      - name: Verificar registro multi-cliente (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ok = $true
+          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.cursor\mcp.json" -Pattern '"ragx"' -Quiet)
+          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.codeium\windsurf\mcp_config.json" -Pattern '"ragx"' -Quiet)
+          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.gemini\settings.json" -Pattern '"ragx"' -Quiet)
+          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.codex\config.toml" -Pattern '\[mcp_servers\.ragx\]' -Quiet)
+          if (-not $ok) { throw "MCP nao registrado em algum cliente" }
+          Write-Host "MCP registrado em Cursor, Windsurf, Gemini CLI e Codex CLI"
 
       - name: Colocar o ragx no PATH deste job
         shell: bash
@@ -118,6 +144,17 @@ jobs:
           # "bem-sucedida". Este passo é o que impede isso de voltar.
           ragx mcp tools --json > /dev/null
           echo "MCP ok"
+
+      - name: Verificar registro multi-cliente (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '"ragx"' "$HOME/.cursor/mcp.json"
+          grep -q '"ragx"' "$HOME/.codeium/windsurf/mcp_config.json"
+          grep -q '"ragx"' "$HOME/.gemini/settings.json"
+          grep -q '\[mcp_servers.ragx\]' "$HOME/.codex/config.toml"
+          echo "MCP registrado em Cursor, Windsurf, Gemini CLI e Codex CLI"
 
       - name: Ciclo completo num projeto novo
         shell: bash

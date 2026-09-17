@@ -266,6 +266,65 @@ function Registrar-Mcp {
 
 <#
 .SYNOPSIS
+    Registra o MCP em clientes que usam TOML (Codex CLI), nao JSON.
+
+.DESCRIPTION
+    Sem biblioteca de ESCRITA de TOML no PowerShell 5.1/7, editar uma tabela
+    EXISTENTE sem quebrar o resto do arquivo nao e seguro de fazer as cegas.
+    Por isso: se `[mcp_servers.ragx]` ja existe, nao mexe - a pessoa que edite
+    a mao se o caminho do binario mudou. Se nao existe, so ANEXA uma tabela
+    nova no fim do arquivo, que e sempre TOML valido independente do que vier
+    antes. Mesmo contrato idempotente e append-only da versao bash
+    (registrar_mcp_toml em install.sh).
+#>
+function Registrar-Mcp-Toml {
+    param([string]$Nome, [string]$Arquivo, [string]$Comando)
+
+    $pasta = Split-Path -Parent $Arquivo
+    if (-not (Test-Path $pasta)) { return }
+
+    $texto = ''
+    if (Test-Path $Arquivo) {
+        $texto = Get-Content $Arquivo -Raw -Encoding UTF8
+    }
+    if ($texto -match [regex]::Escape('[mcp_servers.ragx]')) {
+        return
+    }
+
+    # String LITERAL do TOML (aspas simples), nao basica (aspas duplas): numa
+    # string basica, `\` inicia um escape (`\n`, `\uXXXX`, etc.), e `$Comando`
+    # e um caminho Windows cheio de backslash (`Join-Path` produz algo como
+    # `C:\Users\...\ragx.exe`). Com aspas duplas, `\U` de `\Users\` seria lido
+    # como inicio de escape Unicode de 8 digitos hex e o parse do TOML falha -
+    # deixando o arquivo INTEIRO ilegivel pro Codex CLI, nao so o bloco novo.
+    # Aspas simples aceitam o backslash como literal, sem processar escape.
+    $bloco = "`n[mcp_servers.ragx]`ncommand = '$Comando'`nargs = [""mcp"", ""serve""]`n"
+    # `AppendAllText` ja escreve a partir do FIM do arquivo: o que vai nesta
+    # chamada e so o sufixo novo (a quebra de linha, se faltar, mais o bloco).
+    # Prefixar com `$texto` de novo - o conteudo que acabou de ser LIDO do
+    # mesmo arquivo - duplicaria tudo que a pessoa ja tinha no config.toml.
+    $sufixo = if (-not $texto) {
+        # Arquivo novo/vazio: sem conteudo antes, entao sem linha em branco
+        # antes da tabela - so o `$bloco` sem o `\n` inicial dele.
+        $bloco.TrimStart("`n")
+    } elseif (-not $texto.EndsWith("`n")) {
+        "`n" + $bloco
+    } else {
+        $bloco
+    }
+    New-Item -ItemType Directory -Force -Path $pasta | Out-Null
+    # Sem BOM: `AppendAllText` com `[System.Text.Encoding]::UTF8` GRAVA um BOM
+    # quando o arquivo e novo (a preamble so e omitida se o arquivo ja existir
+    # e nao estiver vazio) - confirmado na pratica ao escrever este trecho.
+    # `UTF8Encoding($false)`, mesma solucao do `Registrar-Mcp` acima, e a
+    # unica forma confiavel de nao gravar BOM em nenhum dos dois casos.
+    $semBomToml = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::AppendAllText($Arquivo, $sufixo, $semBomToml)
+    Escreva-Nota "MCP registrado em $Nome"
+}
+
+<#
+.SYNOPSIS
     O instalador.
 
 .DESCRIPTION
@@ -408,6 +467,14 @@ function Invoke-InstalacaoRagx {
             (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json') $exe
         Registrar-Mcp 'Claude Code' `
             (Join-Path $env:USERPROFILE '.claude.json') $exe
+        Registrar-Mcp 'Cursor' `
+            (Join-Path $env:USERPROFILE '.cursor\mcp.json') $exe
+        Registrar-Mcp 'Windsurf' `
+            (Join-Path $env:USERPROFILE '.codeium\windsurf\mcp_config.json') $exe
+        Registrar-Mcp 'Gemini CLI' `
+            (Join-Path $env:USERPROFILE '.gemini\settings.json') $exe
+        Registrar-Mcp-Toml 'Codex CLI' `
+            (Join-Path $env:USERPROFILE '.codex\config.toml') $exe
         Escreva-Ok 'servidor MCP disponivel: ragx mcp serve'
     }
 
