@@ -1,10 +1,4 @@
-"""`ragx trial` — mede tokens de verdade: build_context vs. ler o arquivo inteiro.
-
-Não é uma sessão de agente real reproduzida (isso exigiria instrumentar o
-agente em si). É a comparação que dá pra fazer só com o que o RAGX controla —
-o mesmo espírito do `ragx eval`, aplicado a economia de tokens em vez de
-qualidade de ranking.
-"""
+"""`ragx trial` — compara tokens do build_context contra ler o arquivo inteiro."""
 
 from __future__ import annotations
 

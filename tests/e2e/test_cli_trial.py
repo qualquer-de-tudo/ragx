@@ -42,6 +42,7 @@ def test_trial_json_reports_savings(proj: Path, monkeypatch: pytest.MonkeyPatch)
     assert result.exit_code == 0, result.output
     assert '"baseline_tokens"' in result.output
     assert '"ragx_tokens"' in result.output
+    assert '"caveat"' in result.output
 
 
 def test_trial_human_output_prints_honesty_caveat(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
