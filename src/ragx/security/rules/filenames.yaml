@@ -4,6 +4,66 @@
 
 version: 1
 
+# Extensões de CÓDIGO-FONTE e documentação.
+#
+# Uma regra por nome existe para não LER arquivos que são, por definição, um
+# recipiente de segredo: `.env`, `id_rsa`, `*.pem`. Um módulo `.py` ou `.ts`
+# não é isso — é código, e código com nome sugestivo é o caso comum, não o
+# raro: `tokens.py` (contagem de tokens), `tokens.ts` (design tokens),
+# `auth_token.go`, `docs/tokens.md`.
+#
+# Isto NÃO abre exceção para arquivo sensível: só vale para as regras marcadas
+# com `content_decides: true` — as que adivinham pelo nome — e o conteúdo
+# continua passando pela fase 2 inteira. Segredo de verdade dentro de
+# `tokens.py` continua bloqueado; o que deixa de acontecer é bloquear um
+# módulo inteiro porque o nome dele lembra "token".
+#
+# Formatos de DADOS ficam de fora de propósito: `credentials.json`,
+# `secrets.yaml` e `tokens.toml` são exatamente onde credencial de verdade
+# mora, e continuam bloqueados pelo nome.
+code_extensions:
+  - .py
+  - .pyi
+  - .ts
+  - .tsx
+  - .js
+  - .jsx
+  - .mjs
+  - .cjs
+  - .go
+  - .rs
+  - .java
+  - .kt
+  - .kts
+  - .rb
+  - .php
+  - .cs
+  - .c
+  - .h
+  - .cc
+  - .cpp
+  - .hpp
+  - .m
+  - .mm
+  - .swift
+  - .scala
+  - .ex
+  - .exs
+  - .dart
+  - .lua
+  - .pl
+  - .r
+  - .vue
+  - .svelte
+  - .css
+  - .scss
+  - .sass
+  - .less
+  - .md
+  - .mdx
+  - .rst
+  - .adoc
+
 # Templates sem valor real. Passam a fase 1, mas o conteúdo ainda é verificado
 # na fase 2 — template com segredo real vira BLOCK.
 allow:
@@ -49,21 +109,25 @@ deny:
 
   - id: credentials
     severity: critical
+    content_decides: true
     patterns: ["**/credentials", "**/credentials.*", "**/*credential*"]
     reason: "arquivo de credenciais"
 
   - id: secrets
     severity: critical
+    content_decides: true
     patterns: ["**/secret", "**/secret.*", "**/secrets", "**/secrets.*", "**/*secrets*"]
     reason: "arquivo de segredos"
 
   - id: tokens
     severity: critical
+    content_decides: true
     patterns: ["**/token", "**/token.*", "**/tokens", "**/tokens.*", "**/*_token*", "**/*-token*"]
     reason: "arquivo de tokens"
 
   - id: password-file
     severity: critical
+    content_decides: true
     patterns: ["**/password*", "**/passwd*", "**/.htpasswd"]
     reason: "arquivo de senha"
 

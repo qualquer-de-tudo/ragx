@@ -42,6 +42,11 @@ class FilenameRule:
     severity: Severity
     spec: GitIgnoreSpec
     reason: str
+    #: `True` quando a regra adivinha pelo NOME (`tokens`, `secrets`,
+    #: `password`). Nesses casos um arquivo de código-fonte é liberado da fase
+    #: 1 e julgado pelo conteúdo, na fase 2. Regras que descrevem FORMATO
+    #: (`*.pem`) ou LOCAL (`.ssh/**`) ficam absolutas.
+    content_decides: bool = False
 
 
 class Ruleset:
@@ -53,8 +58,17 @@ class Ruleset:
         pt = yaml.safe_load((rules_dir / "patterns.yaml").read_text(encoding="utf-8"))
 
         self.allow_spec = _spec(fn.get("allow", []))
+        self.code_extensions = frozenset(
+            str(e).lower() for e in fn.get("code_extensions", [])
+        )
         self.filename_rules: list[FilenameRule] = [
-            FilenameRule(r["id"], Severity(r["severity"]), _spec(r["patterns"]), r.get("reason", ""))
+            FilenameRule(
+                r["id"],
+                Severity(r["severity"]),
+                _spec(r["patterns"]),
+                r.get("reason", ""),
+                bool(r.get("content_decides", False)),
+            )
             for r in fn.get("deny", [])
             if r["id"] not in disabled
         ]
@@ -126,7 +140,14 @@ class SecurityScanner:
         p = rel_path.replace("\\", "/")
         if self.rules.allow_spec.match_file(p):
             return None
+        # Código-fonte não é recipiente de segredo: `tokens.py` conta tokens,
+        # `tokens.ts` são design tokens, `docs/tokens.md` é documentação. Eles
+        # seguem para a fase 2, que ainda lê o conteúdo inteiro — o que muda é
+        # que o NOME deixa de ser condenação. Ver docs/02-seguranca.md.
+        e_codigo = Path(p).suffix.lower() in self.rules.code_extensions
         for rule in self.rules.filename_rules:
+            if rule.content_decides and e_codigo:
+                continue
             if rule.spec.match_file(p):
                 return SecurityFinding(
                     rule_id=f"filename-deny:{rule.id}",
