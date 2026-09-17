@@ -148,7 +148,7 @@ no banco: fala com o RAGX por MCP (processo quente) ou pela CLI. Ver
 
 ## Estado
 
-MVP completo: 14 fases implementadas, 696 testes (+39 no plugin), **zero `xfail`** na suíte de
+MVP completo: 14 fases implementadas, 722 testes (+39 no plugin), **zero `xfail`** na suíte de
 segurança (8 superfícies de vazamento verificadas).
 
 **Ressalva importante:** a busca híbrida **não supera o keyword** neste corpus.
