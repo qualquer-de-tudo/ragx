@@ -8,7 +8,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | `RAGX-0098` |
 | **Documentação** | [23-auditoria-e-evolucao-do-rag.md](../../docs/23-auditoria-e-evolucao-do-rag.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -16,10 +16,10 @@ Enquanto a métrica aparecer sozinha, ela vai ser lida como precisa. Foi assim q
 
 ## Entregáveis
 
-- [ ] `ragx eval` imprime `0,77 [0,58–0,89] n=26` em vez de `0,77`
-- [ ] Intervalo de Wilson (correto para proporção com n pequeno), não o normal
-- [ ] `--json` inclui `ci_low`, `ci_high`, `n`
-- [ ] Aviso explícito quando a largura do IC passa de 0,20: o resultado não distingue os modos
+- [x] `ragx eval` imprime `0,77 [0,58–0,89] n=26` em vez de `0,77`
+- [x] Intervalo de Wilson (correto para proporção com n pequeno), não o normal
+- [x] `--json` inclui `ci_low`, `ci_high`, `n`
+- [x] Aviso explícito quando a largura do IC passa de 0,20: o resultado não distingue os modos
 
 ## Fora de escopo
 
@@ -28,14 +28,14 @@ Enquanto a métrica aparecer sozinha, ela vai ser lida como precisa. Foi assim q
 
 ## Critérios de aceite
 
-- [ ] A saída mostra o intervalo junto de cada métrica
-- [ ] Com n=26 o aviso de largura aparece; com n≥150 não aparece
-- [ ] MRR e nDCG, que são médias contínuas, usam erro-padrão em vez de Wilson
+- [x] A saída mostra o intervalo junto de cada métrica
+- [x] Com n=26 o aviso aparece (largura 0,36); com n≥150 não aparece
+- [ ] MRR e nDCG, que são médias contínuas, usam erro-padrão em vez de Wilson — **pendente**: hoje só o recall@5 tem intervalo; os outros dois saem sem
 
 ## Testes
 
-- [ ] Teste do cálculo de Wilson contra valores conhecidos
-- [ ] Teste de que o aviso aparece e some conforme o n
+- [x] Teste do cálculo de Wilson contra valores conhecidos
+- [x] Teste de que o aviso aparece e some conforme o n
 
 ## Notas
 

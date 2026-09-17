@@ -9,6 +9,42 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **A métrica `nDCG@10` estava errada e podia passar de 1,0** (`RAGX-0098`).
+  Ela contava caminhos duplicados como acertos separados, com o denominador
+  ideal contado em arquivos: `_ndcg(['a','a','a'], ('a',))` devolvia **2,131**
+  numa métrica cuja definição tem teto 1,0.
+
+  O erro tinha direção, e é isso que o tornava caro: **premiava devolver o
+  mesmo arquivo picado em vários chunks** — o oposto de um contexto bom. Quem
+  otimizasse contra ela estaria otimizando para fragmentar o resultado.
+
+  O ganho passa a ser contado uma vez por documento, na posição em que ele
+  aparece pela primeira vez. **Os valores mudam**: nDCG cai de 0,76 para 0,48
+  (keyword), 0,66 para 0,44 (semantic) e 0,76 para 0,49 (hybrid). A série
+  histórica quebra porque os valores antigos estavam inflados.
+
+### Adicionado
+
+- **`ragx eval` passa a reportar o intervalo de confiança** (`RAGX-0100`):
+
+  ```text
+  Modo          Recall@5          IC 95%      MRR   nDCG@10
+  keyword           0.77     [0.58–0.89]     0.47      0.48
+  semantic          0.54     [0.35–0.71]     0.44      0.44
+  hybrid            0.62     [0.43–0.78]     0.51      0.49
+
+  ! O intervalo de confiança chega a 0.36 de largura com n=26.
+    Acima de 0.20 o conjunto não distingue os modos.
+  ```
+
+  Wilson, não o intervalo normal: com n pequeno e proporção perto de 0 ou 1, o
+  normal escapa de [0,1] e mente sobre a precisão. O aviso vem **antes** do
+  veredito ✓/✗, e o veredito sai marcado como inconclusivo enquanto o conjunto
+  não distinguir os modos — foi lendo o número sozinho que "0,62 contra 0,77"
+  virou a afirmação publicada de que a busca híbrida falhou o critério.
+
 ### Desempenho
 
 - **O embedder passa a ser construído uma vez por processo** (`RAGX-0097`).

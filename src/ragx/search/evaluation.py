@@ -26,6 +26,11 @@ class EvalCase:
     note: str = ""
 
 
+#: Acima desta largura, o conjunto de consultas não distingue os modos, e
+#: comparar duas medições é ler ruído. Com n=26 a largura é ~0,33.
+MAX_CI_WIDTH = 0.20
+
+
 @dataclass
 class ModeMetrics:
     mode: str
@@ -34,6 +39,35 @@ class ModeMetrics:
     ndcg_at_10: float = 0.0
     cases: int = 0
     failures: list[tuple[str, int | None]] = field(default_factory=list)
+    #: Intervalo de confiança de 95% do recall@5.
+    recall_ci: tuple[float, float] = (0.0, 0.0)
+
+    @property
+    def ci_width(self) -> float:
+        return self.recall_ci[1] - self.recall_ci[0]
+
+    @property
+    def conclusive(self) -> bool:
+        """`False` quando o conjunto é pequeno demais para o número significar algo."""
+        return self.ci_width <= MAX_CI_WIDTH
+
+
+def wilson_ci(hits: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Intervalo de confiança de Wilson para uma proporção.
+
+    Wilson e não o normal: com n pequeno e proporção perto de 0 ou 1, o
+    intervalo normal escapa de [0,1] e mente sobre a precisão. Foi com n=26 que
+    "0,62 contra 0,77" virou a afirmação publicada de que a busca híbrida
+    falhou o critério — quando os dois intervalos se sobrepõem em quase toda a
+    extensão.
+    """
+    if n <= 0:
+        return (0.0, 0.0)
+    p = hits / n
+    d = 1 + z * z / n
+    centro = (p + z * z / (2 * n)) / d
+    meio = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return (max(0.0, centro - meio), min(1.0, centro + meio))
 
 
 def load_cases(path: Path) -> list[EvalCase]:
@@ -61,9 +95,28 @@ def _first_hit_rank(paths: list[str], relevant: tuple[str, ...]) -> int | None:
 
 
 def _ndcg(paths: list[str], relevant: tuple[str, ...], k: int = 10) -> float:
-    gains = [1.0 if p in relevant else 0.0 for p in paths[:k]]
-    dcg = sum(g / math.log2(i + 2) for i, g in enumerate(gains))
-    ideal = sum(1.0 / math.log2(i + 2) for i in range(min(len(relevant), k)))
+    """nDCG@k medido em DOCUMENTOS distintos.
+
+    O ganho é contado uma vez por documento relevante, na posição em que ele
+    aparece PELA PRIMEIRA VEZ. A lista de entrada é de chunks, e vários chunks
+    do mesmo arquivo são comuns — contá-los como acertos separados era um bug
+    com direção: premiava devolver o mesmo arquivo picado em pedaços, que é o
+    oposto de um contexto bom.
+
+    Além de premiar o errado, quebrava a escala. O denominador ideal sempre foi
+    contado em arquivos; com o numerador em chunks, o resultado passava de 1,0
+    — `_ndcg(['a','a','a'], ('a',))` devolvia **2,131** numa métrica cuja
+    definição tem teto 1,0.
+
+    Ver `task/fase-14-evolucao-do-rag/RAGX-0098-*.md`.
+    """
+    vistos: set[str] = set()
+    dcg = 0.0
+    for i, p in enumerate(paths[:k]):
+        if p in relevant and p not in vistos:
+            vistos.add(p)
+            dcg += 1.0 / math.log2(i + 2)
+    ideal = sum(1.0 / math.log2(i + 2) for i in range(min(len(set(relevant)), k)))
     return dcg / ideal if ideal else 0.0
 
 
@@ -90,5 +143,6 @@ def evaluate(
         m.recall_at_5 = recall / n
         m.mrr = mrr / n
         m.ndcg_at_10 = ndcg / n
+        m.recall_ci = wilson_ci(int(recall), n)
         out.append(m)
     return out

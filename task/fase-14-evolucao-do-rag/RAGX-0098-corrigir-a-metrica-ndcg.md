@@ -8,7 +8,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | — |
 | **Documentação** | [23-auditoria-e-evolucao-do-rag.md](../../docs/23-auditoria-e-evolucao-do-rag.md) · [13-testes-hardening.md](../../docs/13-testes-hardening.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -16,9 +16,9 @@
 
 ## Entregáveis
 
-- [ ] `_ndcg` deduplica caminhos antes de calcular ganhos, OU passa a medir em chunks com ideal em chunks — a escolha fica registrada no docstring
-- [ ] `recall@5` documenta explicitamente que mede **caminhos distintos**, não chunks
-- [ ] Teste que falha se `nDCG > 1.0` para qualquer entrada
+- [x] `_ndcg` deduplica caminhos antes de calcular ganhos, OU passa a medir em chunks com ideal em chunks — a escolha fica registrada no docstring
+- [x] `recall@5` documenta explicitamente que mede **caminhos distintos**, não chunks
+- [x] Teste que falha se `nDCG > 1.0` para qualquer entrada
 
 ## Fora de escopo
 
@@ -27,16 +27,16 @@
 
 ## Critérios de aceite
 
-- [ ] `_ndcg(['a','a','a'], ('a',)) <= 1.0`
-- [ ] `_ndcg` com resultado perfeito devolve exatamente 1,0
-- [ ] `_ndcg` com nenhum acerto devolve 0,0
-- [ ] Os valores de `ragx eval` são recalculados e publicados — a série histórica quebra, e isso fica dito
+- [x] `_ndcg(['a','a','a'], ('a',)) <= 1.0` — era 2,131, agora 1,0
+- [x] `_ndcg` com resultado perfeito devolve exatamente 1,0
+- [x] `_ndcg` com nenhum acerto devolve 0,0
+- [x] Os valores de `ragx eval` são recalculados: **nDCG cai de 0,76 para 0,48** (keyword), 0,66→0,44 (semantic), 0,76→0,49 (hybrid). A série histórica quebra — os valores antigos estavam inflados
 
 ## Testes
 
-- [ ] Propriedade: para qualquer entrada, `0.0 <= ndcg <= 1.0`
-- [ ] Caso com caminhos duplicados, fixando o valor esperado
-- [ ] Caso com mais caminhos relevantes que `k`
+- [x] Propriedade: para qualquer entrada, `0.0 <= ndcg <= 1.0`
+- [x] Caso com caminhos duplicados, fixando o valor esperado
+- [x] Caso com mais caminhos relevantes que `k`
 
 ## Notas
 
