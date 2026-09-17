@@ -322,12 +322,24 @@ class KnowledgeAPI:
                         "id": target["id"], "type": target["type"], "name": target["name"],
                         "qualified_name": target["qualified_name"],
                         "confidence": target["confidence"],
+                        "provenance": target["source"],
                     },
+                    # Cada relação carrega a aresta ORIENTADA (`src`/`dst`, os
+                    # mesmos nomes da tabela `relations`) e o nó do outro lado
+                    # (`other*`), que é o que uma lista de vizinhos quer ler.
+                    # Entregar só `other` obrigava o cliente a reconstruir a
+                    # direção — e o grafo do VS Code, que não reconstruía,
+                    # ficava sem nenhuma aresta. Ver docs/06-grafo.md.
                     "relations": [
                         {
                             "direction": e["direction"], "type": e["type"],
-                            "other": e["other_name"], "other_type": e["other_type"],
+                            "src": e["src_id"], "dst": e["dst_id"],
+                            "other": e["other_name"], "other_id": e["other_id"],
+                            "other_type": e["other_type"],
+                            "other_qualified_name": e["other_qname"],
+                            "weight": e["weight"],
                             "confidence": e["confidence"],
+                            "provenance": e["provenance"],
                         }
                         for e in edges
                     ],

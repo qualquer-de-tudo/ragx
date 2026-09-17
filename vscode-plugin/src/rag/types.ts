@@ -151,6 +151,16 @@ export interface SourcesOverview {
   hubAvailable: boolean;
 }
 
+/**
+ * De onde veio a informação do grafo.
+ *
+ * `structural` saiu do AST — o RAGX leu a declaração. `reference` e `semantic`
+ * são inferência: heurística sobre texto e, no caso de `semantic`, modelo.
+ * A UI mostra a diferença porque "A importa B" e "A talvez mencione B" não
+ * merecem o mesmo traço na tela.
+ */
+export type GraphProvenance = 'structural' | 'reference' | 'semantic';
+
 export interface GraphNode {
   id: string;
   name: string;
@@ -161,13 +171,24 @@ export interface GraphNode {
   /** Quantos vizinhos existem além dos já carregados. Move a expansão progressiva. */
   degree?: number;
   expanded?: boolean;
+  confidence?: number;
+  provenance?: GraphProvenance;
 }
 
+/**
+ * Aresta orientada `source → target`, em IDs de entidade.
+ *
+ * Os nomes seguem o que a renderização precisa; o servidor chama os mesmos
+ * campos de `src`/`dst`, como a tabela `relations`. A tradução acontece num
+ * lugar só — ver `McpClient.graph()` — e há teste de contrato dos dois lados.
+ */
 export interface GraphEdge {
   source: string;
   target: string;
   type: string;
   weight?: number;
+  confidence?: number;
+  provenance?: GraphProvenance;
 }
 
 export interface GraphSlice {
@@ -182,8 +203,11 @@ export interface EntityDetail {
   relations: Array<{
     type: string;
     direction: 'out' | 'in';
+    /** Nome do nó do OUTRO lado — o que a lista de relações mostra. */
     target: string;
     targetId?: string;
+    confidence?: number;
+    provenance?: GraphProvenance;
   }>;
   sources: Array<{ path: string; line?: number }>;
 }

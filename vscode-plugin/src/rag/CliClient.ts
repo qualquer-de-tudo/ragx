@@ -16,6 +16,7 @@ import { promisify } from 'node:util';
 import {
   toAnalysis,
   toChunk,
+  toEdge,
   toSources,
   toTask,
   toTaskDetail,
@@ -31,6 +32,7 @@ import type {
   DocumentInfo,
   EntityDetail,
   FileKnowledge,
+  GraphEdge,
   GraphSlice,
   HealthCheck,
   KnowledgeStats,
@@ -229,12 +231,14 @@ export class CliRagClient implements RagClient {
       summary: (n.summary as string) ?? null,
     }));
     const ids = new Set(nós.map((n) => n.id));
+    // A MESMA tradução do transporte MCP: os dois leem `src`/`dst` do mesmo
+    // jeito, então um grafo certo por MCP não pode sair vazio pela CLI.
+    const centroId = String((r.data?.entity as Json)?.id ?? entity);
     const arestas = ((r.data?.edges as Json[]) ?? [])
-      .map((e) => ({
-        source: String(e.src ?? e.source),
-        target: String(e.dst ?? e.target),
-        type: String(e.type ?? 'related'),
-      }))
+      .map((e) => toEdge(e, centroId))
+      .filter((e): e is GraphEdge => e !== undefined)
+      // Aresta cujo nó ficou fora do corte de `maxNodes` não é desenhável:
+      // apontaria para um nó que não está na tela.
       .filter((e) => ids.has(e.source) && ids.has(e.target));
     return done({
       nodes: nós,
@@ -249,16 +253,20 @@ export class CliRagClient implements RagClient {
     const nós = (r.data?.nodes as Json[]) ?? [];
     const centro = nós.find((n) => String(n.name) === name) ?? nós[0] ?? {};
     const centroId = String(centro.id ?? name);
-    const relacoes = ((r.data?.edges as Json[]) ?? []).map((e) => {
-      const saida = String(e.src ?? e.source) === centroId;
-      const outroId = saida ? String(e.dst ?? e.target) : String(e.src ?? e.source);
+    const relacoes = ((r.data?.edges as Json[]) ?? []).flatMap((e) => {
+      const aresta = toEdge(e, centroId);
+      if (!aresta) return [];
+      const saida = aresta.source === centroId;
+      const outroId = saida ? aresta.target : aresta.source;
       const outro = nós.find((n) => String(n.id) === outroId);
-      return {
-        type: String(e.type ?? 'related'),
+      return [{
+        type: aresta.type,
         direction: (saida ? 'out' : 'in') as 'out' | 'in',
-        target: String(outro?.name ?? outroId),
+        target: String(outro?.name ?? (e as Json).other_name ?? outroId),
         targetId: outroId,
-      };
+        confidence: aresta.confidence,
+        provenance: aresta.provenance,
+      }];
     });
     const doc = (centro.document_path as string) ?? null;
     return done({

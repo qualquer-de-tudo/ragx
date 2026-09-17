@@ -119,6 +119,51 @@ AuthService  (service)  src/Auth/AuthService.php
   12 relações · profundidade 1
 ```
 
+### Contrato de uma relação
+
+Toda relação sai do RAGX com **as duas leituras da mesma aresta**. Não é
+indecisão: são duas perguntas diferentes, e responder só uma quebra quem faz
+a outra.
+
+| Campo | O que é |
+|---|---|
+| `src`, `dst` | a aresta ORIENTADA, em ids de entidade. Mesmos nomes da tabela `relations`. É o que desenha `A → B`. |
+| `other`, `other_id`, `other_type`, `other_qualified_name` | o nó do OUTRO lado, visto de quem perguntou. É o que escreve uma linha por vizinho. |
+| `direction` | `out` se a entidade consultada é a origem, `in` se é o destino. |
+| `type` | `imports`, `calls`, `contains`, `uses`, `documented_by`, … |
+| `weight` | peso para ordenar a expansão. |
+| `confidence` | 1.0 quando veio do AST; menor quando foi inferido. |
+| `provenance` | `structural` \| `reference` \| `semantic` — ver abaixo. |
+
+```json
+{
+  "direction": "out", "type": "imports",
+  "src": "02d0f2…", "dst": "e63a20…",
+  "other": "Redis", "other_id": "e63a20…", "other_type": "technology",
+  "weight": 1.0, "confidence": 0.75, "provenance": "reference"
+}
+```
+
+**`provenance` é o que separa fato de dedução**, e por isso atravessa todas as
+camadas até a interface:
+
+- `structural` — saiu do AST. O RAGX *leu* a declaração. `confidence` 1.0.
+- `reference` — heurística sobre texto e nomes. Acerta muito, não sempre.
+- `semantic` — modelo. Custa dinheiro, e por isso é preservada quando as
+  outras camadas são reconstruídas.
+
+Uma interface que mostre "A importa B" com o mesmo traço de "A talvez mencione
+B" está afirmando mais do que o RAGX sabe. É para isso que o campo existe.
+
+> **Por que os dois formatos convivem.** `get_entity` já mandou só `other` e
+> `other_type`. A extensão do VS Code procurava `target`/`dst`, não encontrava,
+> e descartava cada relação em silêncio: o grafo aparecia com os nós e **sem
+> uma única aresta**, sem erro em lugar nenhum. A aresta orientada foi
+> acrescentada sem remover `other*`, que continua sendo a forma certa para uma
+> lista de vizinhos. O contrato é fixado nos dois lados por
+> `tests/unit/test_contrato_grafo.py` e
+> `vscode-plugin/tests/unit/graph-contract.test.ts`.
+
 ## Graph search — vetor + grafo
 
 É aqui que o grafo paga o próprio custo:

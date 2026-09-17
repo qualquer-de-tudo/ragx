@@ -89,7 +89,21 @@ def neighborhood(
     store: GraphStore, entity_id: str, depth: int = 1,
     relation_types: tuple[str, ...] | None = None, max_fanout: int = 60,
 ) -> list[dict[str, object]]:
-    """Vizinhança para exibição (`ragx graph <entidade>`), com direção explícita."""
+    """Vizinhança para exibição (`ragx graph <entidade>`), com direção explícita.
+
+    Devolve as DUAS leituras de cada aresta, e não por indecisão:
+
+    - `src_id`/`dst_id` são a aresta como ela existe no store — orientada, com
+      o mesmo nome de campo da tabela `relations`. É o que um grafo precisa
+      para desenhar `A → B`.
+    - `other_*` é a mesma aresta vista de quem perguntou: "o nó do outro lado".
+      É o que uma lista de vizinhos precisa para escrever uma linha por relação.
+
+    Quem consome uma e ignora a outra escolhe errado em silêncio: derivar
+    `src`/`dst` a partir de `other` + `direction` é possível, mas foi
+    exatamente essa derivação esquecida que deixou o grafo do VS Code sem
+    nenhuma aresta. Ver docs/06-grafo.md.
+    """
     seen = {entity_id}
     frontier = [entity_id]
     out: list[dict[str, object]] = []
@@ -102,11 +116,18 @@ def neighborhood(
                 {
                     "direction": e["direction"],
                     "type": e["type"],
+                    "src_id": e["src_id"],
+                    "dst_id": e["dst_id"],
                     "other_id": other,
                     "other_name": e["other_name"],
                     "other_type": e["other_type"],
                     "other_qname": e["other_qname"],
+                    "weight": e["weight"],
                     "confidence": e["confidence"],
+                    # `structural` saiu do AST; `reference` e `semantic` são
+                    # inferência. Sem este campo, quem lê o grafo não consegue
+                    # separar o que foi extraído do que foi deduzido.
+                    "provenance": e["source"],
                     "depth": level + 1,
                 }
             )

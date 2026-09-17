@@ -13,6 +13,8 @@
 import type {
   ChunkInfo,
   DocumentInfo,
+  GraphEdge,
+  GraphProvenance,
   KnowledgeSource,
   RequestAnalysis,
   SourcesOverview,
@@ -323,4 +325,60 @@ export function toAnalysis(d: Json): RequestAnalysis {
     overriddenBy: str(d.overridden_by) || undefined,
     overrideReason: str(d.override_reason) || undefined,
   };
+}
+
+// ── grafo ───────────────────────────────────────────────────────────────
+/**
+ * Uma relação do `get_entity` vira uma aresta orientada do grafo.
+ *
+ * O servidor manda a aresta como ela existe no store (`src`/`dst`) e também o
+ * nó do outro lado (`other`/`other_type`), que é o que a lista de relações
+ * mostra. A tela de grafo precisa da PRIMEIRA leitura; ler a segunda como se
+ * fosse a primeira é o bug que deixou o grafo do VS Code sem nenhuma aresta:
+ * `rel.target` não existia, o código caía no `continue` e desenhava só nós
+ * soltos.
+ *
+ * Por isso a tradução mora num lugar só, com teste de contrato dos dois lados.
+ * A ordem de leitura é deliberada:
+ *
+ * 1. `src`/`dst` — o contrato canônico, igual à tabela `relations`.
+ * 2. `other_id` + `direction` — como reconstruir a aresta num RAGX antigo,
+ *    que ainda não manda `src`/`dst`. Sem isto, atualizar a extensão sem
+ *    atualizar o RAGX voltaria a mostrar um grafo vazio.
+ *
+ * Devolve `undefined` quando não dá para saber quem são as duas pontas —
+ * aresta sem destino não é aresta, e inventar um destino desenharia uma
+ * ligação que não existe no projeto.
+ */
+export function toEdge(rel: unknown, centroId: string): GraphEdge | undefined {
+  if (!rel || typeof rel !== 'object') return undefined;
+  const r = rel as Json;
+
+  const tipo = str(r.type) || 'related';
+  const comum = {
+    type: tipo,
+    weight: typeof r.weight === 'number' ? r.weight : undefined,
+    confidence: typeof r.confidence === 'number' ? r.confidence : undefined,
+    provenance: toProvenance(r.provenance),
+  };
+
+  // 1. contrato canônico
+  const src = str(r.src) || str(r.src_id);
+  const dst = str(r.dst) || str(r.dst_id);
+  if (src && dst) return { source: src, target: dst, ...comum };
+
+  // 2. compatibilidade: RAGX antigo mandava só o nó do outro lado
+  const outro = str(r.other_id) || str(r.other) || str(r.target) || str(r.dst);
+  if (!outro || !centroId) return undefined;
+  const saindo = str(r.direction) !== 'in';
+  return {
+    source: saindo ? centroId : outro,
+    target: saindo ? outro : centroId,
+    ...comum,
+  };
+}
+
+/** Procedência desconhecida vira `undefined`: a UI não inventa um selo. */
+export function toProvenance(v: unknown): GraphProvenance | undefined {
+  return v === 'structural' || v === 'reference' || v === 'semantic' ? v : undefined;
 }

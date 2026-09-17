@@ -9,12 +9,6 @@ import typer
 from rich.console import Console
 
 from ragx.config import load_config
-from ragx.graph.service import graph_search as run_graph_search
-from ragx.graph.service import rebuild as run_rebuild
-from ragx.graph.store import GraphStore
-from ragx.graph.traversal import neighborhood
-from ragx.search.service import SearchFilters
-from ragx.storage.db import open_db
 
 console = Console()
 
@@ -45,6 +39,9 @@ def entities(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Lista entidades do grafo."""
+    from ragx.graph.store import GraphStore
+    from ragx.storage.db import open_db
+
     cfg = load_config()
     with open_db(cfg.db_path, read_only=True) as conn:
         rows = GraphStore(conn).list_entities(entity_type, name, limit)
@@ -70,6 +67,10 @@ def graph(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Vizinhança de uma entidade."""
+    from ragx.graph.store import GraphStore
+    from ragx.graph.traversal import neighborhood
+    from ragx.storage.db import open_db
+
     cfg = load_config()
     rel_types = tuple(r.strip() for r in relations.split(",")) if relations else None
 
@@ -87,8 +88,31 @@ def graph(
         edges = neighborhood(store, target["id"], depth=depth, relation_types=rel_types)
 
     if as_json:
+        # `nodes` sai junto porque uma aresta só aponta para IDs: sem a lista
+        # de nós, quem desenha o grafo recebe `src`/`dst` que não resolvem
+        # para nome nenhum. Vinha faltando, e a extensão do VS Code filtrava
+        # todas as arestas contra um conjunto de nós vazio — grafo em branco.
+        nodes = {
+            target["id"]: {
+                "id": target["id"], "name": target["name"], "type": target["type"],
+                "qualified_name": target["qualified_name"],
+                "confidence": target["confidence"], "provenance": target["source"],
+            }
+        }
+        for e in edges:
+            nodes.setdefault(
+                str(e["other_id"]),
+                {
+                    "id": e["other_id"], "name": e["other_name"], "type": e["other_type"],
+                    "qualified_name": e["other_qname"],
+                },
+            )
         console.print_json(
-            json.dumps({"entity": target, "edges": edges}, ensure_ascii=False, default=str)
+            json.dumps(
+                {"entity": target, "nodes": list(nodes.values()), "edges": edges},
+                ensure_ascii=False,
+                default=str,
+            )
         )
         return
 
@@ -122,6 +146,9 @@ def graph_search(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Busca combinando vetor e grafo."""
+    from ragx.graph.service import graph_search as run_graph_search
+    from ragx.search.service import SearchFilters
+
     cfg = load_config()
     out = run_graph_search(
         cfg, query, limit=limit, depth=depth, filters=SearchFilters(lang=lang)
@@ -178,6 +205,8 @@ def rebuild(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Reconstrói o grafo a partir dos chunks já indexados."""
+    from ragx.graph.service import rebuild as run_rebuild
+
     cfg = load_config()
     if semantic:
         console.print(
