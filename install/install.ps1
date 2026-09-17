@@ -275,7 +275,9 @@ function Registrar-Mcp {
     a mao se o caminho do binario mudou. Se nao existe, so ANEXA uma tabela
     nova no fim do arquivo, que e sempre TOML valido independente do que vier
     antes. Mesmo contrato idempotente e append-only da versao bash
-    (registrar_mcp_toml em install.sh).
+    (registrar_mcp_toml em install.sh) - MAS sem a mesma garantia: o bash tem
+    `tomllib` para validar o TOML resultante antes de gravar, e o PowerShell
+    nao tem parser de TOML nenhum na stdlib para fazer o mesmo aqui.
 #>
 function Registrar-Mcp-Toml {
     param([string]$Nome, [string]$Arquivo, [string]$Comando)
@@ -291,14 +293,15 @@ function Registrar-Mcp-Toml {
         return
     }
 
-    # String LITERAL do TOML (aspas simples), nao basica (aspas duplas): numa
-    # string basica, `\` inicia um escape (`\n`, `\uXXXX`, etc.), e `$Comando`
-    # e um caminho Windows cheio de backslash (`Join-Path` produz algo como
-    # `C:\Users\...\ragx.exe`). Com aspas duplas, `\U` de `\Users\` seria lido
-    # como inicio de escape Unicode de 8 digitos hex e o parse do TOML falha -
-    # deixando o arquivo INTEIRO ilegivel pro Codex CLI, nao so o bloco novo.
-    # Aspas simples aceitam o backslash como literal, sem processar escape.
-    $bloco = "`n[mcp_servers.ragx]`ncommand = '$Comando'`nargs = [""mcp"", ""serve""]`n"
+    # String BASICA do TOML (aspas duplas), nao literal (aspas simples): a
+    # literal nao tem NENHUM mecanismo de escape, e uma conta do Windows pode
+    # ter apostrofo no nome (ex.: "O'Brien") - o que produziria um `'` dentro
+    # de `$Comando` e fecharia a string literal no meio do caminho, corrompendo
+    # o TOML inteiro. Com aspas duplas, escapamos `\` e `"` a mao antes de
+    # montar o bloco, o que cobre tanto o backslash do caminho Windows quanto
+    # um eventual apostrofo/aspas no nome da conta.
+    $comandoEscapado = $Comando.Replace('\', '\\').Replace('"', '\"')
+    $bloco = "`n[mcp_servers.ragx]`ncommand = ""$comandoEscapado""`nargs = [""mcp"", ""serve""]`n"
     # `AppendAllText` ja escreve a partir do FIM do arquivo: o que vai nesta
     # chamada e so o sufixo novo (a quebra de linha, se faltar, mais o bloco).
     # Prefixar com `$texto` de novo - o conteudo que acabou de ser LIDO do

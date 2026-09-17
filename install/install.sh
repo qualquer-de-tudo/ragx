@@ -186,32 +186,47 @@ PY
 # Codex CLI usa TOML, nao JSON: `[mcp_servers.<nome>]` em vez de "mcpServers".
 # Sem biblioteca de ESCRITA de TOML na stdlib (so leitura, via tomllib desde o
 # Python 3.11), editar uma tabela EXISTENTE sem quebrar o resto do arquivo nao
-# e seguro de fazer as cegas. Por isso: se `[mcp_servers.ragx]` ja existe,
-# nao mexe — a pessoa que edite a mao se o caminho do binario mudou. Se nao
-# existe, so ANEXA uma tabela nova no fim do arquivo, que e sempre TOML valido
-# independente do que vier antes.
+# e seguro de fazer as cegas. Por isso: se o TOML parseado ja tem `ragx` em
+# `mcp_servers` — seja como tabela `[mcp_servers.ragx]`, seja como chave
+# inline dentro de `[mcp_servers]` —, nao mexe: a pessoa que edite a mao se o
+# caminho do binario mudou. Se nao existe, so ANEXA uma tabela nova no fim do
+# arquivo, e valida que o resultado final (o que ja havia + o bloco novo)
+# ainda parseia antes de gravar — um `tomllib.loads` de sobra e mais barato
+# que corromper o config.toml de alguem.
+#
+# Codigos de saida: 0 = escreveu (registrou agora), 2 = ja estava registrado
+# (nao escreveu nada), 1 = config ilegivel ou resultado invalido (nao
+# escreveu nada). O chamador so anuncia "registrado" no caso 0.
 registrar_mcp_toml() {
-  local nome="$1" arquivo="$2"
+  local nome="$1" arquivo="$2" status=0
   [ -d "$(dirname "$arquivo")" ] || return 0
-  python3 - "$arquivo" <<'PY' 2>/dev/null && nota "MCP registrado em $nome" || true
+  python3 - "$arquivo" <<'PY' 2>/dev/null || status=$?
 import pathlib, sys, tomllib
 
 p = pathlib.Path(sys.argv[1])
 texto = p.read_text(encoding="utf-8") if p.is_file() else ""
+dados = {}
 if texto.strip():
     try:
-        tomllib.loads(texto)
+        dados = tomllib.loads(texto)
     except tomllib.TOMLDecodeError:
         sys.exit(1)
-if "[mcp_servers.ragx]" in texto:
-    sys.exit(0)
+if "ragx" in dados.get("mcp_servers", {}):
+    sys.exit(2)
 bloco = "\n[mcp_servers.ragx]\ncommand = \"ragx\"\nargs = [\"mcp\", \"serve\"]\n"
+separador = "\n" if (texto and not texto.endswith("\n")) else ""
+try:
+    tomllib.loads(texto + separador + bloco)
+except tomllib.TOMLDecodeError:
+    sys.exit(1)
 p.parent.mkdir(parents=True, exist_ok=True)
 with p.open("a", encoding="utf-8") as f:
-    if texto and not texto.endswith("\n"):
-        f.write("\n")
-    f.write(bloco)
+    f.write(separador + bloco)
 PY
+  if [ "$status" -eq 0 ]; then
+    nota "MCP registrado em $nome"
+  fi
+  return 0
 }
 
 if [ "$COM_MCP" = "1" ]; then
