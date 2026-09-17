@@ -161,6 +161,10 @@ export interface GraphNode {
   /** Quantos vizinhos existem além dos já carregados. Move a expansão progressiva. */
   degree?: number;
   expanded?: boolean;
+  /** `undefined` quando a fonte não tem o dado (ex.: transporte CLI antigo). */
+  confidence?: number;
+  source?: string;
+  tier?: 'extracted' | 'inferred';
 }
 
 export interface GraphEdge {
@@ -168,6 +172,8 @@ export interface GraphEdge {
   target: string;
   type: string;
   weight?: number;
+  confidence?: number;
+  tier?: 'extracted' | 'inferred';
 }
 
 export interface GraphSlice {
@@ -184,6 +190,9 @@ export interface EntityDetail {
     direction: 'out' | 'in';
     target: string;
     targetId?: string;
+    confidence?: number;
+    source?: string;
+    tier?: 'extracted' | 'inferred';
   }>;
   sources: Array<{ path: string; line?: number }>;
 }

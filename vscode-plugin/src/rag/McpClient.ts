@@ -300,6 +300,9 @@ export class McpRagClient implements RagClient {
       documentPath: str(centro.document_path) || null,
       summary: str(centro.summary) || null,
       expanded: true,
+      confidence: typeof centro.confidence === 'number' ? centro.confidence : undefined,
+      source: str(centro.source) || undefined,
+      tier: tierOf(centro.tier),
     });
 
     const edges: GraphEdge[] = [];
@@ -309,6 +312,10 @@ export class McpRagClient implements RagClient {
       if (!alvo) continue;
       const alvoId = str(rel.target_id) || alvo;
       if (!nodes.has(alvoId)) {
+        // `rel` só carrega a confiança da ARESTA, não a da entidade vizinha.
+        // Esse nó fica sem `confidence`/`tier` até ser expandido como centro
+        // (uma futura chamada `get_entity` nele) — inventar um valor aqui
+        // atribuiria à entidade uma confiança que na verdade é da relação.
         nodes.set(alvoId, {
           id: alvoId,
           name: alvo,
@@ -322,6 +329,8 @@ export class McpRagClient implements RagClient {
         target: saida ? alvoId : centroId,
         type: str(rel.type) || 'related',
         weight: typeof rel.weight === 'number' ? rel.weight : undefined,
+        confidence: typeof rel.confidence === 'number' ? rel.confidence : undefined,
+        tier: tierOf(rel.tier),
       });
     }
 
@@ -341,6 +350,9 @@ export class McpRagClient implements RagClient {
       direction: (str(rel.direction) === 'in' ? 'in' : 'out') as 'in' | 'out',
       target: str(rel.target) || str(rel.name) || '?',
       targetId: str(rel.target_id) || undefined,
+      confidence: typeof rel.confidence === 'number' ? rel.confidence : undefined,
+      source: str(rel.source) || undefined,
+      tier: tierOf(rel.tier),
     }));
     const fontes: Array<{ path: string; line?: number }> = [];
     const doc = str(e.document_path);
@@ -357,6 +369,9 @@ export class McpRagClient implements RagClient {
         qualifiedName: str(e.qualified_name) || null,
         documentPath: doc || null,
         summary: str(e.summary) || null,
+        confidence: typeof e.confidence === 'number' ? e.confidence : undefined,
+        source: str(e.source) || undefined,
+        tier: tierOf(e.tier),
       },
       relations: relacoes,
       sources: fontes,
@@ -625,6 +640,19 @@ function num(v: unknown): number {
 function pair(v: unknown): [number, number] {
   if (Array.isArray(v) && v.length >= 2) return [num(v[0]), num(v[1])];
   return [0, 0];
+}
+
+/**
+ * `undefined` para qualquer coisa que não seja um dos dois tiers conhecidos —
+ * uma instalação antiga do RAGX sem o campo, ou um valor futuro ainda não
+ * previsto, cai em "não sei" em vez de quebrar ou inventar um tier.
+ *
+ * A assinatura explícita importa: sem ela, o literal `'extracted' | 'inferred'`
+ * detectado pela narrowing do `===` seria alargado de volta para `string` ao
+ * entrar num objeto sem tipo de contexto (o caso de `.map()` sem anotação).
+ */
+function tierOf(v: unknown): 'extracted' | 'inferred' | undefined {
+  return v === 'extracted' || v === 'inferred' ? v : undefined;
 }
 
 function toHit(r: Record<string, unknown>): SearchHit {
