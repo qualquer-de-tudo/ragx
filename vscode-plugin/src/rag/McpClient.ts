@@ -101,6 +101,11 @@ type Json = Record<string, unknown>;
 
 const DEFAULT_TIMEOUT = 120_000;
 
+/** Injetada pelo esbuild a partir do package.json. Nos testes, que não
+ *  passam pelo bundler, `typeof` evita o ReferenceError e sobra `dev`. */
+declare const __RAGX_VERSION__: string;
+const VERSAO = typeof __RAGX_VERSION__ === 'string' ? __RAGX_VERSION__ : 'dev';
+
 export class McpRagClient implements RagClient {
   readonly transport = 'mcp' as const;
 
@@ -147,7 +152,7 @@ export class McpRagClient implements RagClient {
       });
 
       this.client = new Client(
-        { name: 'ragx-vscode', version: '1.0.0-beta.1' },
+        { name: 'ragx-vscode', version: VERSAO },
         { capabilities: {} },
       );
       await this.client.connect(transport);

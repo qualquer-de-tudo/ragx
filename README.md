@@ -33,7 +33,7 @@ junto a **extensão do VS Code**, que não vem por este caminho — baixe os
 arquivos e rode o instalador na pasta deles:
 
 ```bash
-gh release download v1.0.0-beta.1 --repo qualquer-de-tudo/ragx --dir ragx
+gh release download v1.0.0-beta.2 --repo qualquer-de-tudo/ragx --dir ragx
 cd ragx && bash install.sh                # Windows: .\install.ps1
 ```
 
@@ -111,7 +111,7 @@ por isso o comando único **não** a traz: ele não baixa arquivo nenhum. À mã
 na pasta dos arquivos da release:
 
 ```bash
-code --install-extension ragx-knowledge-explorer-1.0.0-beta.1.vsix
+code --install-extension ragx-knowledge-explorer-1.0.0-beta.2.vsix
 ```
 
 Busca semântica, grafo navegável, dicionário e Context Builder dentro do

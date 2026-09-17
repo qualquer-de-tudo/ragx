@@ -3,6 +3,188 @@
 Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+> **Regra deste arquivo:** toda alteração relevante atualiza o CHANGELOG na
+> MESMA alteração que a produz. Deixar para depois é como uma correção some do
+> histórico — quem a escreveu lembra do porquê; a próxima pessoa, não.
+
+## [1.0.0-beta.2] — 2026-09-17
+
+Ciclo de endurecimento: segurança, contrato do grafo, tempo de conexão com o
+VS Code, compatibilidade com macOS e documentação verificada por teste.
+
+### Corrigido
+
+- **O Security Gate bloqueava o próprio `src/ragx/tokens.py`.** A regra
+  `filename-deny:tokens` casa `**/tokens.*`, e com ela caíam o módulo de
+  contagem de tokens do RAGX, todo `tokens.ts` de design tokens,
+  `docs/tokens.md`, `auth_token.py` e `refresh-token.go`. Um projeto de
+  front-end perdia arquivos legítimos do índice sem nada explicar o motivo.
+
+  A correção **não** abriu exceção para arquivo sensível. As regras de deny
+  foram separadas em duas naturezas: as que descrevem FORMATO ou LOCAL
+  (`*.pem`, `.ssh/**`, `.env`) continuam absolutas; as que ADIVINHAM pelo nome
+  (`tokens`, `secrets`, `credentials`, `password`) deixam de bloquear
+  **arquivos de código-fonte**, que seguem para a fase 2 e têm o conteúdo lido
+  por inteiro. Formatos de dados (`.json`, `.yaml`, `.toml`) ficaram
+  deliberadamente de fora: é onde credencial de verdade mora, e
+  `credentials.json` continua bloqueado pelo nome.
+
+  Um segredo real dentro de `tokens.py` continua bloqueado — agora pelo
+  conteúdo. `tests/security/test_filename_deny.py` fixa os dois lados do
+  acordo, e quebra se alguém afrouxar um sem o outro.
+
+- **O grafo aparecia sem nenhuma aresta na extensão do VS Code.** O servidor
+  descrevia cada relação só como "o nó do outro lado" (`other`, `other_type`);
+  a extensão procurava `target`/`dst`, não encontrava e descartava a relação em
+  silêncio. A tela mostrava os nós soltos, sem erro em lugar nenhum.
+
+  `get_entity` passa a devolver também a aresta ORIENTADA (`src`/`dst`, os
+  mesmos nomes da tabela `relations`), sem remover `other*` — que continua
+  sendo a forma certa para uma lista de vizinhos. A extensão lê o contrato
+  canônico e sabe reconstruir a aresta de um RAGX antigo, para que atualizar um
+  lado só não volte a esvaziar o grafo. Contrato documentado em
+  [docs/06-grafo.md](docs/06-grafo.md) e fixado nos dois lados por teste.
+
+- **A lista de relações de uma entidade mostrava `?` em todo destino** — o
+  mesmo campo trocado, no mesmo lugar.
+
+- **`ragx graph show --json` não emitia `nodes`.** A extensão filtrava as
+  arestas contra um conjunto de nós vazio e descartava todas: o transporte de
+  reserva também desenhava um grafo em branco.
+
+- **A extensão podia subir dois processos RAGX.** Ativação, troca de pasta do
+  workspace e mudança de configuração disparam conexão, e nada impedia que
+  duas corressem juntas — só a última ficava referenciada, e a outra virava um
+  processo Python órfão de ~100 MB. `conectar()` agora tem fila.
+
+- **A queda do RAGX passava despercebida.** Crash do Python, pipe fechado ou
+  `kill` de fora só apareciam na consulta seguinte, com um erro de transporte,
+  enquanto a barra de status ainda dizia `Ready`.
+
+- **A suíte de testes lia o `$HOME` da máquina.** `test_list_projects` esperava
+  o projeto `demo` e recebia o primeiro projeto registrado no hub real de quem
+  rodava — verde no CI, vermelho na máquina de quem usa o RAGX em mais de um
+  projeto. Pior: um teste que lê o hub real também escreve nele.
+  `tests/conftest.py` redireciona o HOME da sessão inteira.
+
+### Adicionado
+
+- **Reconexão com espera crescente.** Detectada a queda, a extensão reconecta
+  sozinha em 1 s, 2 s, 4 s… até 60 s, com seis tentativas. Desligar de
+  propósito não conta como queda, e "RAGX: Reconnect" zera o contador. Um RAGX
+  não instalado falha em ~50 ms; sem a espera, isso era um laço de `spawn` a
+  100% de CPU.
+
+- **`provenance` no grafo, de ponta a ponta.** `structural` (extraído do AST),
+  `reference` e `semantic` (inferidos) agora chegam ao MCP e à extensão junto
+  com `confidence`. Antes a distinção existia só no banco — e uma interface que
+  mostra "A importa B" igual a "A talvez mencione B" afirma mais do que o RAGX
+  sabe.
+
+- **Medição de cada etapa da conexão.** Uma linha por conexão no canal de log,
+  com a repartição entre spawn+boot, `listTools` e primeira chamada. É o que
+  transforma "o RAGX está lento" em um número.
+
+- **`vscode-plugin/scripts/bench-connect.mjs`** — benchmark do caminho real de
+  conexão, com mediana de cada etapa.
+
+- **`ragx mcp install`** — registra o RAGX como servidor MCP nos clientes
+  instalados: **Claude Desktop, Claude Code, Cursor, Windsurf, Gemini CLI e
+  Codex CLI**. Antes só Claude Desktop e Claude Code eram cobertos, e por duas
+  implementações diferentes: um script Python embutido entre aspas no
+  `install.sh` e um gêmeo reescrito em PowerShell no `install.ps1` — nenhuma
+  das duas com teste, e só uma sabia fazer backup.
+
+  Agora existe uma implementação (`src/ragx/clients/`), e os instaladores a
+  chamam. Ela faz alteração mínima (mexe só na entrada `ragx`), é idempotente
+  (rodar de novo não duplica nem reescreve o que já está certo), grava backup
+  datado antes de qualquer mudança, escreve de forma atômica e sem BOM, e
+  **recusa** configuração ilegível em vez de sobrescrevê-la. Cliente não
+  instalado é reportado como ausente, não como erro, e nenhuma pasta de cliente
+  é criada por conta própria. O Codex CLI usa TOML, e a edição preserva
+  comentários e as outras tabelas.
+
+  34 testes cobrem instalação limpa, repetida, configuração existente, parcial,
+  ausente, inválida e sem permissão.
+
+- **`ragx trial`** — compara o contexto montado com a leitura integral dos
+  arquivos e mostra a diferença em tokens.
+
+  O número sai **sempre** acompanhado da ressalva de que é uma estimativa de
+  ordem de grandeza, e não previsão de custo: o tokenizador é aproximado, o
+  basal supõe leitura integral (que não é como um agente trabalha) e a
+  comparação mede tamanho, não suficiência. Os campos se chamam `estimated_*`
+  justamente porque nome de campo é a documentação que ninguém pula.
+
+  O basal nunca conta o que o RAGX não serviria — bloqueado pelo Security Gate,
+  coberto por `.gitignore`/`.dockerignore`, binário ou grande demais fica de
+  fora e é reportado por motivo. Contar um `.env` inflaria a economia com
+  tokens que nenhuma ferramenta entregaria, e exigiria ler o segredo para
+  contá-lo. Arquivo grande é excluído, nunca truncado: truncar inventaria um
+  número; excluir subestima, que é o lado seguro do erro.
+
+- **macOS no CI.** A matriz passa a ser três sistemas × duas versões de Python.
+  `macos-latest` é arm64, tem filesystem que preserva caixa mas não a distingue
+  e `expanduser` em `/Users/...` — nada disso era exercitado por Linux nem por
+  Windows. O job do instalador também roda lá.
+
+- **`LICENSE`** na raiz. O README prometia MIT e o arquivo só existia dentro de
+  `vscode-plugin/`.
+
+- **`SECURITY.md`** — como reportar vulnerabilidade, o que incluir, o que não é
+  vulnerabilidade e o que se espera antes da divulgação. O canal está marcado
+  explicitamente como pendente, em vez de inventado.
+
+- **`AGENTS.md`** — onboarding técnico para quem altera o RAGX: arquitetura,
+  comandos, como validar, regras de segurança que não se negociam e o que
+  esperar de um agente de IA neste repositório.
+
+- **docs/22 — VS Code e desempenho** — o caminho completo da conexão, onde o
+  tempo vai, prontidão, reconexão, diagnóstico e o que foi deliberadamente não
+  feito.
+
+### Desempenho
+
+- **Imports pesados saíram do topo dos módulos de comando.** `ragx/cli/main.py`
+  importa os 21 módulos de comando só para registrá-los, e cada um carregava
+  seu subsistema junto: `ragx --version` puxava `numpy`, o motor de contexto e
+  o avaliador de agentes. Medido com `python -X importtime`:
+
+  | | antes | depois |
+  |---|---:|---:|
+  | `ragx --version` | 882 ms | 523 ms |
+  | `ragx documents --limit 5` | 1086 ms | 597 ms |
+  | `ragx entities --limit 5` | 938 ms | 537 ms |
+  | `ragx search --mode keyword` | 917 ms | 674 ms |
+  | `import ragx.cli.main` | 899 ms | 484 ms |
+
+  Vale para toda invocação da CLI, inclusive o transporte de reserva da
+  extensão, que roda um processo por consulta.
+
+- **Conexão VS Code → RAGX: 1747 ms → 1482 ms** (mediana de 7 rodadas, -15%).
+
+  O ganho é modesto de propósito, e a medição explica por quê: **mais de 98% do
+  tempo é boot de processo Python**, e ~1,4 s disso é o import do SDK de MCP,
+  que é de terceiros e constrói os modelos de todas as versões do protocolo.
+  Transporte, handshake e consultas somam ~15 ms — não há nada a ganhar ali.
+
+  Por isso o trabalho de desempenho foi para **não pagar esse custo duas
+  vezes** (fila de conexão, reconexão só quando a raiz muda de verdade) em vez
+  de perseguir os milissegundos que já eram baratos.
+
+### Documentação
+
+- `docs/09-mcp.md` documentava **20 das 33 ferramentas**: as 13 de orquestração
+  de tarefas existiam, funcionavam e não estavam escritas em lugar nenhum.
+  Agora estão — e `tests/unit/test_documentacao_mcp.py` compara as ferramentas
+  registradas com as documentadas **nos dois sentidos**, para que a divergência
+  quebre a suíte em vez de envelhecer calada.
+
+- Contadores fixos saíram de `README.md` e `docs/README.md` ("301 documentos",
+  "696 testes", "22 documentos + 15 ADRs", "96 tarefas"). Onde o número
+  importa, o texto passa a indicar o comando que o produz. A contagem de
+  ferramentas MCP ficou, porque tem teste que a confere.
+
 ## [1.0.0-beta.1] — 2026-09-16
 
 Relançamento. As releases **1.0.0, 1.0.1 e 1.0.2 foram retiradas**: saíram
