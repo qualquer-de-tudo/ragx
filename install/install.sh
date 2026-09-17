@@ -193,6 +193,9 @@ if [ "$COM_MCP" = "1" ]; then
     registrar_mcp "Claude Desktop" "$HOME/.config/Claude/claude_desktop_config.json"
     registrar_mcp "Claude Desktop (macOS)" "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
     registrar_mcp "Claude Code" "$HOME/.claude.json"
+    registrar_mcp "Cursor" "$HOME/.cursor/mcp.json"
+    registrar_mcp "Windsurf" "$HOME/.codeium/windsurf/mcp_config.json"
+    registrar_mcp "Gemini CLI" "$HOME/.gemini/settings.json"
     ok "servidor MCP disponível: ragx mcp serve"
   else
     aviso "python3 não encontrado; MCP não registrado automaticamente"
