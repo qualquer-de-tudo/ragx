@@ -82,6 +82,40 @@ A partir da Fase 11, toda ferramenta de consulta aceita `scope`
 (`current` — padrão · `all` · `project:<nome>`) e **todo item de resposta carrega
 `project`**. Detalhes em [17 — Multiprojeto](17-multiprojeto-e-federacao.md).
 
+### Orquestração de tarefas (Fase 13)
+
+O RAGX é a fila e o árbitro; o agente é o executor
+([ADR-0015](adr/ADR-0015-quem-executa-a-tarefa.md)). Implementação em
+`src/ragx/mcp/orchestration.py`. Modelo completo, com o ciclo de vida do
+lease e a máquina de estados, em
+[21 — Orquestração de tarefas](21-orquestracao-de-tarefas.md).
+
+Leitura, sempre disponível:
+
+| Ferramenta | Entrada | Saída |
+|------------|---------|-------|
+| `analyze_request` | `request` | classificação da solicitação — não escreve nada |
+| `list_tasks` | `project_id?`, `status?`, `limit?` | tarefas, forma enxuta (`_slim`) |
+| `get_task` | `task_id` | tarefa completa + dependências + último resultado |
+| `task_graph` | `project_id?` | nós e arestas do DAG de dependências |
+| `next_task` | `project_id?` | a próxima executável, **sem** reivindicar |
+| `task_status` | — | painel consolidado (usado por `stats`/`monitor`) |
+
+Escrita, exige `--write` (mesma flag do índice — ver "Escrita no ÍNDICE" acima):
+
+| Ferramenta | Entrada | Efeito |
+|------------|---------|--------|
+| `plan_work` | `request`, `apply?` | monta o plano; `apply=true` cria projeto, documentos e tarefas |
+| `claim_task` | `task_id?`, `project_id?`, `tokens?` | reivindica com lease **e devolve o contexto já pronto**, dentro do orçamento de tokens — o agente não remonta contexto sozinho |
+| `report_task_result` | `task_id`, `result` | entrega o resultado; dispara validação e libera as tarefas dependentes |
+| `release_task` | `task_id`, `reason?` | devolve a tarefa sem executar (desistência ou interrupção) |
+| `set_task_status` | `task_id`, `status`, `reason?` | bloquear, desbloquear, cancelar — respeita a matriz de transições |
+| `add_task_dependency` | `task_id`, `depends_on`, `kind?` | adiciona dependência; recusa se formar ciclo |
+| `run_worker` | — | um ciclo do worker (lease, promoção, retry, agendamento) — não executa tarefa |
+
+`claim_task` e as demais de escrita retornam `write_disabled` em modo
+`--read-only`, seguindo a mesma convenção das ferramentas de índice.
+
 Ordem de uso recomendada, documentada na descrição de cada ferramenta para que o
 agente aprenda sozinho:
 

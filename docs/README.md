@@ -48,8 +48,12 @@ responde busca híbrida, monta contexto para agentes e expõe tudo via MCP.
 
 ## Estado atual
 
-As 14 fases estão implementadas. O RAGX indexa a si mesmo: 301 documentos,
-2.355 chunks, 1.364 entidades, 6.009 relações, `knowledge/` em 4,2 MB.
+As 14 fases estão implementadas. O RAGX indexa a si mesmo — para os números
+atuais (documentos, chunks, entidades, relações, tamanho de `knowledge/`),
+rode `ragx doctor` ou `ragx status --json` neste repositório em vez de
+confiar num valor escrito aqui: é exatamente o tipo de dado que fica
+desatualizado sem avisar, e este documento não é reidratado automaticamente
+quando o índice muda.
 
 Uma ressalva honesta, medida e documentada em [05 — Busca](05-busca.md): com um
 embedder real, a busca híbrida ainda **não** supera a busca por palavra-chave no
