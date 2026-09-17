@@ -161,6 +161,24 @@ Na indexação incremental: remover um documento remove (cascade) suas entidades
 estruturais; relações que apontavam para elas caem junto. Entidades semânticas
 órfãs viram lixo removido por `ragx vacuum`.
 
+## Modelo de confiança
+
+Toda entidade e relação carrega `confidence` (float) e `source` (a camada que
+a gerou). `confidence_tier()` (`src/ragx/graph/store.py`) resume isso num
+rótulo em linguagem natural, a mesma distinção que ferramentas como o
+Graphify chamam de `EXTRACTED`/`INFERRED`:
+
+| `source` | `confidence` típico | `tier` |
+|---|---|---|
+| `structural` (Camada 1 — hierarquia já está no chunk) | 1.0 | `extracted` |
+| `reference` (Camada 2 — regex/heurística) | 0.6 – 0.8 | `inferred` |
+| `semantic` (Camada 3, custa dinheiro — ver nota acima) | variável | depende |
+
+`get_entity` (MCP) e `ragx graph show` (CLI) expõem os três campos. Um agente
+que recebe `tier: "inferred"` sabe que aquela relação foi deduzida, não lida
+direto da fonte — trate com a mesma cautela que trataria um `INFERRED` de
+qualquer outra ferramenta de grafo.
+
 ## Critério de aceite da Fase 3
 
 1. `ragx graph rebuild` em repositório real produz grafo sem nós órfãos e sem

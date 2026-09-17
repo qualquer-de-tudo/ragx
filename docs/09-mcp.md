@@ -47,7 +47,7 @@ store, por construção, não tem segredo dentro.
 | `get_document` | `path` | metadados + lista de chunks | Fase 1 |
 | `list_documents` | `path_glob?`, `lang?`, `kind?`, `limit?` | inventário do índice + contagem por origem | Fase 14 |
 | `get_chunk` | `chunk_id` | conteúdo completo de um chunk | Fase 1 |
-| `get_entity` | `name` ou `id` | entidade + relações diretas | Fase 3 |
+| `get_entity` | `name` ou `id` | entidade + relações diretas (com `confidence`, `source` e `tier`) | Fase 3 |
 | `search_graph` | `query`, `depth?` | subgrafo relevante | Fase 3 |
 | `build_context` | `query`, `tokens`, `format?` | `ContextPack` pronto | Fase 4 |
 | `list_projects` | — | projetos no hub, estado e integrações | Fase 11 |
