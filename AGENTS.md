@@ -79,6 +79,14 @@ de propósito** — fixtures do próprio Security Gate. Não são um vazamento r
   `ragx dictionary generate` alteram arquivos rastreados; isso é esperado,
   não um efeito colateral para reverter.
 
+## CHANGELOG
+
+Toda PR que muda comportamento, corrige bug ou adiciona algo visível ao
+usuário final entra em `CHANGELOG.md`, seção `[Não lançado]`, **na mesma PR**
+— não depois, não na hora do release. Um changelog escrito de memória dias
+depois é o mesmo problema de conhecimento desatualizado que este projeto
+existe para resolver, só que aplicado ao próprio processo.
+
 ## Onde as coisas ficam desatualizadas
 
 Documentação tem o mesmo risco que qualquer índice: fica velha e continua

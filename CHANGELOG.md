@@ -3,6 +3,30 @@
 Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Corrigido
+
+- Regra de segurança `filename-deny:tokens` bloqueava `src/ragx/tokens.py` e um
+  doc de tarefa da própria indexação do projeto — o padrão `**/tokens.*` casava
+  com qualquer extensão. Restringido a extensões plausíveis de dump de segredo
+  e a separador explícito antes de `token(s)`.
+
+### Adicionado
+
+- macOS na matriz de CI (`ragx` e `instalador`) — o `install.sh` sempre se
+  descreveu como suporte a Linux e macOS, mas nunca tinha rodado de verdade lá.
+- `LICENSE` (MIT), `AGENTS.md` (onboarding de quem contribui no próprio RAGX)
+  e `SECURITY.md` (canal de disclosure via GitHub Security Advisories).
+
+### Documentado
+
+- `docs/09-mcp.md` agora cobre as 33 ferramentas MCP reais — as 13 de
+  orquestração de tarefas (Fase 13) nunca tinham sido documentadas no contrato
+  formal.
+- `docs/README.md` não trava mais números de "estado atual" (documentos,
+  entidades) que ficavam desatualizados sem aviso — aponta para `ragx doctor`.
+
 ## [1.0.0-beta.1] — 2026-09-16
 
 Relançamento. As releases **1.0.0, 1.0.1 e 1.0.2 foram retiradas**: saíram
