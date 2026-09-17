@@ -74,6 +74,41 @@ com a instrução de como habilitar. Ferramenta ausente faz o agente concluir qu
 a operação não existe e inventar um contorno; ferramenta que recusa diz a
 verdade.
 
+### Orquestração de trabalho (Fase 13)
+
+O ciclo completo de uma tarefa, do pedido à entrega. Ver
+[21 — Orquestração de tarefas](21-orquestracao-de-tarefas.md) e
+[20 — Task Analyzer](20-task-analyzer.md).
+
+Só `analyze_request`, `list_tasks`, `get_task`, `task_graph`, `next_task` e
+`task_status` são de leitura pura. As demais escrevem no banco de orquestração
+e seguem a mesma regra das outras: em `--read-only` continuam listadas e
+respondem `write_disabled`.
+
+| Ferramenta | Entrada | Efeito | Escreve? |
+|------------|---------|--------|----------|
+| `analyze_request` | `request` | classifica: executar agora ou documentar e decompor antes | não |
+| `plan_work` | `request`, `apply?` | monta o plano (documentos, tarefas, dependências); `apply=true` cria | com `apply` |
+| `list_tasks` | `project_id?`, `status?`, `limit?` | tarefas, com filtro | não |
+| `get_task` | `task_id` | critérios, escopo, dependências e último resultado | não |
+| `task_graph` | `project_id?` | o DAG de tarefas: nós e arestas | não |
+| `next_task` | `project_id?` | a próxima tarefa executável, SEM reivindicar | não |
+| `task_status` | — | painel: tarefas por estado, projetos, conhecimento, agendamentos | não |
+| `claim_task` | `task_id?`, `project_id?`, `tokens?` | reivindica com lease e devolve o contexto já montado | sim |
+| `report_task_result` | `task_id`, `result` | entrega o resultado, valida e libera as dependentes | sim |
+| `release_task` | `task_id`, `reason?` | devolve uma tarefa reivindicada sem executá-la | sim |
+| `set_task_status` | `task_id`, `status`, `reason?` | muda o estado, respeitando a matriz de transições | sim |
+| `add_task_dependency` | `task_id`, `depends_on`, `kind?` | cria dependência; ciclo é recusado com o caminho completo | sim |
+| `run_worker` | — | um ciclo do worker: expira leases, promove prontas, aplica retry | sim |
+
+`claim_task` é o ponto de entrada do agente executor: ele devolve a tarefa
+**e** o contexto, numa chamada só, para não obrigar a uma segunda ida ao
+índice entre pegar o trabalho e começá-lo.
+
+> A lista acima é verificada contra o servidor por
+> `tests/unit/test_documentacao_mcp.py`. Ferramenta registrada e não
+> documentada — ou documentada e não registrada — quebra a suíte.
+
 O que a escrita **não** concede: ler o filesystem, escapar do Security Gate,
 indexar fora da raiz do projeto, executar comando arbitrário, ou escolher a
 origem de uma fonte base — essa vem de arquivo versionado, revisado por humano.

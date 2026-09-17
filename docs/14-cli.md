@@ -123,7 +123,32 @@ ragx context "<query>"
     --scope current|all|project:<nome>
     --explain               mostra por que cada fragmento entrou/saiu
     --out FILE
+
+ragx trial "<query>"
+    --tokens N              orçamento do contexto (padrão: 3000)
+    --scope sources|project basal: só os arquivos usados, ou o projeto inteiro
+    --path GLOB             basal explícito (repetível)
+    --json
 ```
+
+`ragx trial` compara o contexto montado com a leitura integral dos arquivos e
+mostra a diferença em tokens.
+
+> **O número é uma ESTIMATIVA de ordem de grandeza, não uma previsão de custo.**
+> Os tokens são contados por um tokenizador aproximado — `tiktoken` quando
+> instalado, heurística quando não —, e nenhum dos dois é o tokenizador do
+> modelo que você usa. O basal supõe leitura integral dos arquivos, que não é
+> como um agente realmente trabalha: ele busca, abre pedaços e desiste. E a
+> comparação mede TAMANHO, não suficiência — contexto que falta gera uma
+> segunda volta, que pode custar mais do que a leitura inteira custaria.
+
+O basal nunca conta o que o RAGX não serviria: arquivo bloqueado pelo Security
+Gate, coberto por `.gitignore`/`.dockerignore`/`.ragignore`, binário ou acima de
+`index.max_file_bytes` fica de fora e é reportado por motivo. Contar um `.env`
+inflaria a economia com tokens que nenhuma ferramenta entregaria — e exigiria
+ler o segredo para contá-lo. Arquivo grande é excluído, nunca truncado:
+truncar inventaria um número, excluir **subestima** a economia, que é o lado
+seguro do erro.
 
 ## Fase 5 — dicionário
 
@@ -150,7 +175,36 @@ ragx mcp serve
 ragx mcp tools
     --json                  imprime os JSON Schemas
     --read-only             lista como ficaria sem escrita
+
+ragx mcp install
+    --client NOME           só nestes (repetível): claude-desktop, claude-code,
+                            cursor, windsurf, gemini, codex
+    --command CAMINHO       executável gravado na configuração (padrão: `ragx`)
+    --dry-run               mostra o que mudaria, sem escrever
+    --json
 ```
+
+`ragx mcp install` registra o RAGX como servidor MCP nos clientes que encontra
+na máquina. É o que os instaladores chamam, e pode ser rodado à mão depois.
+
+O que ele garante, porque escrever na configuração de outro programa é a
+operação mais arriscada do instalador:
+
+- **alteração mínima** — mexe só na entrada `ragx`; os outros servidores MCP e
+  todo o resto do arquivo ficam como estavam;
+- **idempotente** — rodar de novo não duplica nada, e se já estiver correto não
+  escreve nem gera backup;
+- **backup datado** antes de qualquer mudança real;
+- **recusa configuração ilegível** em vez de sobrescrevê-la — JSON quebrado
+  pode ser o arquivo que você está editando agora;
+- **escrita atômica**, sem BOM: uma queda no meio não deixa o arquivo truncado.
+
+Cliente não instalado é reportado como ausente, não como erro, e nenhuma pasta
+de cliente é criada por conta própria. Use `--command` com caminho absoluto
+quando o cliente for um aplicativo gráfico: eles não herdam o PATH do shell de
+forma confiável.
+
+Depois de registrar, **reinicie o cliente** — ele lê a configuração ao subir.
 
 `--write` dá ao agente controle sobre o índice — `refresh`, `reindex`, `sync`,
 `rebuild_graph`, `generate_dictionary`, `base_sync`, `publish_contract`. Não dá

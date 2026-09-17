@@ -34,6 +34,7 @@ responde busca híbrida, monta contexto para agentes e expõe tudo via MCP.
 | [19 — Watch e autonomia do agente](19-watch-e-autonomia-do-agente.md) | `ragx watch`, escrita via MCP, playbook | 11 |
 | [20 — Task Analyzer](20-task-analyzer.md) | Classificar a solicitação: executar ou documentar antes | 13 |
 | [21 — Orquestração de tarefas](21-orquestracao-de-tarefas.md) | SQLite, DAG, lease, retry, scheduler, worker | 13 |
+| [22 — VS Code e desempenho](22-vscode-e-desempenho.md) | Conexão, prontidão, reconexão, onde o tempo vai | 14 |
 | [Roadmap](roadmap.md) | Fases, dependências, critérios de aceite | todas |
 | [ADRs](adr/) | Decisões arquiteturais registradas | — |
 
@@ -48,8 +49,17 @@ responde busca híbrida, monta contexto para agentes e expõe tudo via MCP.
 
 ## Estado atual
 
-As 14 fases estão implementadas. O RAGX indexa a si mesmo: 301 documentos,
-2.355 chunks, 1.364 entidades, 6.009 relações, `knowledge/` em 4,2 MB.
+As 14 fases estão implementadas. O RAGX indexa a si mesmo — para ver o tamanho
+do índice **agora**, em vez de um número que envelheceu neste arquivo:
+
+```bash
+ragx status        # documentos, chunks, entidades, relações
+ragx size          # o que `knowledge/` ocupa, contra o teto do Git
+```
+
+Contagem escrita à mão em documentação apodrece em silêncio: ela continua ali,
+convincente e errada, muito depois de o código ter mudado. Onde um número
+importa, este repositório prefere o comando que o produz.
 
 Uma ressalva honesta, medida e documentada em [05 — Busca](05-busca.md): com um
 embedder real, a busca híbrida ainda **não** supera a busca por palavra-chave no

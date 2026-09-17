@@ -136,20 +136,25 @@ no banco: fala com o RAGX por MCP (processo quente) ou pela CLI. Ver
 
 | | |
 |---|---|
-| [docs/](docs/) | 22 documentos + 15 ADRs |
+| [docs/](docs/) | documentação numerada + ADRs |
 | [docs/00-visao-geral.md](docs/00-visao-geral.md) | comece aqui |
 | [docs/02-seguranca.md](docs/02-seguranca.md) | leia antes de escrever código |
 | [docs/14-cli.md](docs/14-cli.md) | referência de comandos |
 | [docs/19-watch-e-autonomia-do-agente.md](docs/19-watch-e-autonomia-do-agente.md) | o que o agente pode fazer sozinho |
 | [docs/20-task-analyzer.md](docs/20-task-analyzer.md) | executar agora ou documentar antes |
-| [install/](install/README.md) | instaladores para Windows e Linux |
+| [docs/09-mcp.md](docs/09-mcp.md) | as ferramentas MCP, uma a uma |
+| [AGENTS.md](AGENTS.md) | trabalhar NO RAGX: arquitetura, testes, padrões |
+| [SECURITY.md](SECURITY.md) | reportar vulnerabilidade |
+| [install/](install/README.md) | instaladores para Linux, macOS e Windows |
 | [vscode-plugin/](vscode-plugin/README.md) | extensão do VS Code |
-| [task/](task/) | 96 tarefas, 14 fases |
+| [task/](task/) | o board completo, fase a fase |
 
 ## Estado
 
-MVP completo: 14 fases implementadas, 696 testes (+39 no plugin), **zero `xfail`** na suíte de
-segurança (8 superfícies de vazamento verificadas).
+MVP completo: 14 fases implementadas, **zero `xfail`** na suíte de segurança
+(8 superfícies de vazamento verificadas). Para a contagem de testes de hoje,
+`uv run pytest -q` — um número escrito aqui só ficaria desatualizado na
+próxima alteração.
 
 **Ressalva importante:** a busca híbrida **não supera o keyword** neste corpus.
 Medição real (26 consultas, `fastembed` multilíngue, 1.929 chunks):
@@ -176,4 +181,4 @@ ragx eval
 
 ## Licença
 
-MIT
+MIT — ver [LICENSE](LICENSE).
