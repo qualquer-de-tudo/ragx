@@ -11,9 +11,6 @@ from rich.console import Console
 
 from ragx.config import load_config
 from ragx.core.errors import UsageError
-from ragx.federation import hub as hub_mod
-from ragx.federation import linker
-from ragx.federation import slice as fed_slice
 
 console = Console()
 
@@ -26,6 +23,8 @@ hub_app = typer.Typer(no_args_is_help=True)
 @federation_app.command("build")
 def build(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Gera knowledge/federation/ — a superfície pública deste projeto."""
+    from ragx.federation import slice as fed_slice
+
     cfg = load_config()
     r = fed_slice.build(cfg)
     if as_json:
@@ -59,6 +58,8 @@ def show(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Mostra a superfície pública deste projeto."""
+    from ragx.federation import slice as fed_slice
+
     cfg = load_config()
     folder = cfg.root / "knowledge" / fed_slice.FOLDER
     if not folder.is_dir():
@@ -84,6 +85,8 @@ def show(
 @federation_app.command("export")
 def export_slice(target: Annotated[Path, typer.Argument()]) -> None:
     """Exporta a fatia como arquivo único (.fed.json), para quem não clona o repo."""
+    from ragx.federation import slice as fed_slice
+
     cfg = load_config()
     n = fed_slice.export_file(cfg, target)
     console.print(f"\n[green]✓[/] {target}  [dim]{n / 1024:.1f} KB[/]\n")
@@ -98,6 +101,8 @@ def register(
     visibility: Annotated[str | None, typer.Option("--visibility")] = None,
 ) -> None:
     """Registra um projeto no hub (clonado ou só pela fatia)."""
+    from ragx.federation import hub as hub_mod
+
     cfg = load_config()
     ref = hub_mod.register(cfg, path, name, from_federation, visibility)
     estado = "clonado" if ref.cloned else "só-federação"
@@ -107,6 +112,8 @@ def register(
 @project_app.command("list")
 def list_(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Projetos registrados."""
+    from ragx.federation import hub as hub_mod
+
     rows = hub_mod.list_projects(load_config())
     if as_json:
         console.print_json(json.dumps(rows, ensure_ascii=False, default=str))
@@ -128,6 +135,8 @@ def list_(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
 @project_app.command("unregister")
 def unregister(name: Annotated[str, typer.Argument()]) -> None:
     """Remove um projeto do hub."""
+    from ragx.federation import hub as hub_mod
+
     if hub_mod.unregister(load_config(), name):
         console.print(f"\n[green]✓[/] {name} removido\n")
     else:
@@ -142,6 +151,8 @@ def hub_sync(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Atualiza o hub a partir dos projetos registrados."""
+    from ragx.federation import hub as hub_mod
+
     cfg = load_config()
     r = hub_mod.sync(cfg, project)
     if as_json:
@@ -166,6 +177,8 @@ def hub_sync(
 @hub_app.command("status")
 def hub_status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Estado do hub e de cada projeto."""
+    from ragx.federation import hub as hub_mod
+
     st = hub_mod.status(load_config())
     if as_json:
         console.print_json(json.dumps(st, ensure_ascii=False, default=str))
@@ -189,6 +202,8 @@ def hub_status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None
 @hub_app.command("link")
 def hub_link(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Resolve consumes ⟷ provides entre os projetos."""
+    from ragx.federation import linker
+
     cfg = load_config()
     r = linker.link(cfg)
     if as_json:
@@ -228,6 +243,8 @@ def hub_link(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
 @hub_app.command("dictionary")
 def hub_dictionary(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Dicionário de workspace: quem fala com quem."""
+    from ragx.federation import linker
+
     data = linker.workspace_dictionary(load_config())
     if as_json:
         console.print_json(json.dumps(data, ensure_ascii=False))
@@ -256,6 +273,8 @@ def hub_reset(
     yes: Annotated[bool, typer.Option("--yes", help="Não perguntar.")] = False,
 ) -> None:
     """Apaga o hub. Reconstruível com `ragx hub sync`."""
+    from ragx.federation import hub as hub_mod
+
     cfg = load_config()
     if not yes:
         alvo = hub_mod.hub_dir(cfg)
@@ -271,6 +290,8 @@ def contract(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Contrato de um endpoint ou evento, e o projeto que o provê."""
+    from ragx.federation import linker
+
     cfg = load_config()
     found = linker.find_contract(cfg, kind, name)
     if found is None:

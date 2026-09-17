@@ -10,7 +10,6 @@ import typer
 from rich.console import Console
 
 from ragx.config import load_config
-from ragx.storage.db import integrity_check, open_db
 
 console = Console()
 
@@ -36,6 +35,8 @@ _ORPHAN_QUERIES = (
 
 def vacuum(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Remove órfãos, compacta o banco e otimiza os índices."""
+    from ragx.storage.db import open_db
+
     cfg = load_config()
     if not cfg.db_path.exists():
         console.print("\n[yellow]sem banco.[/] Rode: [bold]ragx init[/]\n")
@@ -109,6 +110,8 @@ def reset(
 
 
 def integrity(cfg_path: str | None = None) -> str:
+    from ragx.storage.db import integrity_check, open_db
+
     cfg = load_config(cfg_path)
     with open_db(cfg.db_path, read_only=True) as conn:
         return integrity_check(conn)

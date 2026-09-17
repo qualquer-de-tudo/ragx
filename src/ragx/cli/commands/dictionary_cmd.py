@@ -10,7 +10,6 @@ from rich.console import Console
 
 from ragx.config import load_config
 from ragx.core.errors import UsageError
-from ragx.dictionary import builder
 
 console = Console()
 app = typer.Typer(no_args_is_help=True)
@@ -23,6 +22,8 @@ def generate(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Gera knowledge/dictionary.json."""
+    from ragx.dictionary import builder
+
     cfg = load_config()
     if semantic:
         console.print(
@@ -57,6 +58,8 @@ def show(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Mostra o dicionário (ou uma seção)."""
+    from ragx.dictionary import builder
+
     cfg = load_config()
     data = builder.load(cfg)
     if data is None:

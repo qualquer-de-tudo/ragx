@@ -12,10 +12,6 @@ from rich.progress import BarColumn, Progress, TextColumn
 
 from ragx.config import load_config
 from ragx.core.errors import UsageError
-from ragx.indexing.pipeline import index_project
-from ragx.indexing.pipeline import status as get_status
-from ragx.storage.db import open_db
-from ragx.storage.repositories import ChunkRepo, DocumentRepo
 
 console = Console()
 
@@ -32,6 +28,9 @@ def index(
     quiet: Annotated[bool, typer.Option("--quiet")] = False,
 ) -> None:
     """Indexa o projeto (incremental por padrão)."""
+    from ragx.indexing.pipeline import index_project
+    from ragx.indexing.pipeline import status as get_status
+
     cfg = load_config(path)
     if exclude:
         cfg.index.exclude = [*cfg.index.exclude, *exclude]
@@ -113,6 +112,8 @@ def index(
 
 def status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Resumo do índice e do último run."""
+    from ragx.indexing.pipeline import status as get_status
+
     cfg = load_config()
     st = get_status(cfg)
     if as_json:
@@ -152,6 +153,9 @@ def documents(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Lista documentos indexados."""
+    from ragx.storage.db import open_db
+    from ragx.storage.repositories import DocumentRepo
+
     cfg = load_config()
     with open_db(cfg.db_path, read_only=True) as conn:
         rows = DocumentRepo(conn).list(lang=lang, kind=kind, path_like=path_glob, limit=limit)
@@ -178,6 +182,9 @@ def chunks(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Lista chunks de um documento."""
+    from ragx.storage.db import open_db
+    from ragx.storage.repositories import ChunkRepo
+
     cfg = load_config()
     if not document:
         raise UsageError("informe --document <caminho>")
@@ -208,6 +215,9 @@ def chunk(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Conteúdo completo de um chunk."""
+    from ragx.storage.db import open_db
+    from ragx.storage.repositories import ChunkRepo
+
     cfg = load_config()
     with open_db(cfg.db_path, read_only=True) as conn:
         repo = ChunkRepo(conn)

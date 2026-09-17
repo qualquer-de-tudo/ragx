@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from rich.console import Console
@@ -11,8 +11,9 @@ from rich.live import Live
 from rich.table import Table
 
 from ragx.config import load_config
-from ragx.watch.monitor import Delta, WatchState
-from ragx.watch.monitor import watch as run_watch
+
+if TYPE_CHECKING:
+    from ragx.watch.monitor import Delta, WatchState
 
 console = Console()
 
@@ -35,6 +36,9 @@ def watch(
 
     Ctrl+C encerra.
     """
+    from ragx.watch.monitor import WatchState
+    from ragx.watch.monitor import watch as run_watch
+
     cfg = load_config()
     if interval > 0:
         cfg.watch.interval_s = interval
@@ -119,6 +123,7 @@ def _once(cfg: object, plain: bool) -> None:
 
 
 def _print_apply(d: Delta, st: WatchState) -> None:
+
     extra = "  [dim]· consolidado[/]" if st.since_consolidation == 0 else ""
     console.print(f"  [green]✓[/] {d.total} arquivo(s) reindexado(s){extra}")
     if st.last_error:
@@ -126,6 +131,7 @@ def _print_apply(d: Delta, st: WatchState) -> None:
 
 
 def _panel(recentes: list[str], st: WatchState) -> Table:
+
     t = Table(box=None, pad_edge=False, show_header=False)
     t.add_column(overflow="fold")
     for linha in recentes or ["[dim]aguardando mudanças…[/]"]:
@@ -144,6 +150,7 @@ def _panel(recentes: list[str], st: WatchState) -> Table:
 
 
 def _bye(st: WatchState | None) -> None:
+
     if st is None:
         console.print("\n[dim]watch encerrado.[/]\n")
         return

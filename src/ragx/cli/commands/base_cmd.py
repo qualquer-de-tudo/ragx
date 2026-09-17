@@ -14,7 +14,6 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from ragx.base import source as base_source
 from ragx.config import load_config
 from ragx.core.errors import UsageError
 
@@ -42,6 +41,8 @@ def add_cmd(
     `ragx.toml` — é o que impede que um `base add` mude em silêncio o índice de
     todos os outros projetos da máquina, e é o que viaja no Git.
     """
+    from ragx.base import source as base_source
+
     cfg = load_config()
     r = base_source.add(cfg, origin, name=name, ref=ref)
     console.print(
@@ -113,6 +114,8 @@ def _declare(cfg: object, origin: str) -> bool:
 @app.command("list")
 def list_cmd(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Fontes registradas nesta máquina."""
+    from ragx.base import source as base_source
+
     cfg = load_config()
     sources = base_source.load_registry(cfg)
     if as_json:
@@ -149,6 +152,8 @@ def update_cmd(
     index: Annotated[bool, typer.Option("--index/--no-index")] = True,
 ) -> None:
     """Rebaixa as fontes e reindexa o que mudou."""
+    from ragx.base import source as base_source
+
     cfg = load_config()
     reports = base_source.update(cfg, name)
     console.print()
@@ -176,6 +181,8 @@ def sync_cmd(
     Lê `ragx.toml` e `knowledge/base.json`. É o comando que quem clona o
     repositório roda uma vez.
     """
+    from ragx.base import source as base_source
+
     cfg = load_config()
     declaradas = base_source.declared_for(cfg)
     if not declaradas:
@@ -208,6 +215,8 @@ def remove_cmd(
     yes: Annotated[bool, typer.Option("--yes")] = False,
 ) -> None:
     """Remove uma fonte desta máquina. Os documentos saem no próximo index."""
+    from ragx.base import source as base_source
+
     cfg = load_config()
     if not yes and not typer.confirm(f"Remover a fonte base '{name}'?"):
         raise typer.Exit(1)
@@ -232,6 +241,8 @@ def disable_cmd(name: Annotated[str, typer.Argument()]) -> None:
 
 
 def _toggle(name: str, enabled: bool) -> None:
+    from ragx.base import source as base_source
+
     cfg = load_config()
     if not base_source.set_enabled(cfg, name, enabled):
         raise UsageError(f"fonte não encontrada: {name}")

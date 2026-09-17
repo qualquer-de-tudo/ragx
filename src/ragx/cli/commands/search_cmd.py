@@ -10,8 +10,6 @@ from rich.console import Console
 
 from ragx.config import load_config
 from ragx.core.errors import UsageError
-from ragx.search.service import SearchFilters
-from ragx.search.service import search as run_search
 
 console = Console()
 
@@ -31,6 +29,9 @@ def search(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Busca no conhecimento indexado."""
+    from ragx.search.service import SearchFilters
+    from ragx.search.service import search as run_search
+
     if mode and mode not in _MODES:
         raise UsageError(f"modo inválido: {mode!r} (use {' | '.join(_MODES)})")
 

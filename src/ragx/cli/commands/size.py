@@ -9,7 +9,6 @@ import typer
 from rich.console import Console
 
 from ragx.config import load_config
-from ragx.sizing.budget import Budget
 
 console = Console()
 
@@ -19,6 +18,8 @@ def size(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Relatório do orçamento de `knowledge/`."""
+    from ragx.sizing.budget import Budget
+
     cfg = load_config()
     b = Budget(cfg)
     report = b.report()

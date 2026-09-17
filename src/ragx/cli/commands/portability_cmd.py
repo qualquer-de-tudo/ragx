@@ -11,7 +11,6 @@ from rich.console import Console
 
 from ragx.config import load_config
 from ragx.core.errors import UsageError
-from ragx.portability import importer, package
 
 console = Console()
 
@@ -24,6 +23,8 @@ def export(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Empacota o conhecimento em um arquivo .rag."""
+    from ragx.portability import package
+
     cfg = load_config()
     r = package.export(cfg, target, include_embeddings, include_agents, full_vectors)
     if as_json:
@@ -48,6 +49,8 @@ def import_(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Importa conhecimento de um arquivo .rag."""
+    from ragx.portability import importer
+
     if not source.is_file():
         raise UsageError(f"pacote não encontrado: {source}")
     cfg = load_config()
@@ -75,6 +78,8 @@ def inspect(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Lê o manifest de um .rag sem descompactar o pacote."""
+    from ragx.portability import package
+
     if not source.is_file():
         raise UsageError(f"pacote não encontrado: {source}")
     manifest = package.inspect(source)

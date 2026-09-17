@@ -9,7 +9,6 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from ragx.agents import evaluator, profile, trainer
 from ragx.config import load_config
 
 console = Console()
@@ -23,6 +22,8 @@ def create(
     scope: Annotated[str | None, typer.Option("--scope")] = None,
 ) -> None:
     """Cria o esqueleto de um perfil de agente."""
+    from ragx.agents import profile
+
     r = profile.create(load_config(), name, template, scope)
     console.print(f"\n[bold green]Perfil criado[/] — {r.path}  [dim]({r.template})[/]\n")
     for c in r.created:
@@ -38,6 +39,8 @@ def train(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Compila conhecimento, regras e skills no perfil."""
+    from ragx.agents import trainer
+
     r = trainer.train(load_config(), name, tokens, with_examples)
     if as_json:
         console.print_json(
@@ -72,6 +75,8 @@ def train(
 @app.command("list")
 def list_(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Perfis existentes."""
+    from ragx.agents import profile
+
     names = profile.list_profiles(load_config())
     if as_json:
         console.print_json(json.dumps(names, ensure_ascii=False))
@@ -91,6 +96,8 @@ def show(
     section: Annotated[str | None, typer.Option("--section")] = None,
 ) -> None:
     """Mostra o perfil."""
+    from ragx.agents import profile
+
     cfg = load_config()
     manifest, paths = profile.load(cfg, name)
     if section in ("rules", "skills"):
@@ -113,6 +120,8 @@ def eval_(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Avalia a RECUPERAÇÃO do perfil (não a geração)."""
+    from ragx.agents import evaluator
+
     r = evaluator.evaluate(load_config(), name, case)
     if as_json:
         console.print_json(
@@ -151,6 +160,8 @@ def promote(
     example_id: Annotated[str, typer.Argument()],
 ) -> None:
     """Promove um exemplo proposto. Exemplo ruim ensina padrão ruim."""
+    from ragx.agents import trainer
+
     dst = trainer.promote_example(load_config(), name, example_id)
     console.print(f"\n[green]✓[/] {dst}\n")
 
@@ -162,6 +173,8 @@ def export(
 ) -> None:
     """Empacota o perfil para uso em outro projeto."""
     import zipfile
+
+    from ragx.agents import profile
 
     cfg = load_config()
     _m, paths = profile.load(cfg, name)

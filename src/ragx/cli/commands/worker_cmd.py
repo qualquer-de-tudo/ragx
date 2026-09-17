@@ -15,8 +15,6 @@ from rich.table import Table
 
 from ragx.config import load_config
 from ragx.core.errors import UsageError
-from ragx.tasks import worker as wk
-from ragx.tasks.store import TaskRepository, open_tasks_db
 
 console = Console()
 app = typer.Typer(help="Agendamentos de disparo.", no_args_is_help=True)
@@ -35,6 +33,8 @@ def worker(
     Não executa tarefa nenhuma — mantém a fila pronta para que o agente
     encontre trabalho.
     """
+    from ragx.tasks import worker as wk
+
     cfg = load_config()
     if not once:
         raise UsageError(
@@ -70,6 +70,9 @@ def worker(
 @app.command("list")
 def list_cmd(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Agendamentos registrados."""
+    from ragx.tasks import worker as wk
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     with open_tasks_db(cfg, read_only=True) as conn:
         agendas = wk.list_schedules(TaskRepository(conn))
@@ -108,6 +111,9 @@ def add_cmd(
     event: Annotated[str | None, typer.Option("--event")] = None,
 ) -> None:
     """Cria um agendamento. A expressão cron é validada agora, não na 1ª execução."""
+    from ragx.tasks import worker as wk
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     if type_ == "cron" and not cron:
         raise UsageError('--cron é obrigatório para --type cron (ex.: "*/5 * * * *")')
@@ -131,6 +137,9 @@ def add_cmd(
 @app.command("remove")
 def remove_cmd(schedule_id: Annotated[str, typer.Argument()]) -> None:
     """Remove um agendamento."""
+    from ragx.tasks import worker as wk
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     with open_tasks_db(cfg) as conn:
         ok = wk.remove_schedule(TaskRepository(conn), schedule_id)
@@ -153,6 +162,9 @@ def disable_cmd(schedule_id: Annotated[str, typer.Argument()]) -> None:
 
 
 def _toggle(schedule_id: str, enabled: bool) -> None:
+    from ragx.tasks import worker as wk
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     with open_tasks_db(cfg) as conn:
         ok = wk.set_schedule_enabled(TaskRepository(conn), schedule_id, enabled)

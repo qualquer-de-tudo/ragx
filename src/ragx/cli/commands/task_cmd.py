@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 from rich.console import Console
@@ -13,10 +13,9 @@ from rich.table import Table
 from ragx.config import load_config
 from ragx.core.errors import UsageError
 from ragx.security.redactor import safe_echo
-from ragx.tasks import service
-from ragx.tasks.dispatcher import TaskDispatcher, result_from_json, validate
-from ragx.tasks.models import DependencyKind, Status, TaskResult
-from ragx.tasks.store import TaskRepository, open_tasks_db
+
+if TYPE_CHECKING:
+    from ragx.tasks.models import Status
 
 console = Console()
 app = typer.Typer(help="Análise, planejamento e execução de trabalho.", no_args_is_help=True)
@@ -30,6 +29,8 @@ _CORES = {
 
 
 def _repo(read_only: bool = False):
+    from ragx.tasks.store import open_tasks_db
+
     cfg = load_config()
     return cfg, open_tasks_db(cfg, read_only=read_only)
 
@@ -45,6 +46,8 @@ def analyze_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Classifica a solicitação. NÃO escreve nada."""
+    from ragx.tasks import service
+
     cfg = load_config()
     a = service.analyze_request(cfg, request)
     if as_json:
@@ -88,6 +91,8 @@ def plan_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Monta o plano: documentos, tarefas e dependências."""
+    from ragx.tasks import service
+
     cfg = load_config()
     p = service.plan_work(cfg, request, apply=apply, write_docs=docs)
     if as_json:
@@ -140,6 +145,8 @@ def list_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Lista as tarefas."""
+    from ragx.tasks.store import TaskRepository
+
     with _conn() as conn:
         tarefas = TaskRepository(conn).list_tasks(project_id=project, status=status)
     if as_json:
@@ -168,6 +175,8 @@ def show_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Detalhe de uma tarefa."""
+    from ragx.tasks.store import TaskRepository
+
     with _conn() as conn:
         repo = TaskRepository(conn)
         tarefa = repo.get(task_id)
@@ -218,6 +227,9 @@ def next_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """A próxima tarefa executável. Não reivindica."""
+    from ragx.tasks.dispatcher import TaskDispatcher
+    from ragx.tasks.store import TaskRepository
+
     cfg, ctx = _repo(read_only=True)
     with ctx as conn:
         tarefa = TaskDispatcher(cfg, TaskRepository(conn)).next(project)
@@ -240,6 +252,7 @@ def context_cmd(
 ) -> None:
     """Imprime o contexto que o agente receberia para esta tarefa."""
     from ragx.tasks.dispatcher import build_task_context
+    from ragx.tasks.store import TaskRepository
 
     cfg, ctx = _repo(read_only=True)
     with ctx as conn:
@@ -266,6 +279,9 @@ def run_cmd(
 
     O RAGX entrega o trabalho; quem executa é o agente (ADR-0015).
     """
+    from ragx.tasks.dispatcher import TaskDispatcher
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     with open_tasks_db(cfg) as conn:
         repo = TaskRepository(conn)
@@ -292,6 +308,9 @@ def result_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Entrega o resultado da tarefa; dispara validação e liberação."""
+    from ragx.tasks.dispatcher import TaskDispatcher, result_from_json
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     if file:
         payload = result_from_json(file.read_text(encoding="utf-8"))
@@ -333,6 +352,10 @@ def validate_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Revalida o último resultado sem mudar estado."""
+    from ragx.tasks.dispatcher import validate
+    from ragx.tasks.models import TaskResult
+    from ragx.tasks.store import TaskRepository
+
     cfg, ctx = _repo(read_only=True)
     with ctx as conn:
         repo = TaskRepository(conn)
@@ -360,12 +383,16 @@ def validate_cmd(
 @app.command("retry")
 def retry_cmd(task_id: Annotated[str, typer.Argument()]) -> None:
     """Devolve a tarefa à fila imediatamente."""
+    from ragx.tasks.models import Status
+
     _transition(task_id, Status.READY, "retry manual")
 
 
 @app.command("cancel")
 def cancel_cmd(task_id: Annotated[str, typer.Argument()]) -> None:
     """Cancela a tarefa. Decisão humana; não se desfaz sozinha."""
+    from ragx.tasks.models import Status
+
     _transition(task_id, Status.CANCELLED, "cancelada pelo usuário")
 
 
@@ -375,16 +402,22 @@ def block_cmd(
     reason: Annotated[str, typer.Option("--reason")] = "",
 ) -> None:
     """Bloqueia a tarefa."""
+    from ragx.tasks.models import Status
+
     _transition(task_id, Status.BLOCKED, reason or "bloqueada pelo usuário")
 
 
 @app.command("unblock")
 def unblock_cmd(task_id: Annotated[str, typer.Argument()]) -> None:
     """Desbloqueia; volta a `pending` e o worker decide se já está pronta."""
+    from ragx.tasks.models import Status
+
     _transition(task_id, Status.PENDING, "desbloqueada")
 
 
 def _transition(task_id: str, novo: Status, detalhe: str) -> None:
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     with open_tasks_db(cfg) as conn:
         repo = TaskRepository(conn)
@@ -402,6 +435,9 @@ def dependencies_cmd(
     kind: Annotated[str, typer.Option("--kind")] = "depends_on",
 ) -> None:
     """Mostra ou cria dependências."""
+    from ragx.tasks.models import DependencyKind
+    from ragx.tasks.store import TaskRepository, open_tasks_db
+
     cfg = load_config()
     with open_tasks_db(cfg) as conn:
         repo = TaskRepository(conn)
@@ -424,6 +460,8 @@ def graph_cmd(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Desenha o DAG do projeto."""
+    from ragx.tasks.store import TaskRepository
+
     with _conn() as conn:
         repo = TaskRepository(conn)
         tarefas = repo.list_tasks(project_id=project, limit=500)
@@ -456,6 +494,8 @@ def graph_cmd(
 @app.command("status")
 def status_cmd(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Painel: tarefas, projetos, conhecimento e agendamento."""
+    from ragx.tasks import service
+
     cfg = load_config()
     panel = service.status_panel(cfg)
     if as_json:
@@ -500,6 +540,8 @@ def logs_cmd(
     events: Annotated[bool, typer.Option("--events", help="Mostrar eventos em vez de logs.")] = False,
 ) -> None:
     """Logs ou trilha de eventos da tarefa."""
+    from ragx.tasks.store import TaskRepository
+
     with _conn() as conn:
         repo = TaskRepository(conn)
         linhas: list[dict[str, Any]] = (

@@ -9,8 +9,6 @@ import typer
 from rich.console import Console
 
 from ragx.config import load_config
-from ragx.sync.service import resolve as run_resolve
-from ragx.sync.service import sync as run_sync
 
 console = Console()
 
@@ -25,6 +23,9 @@ def sync(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Reconstrói o índice a partir de knowledge/ + working tree."""
+    from ragx.sync.service import resolve as run_resolve
+    from ragx.sync.service import sync as run_sync
+
     cfg = load_config()
     if resolve or resolve_file:
         r = run_resolve(cfg, resolve_file)

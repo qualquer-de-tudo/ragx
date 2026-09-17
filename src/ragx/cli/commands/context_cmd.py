@@ -9,11 +9,7 @@ import typer
 from rich.console import Console
 
 from ragx.config import load_config
-from ragx.context.engine import build_context
-from ragx.context.render import explain as render_explain
-from ragx.context.render import render
 from ragx.core.errors import UsageError
-from ragx.search.service import SearchFilters
 
 console = Console()
 _FORMATS = ("markdown", "json", "xml")
@@ -32,6 +28,11 @@ def context(
     out: Annotated[Path | None, typer.Option("--out", help="Grava em arquivo.")] = None,
 ) -> None:
     """Monta o contexto de trabalho para uma tarefa."""
+    from ragx.context.engine import build_context
+    from ragx.context.render import explain as render_explain
+    from ragx.context.render import render
+    from ragx.search.service import SearchFilters
+
     if fmt not in _FORMATS:
         raise UsageError(f"formato inválido: {fmt!r} (use {' | '.join(_FORMATS)})")
 

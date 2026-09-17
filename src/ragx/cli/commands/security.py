@@ -16,9 +16,6 @@ from rich.console import Console
 
 from ragx.config import load_config
 from ragx.core.models import Severity, Verdict
-from ragx.security.gate import SecurityGate
-from ragx.security.scanner import load_ruleset, rules_summary
-from ragx.walk import iter_files
 
 app = typer.Typer(no_args_is_help=True)
 console = Console()
@@ -37,6 +34,10 @@ def scan(
     rule: Annotated[str | None, typer.Option("--rule", help="Testa uma regra isolada.")] = None,
 ) -> None:
     """Varre em busca de segredos sem indexar nada."""
+    from ragx.security.gate import SecurityGate
+    from ragx.security.scanner import load_ruleset
+    from ragx.walk import iter_files
+
     cfg = load_config(path)
     root = cfg.root if cfg.has_config_file else Path(path).resolve()
     gate = SecurityGate(
@@ -133,6 +134,8 @@ def rules(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Lista as regras ativas e as desabilitadas."""
+    from ragx.security.scanner import load_ruleset, rules_summary
+
     cfg = load_config()
     rs = load_ruleset(frozenset(cfg.security.disabled_rules))
     summary = rules_summary(rs)

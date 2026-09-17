@@ -10,7 +10,6 @@ import typer
 from rich.console import Console
 
 from ragx.config import load_config
-from ragx.search.evaluation import MODES, evaluate, load_cases
 
 console = Console()
 
@@ -22,6 +21,8 @@ def eval_cmd(
     show_failures: Annotated[bool, typer.Option("--failures")] = False,
 ) -> None:
     """Recall@5, MRR e nDCG@10 por modo de busca."""
+    from ragx.search.evaluation import MODES, evaluate, load_cases
+
     cfg = load_config()
     path = queries if queries.is_absolute() else cfg.root / queries
     cases = load_cases(path)

@@ -11,8 +11,6 @@ import typer
 from rich.console import Console
 
 from ragx.config import CONFIG_NAME, load_config
-from ragx.core.ids import CHUNKER_VERSION, SCHEMA_VERSION
-from ragx.storage.db import open_db, set_meta, utcnow
 
 console = Console()
 
@@ -55,6 +53,9 @@ def init(
     name: Annotated[str | None, typer.Option("--name")] = None,
 ) -> None:
     """Prepara o projeto para o RAGX."""
+    from ragx.core.ids import CHUNKER_VERSION, SCHEMA_VERSION
+    from ragx.storage.db import open_db, set_meta, utcnow
+
     root = Path(path).resolve()
     root.mkdir(parents=True, exist_ok=True)
     cfg_path = root / CONFIG_NAME

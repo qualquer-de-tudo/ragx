@@ -11,9 +11,6 @@ import typer
 from rich.console import Console
 
 from ragx.config import CONFIG_NAME, load_config
-from ragx.core.ids import SCHEMA_VERSION
-from ragx.security.scanner import load_ruleset
-from ragx.storage.db import integrity_check, open_db, user_version
 
 console = Console()
 
@@ -51,6 +48,10 @@ def doctor(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Valida o ambiente e a configuração."""
+    from ragx.core.ids import SCHEMA_VERSION
+    from ragx.security.scanner import load_ruleset
+    from ragx.storage.db import integrity_check, open_db, user_version
+
     cfg = load_config()
     rel = _Relatorio(as_json)
     _row = rel.row
