@@ -6,9 +6,9 @@ import pytest
 from typer.testing import CliRunner
 
 from ragx.cli.main import app
+from ragx.config import load_config
 from ragx.graph.service import rebuild
 from ragx.indexing.pipeline import index_project
-from ragx.config import load_config
 
 pytestmark = pytest.mark.e2e
 
@@ -50,3 +50,19 @@ def test_trial_human_output_prints_honesty_caveat(proj: Path, monkeypatch: pytes
     result = runner.invoke(app, ["trial", "--queries", "queries.yaml"])
     assert result.exit_code == 0, result.output
     assert "proxy" in result.output.lower()
+
+
+def test_trial_human_output_escapes_rich_markup_in_query(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regressão: `[project]`/`[/bold]` numa query não pode virar tag de markup
+    do Rich — nem some silenciosamente (corrompendo a tabela), nem estoura
+    `rich.errors.MarkupError` (crash com traceback cru)."""
+    monkeypatch.chdir(proj)
+    (proj / "queries.yaml").write_text(
+        '- query: "query with [brackets] inside"\n  relevant_paths: []\n',
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["trial", "--queries", "queries.yaml"])
+    assert result.exit_code == 0, result.output
+    assert "query with [brackets] inside" in result.output

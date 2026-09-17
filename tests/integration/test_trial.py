@@ -65,3 +65,24 @@ def test_sources_hit_counts_relevant_paths_in_the_pack(proj: Path) -> None:
     cases = [EvalCase(query="autenticacao sessao redis", relevant_paths=("auth.py",))]
     results = run_trial(load_config(proj), cases, budget=2000)
     assert results[0].sources_hit == 1
+
+
+def test_missing_relevant_path_is_flagged_not_counted_as_zero_tokens(proj: Path) -> None:
+    """Regressão: um `relevant_paths` desatualizado (arquivo renomeado/apagado)
+    não pode virar 0 tokens de baseline silenciosos — isso se lê como "RAGX
+    descartou a resposta" quando na verdade é o corpus que está podre."""
+    cases = [
+        EvalCase(
+            query="autenticacao sessao redis",
+            relevant_paths=("auth.py", "nao-existe.py"),
+        )
+    ]
+    results = run_trial(load_config(proj), cases, budget=2000)
+    r = results[0]
+    assert r.missing_paths == 1
+    only_auth = run_trial(
+        load_config(proj),
+        [EvalCase(query="autenticacao sessao redis", relevant_paths=("auth.py",))],
+        budget=2000,
+    )[0]
+    assert r.baseline_tokens == only_auth.baseline_tokens

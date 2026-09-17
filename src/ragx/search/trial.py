@@ -23,6 +23,7 @@ class TrialResult:
     ragx_tokens: int
     sources_hit: int
     sources_total: int
+    missing_paths: int = 0
 
     @property
     def saved_tokens(self) -> int:
@@ -40,10 +41,13 @@ def run_trial(cfg: Config, cases: list[EvalCase], budget: int = 3000) -> list[Tr
     out: list[TrialResult] = []
     for case in cases:
         baseline = 0
+        missing_paths = 0
         for rel in case.relevant_paths:
             fp = cfg.root / rel
             if fp.is_file():
                 baseline += counter.count(fp.read_text(encoding="utf-8", errors="ignore"))
+            else:
+                missing_paths += 1
         pack = build_context(cfg, case.query, budget=budget, use_cache=False)
         hit_paths = {f.document_path for f in pack.fragments}
         sources_hit = sum(1 for rel in case.relevant_paths if rel in hit_paths)
@@ -54,6 +58,7 @@ def run_trial(cfg: Config, cases: list[EvalCase], budget: int = 3000) -> list[Tr
                 ragx_tokens=pack.estimated_tokens,
                 sources_hit=sources_hit,
                 sources_total=len(case.relevant_paths),
+                missing_paths=missing_paths,
             )
         )
     return out
