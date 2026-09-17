@@ -59,7 +59,25 @@ deny:
 
   - id: tokens
     severity: critical
-    patterns: ["**/token", "**/token.*", "**/tokens", "**/tokens.*", "**/*_token*", "**/*-token*"]
+    patterns:
+      - "**/token"
+      - "**/tokens"
+      - "**/token.txt"
+      - "**/token.json"
+      - "**/token.yaml"
+      - "**/token.yml"
+      - "**/tokens.txt"
+      - "**/tokens.json"
+      - "**/tokens.yaml"
+      - "**/tokens.yml"
+      - "**/*_token"
+      - "**/*-token"
+      - "**/*_tokens"
+      - "**/*-tokens"
+      - "**/*_token.*"
+      - "**/*-token.*"
+      - "**/*_tokens.*"
+      - "**/*-tokens.*"
     reason: "arquivo de tokens"
 
   - id: password-file
