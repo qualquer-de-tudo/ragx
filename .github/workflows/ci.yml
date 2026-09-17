@@ -90,6 +90,12 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           mkdir -p "$HOME/.cursor" "$HOME/.codeium/windsurf" "$HOME/.gemini" "$HOME/.codex"
+          # Conteúdo PRÉ-EXISTENTE de verdade, não pasta vazia: os bugs reais
+          # (duplicação de tabela TOML, BOM, escape) só apareceram ANEXANDO a
+          # um arquivo que já tinha algo — nunca no caminho de arquivo novo,
+          # que é o único que uma pasta vazia exercita.
+          printf 'model = "gpt-5"\n' > "$HOME/.codex/config.toml"
+          printf '{"unrelated_key": "value"}\n' > "$HOME/.gemini/settings.json"
 
       # O valor deste job é provar a instalação de ponta a ponta: os três bugs
       # corrigidos na 0.3.1 só apareceram rodando o instalador de verdade.
@@ -105,7 +111,15 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codeium\windsurf" | Out-Null
           New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.gemini" | Out-Null
           New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codex" | Out-Null
+          # Conteúdo PRÉ-EXISTENTE de verdade, não pasta vazia: os bugs reais
+          # (duplicação de tabela TOML, BOM, escape) só apareceram ANEXANDO a
+          # um arquivo que já tinha algo — nunca no caminho de arquivo novo,
+          # que é o único que uma pasta vazia exercita.
+          Set-Content -Path "$env:USERPROFILE\.codex\config.toml" -Value 'model = "gpt-5"' -Encoding utf8NoBOM
+          Set-Content -Path "$env:USERPROFILE\.gemini\settings.json" -Value '{"unrelated_key": "value"}' -Encoding utf8NoBOM
 
+      # Sem `-SemMcp`: o passo de verificação logo abaixo depende do MCP estar
+      # registrado de verdade nos quatro clientes, não só da instalação em si.
       - name: Instalar (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -115,12 +129,44 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $ok = $true
-          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.cursor\mcp.json" -Pattern '"ragx"' -Quiet)
-          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.codeium\windsurf\mcp_config.json" -Pattern '"ragx"' -Quiet)
-          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.gemini\settings.json" -Pattern '"ragx"' -Quiet)
-          $ok = $ok -and (Select-String -Path "$env:USERPROFILE\.codex\config.toml" -Pattern '\[mcp_servers\.ragx\]' -Quiet)
-          if (-not $ok) { throw "MCP nao registrado em algum cliente" }
+          $ErrorActionPreference = 'Stop'
+
+          # `Get-Content` detecta e descarta um BOM sozinho, o que faria este
+          # script aprovar um arquivo que o `JSON.parse` do Node (quem os
+          # clientes de verdade usam) rejeitaria. Checa os bytes crus primeiro
+          # para o bug de BOM não escapar da verificação.
+          function Assert-SemBom($caminho, $rotulo) {
+              $bytes = [System.IO.File]::ReadAllBytes($caminho)
+              if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                  throw "$rotulo`: arquivo gravado COM BOM - quebra o JSON.parse do Node"
+              }
+          }
+
+          function Verificar-Json($caminho, $rotulo) {
+              Assert-SemBom $caminho $rotulo
+              $dados = Get-Content -Raw -Path $caminho | ConvertFrom-Json
+              if (-not $dados.mcpServers.ragx) { throw "$rotulo`: ragx ausente em mcpServers" }
+              return $dados
+          }
+
+          Verificar-Json "$env:USERPROFILE\.cursor\mcp.json" 'Cursor' | Out-Null
+          Verificar-Json "$env:USERPROFILE\.codeium\windsurf\mcp_config.json" 'Windsurf' | Out-Null
+          $gemini = Verificar-Json "$env:USERPROFILE\.gemini\settings.json" 'Gemini CLI'
+          if ($gemini.unrelated_key -ne 'value') { throw "Gemini CLI: conteudo pre-existente foi perdido" }
+
+          $codexPath = "$env:USERPROFILE\.codex\config.toml"
+          Assert-SemBom $codexPath 'Codex CLI'
+          $codexTexto = Get-Content -Raw -Path $codexPath
+          if ($codexTexto -notmatch 'model\s*=\s*"gpt-5"') { throw "Codex CLI: conteudo pre-existente foi perdido" }
+
+          # PowerShell não tem parser de TOML na stdlib: reusa o `tomllib` do
+          # Python, que o runner windows-latest já traz (3.12+), para validar
+          # de verdade em vez de só bater substring — o que teria deixado
+          # passar cada um dos bugs de escape/BOM já corrigidos neste branch.
+          $env:RAGX_VERIFICAR_TOML = $codexPath
+          python -c "import os, tomllib; p = os.environ['RAGX_VERIFICAR_TOML']; d = tomllib.loads(open(p, encoding='utf-8').read()); assert 'ragx' in d.get('mcp_servers', {}), 'ragx ausente em mcp_servers'"
+          if ($LASTEXITCODE -ne 0) { throw "Codex CLI: config.toml invalido ou sem ragx em mcp_servers" }
+
           Write-Host "MCP registrado em Cursor, Windsurf, Gemini CLI e Codex CLI"
 
       - name: Colocar o ragx no PATH deste job
@@ -150,10 +196,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q '"ragx"' "$HOME/.cursor/mcp.json"
-          grep -q '"ragx"' "$HOME/.codeium/windsurf/mcp_config.json"
-          grep -q '"ragx"' "$HOME/.gemini/settings.json"
-          grep -q '\[mcp_servers.ragx\]' "$HOME/.codex/config.toml"
+          python3 -c "
+          import json, pathlib, tomllib, os
+          h = os.environ['HOME']
+          for p in ('/.cursor/mcp.json', '/.codeium/windsurf/mcp_config.json'):
+              dados = json.loads(pathlib.Path(h + p).read_text(encoding='utf-8'))
+              assert 'ragx' in dados.get('mcpServers', {}), f'ragx ausente em {p}'
+          gemini = json.loads(pathlib.Path(h + '/.gemini/settings.json').read_text(encoding='utf-8'))
+          assert 'ragx' in gemini.get('mcpServers', {}), 'ragx ausente em .gemini/settings.json'
+          assert gemini.get('unrelated_key') == 'value', 'conteudo pre-existente do Gemini CLI foi perdido'
+          codex_texto = pathlib.Path(h + '/.codex/config.toml').read_text(encoding='utf-8')
+          assert 'model = \"gpt-5\"' in codex_texto, 'conteudo pre-existente do Codex CLI foi perdido'
+          codex = tomllib.loads(codex_texto)
+          assert 'ragx' in codex.get('mcp_servers', {}), 'ragx ausente em mcp_servers'
+          print('todos os arquivos MCP sao JSON/TOML validos e contem ragx')
+          "
           echo "MCP registrado em Cursor, Windsurf, Gemini CLI e Codex CLI"
 
       - name: Ciclo completo num projeto novo
@@ -177,3 +234,84 @@ jobs:
             echo "::error::um segredo entrou no índice — o Security Gate falhou"
             exit 1
           fi
+
+      # Os bugs reais deste branch (duplicação de tabela TOML, BOM, escape de
+      # backslash/aspas) só existem no caminho de rodar o instalador DUAS
+      # vezes sobre uma configuração já registrada — a primeira instalação,
+      # acima, nunca exercitou isso. Reinstalar e verificar de novo prova que
+      # o registro multi-cliente é idempotente.
+      - name: Reinstalar para provar idempotencia (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: bash install/install.sh
+
+      - name: Verificar idempotencia do registro multi-cliente (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -c "
+          import json, pathlib, tomllib, os
+          h = os.environ['HOME']
+          for p in ('/.cursor/mcp.json', '/.codeium/windsurf/mcp_config.json'):
+              dados = json.loads(pathlib.Path(h + p).read_text(encoding='utf-8'))
+              assert 'ragx' in dados.get('mcpServers', {}), f'ragx ausente em {p}'
+          gemini = json.loads(pathlib.Path(h + '/.gemini/settings.json').read_text(encoding='utf-8'))
+          assert 'ragx' in gemini.get('mcpServers', {}), 'ragx ausente em .gemini/settings.json'
+          assert gemini.get('unrelated_key') == 'value', 'conteudo pre-existente do Gemini CLI foi perdido'
+          codex_texto = pathlib.Path(h + '/.codex/config.toml').read_text(encoding='utf-8')
+          assert 'model = \"gpt-5\"' in codex_texto, 'conteudo pre-existente do Codex CLI foi perdido'
+          # Duas tabelas [mcp_servers.ragx] (registro duplicado na segunda
+          # rodada) fariam este tomllib.loads falhar — que e o ponto deste
+          # teste.
+          codex = tomllib.loads(codex_texto)
+          assert 'ragx' in codex.get('mcp_servers', {}), 'ragx ausente em mcp_servers'
+          print('registro multi-cliente e idempotente')
+          "
+          echo "segunda instalacao nao duplicou nem corrompeu nada"
+
+      - name: Reinstalar para provar idempotencia (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\install\install.ps1
+
+      - name: Verificar idempotencia do registro multi-cliente (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # `Get-Content` detecta e descarta um BOM sozinho, o que faria este
+          # script aprovar um arquivo que o `JSON.parse` do Node (quem os
+          # clientes de verdade usam) rejeitaria. Checa os bytes crus primeiro
+          # para o bug de BOM não escapar da verificação.
+          function Assert-SemBom($caminho, $rotulo) {
+              $bytes = [System.IO.File]::ReadAllBytes($caminho)
+              if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+                  throw "$rotulo`: arquivo gravado COM BOM - quebra o JSON.parse do Node"
+              }
+          }
+
+          function Verificar-Json($caminho, $rotulo) {
+              Assert-SemBom $caminho $rotulo
+              $dados = Get-Content -Raw -Path $caminho | ConvertFrom-Json
+              if (-not $dados.mcpServers.ragx) { throw "$rotulo`: ragx ausente em mcpServers" }
+              return $dados
+          }
+
+          Verificar-Json "$env:USERPROFILE\.cursor\mcp.json" 'Cursor' | Out-Null
+          Verificar-Json "$env:USERPROFILE\.codeium\windsurf\mcp_config.json" 'Windsurf' | Out-Null
+          $gemini = Verificar-Json "$env:USERPROFILE\.gemini\settings.json" 'Gemini CLI'
+          if ($gemini.unrelated_key -ne 'value') { throw "Gemini CLI: conteudo pre-existente foi perdido" }
+
+          $codexPath = "$env:USERPROFILE\.codex\config.toml"
+          Assert-SemBom $codexPath 'Codex CLI'
+          $codexTexto = Get-Content -Raw -Path $codexPath
+          if ($codexTexto -notmatch 'model\s*=\s*"gpt-5"') { throw "Codex CLI: conteudo pre-existente foi perdido" }
+
+          # Duas tabelas [mcp_servers.ragx] (registro duplicado na segunda
+          # rodada) fariam este parse com tomllib falhar.
+          $env:RAGX_VERIFICAR_TOML = $codexPath
+          python -c "import os, tomllib; p = os.environ['RAGX_VERIFICAR_TOML']; d = tomllib.loads(open(p, encoding='utf-8').read()); assert 'ragx' in d.get('mcp_servers', {}), 'ragx ausente em mcp_servers'"
+          if ($LASTEXITCODE -ne 0) { throw "Codex CLI: config.toml invalido ou sem ragx em mcp_servers apos reinstalar" }
+
+          Write-Host "segunda instalacao nao duplicou nem corrompeu nada"
