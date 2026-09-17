@@ -203,3 +203,9 @@ que o agente realmente teria lido sozinho. Por isso `ragx trial` sempre reporta
 também a **cobertura de fonte** (`sources_hit / sources_total`): economia de
 token sem a fonte relevante dentro do pacote não é economia, é perda de
 informação disfarçada de otimização.
+
+Um `saved_ratio` negativo é esperado, não é bug: acontece quando o arquivo
+relevante já é menor que o orçamento de tokens, então "ler o arquivo inteiro"
+(baseline) já é mais barato que o pacote orçado do `build_context`. No corpus
+deste próprio repositório, cerca de 10 das 26 consultas mostram economia
+negativa por exatamente esse motivo.

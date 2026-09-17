@@ -14,7 +14,7 @@ O RAGX indexa a si mesmo. Antes de sair lendo arquivo por arquivo:
 ragx index .                                  # se ainda não indexou
 ragx search "o que você procura" --mode hybrid
 ragx context "sua tarefa" --tokens 3000       # contexto pronto, com fontes
-ragx trial                                    # prova, no seu corpus, se o build_context economiza token de verdade
+ragx trial                                    # estima, no seu corpus, se o build_context economiza token de verdade
 ```
 
 Se você é um agente MCP com o servidor `ragx` conectado, use `get_dictionary`,

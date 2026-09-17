@@ -18,6 +18,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   descreveu como suporte a Linux e macOS, mas nunca tinha rodado de verdade lá.
 - `LICENSE` (MIT), `AGENTS.md` (onboarding de quem contribui no próprio RAGX)
   e `SECURITY.md` (canal de disclosure via GitHub Security Advisories).
+- `ragx trial` — mede, no corpus de avaliação, quantos tokens o `build_context`
+  economiza contra o baseline de ler o arquivo inteiro.
 
 ### Documentado
 
