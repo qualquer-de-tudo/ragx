@@ -20,6 +20,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   e `SECURITY.md` (canal de disclosure via GitHub Security Advisories).
 - `ragx trial` — mede, no corpus de avaliação, quantos tokens o `build_context`
   economiza contra o baseline de ler o arquivo inteiro.
+- Instalador agora também registra o servidor MCP em Cursor, Windsurf, Gemini
+  CLI e Codex CLI — antes só Claude Desktop e Claude Code.
 
 ### Documentado
 
