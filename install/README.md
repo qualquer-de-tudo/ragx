@@ -35,13 +35,13 @@ O [GitHub CLI](https://cli.github.com) resolve download e autenticação numa
 linha.
 
 ```bash
-gh release download v1.0.0-beta.2 --repo qualquer-de-tudo/ragx --dir ragx
+gh release download v1.0.0-beta.3 --repo qualquer-de-tudo/ragx --dir ragx
 ```
 
 Windows é idêntico:
 
 ```powershell
-gh release download v1.0.0-beta.2 --repo qualquer-de-tudo/ragx --dir ragx
+gh release download v1.0.0-beta.3 --repo qualquer-de-tudo/ragx --dir ragx
 ```
 
 ### Pelo navegador
@@ -52,7 +52,7 @@ Abra a página da release e baixe os arquivos para uma pasta:
 install.sh                                  instalador Linux/macOS
 install.ps1                                 instalador Windows
 ragx-1.0.0b1-py3-none-any.whl               o RAGX
-ragx-knowledge-explorer-1.0.0-beta.2.vsix   extensão do VS Code
+ragx-knowledge-explorer-1.0.0-beta.3.vsix   extensão do VS Code
 SHA256SUMS.txt                              para conferir o download
 ```
 
@@ -143,7 +143,7 @@ uv tool install --python 3.12 "$PWD/ragx-1.0.0b1-py3-none-any.whl[all]"
 
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc     # ou ~/.zshrc
 
-code --install-extension ./ragx-knowledge-explorer-1.0.0-beta.2.vsix
+code --install-extension ./ragx-knowledge-explorer-1.0.0-beta.3.vsix
 ```
 
 ### Windows
@@ -159,7 +159,7 @@ if (-not ($p -split ';' | Where-Object { $_.TrimEnd('\') -ieq $bin.TrimEnd('\') 
     [Environment]::SetEnvironmentVariable('Path', "$p;$bin", 'User')
 }
 
-code --install-extension .\ragx-knowledge-explorer-1.0.0-beta.2.vsix
+code --install-extension .\ragx-knowledge-explorer-1.0.0-beta.3.vsix
 ```
 
 > `--python 3.12` **não é decoração**. Sem ele o `uv` pode reaproveitar um
@@ -241,12 +241,12 @@ ver [ADR-0012](../docs/adr/ADR-0012-poder-do-agente-sobre-o-indice.md).
 Aí o comando único passa a funcionar:
 
 ```bash
-curl -fsSL https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.0-beta.2/install.sh | bash
+curl -fsSL https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.0-beta.3/install.sh | bash
 ```
 
 ```powershell
 [Net.ServicePointManager]::SecurityProtocol = 3072
-irm https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.0-beta.2/install.ps1 | iex
+irm https://github.com/qualquer-de-tudo/ragx/releases/download/v1.0.0-beta.3/install.ps1 | iex
 ```
 
 A primeira linha do Windows **não é opcional** no PowerShell 5.1, que ainda é o
