@@ -8,7 +8,7 @@
 | **Estimativa** | 1,5d |
 | **Depende de** | — |
 | **Documentação** | [23-auditoria-e-evolucao-do-rag.md](../../docs/23-auditoria-e-evolucao-do-rag.md) · [04-indexacao.md](../../docs/04-indexacao.md) · [15-configuracao.md](../../docs/15-configuracao.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -16,19 +16,19 @@
 
 ## Entregáveis
 
-- [ ] Coluna `tier` em `documents`: `knowledge` | `work` | `test`
-- [ ] Classificação por caminho, configurável em `ragx.toml`:
+- [x] ~~Coluna `tier` em `documents`~~ → **classificação em tempo de LEITURA**, sem coluna e sem migração. Motivo: mudar `work_paths` passa a valer sem reindexar o projeto inteiro. O custo é uma comparação de caminho por resultado. Ver `src/ragx/tiers.py`
+- [x] Classificação por caminho, configurável em `ragx.toml`:
   ```toml
   [index]
   knowledge_paths = ["src/", "docs/"]
   work_paths      = ["task/", "adr-drafts/"]
   test_paths      = ["tests/"]
   ```
-- [ ] Defaults sensatos que funcionem sem configuração (`task/`, `tests/`, `spec/`, `.github/`)
-- [ ] O ranking pondera `work` e `test` para BAIXO — sem excluir, porque às vezes a resposta está mesmo na tarefa
-- [ ] O peso é configurável e o default fica registrado na documentação
-- [ ] `matched_by`/metadados expõem o `tier`, para o agente saber o que recebeu
-- [ ] Migração de schema, com reindexação não obrigatória (default aplicado na leitura)
+- [x] Defaults sensatos que funcionem sem configuração (`task/`, `tests/`, `spec/`, `.github/`)
+- [x] O ranking pondera `work` e `test` para BAIXO (`weight_tier_work=0.45`, `weight_tier_test=0.7`) — sem excluir, porque às vezes a resposta está mesmo na tarefa
+- [x] O peso é configurável e o default fica registrado na documentação
+- [x] `matched_by`/metadados expõem o `tier`, para o agente saber o que recebeu
+- [x] ~~Migração de schema~~ — desnecessária: não há coluna nova, e nenhum índice existente precisa ser tocado
 
 ## Fora de escopo
 
@@ -37,16 +37,29 @@
 
 ## Critérios de aceite
 
-- [ ] Na consulta *"como o security gate decide bloquear um arquivo"*, o fragmento [1] passa a ser `src/ragx/security/gate.py`
-- [ ] recall@5 medido antes/depois no conjunto ampliado (`RAGX-0099`), com o número publicado
-- [ ] Um projeto sem `[index] tier` configurado continua funcionando, com os defaults
-- [ ] Uma consulta cuja resposta REALMENTE está numa task ainda a encontra
+- [ ] Na consulta *"como o security gate decide bloquear um arquivo"*, o fragmento [1] passa a ser `src/ragx/security/gate.py` — **NÃO atingido literalmente**. O arquivo de task saiu do topo (era [1]), e o [1] passou a ser `docs/adr/ADR-0008-security-gate-antes-do-parser.md`, que responde a pergunta. Mas `gate.py` não aparece nem no top-10: as três primeiras posições são três chunks do MESMO ADR. Isso aponta para a `RAGX-0107` (conter fragmentação) e para `max_per_document`, não para esta tarefa
+- [x] recall@5 medido antes/depois — mas no conjunto de **26** consultas, não no ampliado:
+
+  | modo | recall@5 | MRR |
+  |---|---|---|
+  | keyword | 0,77 → **0,81** | 0,47 → **0,62** |
+  | semantic | 0,54 → **0,69** | 0,44 → **0,51** |
+  | hybrid | 0,62 → **0,77** | 0,51 → **0,59** |
+
+  **Ressalva que não pode sumir:** os `relevant_paths` do conjunto nunca apontam
+  para `task/` ou `tests/`. Rebaixar essas camadas melhora esta métrica **por
+  construção** — o ganho é real no sentido de que a métrica encoda julgamento
+  humano sobre onde a resposta mora, e circular no sentido de que nenhum caso
+  poderia ter sido prejudicado. Confirmar na `RAGX-0099`, com casos cuja
+  resposta ESTEJA numa tarefa
+- [x] Um projeto sem `[index] tier` configurado continua funcionando, com os defaults
+- [x] Uma consulta cuja resposta REALMENTE está numa task ainda a encontra — testado
 
 ## Testes
 
-- [ ] Teste de que o peso muda a ordem, sem remover resultados
-- [ ] Teste dos defaults de classificação
-- [ ] Teste de que `tier` sobrevive a export/import (`.rag`)
+- [x] Teste de que o peso muda a ordem, sem remover resultados
+- [x] Teste dos defaults de classificação
+- [ ] ~~Teste de que `tier` sobrevive a export/import~~ — sem coluna, não há o que sobreviver: o `tier` é recalculado na leitura, sempre a partir da configuração de quem lê
 
 ## Notas
 

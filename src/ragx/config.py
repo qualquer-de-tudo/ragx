@@ -35,6 +35,10 @@ class IndexCfg(BaseModel):
     batch_size: int = 200
     exclude: list[str] = Field(default_factory=list)
     include: list[str] = Field(default_factory=list)
+    # Camada do documento — ver `ragx.tiers`. Vazio significa "use o default";
+    # uma lista explícita (mesmo vazia depois de editada) substitui o default.
+    work_paths: list[str] | None = None
+    test_paths: list[str] | None = None
 
 
 class ChunkCfg(BaseModel):
@@ -73,6 +77,11 @@ class SearchCfg(BaseModel):
     weight_keyword: float = 0.8
     candidate_factor: int = 3
     max_per_document: int = 3
+    # Peso por camada do documento (`ragx.tiers`). `knowledge` é sempre 1,0.
+    # Pesar e não excluir: às vezes a resposta ESTÁ na tarefa, e um `task/`
+    # invisível seria pior que um `task/` ruidoso.
+    weight_tier_work: float = 0.45
+    weight_tier_test: float = 0.7
 
 
 class GraphCfg(BaseModel):

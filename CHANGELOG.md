@@ -27,6 +27,45 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Camada do documento: conhecimento, registro de trabalho ou teste**
+  (`RAGX-0102`). Um repositório não guarda só conhecimento — guarda também o
+  registro de como ele foi construído. Medido aqui: `task/` é **22% dos
+  chunks**, mais que toda a documentação, e vencia o código na busca. Para
+  *"como o security gate decide bloquear um arquivo"*, o primeiro fragmento era
+  o enunciado da TAREFA que pediu para construir o gate.
+
+  `ragx.tiers` classifica por caminho, configurável em `ragx.toml`:
+
+  ```toml
+  [index]
+  work_paths = ["task/", "adr-drafts/"]
+  test_paths = ["tests/"]
+
+  [search]
+  weight_tier_work = 0.45
+  weight_tier_test = 0.7
+  ```
+
+  **Pesa, não exclui** — às vezes a resposta está mesmo na tarefa, e há teste
+  fixando que ela continua encontrável. A classificação acontece na LEITURA, e
+  não numa coluna do banco: mudar `work_paths` passa a valer sem reindexar.
+
+  Efeito no conjunto de 26 consultas:
+
+  | modo | recall@5 | MRR |
+  |---|---|---|
+  | keyword | 0,77 → **0,81** | 0,47 → **0,62** |
+  | semantic | 0,54 → **0,69** | 0,44 → **0,51** |
+  | hybrid | 0,62 → **0,77** | 0,51 → **0,59** |
+
+  > Os `relevant_paths` do conjunto nunca apontam para `task/` ou `tests/`, então
+  > rebaixar essas camadas melhora a métrica **em parte por construção**. O ganho
+  > é real no sentido de que o conjunto encoda julgamento humano sobre onde a
+  > resposta mora — e precisa ser confirmado com casos cuja resposta esteja numa
+  > tarefa, o que entra na `RAGX-0099`.
+
+### Adicionado
+
 - **`ragx eval` passa a reportar o intervalo de confiança** (`RAGX-0100`):
 
   ```text

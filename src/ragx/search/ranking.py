@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 
 from ragx.core.models import DocKind, SearchResult
+from ragx.tiers import Tier
 
 _QUESTION = re.compile(
     r"\?|^\s*(como|o que|oque|por que|porque|quando|onde|qual|quais|quem)\b", re.IGNORECASE
@@ -24,7 +25,19 @@ def looks_like_identifier(query: str) -> bool:
     return bool(_IDENTIFIER.search(query))
 
 
-def rerank(query: str, results: list[SearchResult]) -> list[SearchResult]:
+def rerank(
+    query: str,
+    results: list[SearchResult],
+    work_weight: float = 1.0,
+    test_weight: float = 1.0,
+) -> list[SearchResult]:
+    """Ajustes determinísticos sobre o score fundido.
+
+    `work_weight`/`test_weight` pesam a CAMADA do documento (`ragx.tiers`):
+    um plano de tarefa fala do mesmo assunto que a documentação, com o mesmo
+    vocabulário, e sem a resposta. Os defaults de 1,0 mantêm o comportamento
+    antigo para quem chama sem os parâmetros.
+    """
     is_question = looks_like_question(query)
     is_ident = looks_like_identifier(query)
     q_low = query.lower().strip()
@@ -43,6 +56,11 @@ def rerank(query: str, results: list[SearchResult]) -> list[SearchResult]:
             factor *= 0.8
         if r.metadata.get("redacted"):
             factor *= 0.9
+        tier = r.metadata.get("tier")
+        if tier == Tier.WORK.value:
+            factor *= work_weight
+        elif tier == Tier.TEST.value:
+            factor *= test_weight
         boosted.append(_with_score(r, r.score * factor))
     return sorted(boosted, key=lambda r: -r.score)
 

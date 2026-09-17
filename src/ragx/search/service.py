@@ -21,6 +21,7 @@ from ragx.search.hybrid import matched_by, rrf
 from ragx.search.ranking import diversify, rerank
 from ragx.storage.db import open_db
 from ragx.storage.vectors import load_index
+from ragx.tiers import Tier
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,9 +98,13 @@ def search(
 
         sources = matched_by(rankings)
         ordered = sorted(fused.items(), key=lambda kv: -kv[1])[: candidates * 2]
-        results = _hydrate(conn, ordered, sources)
+        results = _hydrate(conn, ordered, sources, cfg)
 
-    results = rerank(query, results)
+    results = rerank(
+        query, results,
+        work_weight=cfg.search.weight_tier_work,
+        test_weight=cfg.search.weight_tier_test,
+    )
     results = diversify(results, cfg.search.max_per_document)
     if filters.min_score > 0:
         results = [r for r in results if r.score >= filters.min_score]
@@ -149,6 +154,7 @@ def _hydrate(
     conn: sqlite3.Connection,
     ordered: list[tuple[str, float]],
     sources: dict[str, tuple[str, ...]],
+    cfg: Config | None = None,
 ) -> list[SearchResult]:
     if not ordered:
         return []
@@ -180,17 +186,34 @@ def _hydrate(
                 symbol=r["symbol"],
                 heading_path=r["heading_path"],
                 matched_by=sources.get(cid, ()),
-                metadata=_meta(r),
+                metadata=_meta(r, cfg),
             )
         )
     return out
 
 
-def _meta(r: dict[str, Any]) -> dict[str, Any]:
+def _meta(r: dict[str, Any], cfg: Config | None = None) -> dict[str, Any]:
     return {
         "lang": r["lang"],
         "doc_kind": r["doc_kind"],
         "token_count": r["token_count"],
         "redacted": bool(r["redacted"]),
         "ordinal": r["ordinal"],
+        # A camada é calculada na leitura, não lida do banco: mudar
+        # `work_paths` no `ragx.toml` passa a valer sem reindexar.
+        "tier": _tier(r["rel_path"], cfg).value,
     }
+
+
+def _tier(rel_path: str, cfg: Config | None) -> Tier:
+    from ragx.tiers import DEFAULT_TEST, DEFAULT_WORK, classify
+
+    if cfg is None:
+        return classify(rel_path)
+    work = cfg.index.work_paths
+    test = cfg.index.test_paths
+    return classify(
+        rel_path,
+        work=tuple(work) if work is not None else DEFAULT_WORK,
+        test=tuple(test) if test is not None else DEFAULT_TEST,
+    )
