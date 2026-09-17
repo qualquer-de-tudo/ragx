@@ -7,6 +7,27 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 > MESMA alteração que a produz. Deixar para depois é como uma correção some do
 > histórico — quem a escreveu lembra do porquê; a próxima pessoa, não.
 
+## [Não lançado]
+
+### Desempenho
+
+- **O embedder passa a ser construído uma vez por processo** (`RAGX-0097`).
+  `build_embedder()` era chamado a CADA busca semântica — e mais uma vez dentro
+  do `build_context`. Construir o modelo ONNX custa 2537–3638 ms; embutir a
+  consulta com ele pronto custa 6–27 ms. Ou seja: ~99% da latência da busca
+  semântica era carregar o modelo de novo.
+
+  | | antes | depois |
+  |---|---:|---:|
+  | `search --mode hybrid` (2ª chamada no mesmo processo) | 2677 ms | **58 ms** |
+  | `build_context` (sem cache) | 5327 ms | **287 ms** |
+
+  Nenhum resultado muda — há teste de contrato fixando que os `chunk_id`
+  devolvidos são os mesmos, nos três modos. O ganho aparece em processo que
+  vive: o servidor MCP, o `ragx watch` e a indexação. A diferença de 150× que
+  havia entre `search keyword` (18 ms) e `search hybrid` não era propriedade de
+  busca vetorial — era este defeito.
+
 ## [1.0.0-beta.2] — 2026-09-17
 
 ### Corrigido
