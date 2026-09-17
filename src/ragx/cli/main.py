@@ -27,6 +27,7 @@ from ragx.cli.commands import (
     size,
     sync_cmd,
     task_cmd,
+    trial_cmd,
     watch_cmd,
     worker_cmd,
 )
@@ -45,6 +46,7 @@ app.command("index")(index_cmd.index)
 app.command("status")(index_cmd.status)
 app.command("search")(search_cmd.search)
 app.command("context")(context_cmd.context)
+app.command("trial")(trial_cmd.trial)
 app.command("eval")(eval_cmd.eval_cmd)
 app.command("entities")(graph_cmd.entities)
 app.command("graph-search")(graph_cmd.graph_search)
