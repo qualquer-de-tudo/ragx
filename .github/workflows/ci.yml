@@ -19,10 +19,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Os dois sistemas que o projeto promete suportar, e a versão mínima
+        # Os três sistemas que o projeto promete suportar, e a versão mínima
         # junto com uma atual. IDs de chunk precisam bater entre plataformas —
         # rodar só em Linux esconderia exatamente esse tipo de bug.
-        os: [ubuntu-latest, windows-latest]
+        #
+        # O macOS não é decoração: `macos-latest` é arm64, tem filesystem
+        # que preserva caixa mas não a distingue, e `expanduser` cai em
+        # `/Users/...`. Nenhuma dessas três coisas é exercitada por Linux
+        # nem por Windows.
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python: ['3.11', '3.12']
 
     steps:
@@ -79,15 +84,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v5
 
       # O valor deste job é provar a instalação de ponta a ponta: os três bugs
       # corrigidos na 0.3.1 só apareceram rodando o instalador de verdade.
-      - name: Instalar (Linux)
-        if: runner.os == 'Linux'
+      - name: Instalar (Linux e macOS)
+        # O mesmo script serve os dois: é POSIX sh e o macOS tem bash. Rodar
+        # de verdade no macOS é o que pega `sed -i`, `readlink -f` e outras
+        # diferenças do BSD que só aparecem lá.
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: bash install/install.sh
 
       - name: Instalar (Windows)
