@@ -20,6 +20,7 @@ correspondente; regras do board em [README.md](README.md); plano geral em
 | **9** | [Git Sync / Merge](fase-09-git-sync/) | 🔴 obrigatória para time | 4 | ~4d |
 | **10** | [Hardening + Release](fase-10-hardening/) | 🔴 obrigatória | 6 | ~3,5d |
 | **11** | [Multiprojeto + Federação](fase-11-multiprojeto-federacao/) | 🔴 obrigatória p/ microsserviços | 9 | ~8,5d |
+| **14** | [Evolução do RAG](fase-14-evolucao-do-rag/) | 🔴 obrigatória p/ qualidade | 18 | ~20d |
 | | **Total** | | **80** | **~57,75d** |
 
 > Estimativas são ordem de grandeza para um desenvolvedor, não compromisso de prazo.
