@@ -19,10 +19,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Os dois sistemas que o projeto promete suportar, e a versão mínima
-        # junto com uma atual. IDs de chunk precisam bater entre plataformas —
-        # rodar só em Linux esconderia exatamente esse tipo de bug.
-        os: [ubuntu-latest, windows-latest]
+        # Os três sistemas que o projeto promete suportar (o install.sh já se
+        # descreve como "para Linux e macOS" desde sempre — só nunca tinha
+        # rodado de verdade), e a versão mínima junto com uma atual. IDs de
+        # chunk precisam bater entre plataformas — rodar só em Linux esconderia
+        # exatamente esse tipo de bug.
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python: ['3.11', '3.12']
 
     steps:
@@ -79,15 +81,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v5
 
       # O valor deste job é provar a instalação de ponta a ponta: os três bugs
       # corrigidos na 0.3.1 só apareceram rodando o instalador de verdade.
-      - name: Instalar (Linux)
-        if: runner.os == 'Linux'
+      - name: Instalar (Linux/macOS)
+        if: runner.os != 'Windows'
         run: bash install/install.sh
 
       - name: Instalar (Windows)
