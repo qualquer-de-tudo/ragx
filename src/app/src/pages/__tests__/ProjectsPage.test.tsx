@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { ProjectsPage } from '../ProjectsPage'
 import { installBridge, job, snap } from '../../test/snap'
 import type { JobView, ProjectSnapshot } from '../../types/ragx-bridge'
@@ -243,6 +243,110 @@ describe('ProjectsPage', () => {
     expect(within(grid).getAllByRole('listitem')[0]).toContainElement(add)
     fireEvent.click(add)
     expect(screen.getByRole('dialog', { name: 'Adicionar projeto' })).toBeInTheDocument()
+  })
+
+  describe('feedback de fila', () => {
+    const HOOKS = (over: Partial<JobView> = {}) =>
+      job({ id: 'jh', projectId: 'nohooks', kind: 'hooks-install', state: 'queued', ...over })
+
+    it('com "hooks-install" na fila, o botão fica desabilitado e diz "Na fila"', () => {
+      installBridge()
+      renderPage({ jobs: [HOOKS()] })
+      const c = within(card('Nohooks'))
+      expect(c.getByRole('button', { name: 'Instalar hooks: na fila' })).toBeDisabled()
+      expect(c.getByRole('button', { name: 'Instalar hooks: na fila' })).toHaveTextContent('Na fila')
+      // Não é indexação: o selo continua o mesmo.
+      expect(c.getByText('Sem hooks', { selector: '.badge-text' })).toBeInTheDocument()
+    })
+
+    it('com "hooks-install" rodando, o botão diz "Rodando"', () => {
+      installBridge()
+      renderPage({ jobs: [HOOKS({ state: 'running', total: null })] })
+      expect(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks: rodando' })).toHaveTextContent(
+        'Rodando',
+      )
+    })
+
+    it('tarefa de outro projeto ou de outro tipo não desabilita o botão', () => {
+      installBridge()
+      renderPage({
+        jobs: [HOOKS({ projectId: 'stale' }), HOOKS({ id: 'jg', kind: 'graph' })],
+      })
+      expect(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' })).toBeEnabled()
+    })
+
+    it('clicar numa ação avisa que entrou na fila e o aviso some em 4 s', async () => {
+      vi.useRealTimers()
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+      installBridge()
+      renderPage()
+      await act(async () => {
+        fireEvent.click(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' }))
+      })
+      const status = screen.getByRole('status')
+      expect(status).toHaveAttribute('aria-live', 'polite')
+      expect(status).toHaveTextContent('Adicionado à fila: Instalar hooks em Nohooks')
+      act(() => {
+        vi.advanceTimersByTime(3900)
+      })
+      expect(screen.getByText('Adicionado à fila: Instalar hooks em Nohooks')).toBeInTheDocument()
+      act(() => {
+        vi.advanceTimersByTime(200)
+      })
+      expect(screen.queryByText(/Adicionado à fila/)).not.toBeInTheDocument()
+    })
+
+    it('enqueueJob rejeitando mostra o erro e ele só some em 8 s', async () => {
+      vi.useRealTimers()
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+      installBridge({ enqueueJob: vi.fn().mockRejectedValue(new Error('fila cheia')) })
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      renderPage()
+      await act(async () => {
+        fireEvent.click(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' }))
+      })
+      expect(screen.getByText('Não foi possível adicionar à fila: fila cheia')).toBeInTheDocument()
+      act(() => {
+        vi.advanceTimersByTime(7900)
+      })
+      expect(screen.getByText('Não foi possível adicionar à fila: fila cheia')).toBeInTheDocument()
+      act(() => {
+        vi.advanceTimersByTime(200)
+      })
+      expect(screen.queryByText(/Não foi possível/)).not.toBeInTheDocument()
+    })
+
+    it('tarefa "failed" do projeto mostra "Última tarefa falhou:" com o erro', () => {
+      installBridge()
+      renderPage({ jobs: [HOOKS({ state: 'failed', error: 'não é um repositório git', finishedAt: '2026-09-23T11:00:00Z' })] })
+      expect(within(card('Nohooks')).getByText('Última tarefa falhou: não é um repositório git')).toBeInTheDocument()
+      // Botão volta a convidar ao clique.
+      expect(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' })).toBeEnabled()
+      expect(within(card('Juriflux')).queryByText(/Última tarefa falhou/)).not.toBeInTheDocument()
+    })
+
+    it('uma nova tarefa ativa do projeto esconde o erro da anterior', () => {
+      installBridge()
+      renderPage({
+        jobs: [
+          HOOKS({ id: 'old', state: 'failed', error: 'boom', finishedAt: '2026-09-23T11:00:00Z' }),
+          HOOKS({ id: 'new' }),
+        ],
+      })
+      expect(within(card('Nohooks')).queryByText(/Última tarefa falhou/)).not.toBeInTheDocument()
+    })
+
+    it('desmontar limpa o timer do aviso', async () => {
+      vi.useRealTimers()
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+      installBridge()
+      const { unmount } = renderPage()
+      await act(async () => {
+        fireEvent.click(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' }))
+      })
+      unmount()
+      expect(vi.getTimerCount()).toBe(0)
+    })
   })
 
   it('não quebra com projeto sem contagem, sem git e sem caminho', () => {

@@ -89,6 +89,19 @@ export function activeJobFor(jobs: readonly JobView[], projectId: string, kinds:
   return mine.find((j) => j.state === 'running') ?? mine[0] ?? null
 }
 
+/**
+ * Erro da última tarefa terminada do projeto, se ela falhou e nenhuma tarefa
+ * dele está na fila ou rodando (uma tarefa nova apaga o aviso). `null` senão.
+ */
+export function lastFailureFor(jobs: readonly JobView[], projectId: string): string | null {
+  const mine = jobs.filter((j) => j.projectId === projectId)
+  if (mine.some((j) => j.state === 'queued' || j.state === 'running')) return null
+  const finished = mine.filter((j) => j.finishedAt !== null)
+  if (finished.length === 0) return null
+  const last = finished.reduce((a, b) => (b.finishedAt! >= a.finishedAt! ? b : a))
+  return last.state === 'failed' ? (last.error ?? 'erro desconhecido') : null
+}
+
 export function jobStateLabel(j: JobView): string {
   return j.state === 'running' ? 'Rodando' : 'Na fila'
 }

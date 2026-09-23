@@ -1,7 +1,15 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import type { JobView, ProjectSnapshot } from '../types/ragx-bridge'
-import { enqueue } from '../jobs'
-import { busyProjectIds, deriveProjectState, hasProblem, isOutdated, type ProjectState } from '../state'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import type { JobKind, JobView, ProjectSnapshot } from '../types/ragx-bridge'
+import {
+  STATE_ACTION,
+  activeJobFor,
+  busyProjectIds,
+  deriveProjectState,
+  hasProblem,
+  isOutdated,
+  lastFailureFor,
+  type ProjectState,
+} from '../state'
 import { commonBase, foldForSearch, parentHint } from '../format'
 import { ProjectCard } from '../components/project/ProjectCard'
 import { AddProjectDialog } from '../components/project/AddProjectDialog'
@@ -64,6 +72,37 @@ function SegmentedFilter({
   )
 }
 
+/** Tarefa ativa do tipo da ação do botão do card (`null` quando a ação só abre o detalhe). */
+function activeAction(jobs: readonly JobView[], projectId: string, state: ProjectState): JobView | null {
+  const action = STATE_ACTION[state]
+  if (action === null || action.kind === 'open') return null
+  return activeJobFor(jobs, projectId, [action.kind])
+}
+
+const NOTICE_MS = 4000
+const NOTICE_ERROR_MS = 8000
+
+/** Aviso discreto da página: some sozinho; o timer é limpo ao desmontar. */
+function useNotice() {
+  const [notice, setNotice] = useState<string | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (timer.current !== null) clearTimeout(timer.current)
+    },
+    [],
+  )
+  const show = (text: string, ms: number) => {
+    if (timer.current !== null) clearTimeout(timer.current)
+    setNotice(text)
+    timer.current = setTimeout(() => {
+      timer.current = null
+      setNotice(null)
+    }, ms)
+  }
+  return { notice, show }
+}
+
 export function ProjectsPage({
   projects,
   jobs,
@@ -77,6 +116,18 @@ export function ProjectsPage({
 }) {
   const [filter, setFilter] = useState<Filter>('all')
   const [adding, setAdding] = useState(false)
+  const { notice, show } = useNotice()
+
+  const queueAction = (project: ProjectSnapshot, kind: JobKind) => {
+    const label = STATE_ACTION[deriveProjectState(project, busyProjectIds(jobs))]?.label ?? kind
+    window.ragx.enqueueJob({ kind, projectId: project.id }).then(
+      () => show(`Adicionado à fila: ${label} em ${project.name}`, NOTICE_MS),
+      (err: unknown) => {
+        console.error(`enqueueJob(${kind}) falhou:`, err)
+        show(`Não foi possível adicionar à fila: ${err instanceof Error ? err.message : String(err)}`, NOTICE_ERROR_MS)
+      },
+    )
+  }
 
   const rows = useMemo(() => {
     const busy = busyProjectIds(jobs)
@@ -86,6 +137,7 @@ export function ProjectsPage({
       state: deriveProjectState(project, busy),
       hint: parentHint(project.path, base),
       job: jobs.find((j) => j.projectId === project.id && j.state === 'running') ?? null,
+      failure: lastFailureFor(jobs, project.id),
     }))
   }, [projects, jobs])
 
@@ -122,8 +174,10 @@ export function ProjectsPage({
               state={r.state}
               hint={r.hint}
               job={r.job}
+              active={activeAction(jobs, r.project.id, r.state)}
+              failure={r.failure}
               onOpen={onOpen}
-              onAction={(kind) => void enqueue(kind, r.project.id)}
+              onAction={(kind) => queueAction(r.project, kind)}
             />
           </li>
         ))}
@@ -134,6 +188,10 @@ export function ProjectsPage({
           Nenhum projeto neste filtro.
         </p>
       )}
+
+      <div className="page-notice" role="status" aria-live="polite">
+        {notice}
+      </div>
 
       <AddProjectDialog open={adding} onClose={() => setAdding(false)} />
     </section>

@@ -1,6 +1,6 @@
 import { useId, type MouseEvent } from 'react'
 import type { JobKind, JobView, ProjectSnapshot } from '../../types/ragx-bridge'
-import { STATE_ACTION, STATE_LABEL, STATE_TONE, type ProjectState } from '../../state'
+import { STATE_ACTION, jobStateLabel, STATE_LABEL, STATE_TONE, type ProjectState } from '../../state'
 import { formatCompact, formatEta, formatRelative } from '../../format'
 import { Badge } from '../shell/Badge'
 
@@ -49,6 +49,8 @@ export function ProjectCard({
   state,
   hint,
   job = null,
+  active = null,
+  failure = null,
   onOpen,
   onAction,
 }: {
@@ -58,6 +60,10 @@ export function ProjectCard({
   hint: string | null
   /** Tarefa desta fila para o projeto, se houver: dá a barra de progresso. */
   job?: JobView | null
+  /** Tarefa na fila ou rodando do mesmo tipo da ação do botão: desabilita o botão. */
+  active?: JobView | null
+  /** Erro da última tarefa do projeto, quando ela falhou. */
+  failure?: string | null
   onOpen: (id: string) => void
   onAction: (kind: JobKind) => void
 }) {
@@ -101,9 +107,16 @@ export function ProjectCard({
     )
   } else {
     const kind = action.kind
+    const busy = active ? jobStateLabel(active) : null
     button = (
-      <button type="button" className="btn btn-primary btn-block" onClick={() => onAction(kind)}>
-        {action.label}
+      <button
+        type="button"
+        className="btn btn-primary btn-block"
+        disabled={busy !== null}
+        aria-label={busy ? `${action.label}: ${busy.toLowerCase()}` : undefined}
+        onClick={() => onAction(kind)}
+      >
+        {busy ?? action.label}
       </button>
     )
   }
@@ -162,6 +175,7 @@ export function ProjectCard({
             {running.etaSeconds !== null && <p className="project-card-legend">Faltam {formatEta(running.etaSeconds)}</p>}
           </div>
         )}
+        {failure !== null && <p className="project-card-failure">Última tarefa falhou: {failure}</p>}
         {button}
       </div>
     </article>
