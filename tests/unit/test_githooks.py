@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -199,3 +200,30 @@ def test_respeita_core_hookspath(tmp_path: Path) -> None:
 )
 def test_should_run(event: str, args: list[str], expected: bool) -> None:
     assert githooks.should_run(event, args) is expected
+
+
+def test_index_argv_usa_sempre_o_interpretador_atual(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regressão: `_index_argv` resolvia `shutil.which("ragx")` de NOVO no
+    momento do spawn, independente de qual interpretador/instalação rodou
+    `hook-run` — reproduzido com uma entrada velha de PATH apontando pra um
+    `ragx` sem `--source`, e a indexação nunca atualizava de verdade. O spawn
+    do hook tem que usar `sys.executable`, nunca um lookup de PATH."""
+    monkeypatch.setattr(shutil, "which", lambda _name: "C:/stale/path/ragx.exe")
+    argv = githooks._index_argv(tmp_path, "post-commit")
+    assert argv[0] == sys.executable
+    assert argv[1] == "-m"
+    assert argv[2] == "ragx.cli.main"
+    assert "--source" in argv and argv[argv.index("--source") + 1] == "hook:post-commit"
+
+
+def test_command_prefix_continua_usando_which_para_o_texto_estatico(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`command_prefix()` é usado só para o texto ESTÁTICO gravado no hook na
+    instalação — comportamento diferente e intencional de `_index_argv`, que
+    roda a cada spawn. Este teste marca a distinção para não virar as duas
+    junto num fix futuro."""
+    monkeypatch.setattr(shutil, "which", lambda _name: "/opt/ragx/bin/ragx")
+    assert githooks.command_prefix() == '"/opt/ragx/bin/ragx"'

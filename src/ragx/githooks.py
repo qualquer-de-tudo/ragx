@@ -200,9 +200,16 @@ def should_run(event: str, args: list[str]) -> bool:
 
 
 def _index_argv(root: Path, event: str) -> list[str]:
-    exe = shutil.which("ragx")
-    base = [exe] if exe else [sys.executable, "-m", "ragx.cli.main"]
-    return [*base, "index", str(root), "--quiet", "--source", f"hook:{event}"]
+    # NUNCA `shutil.which("ragx")` aqui: isso resolve o PATH de NOVO, no
+    # momento do spawn, e pode achar uma instalação diferente da que rodou
+    # `hook-run` (reproduzido: entrada de PATH velha apontando para um `ragx`
+    # sem `--source`, indexação nunca atualizava, log só dizia "No such
+    # option: --source"). `sys.executable` é o MESMO interpretador que já
+    # está rodando este processo — sempre correto, sem lookup nenhum.
+    return [
+        sys.executable, "-m", "ragx.cli.main",
+        "index", str(root), "--quiet", "--source", f"hook:{event}",
+    ]
 
 
 def spawn_index(root: Path, event: str) -> None:
