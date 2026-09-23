@@ -1,4 +1,4 @@
-import type { JobKind, JobView, ProjectSnapshot } from './types/ragx-bridge'
+import type { ConnectionAction, JobKind, JobView, ProjectSnapshot } from './types/ragx-bridge'
 
 export type ProjectState = 'missing' | 'indexing' | 'error' | 'embeddings' | 'stale' | 'no-hooks' | 'ok'
 
@@ -97,4 +97,19 @@ export function jobStateLabel(j: JobView): string {
 export function missingEmbeddings(counts: ProjectSnapshot['counts']): number {
   if (counts === null) return 0
   return Math.max(counts.pendingEmbeddings, counts.chunks - counts.embeddings, 0)
+}
+
+/**
+ * Tarefa na fila ou rodando para uma ação de conexão. `ollama-pull` só conta
+ * se for do mesmo modelo; como `JobView` não traz o modelo, compara pelo
+ * rótulo que o catálogo dá (`electron/jobs/catalog.ts`: "Baixar o modelo X").
+ */
+export function activeConnectionJob(jobs: readonly JobView[], action: ConnectionAction): JobView | null {
+  const mine = jobs.filter(
+    (j) =>
+      j.kind === action.kind &&
+      (j.state === 'queued' || j.state === 'running') &&
+      (action.kind !== 'ollama-pull' || j.label === `Baixar o modelo ${action.model ?? ''}`),
+  )
+  return mine.find((j) => j.state === 'running') ?? mine[0] ?? null
 }

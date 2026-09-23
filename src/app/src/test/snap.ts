@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { JobView, ProjectSnapshot, RagxBridge } from '../types/ragx-bridge'
+import type { ConnectionCheck, JobView, ProjectSnapshot, RagxBridge } from '../types/ragx-bridge'
 
 /** Projeto "Atualizado" por padrão; cada teste troca só o que importa. */
 export function snap(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
@@ -48,4 +48,32 @@ export function installBridge(over: Partial<RagxBridge> = {}): RagxBridge {
   }
   window.ragx = b
   return b
+}
+
+/**
+ * As três checagens como nesta máquina: RAGX ok, Claude Code registrado só
+ * em um projeto (atenção) e Ollama sem o modelo (atenção). `over` troca por id.
+ */
+export function connectionChecks(over: Partial<Record<ConnectionCheck['id'], Partial<ConnectionCheck>>> = {}): ConnectionCheck[] {
+  const base: ConnectionCheck[] = [
+    {
+      id: 'ragx', title: 'RAGX CLI', state: 'ok', stateLabel: 'Conectado', summary: 'Respondendo normalmente.',
+      facts: [{ label: 'Versão', value: 'ragx 0.9.0' }, { label: 'Local', value: 'C:/Users/me/.local/bin/ragx.exe' }],
+      actions: [], help: null, lastMcpCallAt: null,
+    },
+    {
+      id: 'claude', title: 'Claude Code', state: 'warn', stateLabel: 'Atenção',
+      summary: 'O RAGX está registrado só em 1 projeto(s). Nos outros o Claude Code não enxerga o índice.',
+      facts: [{ label: 'Projetos', value: 'ragx' }],
+      actions: [{ kind: 'mcp-register', label: 'Registrar para todos os projetos' }],
+      help: null, lastMcpCallAt: '2026-09-23T11:55:00Z',
+    },
+    {
+      id: 'ollama', title: 'Ollama (Docker)', state: 'warn', stateLabel: 'Atenção', summary: 'Falta baixar 1 modelo(s).',
+      facts: [{ label: 'Modelos instalados', value: 'nenhum' }, { label: 'Projetos que dependem', value: '1 projeto(s): Juriflux' }],
+      actions: [{ kind: 'ollama-pull', label: 'Baixar nomic-embed-text', model: 'nomic-embed-text' }],
+      help: null, lastMcpCallAt: null,
+    },
+  ]
+  return base.map((c) => ({ ...c, ...over[c.id] }))
 }

@@ -2,11 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from './hooks/useSnapshot'
 import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
+import { useRecheckAfterConnectionJobs } from './hooks/useRecheckAfterConnectionJobs'
 import { Sidebar } from './components/shell/Sidebar'
 import { TopBar, type Health } from './components/shell/TopBar'
 import type { Route } from './route'
 import type { ConnectionCheck } from './types/ragx-bridge'
-import { ConnectionsPlaceholder, HowPlaceholder, OnboardingPlaceholder } from './pages/Placeholders'
+import { ConnectionsPage } from './pages/ConnectionsPage'
+import { HowItWorksPage } from './pages/HowItWorksPage'
+import { Onboarding } from './pages/Onboarding'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectPage } from './pages/ProjectPage'
 import './App.css'
@@ -27,6 +30,7 @@ function App() {
   const { snapshot } = useSnapshot()
   const jobs = useJobs()
   const { connections, checking, refresh } = useConnections()
+  useRecheckAfterConnectionJobs(jobs, refresh)
 
   // `null` enquanto não se sabe. Uma falha ao ler as preferências não prende
   // ninguém no onboarding.
@@ -75,10 +79,8 @@ function App() {
     window.ragx.cancelJob(id).catch((err: unknown) => console.error('cancelJob() falhou:', err))
   }, [])
 
-  const skipOnboarding = useCallback(() => {
-    window.ragx
-      .setOnboardingDone(true)
-      .catch((err: unknown) => console.error('setOnboardingDone() falhou:', err))
+  // O próprio onboarding grava a preferência; aqui só se sai dele.
+  const finishOnboarding = useCallback(() => {
     setOnboardingDone(true)
     setRoute({ page: 'projects' })
   }, [])
@@ -93,7 +95,15 @@ function App() {
 
   // Onboarding é tela cheia, sem barra lateral nem barra superior.
   if (route.page === 'onboarding') {
-    return <OnboardingPlaceholder onSkip={skipOnboarding} />
+    return (
+      <Onboarding
+        connections={connections}
+        checking={checking}
+        onRefresh={() => void refresh()}
+        jobs={jobs}
+        onFinish={finishOnboarding}
+      />
+    )
   }
 
   let page
@@ -119,10 +129,12 @@ function App() {
       )
       break
     case 'connections':
-      page = <ConnectionsPlaceholder connections={connections} checking={checking} onRefresh={() => void refresh()} />
+      page = (
+        <ConnectionsPage connections={connections} checking={checking} onRefresh={() => void refresh()} jobs={jobs} />
+      )
       break
     case 'how':
-      page = <HowPlaceholder onRestart={() => setRoute({ page: 'onboarding' })} />
+      page = <HowItWorksPage onRestart={() => setRoute({ page: 'onboarding' })} />
       break
   }
 

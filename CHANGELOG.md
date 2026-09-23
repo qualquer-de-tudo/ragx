@@ -81,6 +81,22 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   (adicionar, atualizar, gerar embeddings, reindexar); sincronizar knowledge,
   reconstruir grafo, gerar dicionário e mexer nos hooks não contam.
 
+  A tela Conexões mostra três cards (RAGX CLI, Claude Code e Ollama no Docker),
+  cada um com o selo "Conectado", "Atenção" ou "Não conectado", os fatos da
+  checagem (versão e local do ragx, projetos onde o RAGX está registrado,
+  última chamada MCP, modelos instalados e projetos que dependem deles), a
+  ajuda em bloco de texto que dá para copiar e as correções de um clique
+  ("Registrar para todos os projetos", "Iniciar container", "Baixar
+  nomic-embed-text"). O painel confere tudo a cada 30 segundos, na hora com
+  "Verificar agora" e logo depois que uma dessas correções termina; antes da
+  primeira resposta os cards ficam em "Verificando…", nunca verdes. RAGX
+  registrado no Claude Code só no escopo de um projeto aparece como
+  "Atenção", não como conectado. A configuração inicial ganhou quatro passos
+  (como o RAGX funciona, conexões, escolher os projetos, indexar), com
+  "Voltar", "Continuar" e "Pular configuração"; "Começar" enfileira a
+  indexação dos projetos marcados. "Como funciona" repete a explicação e
+  permite refazer a configuração.
+
 - **O índice acompanha a branch.** Cada indexação registra branch, commit e quem
   disparou (`cli`, `panel`, `watch`, `sync`, `mcp:*`, `hook:*`). `ragx status --json`
   diz se o índice está defasado e por quê (troca de branch, commits novos,

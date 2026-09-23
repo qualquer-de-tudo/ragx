@@ -446,12 +446,6 @@
   min-width: 0;
 }
 
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-
 .prose {
   display: grid;
   gap: 16px;
@@ -570,17 +564,227 @@
 
 .onboarding {
   display: grid;
-  place-items: center;
+  grid-template-rows: auto 1fr;
   min-height: 100%;
-  padding: 32px;
 }
 
-.onboarding-card {
+.onboarding-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.onboarding-brand {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.onboarding-brand-name {
+  margin-right: 6px;
+  font: 700 14px/1 var(--display);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.onboarding-main {
   display: grid;
+  align-content: start;
+  gap: 20px;
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 2px solid var(--line);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.stepper-item.is-done {
+  border-top-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--ink-2);
+}
+
+.stepper-item[aria-current='step'] {
+  border-top-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.stepper-num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper-item[aria-current='step'] .stepper-num {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.stepper-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onboarding-panel {
+  display: grid;
+  gap: 16px;
+  padding: 28px 32px;
+}
+
+.onboarding-count {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.onboarding-title {
+  margin-top: -10px;
+}
+
+.onboarding-title:focus {
+  outline: none;
+}
+
+.onboarding-body {
+  gap: 16px;
+}
+
+.onboarding-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.onboarding-intro {
+  margin-bottom: 16px;
+}
+
+.onboarding-nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .stepper-label {
+    display: none;
+  }
+
+  .onboarding-panel {
+    padding: 20px;
+  }
+}
+
+/* ── tela Conexões ─────────────────────────────────────────────────── */
+
+.conn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
-  justify-items: start;
-  width: min(100%, 520px);
-  padding: 32px;
+}
+
+.conn-grid > li {
+  display: grid;
+  min-width: 0;
+}
+
+.conn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.conn-card > .card-head {
+  margin-bottom: 0;
+}
+
+.conn-summary {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.conn-facts dd {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.conn-help {
+  display: grid;
+  gap: 6px;
+}
+
+.conn-help-text {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font: 400 12.5px/1.5 var(--mono);
+  /* Comando para copiar: "--name" tem de aparecer como dois hífens. */
+  font-variant-ligatures: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  user-select: text;
+}
+
+.conn-help-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.conn-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* Rótulo longo ("Registrar para todos os projetos") quebra em vez de alargar o card. */
+.conn-actions .btn {
+  height: auto;
+  min-height: 32px;
+  padding: 6px 14px;
+  white-space: normal;
+  text-align: center;
+}
+
+/* No onboarding o painel é mais estreito: os três cards cabem lado a lado. */
+.onboarding .conn-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.how-card h2 {
+  margin-bottom: -4px;
 }
 
 /* ── tela Projetos ─────────────────────────────────────────────────── */

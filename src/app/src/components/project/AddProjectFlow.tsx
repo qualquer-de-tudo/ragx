@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DiscoverItem } from '../../types/ragx-bridge'
 
 const TRUNCATED_NOTE =
@@ -19,18 +19,44 @@ function addLabel(n: number): string {
   return n === 1 ? 'Adicionar 1 projeto' : `Adicionar ${n} projetos`
 }
 
+/** Projeto marcado: o token vai para o `add-project`; o nome é só para a tela. */
+export interface PickedProject {
+  token: string
+  name: string
+}
+
 /**
  * Corpo do "Adicionar projeto": escolher pasta, ver os projetos do RAGX
  * dentro dela, marcar quais entram e enfileirar um `add-project` por item.
- * Fica separado do diálogo para o onboarding reaproveitar (Task 10).
+ * Fica separado do diálogo para o onboarding reaproveitar.
+ *
+ * Dois modos:
+ * - diálogo (`onDone`): tem os próprios botões e enfileira ao confirmar;
+ * - embutido (`onSelectionChange`, passo 3 do onboarding): sem botões, avisa
+ *   a seleção a cada mudança e quem enfileira é o passo 4. O checkbox de hooks
+ *   pode ser controlado de fora (`installHooks`/`onInstallHooksChange`).
  *
  * Tudo que volta ao processo principal é token: o caminho só aparece na tela.
  */
-export function AddProjectFlow({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) {
+export function AddProjectFlow({
+  onDone,
+  onCancel,
+  onSelectionChange,
+  installHooks: hooksProp,
+  onInstallHooksChange,
+}: {
+  onDone?: () => void
+  onCancel?: () => void
+  onSelectionChange?: (picked: PickedProject[]) => void
+  installHooks?: boolean
+  onInstallHooksChange?: (value: boolean) => void
+}) {
   const [folder, setFolder] = useState<{ token: string; path: string } | null>(null)
   const [found, setFound] = useState<Found>({ status: 'idle' })
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
-  const [installHooks, setInstallHooks] = useState(true)
+  const [ownHooks, setOwnHooks] = useState(true)
+  const installHooks = hooksProp ?? ownHooks
+  const setInstallHooks = onInstallHooksChange ?? setOwnHooks
   const [submitting, setSubmitting] = useState(false)
   const [failed, setFailed] = useState<string[]>([])
 
@@ -102,7 +128,7 @@ export function AddProjectFlow({ onDone, onCancel }: { onDone: () => void; onCan
     if (!alive.current) return
     setSubmitting(false)
     if (notAdded.length === 0) {
-      onDone()
+      onDone?.()
       return
     }
     // O que entrou na fila sai da seleção; o que falhou fica para tentar de novo.
@@ -111,6 +137,20 @@ export function AddProjectFlow({ onDone, onCancel }: { onDone: () => void; onCan
   }
 
   const count = selected.size
+
+  // Seleção na ordem da lista (a mesma em que o diálogo enfileira).
+  const picked = useMemo<PickedProject[]>(() => {
+    if (found.status !== 'done' || !folder) return []
+    const candidates =
+      found.items.length === 0
+        ? [{ token: folder.token, name: lastSegment(folder.path) }]
+        : found.items.filter((i) => !i.alreadyRegistered).map((i) => ({ token: i.token, name: i.name }))
+    return candidates.filter((c) => selected.has(c.token))
+  }, [found, folder, selected])
+
+  useEffect(() => {
+    onSelectionChange?.(picked)
+  }, [picked, onSelectionChange])
 
   return (
     <div className="add-flow">
@@ -187,21 +227,23 @@ export function AddProjectFlow({ onDone, onCancel }: { onDone: () => void; onCan
         </p>
       )}
 
-      <div className="add-flow-actions">
-        {onCancel && (
-          <button type="button" className="btn btn-quiet" onClick={onCancel}>
-            Cancelar
+      {!onSelectionChange && (
+        <div className="add-flow-actions">
+          {onCancel && (
+            <button type="button" className="btn btn-quiet" onClick={onCancel}>
+              Cancelar
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={count === 0 || submitting}
+            onClick={() => void submit()}
+          >
+            {addLabel(count)}
           </button>
-        )}
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={count === 0 || submitting}
-          onClick={() => void submit()}
-        >
-          {addLabel(count)}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

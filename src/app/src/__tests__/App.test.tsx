@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from '../App'
 import type { RagxBridge, Snapshot } from '../types/ragx-bridge'
 import { snap } from '../test/snap'
@@ -42,7 +42,7 @@ describe('App', () => {
   it('abre no onboarding quando ele não foi feito', async () => {
     install({ onboardingDone: false }, withProject)
     render(<App />)
-    expect(await screen.findByRole('heading', { level: 1, name: 'Configuração inicial' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Como o RAGX funciona' })).toBeInTheDocument()
     // Tela cheia: sem barra lateral.
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
   })
@@ -50,7 +50,25 @@ describe('App', () => {
   it('abre no onboarding quando o hub está vazio', async () => {
     install({ onboardingDone: true }, empty)
     render(<App />)
-    expect(await screen.findByRole('heading', { level: 1, name: 'Configuração inicial' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Como o RAGX funciona' })).toBeInTheDocument()
+  })
+
+  it('"Pular configuração" leva a Projetos', async () => {
+    const b = install({ onboardingDone: false }, withProject)
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Pular configuração' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Projetos' })).toBeInTheDocument()
+    await waitFor(() => expect(b.setOnboardingDone).toHaveBeenCalledWith(true))
+  })
+
+  it('"Refazer configuração" em Como funciona abre o onboarding', async () => {
+    install({ onboardingDone: true }, withProject)
+    render(<App />)
+    await screen.findByRole('heading', { level: 1, name: 'Projetos' })
+    fireEvent.click(screen.getByRole('button', { name: 'Como funciona' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refazer configuração' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Como o RAGX funciona' })).toBeInTheDocument()
+    expect(screen.getByText('Passo 1 de 4')).toBeInTheDocument()
   })
 
   it('navega pela barra lateral e pelo ponto de saúde', async () => {
