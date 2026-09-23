@@ -22,7 +22,6 @@ const JOBS_THROTTLE_MS = 250
 let mainWindow: BrowserWindow | null = null
 let snapshotTimer: ReturnType<typeof setInterval> | null = null
 let connectionsTimer: ReturnType<typeof setInterval> | null = null
-let snapshotInFlight = false
 let connectionsInFlight = false
 
 // Último snapshot/checagens conhecidos - fonte de verdade para validar
@@ -43,10 +42,26 @@ function withConnectionsHealth(snapshot: Snapshot): Snapshot {
   return { ...snapshot, connectionsHealth: latestConnections ? worstConnectionsState(latestConnections) : null }
 }
 
-async function refreshSnapshot(): Promise<Snapshot> {
-  const s = await buildSnapshot()
-  latestSnapshot = s
-  return withConnectionsHealth(s)
+// Fix round 1 (MINOR 1/2): uma única reconstrução por vez, compartilhada
+// entre o polling de 5s, o handler `ragx:getSnapshot` e o push logo após uma
+// tarefa terminar - `git` nunca roda em paralelo consigo mesmo, e uma
+// chamada que chega no meio de uma reconstrução em andamento recebe o
+// MESMO resultado em vez de disparar outra.
+let inFlightSnapshot: Promise<Snapshot> | null = null
+
+function refreshSnapshot(): Promise<Snapshot> {
+  if (inFlightSnapshot) return inFlightSnapshot
+  const promise = (async () => {
+    try {
+      const s = await buildSnapshot()
+      latestSnapshot = s
+      return withConnectionsHealth(s)
+    } finally {
+      inFlightSnapshot = null
+    }
+  })()
+  inFlightSnapshot = promise
+  return promise
 }
 
 // -- fila de tarefas ---------------------------------------------------
@@ -86,18 +101,30 @@ function onJobsChange(jobs: JobView[]): void {
 
   sendJobsThrottled(jobs)
 
-  if (justFinished) pushSnapshotNow()
+  // Uma tarefa terminou: o renderer precisa ver o snapshot atualizado sem
+  // esperar até 5s pelo próximo tick do polling. Se já tem uma reconstrução
+  // rodando, não dispara outra em paralelo - marca "dirty" pra rodar mais
+  // uma assim que essa terminar, porque ela pode ter começado antes da
+  // tarefa terminar de verdade e não refletir o resultado final (MINOR 2).
+  if (justFinished) pushSnapshotNow({ markDirtyIfBusy: true })
 }
 
-function pushSnapshotNow(): void {
-  if (snapshotInFlight) return // já tem uma reconstrução em andamento - a próxima batida do polling cobre isso
-  snapshotInFlight = true
+let snapshotDirtyAfterInFlight = false
+
+function pushSnapshotNow(opts: { markDirtyIfBusy?: boolean } = {}): void {
+  if (inFlightSnapshot) {
+    if (opts.markDirtyIfBusy) snapshotDirtyAfterInFlight = true
+    return // já tem uma reconstrução em andamento - a batida de polling/o "dirty" acima cobre isso
+  }
   refreshSnapshot()
-    .then((snapshot) => mainWindow?.webContents.send('ragx:snapshot', snapshot))
-    .catch((err) => console.error('buildSnapshot() falhou apos tarefa terminar:', err))
-    .finally(() => {
-      snapshotInFlight = false
+    .then((snapshot) => {
+      mainWindow?.webContents.send('ragx:snapshot', snapshot)
+      if (snapshotDirtyAfterInFlight) {
+        snapshotDirtyAfterInFlight = false
+        pushSnapshotNow()
+      }
     })
+    .catch((err) => console.error('buildSnapshot() falhou apos tarefa terminar:', err))
 }
 
 // -- handlers de IPC -----------------------------------------------------
@@ -129,18 +156,39 @@ const handlers = createHandlers({
   writeSettings: (s) => writeSettings(app.getPath('userData'), s),
 })
 
-ipcMain.handle('ragx:getSnapshot', () => handlers.getSnapshot())
-ipcMain.handle('ragx:getProjectStatus', (_e, projectId: unknown) => handlers.getProjectStatus(projectId))
-ipcMain.handle('ragx:runTrial', (_e, projectId: unknown) => handlers.runTrial(projectId))
-ipcMain.handle('ragx:runSecurityScan', (_e, projectId: unknown) => handlers.runSecurityScan(projectId))
-ipcMain.handle('ragx:getConnections', () => handlers.getConnections())
-ipcMain.handle('ragx:listJobs', () => handlers.listJobs())
-ipcMain.handle('ragx:enqueueJob', (_e, req: unknown) => handlers.enqueueJob(req))
-ipcMain.handle('ragx:cancelJob', (_e, jobId: unknown) => handlers.cancelJob(jobId))
-ipcMain.handle('ragx:pickFolder', () => handlers.pickFolder())
-ipcMain.handle('ragx:discover', (_e, token: unknown) => handlers.discover(token))
-ipcMain.handle('ragx:getSettings', () => handlers.getSettings())
-ipcMain.handle('ragx:setOnboardingDone', (_e, done: unknown) => handlers.setOnboardingDone(done))
+/**
+ * Fix round 1 (MINOR 6): todo handler só atende pedidos cujo frame de
+ * origem é o frame principal da própria janela do painel. `contextIsolation`
+ * já impede o renderer de tocar em Node direto, mas isso fecha a outra
+ * ponta - um iframe/popup que por algum motivo acabe carregado dentro do
+ * processo (ex.: uma falha na regra de navegação abaixo) não herda acesso
+ * ao `ragx:*` só por rodar no mesmo `WebContents`.
+ */
+function isTrustedSender(event: Electron.IpcMainInvokeEvent): boolean {
+  return mainWindow !== null && event.senderFrame !== null && event.senderFrame === mainWindow.webContents.mainFrame
+}
+
+function handleIpc(channel: string, fn: (...args: unknown[]) => unknown): void {
+  ipcMain.handle(channel, (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => {
+    if (!isTrustedSender(event)) {
+      throw new Error('pedido recusado: origem nao confiavel')
+    }
+    return fn(...args)
+  })
+}
+
+handleIpc('ragx:getSnapshot', () => handlers.getSnapshot())
+handleIpc('ragx:getProjectStatus', (projectId: unknown) => handlers.getProjectStatus(projectId))
+handleIpc('ragx:runTrial', (projectId: unknown) => handlers.runTrial(projectId))
+handleIpc('ragx:runSecurityScan', (projectId: unknown) => handlers.runSecurityScan(projectId))
+handleIpc('ragx:getConnections', () => handlers.getConnections())
+handleIpc('ragx:listJobs', () => handlers.listJobs())
+handleIpc('ragx:enqueueJob', (req: unknown) => handlers.enqueueJob(req))
+handleIpc('ragx:cancelJob', (jobId: unknown) => handlers.cancelJob(jobId))
+handleIpc('ragx:pickFolder', () => handlers.pickFolder())
+handleIpc('ragx:discover', (token: unknown) => handlers.discover(token))
+handleIpc('ragx:getSettings', () => handlers.getSettings())
+handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDone(done))
 
 // -- polling ---------------------------------------------------------------
 
@@ -184,6 +232,15 @@ function createWindow(): void {
   })
   mainWindow = win
 
+  // Fix round 1 (MINOR 6): a janela nunca navega pra fora do próprio app -
+  // um link externo ou uma navegação injetada não troca o conteúdo carregado
+  // por uma página arbitrária (fora da URL do servidor de dev, em `isDev`).
+  win.webContents.on('will-navigate', (event, url) => {
+    if (isDev && url.startsWith('http://localhost:5173')) return
+    event.preventDefault()
+  })
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+
   if (isDev) {
     win.loadURL('http://localhost:5173')
     win.webContents.openDevTools({ mode: 'detach' })
@@ -194,6 +251,10 @@ function createWindow(): void {
   win.webContents.once('did-finish-load', () => {
     startSnapshotPolling()
     startConnectionsPolling()
+    // Fix round 1 (MINOR 4): a primeira checagem de conexão roda logo depois
+    // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`
+    // já constrói um snapshot se ainda não houver nenhum (decisão 2 da Task 6).
+    handlers.getConnections().catch((err) => console.error('getConnections() falhou no startup:', err))
   })
 
   win.on('close', (e) => {

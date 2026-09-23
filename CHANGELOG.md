@@ -35,7 +35,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   O painel avisa quando há chunks sem embedding — nesse caso a busca semântica
   cai para só palavra-chave, o que antes passava despercebido — e o scan lista
   os arquivos bloqueados com severidade e regra, sem exibir o trecho do
-  segredo. Tema claro e escuro seguem o Windows.
+  segredo. O tema é sempre escuro, com fundo preto; não muda mais com o tema
+  do Windows.
+
+  A janela abre com fundo preto e título "RAGX Painel". Fechar o painel com
+  alguma tarefa em andamento pergunta antes de cancelar todas elas.
 
   Cada card agora lê `.ragx/status.json` e a branch/commit atuais do git para
   dizer o estado real do projeto: "Atualizado", "Defasado" (branch ou commit

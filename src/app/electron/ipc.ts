@@ -1,9 +1,10 @@
 import { resolveJob, JobRejected, type CatalogContext, type ResolvedJob } from './jobs/catalog'
-import type { Found } from './projects/discovery'
+import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
 import type { PanelSettings } from './settings'
 import type {
   ConnectionCheck,
   DiscoverItem,
+  DiscoverResult,
   JobRequest,
   JobView,
   ProjectSnapshot,
@@ -42,7 +43,7 @@ export interface HandlerDeps {
   resetRagxCache: () => void
   queue: QueueLike
   folderTokens: FolderTokensLike
-  discoverProjects: (root: string, registeredPaths: Set<string>) => Found[]
+  discoverProjects: (root: string, registeredPaths: Set<string>) => DiscoverProjectsResult
   /** Abre o diálogo nativo de escolha de pasta; `null` quando o usuário cancela. Injetável (decisão 8) para o teste nunca precisar do Electron de verdade. */
   showOpenDialog: () => Promise<string | null>
   readSettings: () => PanelSettings
@@ -172,7 +173,7 @@ export function createHandlers(deps: HandlerDeps) {
      * nunca vê o caminho de disco de um jeito que possa mandar de volta como
      * argumento; só o token serve para isso (ex.: `add-project`).
      */
-    discover(tokenUnknown: unknown): DiscoverItem[] {
+    discover(tokenUnknown: unknown): DiscoverResult {
       if (typeof tokenUnknown !== 'string' || tokenUnknown.length === 0) {
         throw rejected('token precisa ser texto')
       }
@@ -186,13 +187,14 @@ export function createHandlers(deps: HandlerDeps) {
           .map((p) => p.path)
           .filter((p): p is string => p !== null),
       )
-      const found = deps.discoverProjects(root, registeredPaths)
-      return found.map((f) => ({
+      const { items, truncated } = deps.discoverProjects(root, registeredPaths)
+      const mapped: DiscoverItem[] = items.map((f) => ({
         token: deps.folderTokens.issue(f.path),
         path: f.path,
         name: f.name,
         alreadyRegistered: f.alreadyRegistered,
       }))
+      return { items: mapped, truncated }
     },
 
     getSettings(): PanelSettings {

@@ -21,4 +21,17 @@ describe('FolderTokens', () => {
     expect(tokens.get(a)).toBe('C:/pastas/Projeto')
     expect(tokens.get(b)).toBe('C:/pastas/Projeto')
   })
+
+  it('guarda so os 500 tokens mais recentes, descartando o mais antigo primeiro (fix round 1)', () => {
+    const tokens = new FolderTokens()
+    const first = tokens.issue('C:/pastas/primeiro')
+
+    let last = first
+    for (let i = 0; i < 500; i += 1) {
+      last = tokens.issue(`C:/pastas/${String(i)}`)
+    }
+
+    expect(tokens.get(first)).toBeUndefined()
+    expect(tokens.get(last)).toBe('C:/pastas/499')
+  })
 })

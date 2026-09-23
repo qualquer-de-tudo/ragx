@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
   ConnectionCheck,
-  DiscoverItem,
+  DiscoverResult,
   JobRequest,
   JobView,
   PanelSettings,
@@ -32,7 +32,7 @@ const ragx: RagxBridge = {
   enqueueJob: (req: JobRequest): Promise<JobView> => ipcRenderer.invoke('ragx:enqueueJob', req),
   cancelJob: (jobId: string): Promise<boolean> => ipcRenderer.invoke('ragx:cancelJob', jobId),
   pickFolder: (): Promise<{ token: string; path: string } | null> => ipcRenderer.invoke('ragx:pickFolder'),
-  discover: (token: string): Promise<DiscoverItem[]> => ipcRenderer.invoke('ragx:discover', token),
+  discover: (token: string): Promise<DiscoverResult> => ipcRenderer.invoke('ragx:discover', token),
   getSettings: (): Promise<PanelSettings> => ipcRenderer.invoke('ragx:getSettings'),
   setOnboardingDone: (done: boolean): Promise<void> => ipcRenderer.invoke('ragx:setOnboardingDone', done),
 }

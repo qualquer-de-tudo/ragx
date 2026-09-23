@@ -160,6 +160,12 @@ export interface DiscoverItem {
   alreadyRegistered: boolean
 }
 
+export interface DiscoverResult {
+  items: DiscoverItem[]
+  /** `true` quando a busca parou por orçamento de pastas (Fix round 1) - a lista pode estar incompleta. */
+  truncated: boolean
+}
+
 export interface RagxBridge {
   getSnapshot: () => Promise<Snapshot>
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void
@@ -173,7 +179,7 @@ export interface RagxBridge {
   cancelJob: (jobId: string) => Promise<boolean>
   /** `path` é só para exibir - o token é o que qualquer chamada seguinte (`discover`) usa. */
   pickFolder: () => Promise<{ token: string; path: string } | null>
-  discover: (token: string) => Promise<DiscoverItem[]>
+  discover: (token: string) => Promise<DiscoverResult>
   getSettings: () => Promise<PanelSettings>
   setOnboardingDone: (done: boolean) => Promise<void>
 }

@@ -7,6 +7,12 @@ export interface Found {
   alreadyRegistered: boolean
 }
 
+export interface DiscoverResult {
+  items: Found[]
+  /** `true` quando `maxDirs` foi atingido antes de terminar a busca - a lista pode estar incompleta. */
+  truncated: boolean
+}
+
 export interface DirEntryLike {
   name: string
   isDirectory: boolean
@@ -15,12 +21,43 @@ export interface DirEntryLike {
 export interface DiscoverOpts {
   /** Profundidade máxima de descida abaixo da raiz. Padrão 4. */
   maxDepth?: number
+  /**
+   * Orçamento de pastas visitadas (uma leitura de diretório cada). Escolher
+   * `C:\` sem isso caminha dezenas de milhares de pastas e congela a janela
+   * (Fix round 1 - `C:\` real: 44.600 pastas em ~11s). Padrão 5000.
+   */
+  maxDirs?: number
   readdir?: (dir: string) => DirEntryLike[]
   exists?: (p: string) => boolean
 }
 
-/** Pastas que nunca escondem um projeto do usuário - só ruído/dependências/artefatos de build. */
-const SKIP_DIRS: ReadonlySet<string> = new Set(['node_modules', '.git', '.venv', 'venv', 'dist', 'build', '.ragx', 'target'])
+const DEFAULT_MAX_DIRS = 5000
+
+/**
+ * Pastas que nunca escondem um projeto do usuário - ruído/dependências/
+ * artefatos de build, mais o ruído do próprio Windows quando a raiz
+ * escolhida é ampla demais (`C:\`, a pasta do usuário). Comparado sem
+ * diferenciar maiúsculas (Fix round 1).
+ */
+const SKIP_DIRS_LOWER: ReadonlySet<string> = new Set(
+  [
+    'node_modules',
+    '.git',
+    '.venv',
+    'venv',
+    'dist',
+    'build',
+    '.ragx',
+    'target',
+    'appdata',
+    'windows',
+    '$recycle.bin',
+    'system volume information',
+    'program files',
+    'program files (x86)',
+    'programdata',
+  ].map((s) => s.toLowerCase()),
+)
 
 function defaultReaddir(dir: string): DirEntryLike[] {
   try {
@@ -40,24 +77,37 @@ function normalizeForCompare(p: string): string {
 
 /**
  * Procura `ragx.toml` a partir de `root`, até `maxDepth` níveis abaixo (a
- * própria raiz conta como nível 0). Não desce dentro de uma pasta onde já
- * achou um projeto (um `ragx.toml` aninhado dentro de outro projeto - ex.:
- * um vendored/submodule - nunca aparece). Pastas de dependência/build
- * (`SKIP_DIRS`) nunca são visitadas. Erros de leitura (permissão, pasta
- * removida) são ignorados por pasta, não interrompem a busca.
+ * própria raiz conta como nível 0), sem visitar mais que `maxDirs` pastas
+ * no total - a busca para e `truncated` vira `true` (a lista pode estar
+ * incompleta, mas a chamada sempre devolve rápido). Não desce dentro de uma
+ * pasta onde já achou um projeto (um `ragx.toml` aninhado dentro de outro
+ * projeto - ex.: um vendored/submodule - nunca aparece). Pastas de
+ * dependência/build/ruído do Windows (`SKIP_DIRS_LOWER`) nunca são
+ * visitadas. Erros de leitura (permissão, pasta removida) são ignorados por
+ * pasta, não interrompem a busca.
  */
-export function discoverProjects(root: string, registeredPaths: Set<string>, opts: DiscoverOpts = {}): Found[] {
+export function discoverProjects(root: string, registeredPaths: Set<string>, opts: DiscoverOpts = {}): DiscoverResult {
   const maxDepth = opts.maxDepth ?? 4
+  const maxDirs = opts.maxDirs ?? DEFAULT_MAX_DIRS
   const readdir = opts.readdir ?? defaultReaddir
   const exists = opts.exists ?? ((p: string) => fs.existsSync(p))
 
   const registeredNormalized = new Set(Array.from(registeredPaths).map(normalizeForCompare))
 
-  if (!exists(root)) return []
+  if (!exists(root)) return { items: [], truncated: false }
 
   const results: Found[] = []
+  let dirsVisited = 0
+  let truncated = false
 
   function walk(dir: string, depth: number): void {
+    if (truncated) return
+    if (dirsVisited >= maxDirs) {
+      truncated = true
+      return
+    }
+    dirsVisited += 1
+
     let entries: DirEntryLike[]
     try {
       entries = readdir(dir)
@@ -81,13 +131,17 @@ export function discoverProjects(root: string, registeredPaths: Set<string>, opt
     if (depth >= maxDepth) return
 
     for (const entry of entries) {
+      if (truncated) return
       if (!entry.isDirectory) continue
-      if (SKIP_DIRS.has(entry.name)) continue
+      if (SKIP_DIRS_LOWER.has(entry.name.toLowerCase())) continue
       walk(path.join(dir, entry.name), depth + 1)
     }
   }
 
   walk(root, 0)
 
-  return results.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }))
+  return {
+    items: results.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })),
+    truncated,
+  }
 }

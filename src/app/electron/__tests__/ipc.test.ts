@@ -69,7 +69,7 @@ function makeDeps(over: Partial<HandlerDeps> = {}): HandlerDeps {
     resetRagxCache: vi.fn(),
     queue: fakeQueue(),
     folderTokens: new FolderTokens(),
-    discoverProjects: vi.fn(() => []),
+    discoverProjects: vi.fn(() => ({ items: [], truncated: false })),
     showOpenDialog: vi.fn(async () => null),
     readSettings: vi.fn(() => ({ onboardingDone: false })),
     writeSettings: vi.fn(),
@@ -175,6 +175,34 @@ describe('createHandlers - enqueueJob valida forma, chama resolveJob e enfileira
     expect(() => handlers.enqueueJob('update')).toThrow(/pedido recusado/)
     expect(() => handlers.enqueueJob(null)).toThrow(/pedido recusado/)
   })
+
+  // Fix round 1 - Review Focus / MINOR 5: entradas hostis especificas que o
+  // Security Gate do review pediu pra cobrir direto aqui, nao so em
+  // catalog.test.ts.
+  it('recusa projectId com tentativa de path traversal (nao existe no snapshot, e o que importa)', () => {
+    const handlers = createHandlers(makeDeps())
+    expect(() => handlers.enqueueJob({ kind: 'update', projectId: '../../etc' })).toThrow(/pedido recusado/)
+  })
+
+  it('recusa um pedido com chave __proto__ (propriedade propria de verdade, via JSON.parse)', () => {
+    const handlers = createHandlers(makeDeps())
+    // `{ __proto__: ... }` em sintaxe de objeto literal NAO cria uma
+    // propriedade propria (define o prototipo) - JSON.parse, como o que o
+    // IPC de verdade desserializa, cria uma propriedade "__proto__" comum,
+    // que e o caso que precisa ser recusado.
+    const malicious = JSON.parse('{"__proto__":"evil","kind":"update","projectId":"a"}') as unknown
+    expect(() => handlers.enqueueJob(malicious)).toThrow(/pedido recusado/)
+  })
+
+  it('recusa um pedido com chave constructor', () => {
+    const handlers = createHandlers(makeDeps())
+    expect(() => handlers.enqueueJob({ constructor: 'evil', kind: 'update', projectId: 'a' })).toThrow(/pedido recusado/)
+  })
+
+  it('recusa kind="__proto__" (fora do catalogo fechado)', () => {
+    const handlers = createHandlers(makeDeps())
+    expect(() => handlers.enqueueJob({ kind: '__proto__' })).toThrow(/pedido recusado/)
+  })
 })
 
 describe('createHandlers - discover so aceita token conhecido e devolve tokens novos', () => {
@@ -190,23 +218,39 @@ describe('createHandlers - discover so aceita token conhecido e devolve tokens n
 
   it('devolve itens com token proprio (diferente do token de entrada), usavel depois em add-project', () => {
     const queue = fakeQueue()
-    const discoverProjects = vi.fn(() => [{ path: 'C:/pastas/Novo', name: 'Novo', alreadyRegistered: false }])
+    const discoverProjects = vi.fn(() => ({
+      items: [{ path: 'C:/pastas/Novo', name: 'Novo', alreadyRegistered: false }],
+      truncated: false,
+    }))
     const deps = makeDeps({ discoverProjects, queue })
     const handlers = createHandlers(deps)
 
     const rootToken = deps.folderTokens.issue('C:/pastas')
-    const items = handlers.discover(rootToken)
+    const result = handlers.discover(rootToken)
 
     expect(discoverProjects).toHaveBeenCalledWith('C:/pastas', new Set(['C:/proj/a']))
-    expect(items).toHaveLength(1)
-    expect(items[0]).toMatchObject({ path: 'C:/pastas/Novo', name: 'Novo', alreadyRegistered: false })
-    expect(items[0].token).not.toBe(rootToken)
-    expect(deps.folderTokens.get(items[0].token)).toBe('C:/pastas/Novo')
+    expect(result.truncated).toBe(false)
+    expect(result.items).toHaveLength(1)
+    expect(result.items[0]).toMatchObject({ path: 'C:/pastas/Novo', name: 'Novo', alreadyRegistered: false })
+    expect(result.items[0].token).not.toBe(rootToken)
+    expect(deps.folderTokens.get(result.items[0].token)).toBe('C:/pastas/Novo')
 
     // O token devolvido por discover funciona direto num add-project (3 passos com installHooks).
-    handlers.enqueueJob({ kind: 'add-project', folderToken: items[0].token, installHooks: true })
+    handlers.enqueueJob({ kind: 'add-project', folderToken: result.items[0].token, installHooks: true })
     expect(queue.enqueued[0].steps).toHaveLength(3)
     expect(queue.enqueued[0].steps[0]).toEqual({ cmd: 'ragx', args: ['init', 'C:/pastas/Novo'], cwd: null, progress: false })
+  })
+
+  it('repassa truncated:true quando a busca parou por orcamento de pastas', () => {
+    const discoverProjects = vi.fn(() => ({ items: [], truncated: true }))
+    const deps = makeDeps({ discoverProjects })
+    const handlers = createHandlers(deps)
+
+    const rootToken = deps.folderTokens.issue('C:/pastas')
+    const result = handlers.discover(rootToken)
+
+    expect(result.truncated).toBe(true)
+    expect(result.items).toEqual([])
   })
 })
 
