@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ExecFn, ExecResult } from '../../system/exec'
-import { classifyGpu, detectOllama, recommend } from '../environment'
+import { classifyGpu, defaultEnvDeps, detectOllama, onceGpuNames, queryGpuNames, recommend } from '../environment'
 import type { EnvDeps } from '../environment'
 import type { OllamaEnvironment } from '../../../src/types/ragx-bridge'
 
@@ -20,6 +20,8 @@ interface Opts {
   platform?: NodeJS.Platform
   arch?: string
   nativePath?: string | null
+  /** Conteúdo de `/proc/<pid>/cgroup` por pid; ausente = arquivo ilegível. */
+  cgroups?: Record<string, string>
 }
 
 function deps(o: Opts = {}): EnvDeps {
@@ -31,6 +33,10 @@ function deps(o: Opts = {}): EnvDeps {
     platform: o.platform ?? 'win32',
     arch: o.arch ?? 'x64',
     resolveNativePath: () => (o.nativePath === undefined ? null : o.nativePath),
+    readFile: (p) => {
+      const m = /^\/proc\/(\d+)\/cgroup$/.exec(p)
+      return m !== null ? (o.cgroups?.[m[1]] ?? null) : null
+    },
   }
 }
 
@@ -200,6 +206,53 @@ describe('detectOllama', () => {
     expect(env.mode).toBe('native')
   })
 
+  describe('Linux: processo do próprio container não conta como Ollama local', () => {
+    const dockerUpLinux = {
+      [DOCKER_VERSION]: ok('Docker version 27'),
+      [DOCKER_INFO]: ok('27.0.1'),
+      [DOCKER_PS]: ok('running\n'),
+    }
+    const DOCKER_CG = '0::/system.slice/docker-3f1c2a9b.scope\n'
+    const CONTAINERD_CG = '12:pids:/system.slice/containerd.service/kubepods-besteffort.slice\n'
+    const KUBE_CG = '0::/kubepods.slice/kubepods-pod1.slice/cri-containerd-9a.scope\n'
+    const HOST_CG = '0::/user.slice/user-1000.slice/session-2.scope\n'
+
+    it('pgrep só acha processos do container: modo docker, não conflict', async () => {
+      const env = await detectOllama(
+        deps({
+          platform: 'linux',
+          responses: { ...dockerUpLinux, [PGREP]: ok('4242\n4243\n4244\n') },
+          cgroups: { '4242': DOCKER_CG, '4243': CONTAINERD_CG, '4244': KUBE_CG },
+          nativePath: '/usr/local/bin/ollama',
+          api: { models: [] },
+        }),
+      )
+      expect(env.native.running).toBe(false)
+      expect(env.mode).toBe('docker')
+    })
+
+    it('um processo do host no meio dos do container ainda conta: conflict', async () => {
+      const env = await detectOllama(
+        deps({
+          platform: 'linux',
+          responses: { ...dockerUpLinux, [PGREP]: ok('4242\n777\n') },
+          cgroups: { '4242': DOCKER_CG, '777': HOST_CG },
+          nativePath: '/usr/local/bin/ollama',
+          api: { models: [] },
+        }),
+      )
+      expect(env.native.running).toBe(true)
+      expect(env.mode).toBe('conflict')
+    })
+
+    it('cgroup ilegível (processo sumiu, macOS sem /proc) conta como do host', async () => {
+      const env = await detectOllama(
+        deps({ platform: 'darwin', responses: { [PGREP]: ok('55\n') }, nativePath: '/usr/local/bin/ollama' }),
+      )
+      expect(env.native.running).toBe(true)
+    })
+  })
+
   it('os dois rodando é conflict', async () => {
     const env = await detectOllama(
       deps({
@@ -254,6 +307,65 @@ describe('detectOllama', () => {
     ].join('\n')
     const env = await detectOllama(deps({ platform: 'linux', responses: { lspci: ok(lspci) } }))
     expect(env.gpu.vendor).toBe('nvidia')
+  })
+
+  describe('nomes das placas de vídeo: uma consulta por processo', () => {
+    it('duas detecções com o cache consultam o PowerShell uma vez só', async () => {
+      let gpuCalls = 0
+      const d = deps({ responses: {} })
+      const exec: ExecFn = async (file, args) => {
+        if ([file, ...args].join(' ') === PS_GPU) {
+          gpuCalls++
+          return ok('NVIDIA GeForce RTX 4070\r\n')
+        }
+        return fail
+      }
+      d.exec = exec
+      d.gpuNames = onceGpuNames(() => queryGpuNames(exec, 'win32'))
+
+      const a = await detectOllama(d)
+      const b = await detectOllama(d)
+      expect(gpuCalls).toBe(1)
+      expect(a.gpu.vendor).toBe('nvidia')
+      expect(b.gpu.vendor).toBe('nvidia')
+    })
+
+    it('consulta que falhou não fica guardada: a próxima tenta de novo', async () => {
+      let calls = 0
+      const names = onceGpuNames(async () => (++calls === 1 ? null : ['Intel(R) UHD Graphics']))
+      expect(await names()).toEqual([])
+      expect(await names()).toEqual(['Intel(R) UHD Graphics'])
+      expect(await names()).toEqual(['Intel(R) UHD Graphics'])
+      expect(calls).toBe(2)
+    })
+
+    it('pedidos simultâneos dividem a mesma consulta', async () => {
+      let calls = 0
+      const names = onceGpuNames(async () => {
+        calls++
+        return ['AMD Radeon']
+      })
+      await Promise.all([names(), names(), names()])
+      expect(calls).toBe(1)
+    })
+
+    it('defaultEnvDeps devolve sempre o mesmo cache (vale para o processo inteiro)', () => {
+      const first = defaultEnvDeps().gpuNames
+      expect(typeof first).toBe('function')
+      expect(defaultEnvDeps().gpuNames).toBe(first)
+    })
+
+    it('sem cache injetado, detectOllama consulta pelo exec (puro para testes)', async () => {
+      let gpuCalls = 0
+      const d = deps()
+      d.exec = async (file, args) => {
+        if ([file, ...args].join(' ') === PS_GPU) gpuCalls++
+        return fail
+      }
+      await detectOllama(d)
+      await detectOllama(d)
+      expect(gpuCalls).toBe(2)
+    })
   })
 
   it('macOS arm64 é apple sem consultar nada', async () => {

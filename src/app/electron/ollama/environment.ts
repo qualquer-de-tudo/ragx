@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import { execFileText } from '../system/exec'
 import type { ExecFn } from '../system/exec'
 import { httpGetJson } from '../system/http'
@@ -11,6 +12,17 @@ export interface EnvDeps {
   arch: string
   /** Executável nativo, mesmo fora do PATH. */
   resolveNativePath: () => string | null
+  /**
+   * Lê um arquivo de texto (`/proc/<pid>/cgroup`); `null` se não der. Sem
+   * ela, todo pid do `pgrep` conta como Ollama local.
+   */
+  readFile?: (p: string) => string | null
+  /**
+   * Nomes das placas de vídeo. O `defaultEnvDeps` passa um cache de processo
+   * (a placa não muda com o painel aberto, e a consulta do Windows abre um
+   * PowerShell); sem ela, `detectOllama` consulta pelo `exec` a cada vez.
+   */
+  gpuNames?: () => Promise<string[]>
 }
 
 const TAGS_URL = 'http://localhost:11434/api/tags'
@@ -73,21 +85,50 @@ function lines(text: string): string[] {
     .filter((l) => l.length > 0)
 }
 
-async function listGpuNames(d: EnvDeps): Promise<string[]> {
-  if (d.platform === 'win32') {
-    const r = await d.exec('powershell', [
+/** Nomes das placas de vídeo; `null` quando a consulta falhou (e vale tentar de novo). */
+export async function queryGpuNames(exec: ExecFn, platform: NodeJS.Platform): Promise<string[] | null> {
+  if (platform === 'win32') {
+    const r = await exec('powershell', [
       '-NoProfile',
       '-NonInteractive',
       '-Command',
       '(Get-CimInstance Win32_VideoController).Name',
     ])
-    return r.code === 0 ? lines(r.stdout) : []
+    return r.code === 0 ? lines(r.stdout) : null
   }
-  if (d.platform === 'linux') {
-    const r = await d.exec('lspci', [])
-    return r.code === 0 ? lines(r.stdout).filter((l) => /VGA|3D|Display/.test(l)) : []
+  if (platform === 'linux') {
+    const r = await exec('lspci', [])
+    return r.code === 0 ? lines(r.stdout).filter((l) => /VGA|3D|Display/.test(l)) : null
   }
   return []
+}
+
+/**
+ * Guarda os nomes das placas depois da primeira consulta que deu certo.
+ * Consulta que falhou (ou lançou) devolve `[]` e não fica guardada; pedidos
+ * simultâneos dividem a mesma consulta. Nunca rejeita.
+ */
+export function onceGpuNames(query: () => Promise<string[] | null>): () => Promise<string[]> {
+  let cached: string[] | null = null
+  let inFlight: Promise<string[]> | null = null
+  return () => {
+    if (cached !== null) return Promise.resolve(cached)
+    if (inFlight !== null) return inFlight
+    const run = Promise.resolve()
+      .then(query)
+      .then(
+        (names) => {
+          if (names !== null) cached = names
+          return names ?? []
+        },
+        () => [] as string[],
+      )
+      .finally(() => {
+        if (inFlight === run) inFlight = null
+      })
+    inFlight = run
+    return run
+  }
 }
 
 async function detectDocker(d: EnvDeps): Promise<{
@@ -110,13 +151,41 @@ async function detectDocker(d: EnvDeps): Promise<{
   }
 }
 
+/** cgroup de processo de container (Docker, containerd, Kubernetes). */
+const CONTAINER_CGROUP = /docker|containerd|kubepods/i
+
+/**
+ * Fora do Windows, `pgrep -x ollama` também acha o `ollama` que roda DENTRO
+ * do container (no Linux ele é um processo do host). Um pid cujo
+ * `/proc/<pid>/cgroup` cita docker, containerd ou kubepods é do container e
+ * não conta; cgroup ilegível (processo sumiu, macOS sem `/proc`) conta.
+ */
 async function nativeRunning(d: EnvDeps): Promise<boolean> {
   if (d.platform === 'win32') {
     const r = await d.exec('tasklist', ['/FI', 'IMAGENAME eq ollama.exe', '/FO', 'CSV', '/NH'])
     return r.code === 0 && r.stdout.toLowerCase().includes('ollama.exe')
   }
   const r = await d.exec('pgrep', ['-x', 'ollama'])
-  return r.code === 0
+  if (r.code !== 0) return false
+  const pids = lines(r.stdout).filter((l) => /^\d+$/.test(l))
+  if (pids.length === 0) return true
+  return pids.some((pid) => {
+    const cgroup = readCgroup(d, pid)
+    return cgroup === null || !CONTAINER_CGROUP.test(cgroup)
+  })
+}
+
+function readCgroup(d: EnvDeps, pid: string): string | null {
+  try {
+    return d.readFile?.(`/proc/${pid}/cgroup`) ?? null
+  } catch {
+    return null
+  }
+}
+
+async function gpuNamesOf(d: EnvDeps): Promise<string[]> {
+  if (d.gpuNames) return d.gpuNames()
+  return (await queryGpuNames(d.exec, d.platform)) ?? []
 }
 
 function extractModels(json: unknown): string[] {
@@ -139,7 +208,7 @@ function toSupportedPlatform(p: NodeJS.Platform): OllamaEnvironment['platform'] 
 export async function detectOllama(d: EnvDeps): Promise<OllamaEnvironment> {
   const platform = toSupportedPlatform(d.platform)
   const [gpuNames, dockerInfo, nativePath, isNativeRunning, json] = await Promise.all([
-    safe(() => listGpuNames(d), [] as string[]),
+    safe(() => gpuNamesOf(d), [] as string[]),
     safe(() => detectDocker(d), {
       docker: { installed: false, running: false },
       container: { exists: false, running: false },
@@ -175,6 +244,17 @@ export async function detectOllama(d: EnvDeps): Promise<OllamaEnvironment> {
   return { ...partial, recommendation: recommend(partial) }
 }
 
+/** Uma consulta de placas de vídeo por processo (e não um PowerShell a cada 30 s). */
+const processGpuNames = onceGpuNames(() => queryGpuNames(execFileText, process.platform))
+
+function readTextFile(p: string): string | null {
+  try {
+    return fs.readFileSync(p, 'utf-8')
+  } catch {
+    return null
+  }
+}
+
 export function defaultEnvDeps(): EnvDeps {
   return {
     exec: execFileText,
@@ -182,5 +262,7 @@ export function defaultEnvDeps(): EnvDeps {
     platform: process.platform,
     arch: process.arch,
     resolveNativePath: () => resolveOllama(),
+    readFile: readTextFile,
+    gpuNames: processGpuNames,
   }
 }
