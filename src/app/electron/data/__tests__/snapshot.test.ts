@@ -50,6 +50,7 @@ function baseDeps(over: Partial<SnapshotDeps> = {}): SnapshotDeps {
     readTelemetry: () => ({ callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null }),
     readGit: async () => ({ branch: 'main', commit: 'c1' }),
     exists: () => true,
+    isPidAlive: () => true,
     ...over,
   }
 }
@@ -147,5 +148,38 @@ describe('buildSnapshot', () => {
       }),
     )
     expect(snap.projects[0].telemetry.lastCallAt).toBe('2026-09-23T08:00:00Z')
+  })
+
+  it('(h) running com pid que não existe mais vira null (índice cancelado ou hook morto)', async () => {
+    const asked: number[] = []
+    const snap = await buildSnapshot(
+      baseDeps({
+        readStatus: () =>
+          statusFile({
+            running: { pid: 4242, op: 'index', source: 'panel', started_at: '2026-09-23T09:30:00Z' },
+          }),
+        isPidAlive: (pid) => {
+          asked.push(pid)
+          return false
+        },
+      }),
+    )
+    expect(asked).toEqual([4242])
+    expect(snap.projects[0].running).toBeNull()
+  })
+
+  it('(i) isPidAlive real: o próprio processo está vivo, um pid inexistente não', async () => {
+    const { isPidAlive } = await import('../snapshot')
+    expect(isPidAlive(process.pid)).toBe(true)
+    expect(isPidAlive(2 ** 22 + 12345)).toBe(false)
+  })
+
+  it('(j) isPidAlive: EPERM (processo de outro usuário) conta como vivo; ESRCH como morto', async () => {
+    const { isPidAlive } = await import('../snapshot')
+    const eperm = Object.assign(new Error('eperm'), { code: 'EPERM' })
+    const esrch = Object.assign(new Error('esrch'), { code: 'ESRCH' })
+    expect(isPidAlive(10, () => { throw eperm })).toBe(true)
+    expect(isPidAlive(10, () => { throw esrch })).toBe(false)
+    expect(isPidAlive(10, () => true)).toBe(true)
   })
 })

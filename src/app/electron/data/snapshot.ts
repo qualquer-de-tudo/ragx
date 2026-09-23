@@ -18,6 +18,27 @@ export interface SnapshotDeps {
   readTelemetry: (projectPath: string, sinceHours: number) => TelemetrySummary
   readGit: (projectPath: string) => Promise<GitHead | null>
   exists: (projectPath: string) => boolean
+  /** O processo que segura a indexação (`status.json` `running.pid`) ainda existe? */
+  isPidAlive: (pid: number) => boolean
+}
+
+type KillFn = (pid: number, signal: 0) => unknown
+
+/**
+ * Sinal 0 não mata nada: só pergunta ao SO se o processo existe (funciona
+ * também no Windows). ESRCH é "não existe"; EPERM é "existe, mas é de outro
+ * usuário", então conta como vivo. Um pid inválido (não inteiro positivo)
+ * não dá para checar e fica como vivo: melhor mostrar "Indexando…" a mais do
+ * que esconder uma indexação de verdade.
+ */
+export function isPidAlive(pid: number, kill: KillFn = (p, sig) => process.kill(p, sig)): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return true
+  try {
+    kill(pid, 0)
+    return true
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code !== 'ESRCH'
+  }
 }
 
 const REAL_DEPS: SnapshotDeps = {
@@ -27,6 +48,7 @@ const REAL_DEPS: SnapshotDeps = {
   readTelemetry,
   readGit: readGitHead,
   exists: (p) => fs.existsSync(p),
+  isPidAlive: (pid) => isPidAlive(pid),
 }
 
 const EMPTY_TELEMETRY: TelemetrySummary = { callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null }
@@ -161,10 +183,27 @@ async function buildProjectSnapshot(proj: HubProject, d: SnapshotDeps): Promise<
     index,
     git,
     hooksInstalled: status?.hooks.installed ?? null,
-    running: status?.running ? { source: status.running.source, startedAt: status.running.started_at } : null,
+    running: runningFrom(status, d, proj.name),
     pending: status?.pending ?? false,
     lastError: status?.last_error ?? null,
     hasStatusFile: status !== null,
     telemetry,
   }
+}
+
+/**
+ * `running` do `status.json` só vale enquanto o processo dono existe (spec
+ * A2): um índice cancelado pela fila (`kill`) ou um hook em segundo plano
+ * que morreu não chegam a limpar o campo, e o card ficaria "Indexando…"
+ * para sempre.
+ */
+function runningFrom(status: StatusFile | null, d: SnapshotDeps, projectName: string): ProjectSnapshot['running'] {
+  if (!status?.running) return null
+  let alive = true
+  try {
+    alive = d.isPidAlive(status.running.pid)
+  } catch (err) {
+    console.error(`isPidAlive falhou para o projeto "${projectName}":`, err)
+  }
+  return alive ? { source: status.running.source, startedAt: status.running.started_at } : null
 }
