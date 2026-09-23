@@ -82,4 +82,20 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Conexões: tudo certo' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Conexões' })).toBeInTheDocument()
   })
+
+  it('zera o scroll do conteúdo ao trocar de rota', async () => {
+    install({ onboardingDone: true }, withProject)
+    render(<App />)
+    await screen.findByRole('heading', { level: 1, name: 'Projetos' })
+
+    const content = document.querySelector('.content')
+    expect(content).not.toBeNull()
+    Object.defineProperty(content!, 'scrollTop', { value: 400, writable: true })
+    expect(content!.scrollTop).toBe(400)
+
+    fireEvent.click(screen.getByRole('button', { name: project.name }))
+    await screen.findByRole('heading', { level: 1, name: project.name })
+
+    expect(content!.scrollTop).toBe(0)
+  })
 })

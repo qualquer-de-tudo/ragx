@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from './hooks/useSnapshot'
 import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
@@ -37,6 +37,7 @@ function App() {
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)
   const [route, setRoute] = useState<Route | null>(null)
   const [query, setQuery] = useState('')
+  const contentRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +54,17 @@ function App() {
       cancelled = true
     }
   }, [])
+
+  // Chave da rota para fins de scroll: página, mais o projeto quando houver.
+  const routeScrollKey = route === null ? null : route.page === 'project' ? `project:${route.id}` : route.page
+
+  // Toda troca de rota recomeça pelo topo: sem isso, abrir um projeto depois
+  // de rolar Projetos até o fim abre a página de detalhe já rolada para
+  // baixo.
+  useEffect(() => {
+    const el = contentRef.current
+    if (el) el.scrollTop = 0
+  }, [routeScrollKey])
 
   // Rota inicial: decidida uma vez só, quando há dado para isso (preferências
   // e, se o onboarding já foi feito, o primeiro snapshot). Depois disso só o
@@ -150,7 +162,7 @@ function App() {
           onOpenConnections={() => setRoute({ page: 'connections' })}
           onCancelJob={onCancelJob}
         />
-        <main className="content">
+        <main className="content" ref={contentRef}>
           <div className="content-inner">{page}</div>
         </main>
       </div>

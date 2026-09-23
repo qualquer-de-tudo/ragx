@@ -731,9 +731,28 @@
   line-height: 1.5;
 }
 
+/* Fatos em rótulo pequeno e discreto em cima, valor normal e alinhado à
+   esquerda embaixo: rótulo/valor lado a lado não sobra espaço para valores
+   longos (nome de modelo, lista de projetos) sem quebrar mal. */
+.pairs.conn-facts > div {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 10px 0;
+}
+
+.conn-facts dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
 .conn-facts dd {
   min-width: 0;
-  text-align: right;
+  width: 100%;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 
