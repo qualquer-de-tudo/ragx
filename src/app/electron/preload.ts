@@ -8,4 +8,8 @@ contextBridge.exposeInMainWorld('ragx', {
     ipcRenderer.on('ragx:snapshot', listener)
     return () => ipcRenderer.removeListener('ragx:snapshot', listener)
   },
+  runTrial: (projectPath: string): Promise<unknown> =>
+    ipcRenderer.invoke('ragx:run-trial', projectPath),
+  runSecurityScan: (projectPath: string): Promise<unknown> =>
+    ipcRenderer.invoke('ragx:run-security-scan', projectPath),
 })

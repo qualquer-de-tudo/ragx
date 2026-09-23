@@ -3,6 +3,7 @@ import path from 'node:path'
 import { readHubRegistry } from './data/hub'
 import { initSqlWasm, readProjectStats } from './data/project-stats'
 import { readTelemetry } from './data/telemetry'
+import { runRagxCommand } from './data/run-ragx-command'
 import type { Snapshot } from '../src/types/ragx-bridge'
 
 const isDev = !app.isPackaged
@@ -60,6 +61,12 @@ function createWindow(): void {
 }
 
 ipcMain.handle('ragx:get-snapshot', () => buildSnapshot())
+ipcMain.handle('ragx:run-trial', (_event, projectPath: string) =>
+  runRagxCommand(projectPath, ['trial', '--json']),
+)
+ipcMain.handle('ragx:run-security-scan', (_event, projectPath: string) =>
+  runRagxCommand(projectPath, ['security', 'scan', '.', '--json']),
+)
 
 app.whenReady().then(async () => {
   // sql.js carrega seu modulo WASM de forma assincrona; precisa terminar

@@ -1,10 +1,34 @@
-import type { ProjectSnapshot } from '../types/ragx-bridge'
+import { useState } from 'react'
+import type { ProjectSnapshot, TrialResult, SecurityScanResult } from '../types/ragx-bridge'
 
 interface Props {
   project: ProjectSnapshot | null
 }
 
 export function ProjectDetail({ project }: Props) {
+  const [trial, setTrial] = useState<TrialResult | 'loading' | 'error' | null>(null)
+  const [scan, setScan] = useState<SecurityScanResult | 'loading' | 'error' | null>(null)
+
+  async function handleRunTrial() {
+    if (!project) return
+    setTrial('loading')
+    try {
+      setTrial(await window.ragx.runTrial(project.path ?? ''))
+    } catch {
+      setTrial('error')
+    }
+  }
+
+  async function handleRunScan() {
+    if (!project) return
+    setScan('loading')
+    try {
+      setScan(await window.ragx.runSecurityScan(project.path ?? ''))
+    } catch {
+      setScan('error')
+    }
+  }
+
   if (!project) {
     return <main className="project-detail"><p>Selecione um projeto à esquerda.</p></main>
   }
@@ -48,6 +72,27 @@ export function ProjectDetail({ project }: Props) {
         <p className="estimate-note">
           Economia estimada não é calculada automaticamente — é um proxy (ver <code>ragx trial</code>), não um número ao vivo.
         </p>
+        <button type="button" onClick={handleRunTrial} disabled={trial === 'loading'}>
+          {trial === 'loading' ? 'Calculando…' : 'Ver economia estimada'}
+        </button>
+        {trial && trial !== 'loading' && trial !== 'error' && (
+          <p className="estimate-result">
+            Estimativa: {(trial.totals.saved_ratio * 100).toFixed(0)}% de economia ·
+            cobertura de fonte {(trial.totals.source_coverage * 100).toFixed(0)}%
+          </p>
+        )}
+        {trial === 'error' && <p className="warning">Não foi possível calcular agora.</p>}
+      </section>
+
+      <section>
+        <h2>Segurança</h2>
+        <button type="button" onClick={handleRunScan} disabled={scan === 'loading'}>
+          {scan === 'loading' ? 'Escaneando…' : 'Atualizar achados de segurança'}
+        </button>
+        {scan && scan !== 'loading' && scan !== 'error' && (
+          <p>{scan.blocked.length} bloqueados · {scan.redacted.length} redigidos</p>
+        )}
+        {scan === 'error' && <p className="warning">Não foi possível escanear agora.</p>}
       </section>
     </main>
   )

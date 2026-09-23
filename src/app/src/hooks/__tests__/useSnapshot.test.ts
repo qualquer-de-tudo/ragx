@@ -17,6 +17,8 @@ describe('useSnapshot', () => {
           if (i >= 0) listeners.splice(i, 1)
         }
       }),
+      runTrial: vi.fn(),
+      runSecurityScan: vi.fn(),
     }
   })
 
