@@ -55,6 +55,36 @@ export interface SecurityScanResult {
   policy: string
 }
 
+export type ConnectionId = 'ragx' | 'claude' | 'ollama'
+export type ConnectionState = 'ok' | 'warn' | 'error'
+
+export interface ConnectionAction {
+  kind: 'mcp-register' | 'ollama-start' | 'ollama-pull'
+  label: string
+  model?: string
+}
+
+export interface ConnectionCheck {
+  id: ConnectionId
+  title: string
+  state: ConnectionState
+  stateLabel: string
+  summary: string
+  facts: Array<{ label: string; value: string }>
+  actions: ConnectionAction[]
+  help: string | null
+  /**
+   * Maior `telemetry.lastCallAt` entre os projetos do snapshot, ou `null`
+   * quando não há snapshot ou nenhum projeto tem chamada registrada.
+   * Só é preenchido na checagem `claude`; nas outras é sempre `null`. O
+   * processo principal do Electron não formata data relativa (tsconfig
+   * de build usa `rootDir: "electron"`, então `formatRelative` de
+   * `src/format.ts` não é importável em runtime) - quem formata este
+   * campo é o renderer.
+   */
+  lastMcpCallAt: string | null
+}
+
 export interface RagxBridge {
   getSnapshot: () => Promise<Snapshot>
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void

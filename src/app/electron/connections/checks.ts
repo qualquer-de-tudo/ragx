@@ -1,0 +1,433 @@
+import fs from 'node:fs'
+import http from 'node:http'
+import os from 'node:os'
+import path from 'node:path'
+import { execFileText } from '../system/exec'
+import type { ExecFn } from '../system/exec'
+import { resolveRagx } from '../system/ragx-exe'
+import type { ConnectionAction, ConnectionCheck, ConnectionState, Snapshot } from '../../src/types/ragx-bridge'
+
+export interface CheckDeps {
+  exec: ExecFn
+  resolveRagx: () => string | null
+  readFile: (p: string) => string | null
+  exists: (p: string) => boolean
+  httpGetJson: (url: string, timeoutMs: number) => Promise<unknown | null>
+  homeDir: string
+}
+
+interface ClaudeMcpEntry {
+  command?: string
+}
+
+interface ClaudeConfig {
+  mcpServers?: Record<string, ClaudeMcpEntry>
+  projects?: Record<string, { mcpServers?: Record<string, ClaudeMcpEntry> }>
+}
+
+interface OllamaTagsResponse {
+  models?: Array<{ name?: string }>
+}
+
+function stateLabelFor(state: ConnectionState): string {
+  if (state === 'ok') return 'Conectado'
+  if (state === 'warn') return 'Atenção'
+  return 'Não conectado'
+}
+
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+function lastFolderName(p: string): string {
+  const parts = p.split(/[\\/]/).filter((part) => part.length > 0)
+  return parts.length > 0 ? parts[parts.length - 1] : p
+}
+
+function maxLastCallAt(snapshot: Snapshot | null): string | null {
+  if (!snapshot) return null
+  let best: string | null = null
+  for (const proj of snapshot.projects) {
+    const at = proj.telemetry.lastCallAt
+    if (at === null) continue
+    if (best === null || Date.parse(at) > Date.parse(best)) best = at
+  }
+  return best
+}
+
+// RAGX CLI ------------------------------------------------------------
+
+export async function checkRagx(d: CheckDeps): Promise<ConnectionCheck> {
+  const id = 'ragx' as const
+  const title = 'RAGX CLI'
+  try {
+    const ragxPath = d.resolveRagx()
+    if (ragxPath === null) {
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'O comando ragx não foi encontrado nesta máquina.',
+        facts: [],
+        actions: [],
+        help: 'Instale com o instalador do RAGX (install.ps1 no Windows, install.sh no Linux e macOS) e reabra o painel.',
+        lastMcpCallAt: null,
+      }
+    }
+
+    const result = await d.exec(ragxPath, ['--version'])
+    if (result.code === 0) {
+      return {
+        id,
+        title,
+        state: 'ok',
+        stateLabel: stateLabelFor('ok'),
+        summary: 'Respondendo normalmente.',
+        facts: [
+          { label: 'Versão', value: result.stdout.trim() },
+          { label: 'Local', value: ragxPath },
+        ],
+        actions: [],
+        help: null,
+        lastMcpCallAt: null,
+      }
+    }
+
+    const stderrLines = result.stderr.split(/\r?\n/).slice(0, 3).join('\n').trim()
+    return {
+      id,
+      title,
+      state: 'error',
+      stateLabel: stateLabelFor('error'),
+      summary: 'O ragx foi encontrado mas não respondeu.',
+      facts: [{ label: 'Local', value: ragxPath }],
+      actions: [],
+      help: stderrLines.length > 0 ? stderrLines : 'sem dados',
+      lastMcpCallAt: null,
+    }
+  } catch (err) {
+    return {
+      id,
+      title,
+      state: 'error',
+      stateLabel: stateLabelFor('error'),
+      summary: `Falha inesperada ao checar o ragx: ${errMessage(err)}`,
+      facts: [],
+      actions: [],
+      help: null,
+      lastMcpCallAt: null,
+    }
+  }
+}
+
+// Claude Code -----------------------------------------------------------
+
+export async function checkClaude(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck> {
+  const id = 'claude' as const
+  const title = 'Claude Code'
+  const lastMcpCallAt = maxLastCallAt(snapshot)
+
+  try {
+    const claudeJsonPath = path.join(d.homeDir, '.claude.json')
+    const raw = d.readFile(claudeJsonPath)
+    if (raw === null) {
+      const registerAction: ConnectionAction = { kind: 'mcp-register', label: 'Registrar no Claude Code' }
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'O Claude Code ainda não foi usado nesta conta (sem ~/.claude.json).',
+        facts: [],
+        actions: [registerAction],
+        help: null,
+        lastMcpCallAt,
+      }
+    }
+
+    let data: ClaudeConfig
+    try {
+      data = JSON.parse(raw) as ClaudeConfig
+    } catch {
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'Não foi possível ler ~/.claude.json.',
+        facts: [],
+        actions: [],
+        help: null,
+        lastMcpCallAt,
+      }
+    }
+
+    const userEntry = data?.mcpServers?.ragx
+    if (userEntry) {
+      const command = userEntry.command
+      if (typeof command === 'string' && path.isAbsolute(command) && !d.exists(command)) {
+        return {
+          id,
+          title,
+          state: 'warn',
+          stateLabel: stateLabelFor('warn'),
+          summary: 'O RAGX está registrado, mas o comando gravado não existe mais.',
+          facts: [],
+          actions: [{ kind: 'mcp-register', label: 'Registrar de novo' }],
+          help: null,
+          lastMcpCallAt,
+        }
+      }
+      return {
+        id,
+        title,
+        state: 'ok',
+        stateLabel: stateLabelFor('ok'),
+        summary: 'O RAGX está registrado para todos os projetos.',
+        facts: [],
+        actions: [],
+        help: null,
+        lastMcpCallAt,
+      }
+    }
+
+    const projects = data?.projects ?? {}
+    const localProjectPaths = Object.keys(projects).filter((p) => projects[p]?.mcpServers?.ragx)
+    if (localProjectPaths.length > 0) {
+      const names = localProjectPaths.slice(0, 5).map(lastFolderName)
+      return {
+        id,
+        title,
+        state: 'warn',
+        stateLabel: stateLabelFor('warn'),
+        summary: `O RAGX está registrado só em ${localProjectPaths.length} projeto(s). Nos outros o Claude Code não enxerga o índice.`,
+        facts: [{ label: 'Projetos', value: names.join(', ') }],
+        actions: [{ kind: 'mcp-register', label: 'Registrar para todos os projetos' }],
+        help: null,
+        lastMcpCallAt,
+      }
+    }
+
+    return {
+      id,
+      title,
+      state: 'error',
+      stateLabel: stateLabelFor('error'),
+      summary: 'O RAGX não está registrado no Claude Code.',
+      facts: [],
+      actions: [{ kind: 'mcp-register', label: 'Registrar no Claude Code' }],
+      help: null,
+      lastMcpCallAt,
+    }
+  } catch (err) {
+    return {
+      id,
+      title,
+      state: 'error',
+      stateLabel: stateLabelFor('error'),
+      summary: `Falha inesperada ao checar o Claude Code: ${errMessage(err)}`,
+      facts: [],
+      actions: [],
+      help: null,
+      lastMcpCallAt,
+    }
+  }
+}
+
+// Ollama (Docker) -------------------------------------------------------
+
+function extractInstalledNames(json: unknown): string[] {
+  if (typeof json !== 'object' || json === null) return []
+  const models = (json as OllamaTagsResponse).models
+  if (!Array.isArray(models)) return []
+  const names: string[] = []
+  for (const m of models) {
+    if (m && typeof m.name === 'string') names.push(m.name)
+  }
+  return names
+}
+
+function neededModelsFor(snapshot: Snapshot | null): { models: string[]; projectNames: string[] } {
+  if (!snapshot) return { models: [], projectNames: [] }
+  const relevant = snapshot.projects.filter(
+    (p) =>
+      p.embeddingModel !== null &&
+      (p.embeddingProvider === 'ollama' || (p.embeddingProvider === null && !p.embeddingModel.includes('/'))),
+  )
+  const models = Array.from(new Set(relevant.map((p) => p.embeddingModel as string)))
+  const projectNames = relevant.map((p) => p.name)
+  return { models, projectNames }
+}
+
+function formatDependents(names: string[]): string {
+  if (names.length === 0) return 'nenhum projeto'
+  const shown = names.slice(0, 3).join(', ')
+  return `${names.length} projeto(s): ${shown}`
+}
+
+export async function checkOllama(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck> {
+  const id = 'ollama' as const
+  const title = 'Ollama (Docker)'
+  const { models: needed, projectNames } = neededModelsFor(snapshot)
+  const dependFact = { label: 'Projetos que dependem', value: formatDependents(projectNames) }
+  const semDadosFact = { label: 'Modelos instalados', value: 'sem dados' }
+
+  try {
+    const ps = await d.exec('docker', ['ps', '-a', '--filter', 'name=^ollama$', '--format', '{{.State}}'])
+    if (ps.code !== 0) {
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'O Docker não está rodando.',
+        facts: [semDadosFact, dependFact],
+        actions: [],
+        help: 'Abra o Docker Desktop e aguarde ele iniciar.',
+        lastMcpCallAt: null,
+      }
+    }
+
+    const trimmed = ps.stdout.trim()
+    if (trimmed === '') {
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'Não existe um container chamado ollama.',
+        facts: [semDadosFact, dependFact],
+        actions: [],
+        help: 'Crie com: docker run -d --name ollama -p 11434:11434 -v ollama:/root/.ollama ollama/ollama',
+        lastMcpCallAt: null,
+      }
+    }
+
+    const state = trimmed.split(/\r?\n/)[0].trim()
+    if (state !== 'running') {
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'O container ollama está parado.',
+        facts: [semDadosFact, dependFact],
+        actions: [{ kind: 'ollama-start', label: 'Iniciar container' }],
+        help: null,
+        lastMcpCallAt: null,
+      }
+    }
+
+    const json = await d.httpGetJson('http://localhost:11434/api/tags', 3000)
+    if (json === null) {
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'O container está rodando mas a API não responde na porta 11434.',
+        facts: [semDadosFact, dependFact],
+        actions: [],
+        help: null,
+        lastMcpCallAt: null,
+      }
+    }
+
+    const installed = extractInstalledNames(json)
+    const modelsFact = { label: 'Modelos instalados', value: installed.length > 0 ? installed.join(', ') : 'nenhum' }
+    const missing = needed.filter((m) => !installed.some((inst) => inst === m || inst === `${m}:latest`))
+
+    if (missing.length > 0) {
+      return {
+        id,
+        title,
+        state: 'warn',
+        stateLabel: stateLabelFor('warn'),
+        summary: `Falta baixar ${missing.length} modelo(s).`,
+        facts: [modelsFact, dependFact],
+        actions: missing.map((m) => ({ kind: 'ollama-pull' as const, label: `Baixar ${m}`, model: m })),
+        help: null,
+        lastMcpCallAt: null,
+      }
+    }
+
+    return {
+      id,
+      title,
+      state: 'ok',
+      stateLabel: stateLabelFor('ok'),
+      summary: 'Rodando, com os modelos que os projetos usam.',
+      facts: [modelsFact, dependFact],
+      actions: [],
+      help: null,
+      lastMcpCallAt: null,
+    }
+  } catch (err) {
+    return {
+      id,
+      title,
+      state: 'error',
+      stateLabel: stateLabelFor('error'),
+      summary: `Falha inesperada ao checar o Ollama: ${errMessage(err)}`,
+      facts: [dependFact],
+      actions: [],
+      help: null,
+      lastMcpCallAt: null,
+    }
+  }
+}
+
+// ------------------------------------------------------------------------
+
+export async function checkAll(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck[]> {
+  return Promise.all([checkRagx(d), checkClaude(d, snapshot), checkOllama(d, snapshot)])
+}
+
+export function defaultCheckDeps(): CheckDeps {
+  return {
+    exec: execFileText,
+    resolveRagx: () => resolveRagx(),
+    readFile: (p) => {
+      try {
+        return fs.readFileSync(p, 'utf-8')
+      } catch {
+        return null
+      }
+    },
+    exists: (p) => fs.existsSync(p),
+    httpGetJson: (url, timeoutMs) =>
+      new Promise((resolve) => {
+        try {
+          const req = http.get(url, { timeout: timeoutMs }, (res) => {
+            if (res.statusCode !== 200) {
+              res.resume()
+              resolve(null)
+              return
+            }
+            res.setEncoding('utf-8')
+            let body = ''
+            res.on('data', (chunk: string) => {
+              body += chunk
+            })
+            res.on('end', () => {
+              try {
+                resolve(JSON.parse(body) as unknown)
+              } catch {
+                resolve(null)
+              }
+            })
+            res.on('error', () => resolve(null))
+          })
+          req.on('timeout', () => {
+            req.destroy()
+            resolve(null)
+          })
+          req.on('error', () => resolve(null))
+        } catch {
+          resolve(null)
+        }
+      }),
+    homeDir: os.homedir(),
+  }
+}
