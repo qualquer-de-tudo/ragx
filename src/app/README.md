@@ -149,11 +149,11 @@ comando roda.
 | `hooks-uninstall` | `ragx hooks uninstall <pasta>`                                                                                          |
 | `remove-from-hub` | `ragx project unregister -- <nome>`                                                                                    |
 | `mcp-register`    | `ragx mcp install --client claude-code`                                                                                |
-| `ollama-start`    | segue o modo: `docker start ollama` (Docker) ou `ollama serve` destacado e espera da API (local)                       |
+| `ollama-start`    | `docker start ollama` (Docker) ou `ollama serve` destacado e espera da API (local); qual dos dois é decidido por `chooseStartMode` (ver abaixo) |
 | `ollama-pull`     | segue o modo: `docker exec ollama ollama pull <modelo>` (Docker) ou `ollama pull <modelo>` (local)                     |
-| `ollama-use-native` | `docker stop ollama` (se estiver rodando), `winget install -e --id Ollama.Ollama --silent --accept-package-agreements --accept-source-agreements` (se não estiver instalado), `ollama serve` destacado (se não estiver rodando), espera da API e `ollama pull <modelo>` para cada modelo em uso |
-| `ollama-use-docker` | encerra o Ollama local (`taskkill /IM "ollama app.exe" /T /F` e `/IM ollama.exe`, ou `pkill -x ollama`), `docker start ollama` (se o container existe) ou `docker run -d --name ollama -p 11434:11434 -v ollama:/root/.ollama --restart unless-stopped [--gpus all] ollama/ollama` (se não existe), espera da API e `docker exec ollama ollama pull <modelo>` para cada modelo em uso |
-| `ollama-stop`     | `docker stop ollama` (se estiver rodando) e o encerramento do Ollama local (mesmos comandos de `ollama-use-docker`)     |
+| `ollama-use-native` | `winget install -e --id Ollama.Ollama --silent --accept-package-agreements --accept-source-agreements` (se não estiver instalado), `docker stop ollama` (se estiver rodando), `ollama serve` destacado (se não estiver rodando), espera da API e `ollama pull <modelo>` para cada modelo em uso. Instala antes de parar o container: se o `winget` falhar, o Docker continua servindo |
+| `ollama-use-docker` | recusa com "O Docker não está instalado nesta máquina." ou "Abra o Docker Desktop e aguarde ele iniciar." (Docker parado); senão `docker pull ollama/ollama` (se o container não existe), encerra o Ollama local (ver `ollama-stop`), `docker start ollama` (se o container existe) ou `docker run -d --name ollama -p 11434:11434 -v ollama:/root/.ollama --restart unless-stopped [--gpus all] ollama/ollama` (se não existe), espera da API e `docker exec ollama ollama pull <modelo>` para cada modelo em uso. A imagem é baixada antes de encerrar o Ollama local |
+| `ollama-stop`     | `docker stop ollama` (se estiver rodando) e o encerramento do Ollama local: no Windows, `powershell -NoProfile -NonInteractive -Command <script>`, que encerra só `ollama.exe` e `ollama app.exe` cujo executável fica na pasta do Ollama detectado (a pasta vai pela variável de ambiente `OLLAMA_DIR` do processo, nunca dentro do comando; sem pasta conhecida, o passo não existe); em macOS e Linux, `pkill -x ollama` |
 
 ## Ollama: Docker ou local
 
@@ -188,15 +188,40 @@ passo só roda se ainda for necessário, decidido na hora); `ollama-stop`
 para os dois modos e não apaga nada (o container, o volume dos modelos e a
 instalação local ficam). `ollama-start` e `ollama-pull`, que já existiam,
 agora seguem o modo detectado. O modo escolhido por último fica guardado nas
-configurações do painel, e "Iniciar" sobe esse modo (se ele estiver
-disponível na máquina). O renderer pede só o tipo de tarefa (mais o modelo,
+configurações do painel. O renderer pede só o tipo de tarefa (mais o modelo,
 validado por `MODEL_PATTERN`); nenhum comando ou argumento livre.
+
+**O que o "Iniciar" liga.** Uma função só (`electron/ollama/choose-start.ts`)
+decide, e tanto o texto do botão ("Iniciar container" ou "Iniciar o Ollama
+local") quanto a tarefa `ollama-start` usam a mesma resposta. Ordem: o modo
+escolhido por último, se existir na máquina (container criado ou Ollama
+local instalado); depois o recomendado, se existir; depois o container, se
+existir; depois o Ollama local, se instalado. O card também não sugere
+trocar para o modo recomendado quando o modo atual é o que a pessoa escolheu.
+
+**Encerrar o Ollama local nem sempre é definitivo.** No Windows, o app de
+bandeja do Ollama se registra para abrir no login: depois de trocar para o
+Docker, ele pode voltar a subir no próximo login e disputar a porta com o
+container (o card mostra o conflito). Para evitar, desligue o Ollama em
+Configurações > Aplicativos > Inicialização. Em macOS e Linux, um
+gerenciador de serviços (launchd, o serviço `ollama` do systemd) pode
+reiniciar um servidor que o `pkill` encerrou; nesse caso, pare o serviço
+por ele. Durante uma troca (`ollama-use-native` ou `ollama-use-docker` na
+fila ou rodando), todas as ações do card do Ollama ficam desabilitadas.
 
 **Benchmark.** "Medir velocidade" não é tarefa da fila: manda 64 textos para
 `/api/embed`, consulta `/api/ps` e mostra chunks/s e o processador (`gpu`
 quando o modelo está na VRAM, `cpu` quando não, `unknown` quando não deu para
 saber). Só roda quando a pessoa pede, e o painel guarda o último resultado
-em memória para mostrá-lo no card.
+em memória, com o modo em que foi medido, para mostrá-lo no card. Se o modo
+muda, ou quando uma troca, parada ou início do Ollama termina, o resultado é
+esquecido: a velocidade do Docker não diz nada sobre o Ollama local.
+
+O Ollama tira o modelo da VRAM sozinho depois de alguns minutos sem uso
+(5 minutos por padrão, ajustável por `OLLAMA_KEEP_ALIVE`). Por isso a GPU
+não fica ocupada com o painel parado. O benchmark manda um texto de
+aquecimento antes de medir, então o tempo de carregar o modelo de volta não
+entra na velocidade.
 
 **Instalação automática.** Só existe no Windows: `ollama-use-native` roda
 `winget install -e --id Ollama.Ollama --silent`, por usuário, sem

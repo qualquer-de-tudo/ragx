@@ -24,11 +24,12 @@ O RAGX precisa de um Ollama para gerar embeddings, e hoje isso pressupõe um con
 ## Entregáveis
 
 - [x] Detecção: Docker instalado e rodando; fabricante da GPU (NVIDIA, AMD, Intel, nenhuma); Ollama nativo no PATH ou respondendo na 11434; quem está ocupando a porta 11434
-- [x] Recomendação automática: NVIDIA com Docker, container com `--gpus all`; AMD, Intel, sem Docker, ou macOS, instalação nativa; a pessoa sempre pode escolher outro
+- [x] Recomendação automática: NVIDIA com Docker instalado, container com `--gpus all`; Intel, sem GPU ou GPU desconhecida, container quando o Docker está instalado; AMD, macOS ou sem Docker, instalação nativa; a pessoa sempre pode escolher outro
 - [x] Tarefas na fila para cada passo: instalar o Ollama nativo (winget no Windows), criar/iniciar/parar o container, baixar o modelo, liberar a porta 11434 quando os dois modos existem
 - [x] Verificação de que a GPU está em uso (`ollama ps`, coluna do processador) e velocidade medida em chunks/s mostrada no card
 - [x] Card de Ollama mostra o modo (Docker ou local), o processador (GPU ou CPU) e a velocidade; "Conectado" passa a significar API respondendo e modelo baixado, não "container existe"
-- [x] Controles de iniciar e parar (container: `docker start/stop`; nativo: iniciar o app e encerrar o processo) e explicação de que o modelo sai da VRAM sozinho depois de ociosidade
+- [x] Controles de iniciar e parar (container: `docker start/stop`; nativo: iniciar o app e encerrar o processo)
+- [ ] Explicação de que o modelo sai da VRAM sozinho depois de ociosidade (por enquanto só no [README do painel](../../src/app/README.md); o card ainda não traz esse texto)
 - [ ] `ragx doctor` informa o modo e o processador (informa só o processador; o modo fica no card do painel)
 
 ## Fora de escopo
@@ -39,7 +40,7 @@ O RAGX precisa de um Ollama para gerar embeddings, e hoje isso pressupõe um con
 ## Critérios de aceite
 
 - [x] Em máquina com Docker e sem GPU compatível, a recomendação é o Ollama nativo e o fluxo termina com embeddings funcionando
-- [x] Nunca há dois Ollama disputando a 11434 depois do fluxo
+- [x] Nunca há dois Ollama disputando a 11434 depois do fluxo (coberto só por testes: aviso de conflito e troca que para o outro modo; sem verificação do fluxo real com os dois de pé)
 - [ ] **Com o Claude Code trabalhando**, o caminho do agente embeda certo: com o Ollama de pé, `refresh` (MCP) e os hooks de git geram os embeddings dos arquivos alterados; com o Ollama parado, a indexação continua (ADR-0004), `pending_embeddings` sobe, o card mostra "Embeddings faltando" e "Gerar embeddings" recupera
 - [x] Nenhum travessão em texto visível
 

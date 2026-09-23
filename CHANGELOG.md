@@ -113,10 +113,21 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   painel detecta Docker, GPU e Ollama nativo e recomenda um modo (no macOS e
   com GPU AMD, o local; com GPU NVIDIA e Docker, o container com acesso à
   GPU); a recomendação é sempre substituível, e o modo escolhido fica
-  guardado. Trocar de modo é uma tarefa da fila (para o outro modo, cria ou
-  inicia o escolhido e baixa os modelos que os projetos usam), assim como
-  "Parar" e "Iniciar", e "Iniciar" respeita o modo escolhido. Os dois modos
-  de pé ao mesmo tempo aparecem como conflito na porta 11434. No Windows, o
+  guardado. Trocar de modo é uma tarefa da fila (instala ou baixa a imagem
+  do escolhido antes de parar o outro, para uma falha no meio nunca deixar a
+  máquina sem Ollama; cria ou inicia o escolhido e baixa os modelos que os
+  projetos usam), assim como "Parar" e "Iniciar". Trocar para o Docker com o
+  Docker Desktop fechado é recusado com "Abra o Docker Desktop e aguarde ele
+  iniciar.". O texto do "Iniciar" diz o que a tarefa de fato liga
+  (container ou Ollama local), seguindo o modo escolhido, e o card não
+  insiste em sugerir o outro modo quando o atual foi o escolhido. Enquanto
+  uma troca está na fila ou rodando, as ações do card do Ollama ficam
+  desabilitadas. A velocidade medida vale só para o modo em que foi medida
+  e some quando o Ollama troca, para ou inicia. No Windows, parar o Ollama
+  local encerra só o Ollama da pasta detectada, nunca o `ollama.exe` que
+  outro app traz junto. Os dois modos de pé ao mesmo tempo aparecem como
+  conflito na porta 11434, com os modelos instalados; no Linux, o processo
+  do próprio container não conta mais como Ollama local. No Windows, o
   painel instala o Ollama local sozinho, por usuário e via winget; em
   macOS e Linux ele mostra o link de download. Numa RX 7700 XT, o Ollama
   local passou de 12,1 chunks/s (Docker, CPU) para 85,2 e 114,3 chunks/s
