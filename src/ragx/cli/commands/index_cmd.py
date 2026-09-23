@@ -122,7 +122,7 @@ def status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     if not st.get("initialized"):
         console.print("\n[yellow]Projeto não inicializado.[/] Rode: [bold]ragx init[/]\n")
         raise typer.Exit(1)
-    console.print(f"\n[bold]Índice[/] — {cfg.root}\n")
+    console.print(f"\n[bold]Índice[/] em {cfg.root}\n")
     console.print(f"  Documents        {st['documents']:>8,}")
     console.print(f"  Chunks           {st['chunks']:>8,}")
     console.print(f"  Embeddings       {st.get('embeddings', 0):>8,}")
@@ -132,6 +132,19 @@ def status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
         console.print(
             f"  [dim]modelo: {m['id']} ({m['dim']}d, versionado {m['versioned_dim']}d int8)[/]"
         )
+    fr = st.get("freshness") or {}
+    labels = {
+        "branch_changed": lambda r: f"índice da branch {r['indexed']}, você está em {r['current']}",
+        "commits_since_index": lambda r: f"{r['count'] if r['count'] is not None else 'alguns'} commit(s) depois da indexação",
+        "uncommitted_changes": lambda r: f"{r['count']} arquivo(s) alterado(s) depois da indexação",
+        "pending_embeddings": lambda r: f"{r['count']:,} chunk(s) sem embedding",
+    }
+    if fr.get("state") == "fresh":
+        console.print("\n  [green]Em dia[/] com o working tree")
+    elif fr.get("state") == "stale":
+        console.print("\n  [yellow]Defasado[/]")
+        for r in fr.get("reasons", []):
+            console.print(f"    {labels[r['kind']](r)}")
     if st["by_lang"]:
         console.print("\n  [bold]Por linguagem[/]")
         for lang, n in list(st["by_lang"].items())[:10]:

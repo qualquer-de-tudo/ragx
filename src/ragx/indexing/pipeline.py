@@ -19,7 +19,7 @@ from ragx.config import Config
 from ragx.core.errors import IndexBusyError, UsageError
 from ragx.core.ids import CHUNKER_VERSION, content_hash, document_id
 from ragx.core.models import Document, IndexStats, Verdict
-from ragx.indexing import lock, parsers, status_file
+from ragx.indexing import freshness, lock, parsers, status_file
 from ragx.indexing.chunkers import ChunkOptions, chunk_document
 from ragx.indexing.embed import embed_pending
 from ragx.security.gate import SecurityGate
@@ -381,6 +381,10 @@ def status(cfg: Config) -> dict[str, object]:
         model = conn.execute(
             "SELECT id, dim, versioned_dim FROM embedding_models ORDER BY created_at DESC LIMIT 1"
         ).fetchone()
+        last_done = conn.execute(
+            "SELECT * FROM index_runs WHERE finished_at IS NOT NULL ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        fresh = freshness.compute(cfg, conn, dict(last_done) if last_done else None)
         return {
             "initialized": True,
             "documents": docs.count(),
@@ -390,4 +394,6 @@ def status(cfg: Config) -> dict[str, object]:
             "embeddings": embeddings,
             "embedding_model": dict(model) if model else None,
             "last_run": runs.latest(),
+            "freshness": fresh,
+            "recent_runs": runs.recent(10),
         }
