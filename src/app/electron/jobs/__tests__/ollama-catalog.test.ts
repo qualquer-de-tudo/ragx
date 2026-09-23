@@ -186,6 +186,16 @@ describe('resolveJob - ollama-use-docker', () => {
     expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain('Stop-Process')
     expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain('ExecutablePath')
     expect(STOP_NATIVE_WINDOWS_SCRIPT).not.toMatch(/taskkill/i)
+    // Função com UM resultado é desembrulhada pelo PowerShell: sem `@(...)`,
+    // `.Count` vira $null no 5.1 e a checagem nunca dispara.
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain('if (@(Get-Alvos).Count -gt 0)')
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).not.toMatch(/(?<!@)\(Get-Alvos\)\.Count/)
+    // A bandeja (`ollama app.exe`) sai primeiro, antes de poder reabrir o servidor.
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain(
+      "Get-Alvos | Sort-Object { $_.Name -ne 'ollama app.exe' } | ForEach-Object { Stop-Process",
+    )
+    // Vai como um único argumento: nada de aspas duplas.
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).not.toContain('"')
     expect(steps.some((s) => (s.cmd as string) === 'taskkill')).toBe(false)
   })
 

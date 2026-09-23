@@ -175,9 +175,12 @@ export const STOP_NATIVE_WINDOWS_SCRIPT = [
   "$d = $d.TrimEnd('\\') + '\\'",
   "$names = @('ollama.exe', 'ollama app.exe')",
   'function Get-Alvos { @(Get-CimInstance Win32_Process | Where-Object { $names -contains $_.Name -and $_.ExecutablePath -and $_.ExecutablePath.StartsWith($d, [System.StringComparison]::OrdinalIgnoreCase) }) }',
-  'Get-Alvos | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
+  // A bandeja (`ollama app.exe`) primeiro: viva, ela reabriria o servidor.
+  "Get-Alvos | Sort-Object { $_.Name -ne 'ollama app.exe' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
   'Start-Sleep -Milliseconds 500',
-  "if ((Get-Alvos).Count -gt 0) { [Console]::Error.WriteLine('O Ollama local continua rodando.'); exit 1 }",
+  // `@(...)`: o PowerShell desembrulha o resultado único de uma função, e aí
+  // `.Count` vira $null no 5.1 (a checagem nunca dispararia).
+  "if (@(Get-Alvos).Count -gt 0) { [Console]::Error.WriteLine('O Ollama local continua rodando.'); exit 1 }",
   'exit 0',
 ].join('; ')
 
