@@ -49,6 +49,23 @@ def test_diff_classifica_criado_alterado_removido() -> None:
     assert d.total == 2
 
 
+def test_apply_changes_ocupado_vira_aviso(tmp_path, monkeypatch) -> None:
+    from ragx.config import load_config
+    from ragx.core.errors import IndexBusyError
+    from ragx.watch import monitor
+
+    (tmp_path / "ragx.toml").write_text('[project]\nname = "t"\nid = "t"\n', encoding="utf-8")
+
+    def busy(*a, **k):
+        raise IndexBusyError({"pid": 1, "source": "cli"})
+
+    monkeypatch.setattr("ragx.indexing.pipeline.index_project", busy)
+    st = monitor.WatchState()
+    monitor.apply_changes(load_config(tmp_path), st, consolidate=False)
+    assert st.last_error is None
+    assert st.warnings == ["índice ocupado; atualização agendada"]
+
+
 def test_arquivo_novo_entra_no_indice(cfg) -> None:
     (cfg.root / "beta.py").write_text("def beta():\n    return 2\n", encoding="utf-8")
 

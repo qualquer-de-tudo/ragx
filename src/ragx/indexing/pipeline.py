@@ -12,6 +12,7 @@ import time
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from ragx import gitinfo
 from ragx.base import source as base_source
@@ -61,11 +62,12 @@ def index_project(
     embed_only: bool = False,
     source: str = "cli",
     wait_s: float = 0.0,
+    on_event: Callable[[dict[str, Any]], None] | None = None,
 ) -> IndexReport:
     if source not in VALID_SOURCES:
         raise UsageError(f"origem desconhecida: {source}")
     if dry_run:
-        return _index_once(cfg, full, dry_run, progress, embed, embed_only, source)
+        return _index_once(cfg, full, dry_run, progress, embed, embed_only, source, on_event)
 
     state_dir = cfg.state_dir
     deadline = time.monotonic() + max(wait_s, 0.0)
@@ -85,7 +87,7 @@ def index_project(
     status_file.write_status(cfg)  # depois do while da trava: mostra "running"
     budget = MAX_PENDING_RERUNS
     try:
-        report = _index_once(cfg, full, dry_run, progress, embed, embed_only, source)
+        report = _index_once(cfg, full, dry_run, progress, embed, embed_only, source, on_event)
         budget = _drain_pending(cfg, state_dir, budget)
     finally:
         lock.release(state_dir)
@@ -119,7 +121,7 @@ def _drain_pending(cfg: Config, state_dir: Path, budget: int) -> int:
         if pending is None:
             break
         _index_once(cfg, False, False, None, True, False,
-                    pending if pending in VALID_SOURCES else "cli")
+                    pending if pending in VALID_SOURCES else "cli", None)
         budget -= 1
     return budget
 
@@ -132,6 +134,7 @@ def _index_once(
     embed: bool = True,
     embed_only: bool = False,
     source: str = "cli",
+    on_event: Callable[[dict[str, Any]], None] | None = None,
 ) -> IndexReport:
     gate = SecurityGate(
         cfg.root,
@@ -160,7 +163,7 @@ def _index_once(
 
         try:
             if embed_only:
-                er = embed_pending(cfg, conn)
+                er = embed_pending(cfg, conn, progress=_embed_cb(on_event))
                 report.embed_error = er.error
                 report.stats = _bump(report.stats, embedded=er.embedded)
                 conn.commit()
@@ -173,6 +176,8 @@ def _index_once(
             )
             for walked in _all_sources(cfg, gate, fingerprints):
                 report.stats = _bump(report.stats, files_seen=1)
+                if on_event:
+                    on_event({"phase": "scan", "done": report.stats.files_seen, "total": None})
                 if progress:
                     progress(report.stats.files_seen, walked.rel_path)
 
@@ -226,6 +231,8 @@ def _index_once(
 
                 produced = chunk_document(walked.rel_path, text, parsed, opts)
                 report.stats = _bump(report.stats, indexed=1, chunks=len(produced))
+                if on_event:
+                    on_event({"phase": "chunk", "done": report.stats.indexed, "total": None})
                 report.new_chunks += len(produced)
                 if prior:
                     report.modified_documents += 1
@@ -271,7 +278,7 @@ def _index_once(
             # Embedder fora do ar NÃO derruba a indexação: os chunks já estão
             # gravados e `ragx index --embed-only` completa depois (ADR-0004).
             if embed and not dry_run:
-                er = embed_pending(cfg, conn)
+                er = embed_pending(cfg, conn, progress=_embed_cb(on_event))
                 report.embed_error = er.error
                 report.stats = _bump(report.stats, embedded=er.embedded)
                 conn.commit()
@@ -341,6 +348,14 @@ def _all_sources(
             fingerprints=fingerprints,
             prefix=f"{base_source.PREFIX}/{name}/",
         )
+
+
+def _embed_cb(
+    on_event: Callable[[dict[str, Any]], None] | None,
+) -> Callable[[int, int], None] | None:
+    if on_event is None:
+        return None
+    return lambda done, total: on_event({"phase": "embed", "done": done, "total": total})
 
 
 def _bump(s: IndexStats, **kw: int) -> IndexStats:

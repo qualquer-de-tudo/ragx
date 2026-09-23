@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import sys
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -11,9 +13,29 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, TextColumn
 
 from ragx.config import load_config
-from ragx.core.errors import UsageError
+from ragx.core.errors import IndexBusyError, UsageError
 
 console = Console()
+
+
+def _emit(obj: dict[str, object]) -> None:
+    sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+
+
+class _Throttle:
+    """No máximo uma linha por segundo por fase; a primeira de cada fase sempre sai."""
+
+    def __init__(self) -> None:
+        self.last: dict[str, float] = {}
+
+    def __call__(self, ev: dict[str, object]) -> None:
+        now = time.monotonic()
+        phase = str(ev["phase"])
+        if phase in self.last and now - self.last[phase] < 1.0:
+            return
+        self.last[phase] = now
+        _emit(ev)
 
 
 def index(
@@ -26,6 +48,8 @@ def index(
     no_embed: Annotated[bool, typer.Option("--no-embed", help="Não gera vetores.")] = False,
     as_json: Annotated[bool, typer.Option("--json")] = False,
     quiet: Annotated[bool, typer.Option("--quiet")] = False,
+    source: Annotated[str, typer.Option("--source", help="Quem disparou (registrado no histórico).")] = "cli",
+    progress_json: Annotated[bool, typer.Option("--progress", help="Progresso em linhas JSON no stdout.")] = False,
 ) -> None:
     """Indexa o projeto (incremental por padrão)."""
     from ragx.indexing.pipeline import index_project
@@ -37,31 +61,56 @@ def index(
     if include:
         cfg.index.include = [*cfg.index.include, *include]
 
+    wait_s = 30.0 if source == "cli" else 0.0
     mode = "completa" if full else "incremental"
-    if not quiet and not as_json:
+    if not quiet and not as_json and not progress_json:
         console.print(f"\n[bold]Indexando[/] {cfg.root}  ([cyan]{mode}[/])\n")
 
-    if quiet or as_json:
-        report = index_project(
-            cfg, full=full, dry_run=dry_run, embed=not no_embed, embed_only=embed_only
-        )
-    else:
-        with Progress(
-            TextColumn("  [progress.description]{task.description}"),
-            BarColumn(bar_width=30),
-            TextColumn("{task.completed} arquivos"),
-            console=console,
-            transient=True,
-        ) as bar:
-            task = bar.add_task("varrendo", total=None)
-
-            def tick(n: int, rel: str) -> None:
-                bar.update(task, completed=n, description=rel[-46:])
-
+    try:
+        if progress_json:
             report = index_project(
-                cfg, full=full, dry_run=dry_run, progress=tick,
-                embed=not no_embed, embed_only=embed_only,
+                cfg, full=full, dry_run=dry_run, embed=not no_embed, embed_only=embed_only,
+                source=source, wait_s=wait_s, on_event=_Throttle(),
             )
+            s = report.stats
+            _emit({
+                "phase": "done", "indexed": s.indexed, "chunks": report.new_chunks,
+                "embedded": s.embedded, "blocked": s.blocked,
+                "embed_error": report.embed_error.splitlines()[0] if report.embed_error else None,
+                "duration_ms": s.duration_ms,
+            })
+            return
+        if quiet or as_json:
+            report = index_project(
+                cfg, full=full, dry_run=dry_run, embed=not no_embed, embed_only=embed_only,
+                source=source, wait_s=wait_s,
+            )
+        else:
+            with Progress(
+                TextColumn("  [progress.description]{task.description}"),
+                BarColumn(bar_width=30),
+                TextColumn("{task.completed} arquivos"),
+                console=console,
+                transient=True,
+            ) as bar:
+                task = bar.add_task("varrendo", total=None)
+
+                def tick(n: int, rel: str) -> None:
+                    bar.update(task, completed=n, description=rel[-46:])
+
+                report = index_project(
+                    cfg, full=full, dry_run=dry_run, progress=tick,
+                    embed=not no_embed, embed_only=embed_only,
+                    source=source, wait_s=wait_s,
+                )
+    except IndexBusyError as exc:
+        if source == "cli":
+            raise
+        if progress_json:
+            _emit({"phase": "busy", "pending": True, "holder": exc.holder})
+        elif not quiet:
+            console.print(f"[yellow]{exc}[/]")
+        return
 
     s = report.stats
     if as_json:

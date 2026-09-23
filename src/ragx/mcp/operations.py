@@ -80,7 +80,7 @@ class WriteAPI:
         def run() -> dict[str, Any]:
             from ragx.indexing.pipeline import index_project
 
-            r = index_project(self.cfg, full=full, embed=embed)
+            r = index_project(self.cfg, full=full, embed=embed, source="mcp:index")
             return {
                 "operation": "reindex",
                 "full": full,
@@ -182,7 +182,7 @@ class WriteAPI:
             from ragx.watch.monitor import WatchState, apply_changes
 
             st = WatchState()
-            apply_changes(self.cfg, st, consolidate=True)
+            apply_changes(self.cfg, st, consolidate=True, source="mcp:refresh")
             return {
                 "operation": "refresh",
                 "indexed": st.indexed,

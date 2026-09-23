@@ -104,7 +104,7 @@ def sync(
             )
 
     # [2] Aplica o delta reindexando (incremental por content_hash).
-    indexed = index_project(cfg, full=full)
+    indexed = index_project(cfg, full=full, source="sync", wait_s=30)
     report.indexed = indexed.stats.indexed
     report.unchanged = indexed.stats.unchanged
     report.removed = indexed.stats.removed

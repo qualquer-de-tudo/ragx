@@ -80,6 +80,15 @@ ragx index [PATH]
     --include GLOB          adiciona padrão de inclusão
     --exclude GLOB          adiciona padrão de exclusão
     --jobs N                paralelismo (padrão: cpu_count)
+    --source ORIGEM         quem disparou: cli, panel, watch, sync, mcp:refresh,
+                            mcp:index, hook:post-checkout, hook:post-commit, hook:post-merge
+    --progress              progresso em linhas JSON no stdout (fases scan, chunk,
+                            embed; linha final "done"; "busy" se outra indexação roda)
+
+Só uma indexação roda por projeto (`.ragx/index.lock`). Quem chega com a trava
+ocupada deixa o pedido agendado e quem está rodando repete a passada ao
+terminar (até 3 vezes). Na origem `cli` o comando espera até 30 s antes de
+desistir com exit 4; nas outras origens sai na hora com 0.
 
 ragx status
     --json

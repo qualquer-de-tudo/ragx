@@ -80,23 +80,29 @@ def snapshot(cfg: Config) -> dict[str, tuple[int, int]]:
     return scan_fingerprints(cfg.root, _gate(cfg), cfg.index.follow_symlinks)
 
 
-def apply_changes(cfg: Config, state: WatchState, consolidate: bool) -> None:
+def apply_changes(
+    cfg: Config, state: WatchState, consolidate: bool, source: str = "watch"
+) -> None:
     """Reindexa; consolida quando o ciclo pede.
 
     Nada aqui pode derrubar o laço: um watcher que morre no primeiro arquivo
     malformado é pior que nenhum watcher, porque o agente continua consultando
     um índice que parou no tempo sem ninguém perceber.
     """
+    from ragx.core.errors import IndexBusyError
     from ragx.indexing.pipeline import index_project
 
     try:
-        r = index_project(cfg)
+        r = index_project(cfg, source=source)
         state.indexed += r.stats.indexed
         state.blocked += r.stats.blocked
         state.applied += 1
         state.since_consolidation += 1
         if r.embed_error:
             state.warnings.append(f"embeddings: {r.embed_error.splitlines()[0]}")
+    except IndexBusyError:
+        state.warnings.append("índice ocupado; atualização agendada")
+        return
     except Exception as exc:
         state.last_error = f"index: {exc}"
         return
