@@ -47,6 +47,18 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   que chegam no meio ficam agendados. O estado de cada projeto fica em
   `.ragx/status.json`, e `ragx index --progress` emite progresso em JSON.
 
+  A trava (`.ragx/index.lock`) protege `ragx index` — `mcp:index`/`mcp:sync`
+  respondem `busy` estruturado nesse caso, em vez de um falso `internal` — mas
+  ainda **não** cobre `ragx sync`, `ragx graph rebuild` nem
+  `ragx dictionary generate`. Um pedido de `ragx sync` que chega ocupado
+  reagenda só a reindexação incremental; knowledge/, grafo, dicionário e
+  federação não são refeitos automaticamente quando ela libera — a CLI avisa
+  isso explicitamente em vez de prometer "o pedido ficou agendado" (mensagem
+  genérica, certa para `index`, enganosa aqui). Rodar `ragx sync`,
+  `ragx graph rebuild` ou `ragx dictionary generate` ao mesmo tempo que uma
+  indexação disparada por hook pode, raramente, gerar dois escritores;
+  cobertura completa da trava para os três fica para uma tarefa futura.
+
 ## [1.0.0-beta.3] — 2026-09-17
 
 ### Corrigido

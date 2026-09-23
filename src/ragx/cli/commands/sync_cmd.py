@@ -23,14 +23,39 @@ def sync(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Reconstrói o índice a partir de knowledge/ + working tree."""
+    from ragx.core.errors import IndexBusyError
     from ragx.sync.service import resolve as run_resolve
     from ragx.sync.service import sync as run_sync
 
     cfg = load_config()
-    if resolve or resolve_file:
-        r = run_resolve(cfg, resolve_file)
-    else:
-        r = run_sync(cfg, from_commit=from_commit, full=full)
+    try:
+        if resolve or resolve_file:
+            r = run_resolve(cfg, resolve_file)
+        else:
+            r = run_sync(cfg, from_commit=from_commit, full=full)
+    except IndexBusyError as exc:
+        # A mensagem GENÉRICA de IndexBusyError ("este pedido ficou agendado")
+        # não vale pra `sync`: a trava (.ragx/index.lock) só cobre
+        # `index_project`, e o que reroda sozinho quando ela libera é SÓ a
+        # reindexação incremental — knowledge/, grafo, dicionário e federação
+        # não são reagendados. Sem esta correção quem lê "agendado" concluía
+        # que o sync inteiro ia terminar de rodar sozinho; não vai.
+        who = exc.holder.get("source", "outra origem")
+        pid = exc.holder.get("pid", "?")
+        msg = (
+            f"outra indexação está rodando (origem {who}, pid {pid}). "
+            "Só a reindexação deste `sync` fica agendada e roda quando ela "
+            "terminar — knowledge/, grafo, dicionário e federação NÃO são "
+            "refeitos automaticamente; rode `ragx sync` de novo depois."
+        )
+        if as_json:
+            console.print_json(json.dumps(
+                {"ok": False, "error": {"code": "busy", "message": msg}},
+                ensure_ascii=False,
+            ))
+        elif not quiet:
+            Console(stderr=True).print(f"[yellow]{msg}[/]")
+        raise typer.Exit(code=exc.exit_code) from exc
 
     if as_json:
         console.print_json(json.dumps({
