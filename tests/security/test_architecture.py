@@ -108,9 +108,12 @@ def test_apenas_modulos_autorizados_leem_o_filesystem() -> None:
                       "ragx.context", "ragx.graph", "ragx.sizing", "ragx.indexing",
                       "ragx.federation", "ragx.sync", "ragx.tokens", "ragx.search",
                       "ragx.agents", "ragx.base", "ragx.tasks", "ragx.githooks")
-            # `ragx.githooks` lê e escreve os SCRIPTS de hook em `.git/hooks/`
-            # (ou `core.hooksPath`), máquina do próprio git, nunca o
-            # código-fonte do projeto-alvo.
+            # `ragx.githooks` só lê e escreve os arquivos de hook dentro de
+            # `gitinfo.hooks_dir(root)` (`.git/hooks/` ou o que `core.hooksPath`
+            # apontar) -- nunca um caminho arbitrário do projeto. Mesmo esses
+            # arquivos, o conteúdo lido só é reescrito no lugar ou reduzido a
+            # um booleano (`installed()`); nunca chega ao índice, ao MCP, a
+            # log nem a stdout.
         ):
             continue
         if _called_names(path) & _READ_CALLS:

@@ -20,7 +20,19 @@ from ragx.core.errors import UsageError
 
 EVENTS = ("post-checkout", "post-commit", "post-merge")
 _SHEBANG = "#!/bin/sh\n"
-_FORBIDDEN = ('"', "`", "$", "\n", "\r")
+# `\` entra na lista porque, dentro de `--root "<valor>"` (aspas duplas), uma
+# barra invertida no fim do valor escapa a aspa de fechamento e devolve o
+# resto do arquivo de hook a um shell sem citação nenhuma. Já foi explorado de
+# verdade: raiz terminada em `\` seguida de outro bloco com `;comando;` no
+# valor executava o comando injetado.
+_FORBIDDEN = ('"', "`", "$", "\\", "\n", "\r")
+
+_CARACTERE_PERIGOSO = '(" ` $ \\ ou quebra de linha)'
+
+
+def _recusar_se_perigoso(valor: str, mensagem: str) -> None:
+    if any(c in valor for c in _FORBIDDEN):
+        raise UsageError(mensagem)
 
 
 def _key(root: Path) -> str:
@@ -34,9 +46,18 @@ def _markers(root: Path) -> tuple[str, str]:
 
 def command_prefix() -> str:
     exe = shutil.which("ragx")
+    candidate = Path(exe).as_posix() if exe else Path(sys.executable).as_posix()
+    # Defesa em profundidade: `shutil.which`/`sys.executable` normalmente não
+    # devolvem caminho perigoso, mas se devolvessem, o hook ficaria tão quebrado
+    # quanto uma raiz de projeto perigosa (mesmo mecanismo de citação).
+    _recusar_se_perigoso(
+        candidate,
+        "o caminho do executável do ragx tem caractere que o shell do hook "
+        f"interpretaria {_CARACTERE_PERIGOSO}; reinstale o ragx em outro caminho",
+    )
     if exe:
-        return f'"{Path(exe).as_posix()}"'
-    return f'"{Path(sys.executable).as_posix()}" -m ragx.cli.main'
+        return f'"{candidate}"'
+    return f'"{candidate}" -m ragx.cli.main'
 
 
 def _block(root: Path, event: str, prefix: str) -> str:
@@ -48,6 +69,23 @@ def _block(root: Path, event: str, prefix: str) -> str:
         "fi\n"
         f"{end}\n"
     )
+
+
+def _insert_block(body: str, root: Path, event: str, prefix: str) -> str:
+    """Insere o bloco logo após a primeira linha (shebang), nunca no fim.
+
+    Hook real de outra ferramenta costuma terminar com `exec` ou `exit` antes
+    do fim do arquivo (pre-commit-framework, husky v9): um bloco anexado ao
+    final nunca rodaria, mas `state()` continuaria dizendo `installed: true`.
+    O bloco do RAGX é curto, autocontido e termina em `|| true`, então é
+    seguro rodar primeiro.
+    """
+    block = _block(root, event, prefix)
+    lines = body.splitlines(keepends=True)
+    if not lines:
+        return block
+    head = lines[0] if lines[0].endswith("\n") else lines[0] + "\n"
+    return head + block + "".join(lines[1:])
 
 
 def _strip(text: str, root: Path) -> str:
@@ -76,22 +114,30 @@ def _dir_or_error(root: Path) -> Path:
 
 def install(root: Path, prefix: str | None = None) -> list[Path]:
     key = _key(root)
-    if any(c in key for c in _FORBIDDEN):
-        raise UsageError(
-            "o caminho do projeto tem caractere que o shell do hook interpretaria "
-            '(" ` $ ou quebra de linha); mova o projeto para instalar hooks'
-        )
+    _recusar_se_perigoso(
+        key,
+        "o caminho do projeto tem caractere que o shell do hook interpretaria "
+        f"{_CARACTERE_PERIGOSO}; mova o projeto para instalar hooks",
+    )
     d = _dir_or_error(root)
     d.mkdir(parents=True, exist_ok=True)
     prefix = prefix or command_prefix()
     written: list[Path] = []
     for event in EVENTS:
         path = d / event
-        current = path.read_text(encoding="utf-8") if path.exists() else _SHEBANG
+        if path.exists():
+            try:
+                current = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                raise UsageError(
+                    f"não foi possível ler o hook existente {path}: {exc}"
+                ) from exc
+        else:
+            current = _SHEBANG
         body = _strip(current, root)
-        if not body.endswith("\n"):
-            body += "\n"
-        path.write_text(body + _block(root, event, prefix), encoding="utf-8", newline="\n")
+        path.write_text(
+            _insert_block(body, root, event, prefix), encoding="utf-8", newline="\n"
+        )
         if os.name != "nt":
             path.chmod(0o755)
         written.append(path)
@@ -125,8 +171,13 @@ def state(root: Path) -> dict[str, Any]:
     events: dict[str, bool] = {}
     for event in EVENTS:
         path = d / event if d else None
+        # Comparação por LINHA inteira, não substring: o marcador de uma raiz
+        # que é prefixo de outra (`.../api` vs `.../api-gateway`) senão bate
+        # por engano dentro da linha da raiz mais longa.
         events[event] = bool(
-            path and path.exists() and start in path.read_text(encoding="utf-8")
+            path
+            and path.exists()
+            and start in path.read_text(encoding="utf-8").splitlines()
         )
     return {
         "hooks_dir": d.as_posix() if d else None,

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -85,7 +87,7 @@ def test_raiz_com_espaco_fica_entre_aspas(tmp_path: Path) -> None:
     assert f'--root "{root.resolve().as_posix()}"' in body
 
 
-@pytest.mark.parametrize("bad", ['a"b', "a$b", "a`b"])
+@pytest.mark.parametrize("bad", ['a"b', "a$b", "a`b", "a\\b"])
 def test_raiz_com_caractere_de_shell_e_recusada(tmp_path: Path, bad: str) -> None:
     root = tmp_path / bad
     try:
@@ -95,6 +97,81 @@ def test_raiz_com_caractere_de_shell_e_recusada(tmp_path: Path, bad: str) -> Non
     _repo(root)
     with pytest.raises(UsageError):
         githooks.install(root, PREFIX)
+
+
+def test_bloco_fica_antes_de_exec_de_outra_ferramenta(tmp_path: Path) -> None:
+    """pre-commit-framework e husky v9 terminam o hook em `exec`/`exit`; um
+    bloco anexado DEPOIS disso nunca rodaria. O bloco do RAGX precisa vir
+    antes, logo após o shebang.
+    """
+    root = _repo(tmp_path)
+    hook = _hook(root, "post-commit")
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text("#!/bin/sh\nexec /bin/true\n", encoding="utf-8")
+    githooks.install(root, PREFIX)
+    body = hook.read_text(encoding="utf-8")
+    assert body.index("ragx-hook-start") < body.index("exec /bin/true")
+
+
+def test_state_nao_confunde_raiz_que_e_prefixo_de_outra(tmp_path: Path) -> None:
+    """`# ragx-hook-start <repo>/api` é substring de
+    `# ragx-hook-start <repo>/api-gateway`: `state()` não pode achar que
+    `api` está instalado só porque `api-gateway` está.
+    """
+    root = _repo(tmp_path)
+    gateway = root / "api-gateway"
+    gateway.mkdir()
+    api = root / "api"
+    api.mkdir()
+    githooks.install(gateway, PREFIX)
+    assert githooks.installed(gateway) is True
+    assert githooks.installed(api) is False
+    assert githooks.state(api)["installed"] is False
+
+
+def test_hook_gerado_roda_com_seguranca_no_sh_de_verdade(tmp_path: Path) -> None:
+    """Executa o hook gerado por `install()` com um `sh` de verdade (não
+    mock): prova que `--root "<valor>"` chega ao prefixo como UM único
+    argumento (a citação não quebra) e que `RAGX_SKIP_HOOK=1` impede a
+    chamada — sem isso, a raiz terminada em barra invertida escapava a aspa
+    de fechamento e o resto do hook virava shell livre para o que viesse a
+    seguir no arquivo (já explorado de verdade antes desta correção).
+    """
+    if shutil.which("sh") is None:
+        pytest.skip("sh indisponível")
+    root = _repo(tmp_path)
+    log = tmp_path / "log.txt"
+    # "prefixo" de teste: script sh que só grava os argumentos recebidos, um
+    # por linha, no arquivo de log. Fica no lugar do binário `ragx` real.
+    logger = tmp_path / "logger.sh"
+    logger.write_text(
+        "#!/bin/sh\n" f'printf \'%s\\n\' "$@" >> "{log.as_posix()}"\n',
+        encoding="utf-8",
+    )
+    prefix = f'"{logger.as_posix()}"'
+    written = githooks.install(root, prefix)
+    hook = next(p for p in written if p.name == "post-commit")
+
+    result = subprocess.run(
+        ["sh", str(hook)], cwd=root, capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    linhas = log.read_text(encoding="utf-8").splitlines()
+    # a raiz chegou como UM token, idêntico ao valor real -- se a citação
+    # tivesse quebrado, a lista de argumentos teria token a mais/a menos.
+    assert root.resolve().as_posix() in linhas
+    assert linhas[linhas.index("--root") + 1] == root.resolve().as_posix()
+
+    log.write_text("", encoding="utf-8")
+    result2 = subprocess.run(
+        ["sh", str(hook)],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "RAGX_SKIP_HOOK": "1"},
+    )
+    assert result2.returncode == 0, result2.stderr
+    assert log.read_text(encoding="utf-8") == ""
 
 
 def test_fora_de_repo_e_erro_de_uso(tmp_path: Path) -> None:
