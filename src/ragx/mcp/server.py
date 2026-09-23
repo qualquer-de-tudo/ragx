@@ -14,12 +14,13 @@ from __future__ import annotations
 
 import time
 from collections import deque
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import ValidationError
 
 from ragx.config import Config, load_config
-from ragx.diagnostics import log_exception
+from ragx.diagnostics import log_exception, log_mcp_call
 from ragx.dictionary import builder as dictionary_builder
 from ragx.mcp.operations import WriteAPI
 from ragx.mcp.orchestration import OrchestrationAPI
@@ -56,8 +57,11 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
     sem causa e sem nada acionável. O detalhe vai para o log; o agente recebe
     o suficiente para decidir o que fazer.
     """
+    inicio = time.monotonic()
     try:
-        return fn()
+        resultado = fn()
+        _log_call(cfg, tool, inicio, resultado)
+        return resultado
     except ValidationError as exc:
         # Argumento fora do contrato é erro de QUEM CHAMOU, não falha interna.
         # Tratá-lo como `internal` mandava o agente (e a extensão do VS Code)
@@ -84,6 +88,27 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
             f"{tool} falhou: {type(exc).__name__}. "
             "Detalhe em .ragx/logs/errors.log",
         )
+
+
+def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
+    """Telemetria de uso — uma linha por chamada, nunca a query/argumentos.
+
+    O agente decide sozinho quando reindexar; isto é o que deixa visível,
+    depois, o que ele de fato chamou e quanto cada chamada custou.
+    """
+    ms = round((time.monotonic() - started_at) * 1000, 1)
+    entry: dict[str, Any] = {
+        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "tool": tool,
+        "ms": ms,
+        "project": cfg.project.name,
+    }
+    if tool == "build_context" and isinstance(result, dict) and result.get("ok"):
+        tokens = (result.get("data") or {}).get("estimated_tokens")
+        if isinstance(tokens, int):
+            entry["tokens_delivered"] = tokens
+
+    log_mcp_call(cfg.state_dir, entry)
 
 
 _ORDER_HINT = (

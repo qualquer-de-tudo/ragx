@@ -11,8 +11,10 @@ erro e uma mensagem genérica.
 
 from __future__ import annotations
 
+import json
 import traceback
 from pathlib import Path
+from typing import Any
 
 from ragx.storage.db import utcnow
 
@@ -31,6 +33,18 @@ def log_exception(state_dir: Path, scope: str, exc: BaseException) -> None:
             fh.write(f"--- {utcnow()} {scope}: {type(exc).__name__}\n")
             fh.write("".join(traceback.format_exception(exc)))
             fh.write("\n")
+    except Exception:
+        pass
+
+
+def log_mcp_call(state_dir: Path, entry: dict[str, Any]) -> None:
+    """Grava telemetria de chamada MCP. Falha de log nunca vira falha adicional."""
+    try:
+        folder = Path(state_dir) / "logs"
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / "mcp.jsonl"
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass
 
