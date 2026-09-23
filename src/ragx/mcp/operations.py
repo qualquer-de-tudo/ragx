@@ -27,6 +27,7 @@ import time
 from typing import Any
 
 from ragx.config import Config
+from ragx.core.errors import IndexBusyError
 from ragx.mcp.tools import err, ok
 
 # Reindexação concorrente não corrompe (SQLite com WAL resolve), mas desperdiça:
@@ -40,6 +41,24 @@ _BUSY_MSG = (
 
 class WriteDisabledError(Exception):
     pass
+
+
+def _busy_from_lock(exc: IndexBusyError) -> dict[str, Any]:
+    """`index_project` tem a PRÓPRIA trava entre processos (`.ragx/index.lock`),
+    diferente do `_LOCK` deste módulo (entre chamadas MCP no mesmo processo).
+    Sem isto, um hook rodando a indexação ao mesmo tempo que o agente pede
+    `reindex`/`sync` fazia `IndexBusyError` atravessar sem ser pega e cair no
+    `except Exception` genérico do `_guarded` de server.py — que responde
+    `internal`, mandando o agente olhar um log de erro para uma corrida
+    ocupada, não quebrada."""
+    who = exc.holder.get("source", "outra origem")
+    pid = exc.holder.get("pid", "?")
+    return err(
+        "busy",
+        f"outra indexação já está rodando (origem {who}, pid {pid}). "
+        "Este pedido roda quando ela terminar, ou já está agendado — repita "
+        "mais tarde ou use get_status para acompanhar.",
+    )
 
 
 def _exclusive(fn: Any, timeout_s: float) -> dict[str, Any]:
@@ -99,7 +118,10 @@ class WriteAPI:
                 ),
             }
 
-        return _exclusive(run, self.cfg.mcp.write_timeout_s)
+        try:
+            return _exclusive(run, self.cfg.mcp.write_timeout_s)
+        except IndexBusyError as exc:
+            return _busy_from_lock(exc)
 
     def sync(self, full: bool = False, write_knowledge: bool = True) -> dict[str, Any]:
         """Reidrata, reindexa, regrava `knowledge/`, grafo, dicionário e federação."""
@@ -128,7 +150,10 @@ class WriteAPI:
                 "warnings": r.warnings[:10],
             }
 
-        return _exclusive(run, self.cfg.mcp.write_timeout_s)
+        try:
+            return _exclusive(run, self.cfg.mcp.write_timeout_s)
+        except IndexBusyError as exc:
+            return _busy_from_lock(exc)
 
     def rebuild_graph(self) -> dict[str, Any]:
         blocked = self._check()

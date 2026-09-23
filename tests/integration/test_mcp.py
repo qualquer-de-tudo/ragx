@@ -319,6 +319,53 @@ def test_escrita_habilitada_reindexa_de_verdade(api: KnowledgeAPI) -> None:
     assert "blocked_paths" not in d
 
 
+def test_reindex_com_indice_ocupado_devolve_busy_nao_internal(
+    api: KnowledgeAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regressão: `index_project` tem a PRÓPRIA trava entre processos
+    (`.ragx/index.lock`, diferente do lock deste módulo). Sem captura
+    específica, `IndexBusyError` atravessava `reindex()` sem ser pega e caía
+    no `except Exception` genérico do `_guarded` de server.py — que responde
+    `internal`, mandando o agente olhar um log de erro para uma corrida que
+    só está ocupada, não quebrada."""
+    import ragx.indexing.pipeline as pipeline_mod
+    from ragx.core.errors import IndexBusyError
+
+    def _boom(*a: object, **kw: object) -> None:
+        raise IndexBusyError({"source": "hook:post-checkout", "pid": 4242})
+
+    monkeypatch.setattr(pipeline_mod, "index_project", _boom)
+    ops = WriteAPI(api.cfg, enabled=True)
+    out = ops.reindex()
+    assert out["ok"] is False
+    assert out["error"]["code"] == "busy"
+    assert "4242" in out["error"]["message"]
+
+
+def test_sync_com_indice_ocupado_devolve_busy_nao_internal(
+    api: KnowledgeAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ragx.sync.service as sync_mod
+    from ragx.core.errors import IndexBusyError
+
+    def _boom(*a: object, **kw: object) -> None:
+        raise IndexBusyError({"source": "cli", "pid": 777})
+
+    monkeypatch.setattr(sync_mod, "sync", _boom)
+    ops = WriteAPI(api.cfg, enabled=True)
+    out = ops.sync()
+    assert out["ok"] is False
+    assert out["error"]["code"] == "busy"
+    assert "777" in out["error"]["message"]
+
+    # a mesma exceção, sem a captura específica, cairia como "internal" no
+    # _guarded do servidor — a garantia real é que o agente nunca vê isso.
+    from ragx.mcp.server import _guarded
+
+    guarded_out = _guarded(lambda: ops.sync(), "sync", api.cfg)
+    assert guarded_out["error"]["code"] == "busy"
+
+
 def test_playbook_ensina_a_ordem_e_os_limites(api: KnowledgeAPI) -> None:
     texto = playbook(api.cfg, write_enabled=True)["playbook"]
     for marca in ("get_dictionary", "search_hybrid", "build_context", "refresh"):
