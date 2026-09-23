@@ -44,12 +44,36 @@ function lastFolderName(p: string): string {
   return parts.length > 0 ? parts[parts.length - 1] : p
 }
 
+/**
+ * `command` gravado em `mcpServers.ragx` de `~/.claude.json`:
+ * - absoluto: existe fisicamente no disco (`d.exists`)?
+ * - "nu" (sem diretório, ex.: o literal `ragx`, que é o que o instalador
+ *   grava quando confia no PATH) e o nome-base é `ragx`/`ragx.exe`: ainda
+ *   resolve pra algum lugar (`d.resolveRagx()`, mesma lógica usada pra
+ *   achar o executável fora do PATH do app)?
+ * - qualquer outro comando "nu" (não é o ragx): não dá pra verificar sem
+ *   caminho - assume que existe.
+ */
+function commandNoLongerExists(command: string | undefined, d: CheckDeps): boolean {
+  if (typeof command !== 'string' || command.length === 0) return false
+  if (path.isAbsolute(command)) return !d.exists(command)
+  const base = path.basename(command).toLowerCase()
+  if (base === 'ragx' || base === 'ragx.exe') return d.resolveRagx() === null
+  return false
+}
+
+/**
+ * Nunca lança: `snapshot` vem do processo principal, mas pode ter passado
+ * por serialização/deserialização de IPC ou vir de um mock malformado
+ * em teste - `projects` pode não ser um array, e cada entrada pode não
+ * ter `telemetry`. Qualquer forma inesperada vira "sem dado", não exceção.
+ */
 function maxLastCallAt(snapshot: Snapshot | null): string | null {
-  if (!snapshot) return null
+  if (!snapshot || !Array.isArray(snapshot.projects)) return null
   let best: string | null = null
   for (const proj of snapshot.projects) {
-    const at = proj.telemetry.lastCallAt
-    if (at === null) continue
+    const at = (proj as { telemetry?: { lastCallAt?: unknown } } | null | undefined)?.telemetry?.lastCallAt
+    if (typeof at !== 'string') continue
     if (best === null || Date.parse(at) > Date.parse(best)) best = at
   }
   return best
@@ -126,9 +150,17 @@ export async function checkRagx(d: CheckDeps): Promise<ConnectionCheck> {
 export async function checkClaude(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck> {
   const id = 'claude' as const
   const title = 'Claude Code'
-  const lastMcpCallAt = maxLastCallAt(snapshot)
+  // Valor seguro caso o próprio cálculo de `lastMcpCallAt` (que depende do
+  // formato do snapshot) surpreenda - nunca deixa o campo undefined no
+  // catch-all abaixo.
+  let lastMcpCallAt: string | null = null
 
   try {
+    // Computado dentro do try: um snapshot malformado (ex.: `projects` não
+    // é array) não pode derrubar a checagem inteira antes mesmo de ler o
+    // ~/.claude.json.
+    lastMcpCallAt = maxLastCallAt(snapshot)
+
     const claudeJsonPath = path.join(d.homeDir, '.claude.json')
     const raw = d.readFile(claudeJsonPath)
     if (raw === null) {
@@ -166,7 +198,8 @@ export async function checkClaude(d: CheckDeps, snapshot: Snapshot | null): Prom
     const userEntry = data?.mcpServers?.ragx
     if (userEntry) {
       const command = userEntry.command
-      if (typeof command === 'string' && path.isAbsolute(command) && !d.exists(command)) {
+      const commandGone = commandNoLongerExists(command, d)
+      if (commandGone) {
         return {
           id,
           title,
@@ -248,15 +281,25 @@ function extractInstalledNames(json: unknown): string[] {
   return names
 }
 
+/**
+ * Nunca lança: mesmo motivo de `maxLastCallAt` - `snapshot.projects` pode
+ * não ser array, e cada entrada pode não ter os campos esperados
+ * (`embeddingModel`/`embeddingProvider`/`name`). Entrada malformada é
+ * ignorada (não conta como "necessita modelo"), não derruba a checagem.
+ */
 function neededModelsFor(snapshot: Snapshot | null): { models: string[]; projectNames: string[] } {
-  if (!snapshot) return { models: [], projectNames: [] }
-  const relevant = snapshot.projects.filter(
-    (p) =>
-      p.embeddingModel !== null &&
-      (p.embeddingProvider === 'ollama' || (p.embeddingProvider === null && !p.embeddingModel.includes('/'))),
-  )
+  if (!snapshot || !Array.isArray(snapshot.projects)) return { models: [], projectNames: [] }
+  const relevant = snapshot.projects.filter((p): p is Snapshot['projects'][number] => {
+    if (!p || typeof p !== 'object') return false
+    const embeddingModel = p.embeddingModel
+    const embeddingProvider = p.embeddingProvider
+    return (
+      typeof embeddingModel === 'string' &&
+      (embeddingProvider === 'ollama' || (embeddingProvider === null && !embeddingModel.includes('/')))
+    )
+  })
   const models = Array.from(new Set(relevant.map((p) => p.embeddingModel as string)))
-  const projectNames = relevant.map((p) => p.name)
+  const projectNames = relevant.map((p) => (typeof p.name === 'string' ? p.name : 'projeto sem nome'))
   return { models, projectNames }
 }
 
@@ -269,11 +312,19 @@ function formatDependents(names: string[]): string {
 export async function checkOllama(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck> {
   const id = 'ollama' as const
   const title = 'Ollama (Docker)'
-  const { models: needed, projectNames } = neededModelsFor(snapshot)
-  const dependFact = { label: 'Projetos que dependem', value: formatDependents(projectNames) }
+  // Default seguro pro catch-all: se o próprio cálculo de dependências
+  // falhar de forma totalmente inesperada, o card de erro ainda tem um
+  // `dependFact` válido em vez de referenciar algo não inicializado.
+  let dependFact = { label: 'Projetos que dependem', value: formatDependents([]) }
   const semDadosFact = { label: 'Modelos instalados', value: 'sem dados' }
 
   try {
+    // Computado dentro do try: um snapshot malformado (ex.: `projects` com
+    // entradas sem os campos esperados) não pode derrubar a checagem
+    // inteira antes mesmo de perguntar pro Docker se o container existe.
+    const { models: needed, projectNames } = neededModelsFor(snapshot)
+    dependFact = { label: 'Projetos que dependem', value: formatDependents(projectNames) }
+
     const ps = await d.exec('docker', ['ps', '-a', '--filter', 'name=^ollama$', '--format', '{{.State}}'])
     if (ps.code !== 0) {
       return {
@@ -380,8 +431,37 @@ export async function checkOllama(d: CheckDeps, snapshot: Snapshot | null): Prom
 
 // ------------------------------------------------------------------------
 
+/**
+ * Cada `check*` já tem seu próprio try/catch cobrindo o corpo inteiro, mas
+ * `checkAll` não confia só nisso: se uma dependência injetada tiver um bug
+ * e lançar num lugar que escape desse try (ex.: um erro de programação
+ * fora do escopo hoje coberto), a promessa individual rejeita - sem este
+ * guard, `Promise.all` rejeitaria a chamada inteira e nenhum dos três
+ * cards apareceria no painel. Com o guard, uma checagem quebrada vira só
+ * o card dela em `error`, as outras duas continuam normais.
+ */
+function guardCheck(id: ConnectionCheck['id'], title: string, run: () => Promise<ConnectionCheck>): Promise<ConnectionCheck> {
+  return run().catch(
+    (err: unknown): ConnectionCheck => ({
+      id,
+      title,
+      state: 'error',
+      stateLabel: stateLabelFor('error'),
+      summary: `Falha inesperada ao checar ${title}: ${errMessage(err)}`,
+      facts: [],
+      actions: [],
+      help: null,
+      lastMcpCallAt: null,
+    }),
+  )
+}
+
 export async function checkAll(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck[]> {
-  return Promise.all([checkRagx(d), checkClaude(d, snapshot), checkOllama(d, snapshot)])
+  return Promise.all([
+    guardCheck('ragx', 'RAGX CLI', () => checkRagx(d)),
+    guardCheck('claude', 'Claude Code', () => checkClaude(d, snapshot)),
+    guardCheck('ollama', 'Ollama (Docker)', () => checkOllama(d, snapshot)),
+  ])
 }
 
 export function defaultCheckDeps(): CheckDeps {

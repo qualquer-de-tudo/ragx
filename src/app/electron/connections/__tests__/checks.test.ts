@@ -178,6 +178,44 @@ describe('checkClaude', () => {
     expect(check.summary).toBe('O RAGX está registrado para todos os projetos.')
   })
 
+  it('mcpServers.ragx com command "nu" ragx que não resolve em lugar nenhum vira warn (mesmo texto de "comando gravado não existe mais")', async () => {
+    const raw = JSON.stringify({ mcpServers: { ragx: { command: 'ragx' } } })
+    const check = await checkClaude(baseDeps({ readFile: () => raw, resolveRagx: () => null }), null)
+    expect(check.state).toBe('warn')
+    expect(check.summary).toBe('O RAGX está registrado, mas o comando gravado não existe mais.')
+    expect(check.actions).toEqual([{ kind: 'mcp-register', label: 'Registrar de novo' }])
+    assertNoEmDash(check)
+  })
+
+  it('mcpServers.ragx com command "nu" ragx.exe (Windows, maiúsculas) que não resolve vira warn', async () => {
+    const raw = JSON.stringify({ mcpServers: { ragx: { command: 'RAGX.EXE' } } })
+    const check = await checkClaude(baseDeps({ readFile: () => raw, resolveRagx: () => null }), null)
+    expect(check.state).toBe('warn')
+    expect(check.summary).toBe('O RAGX está registrado, mas o comando gravado não existe mais.')
+  })
+
+  it('mcpServers.ragx com command "nu" ragx que resolve normalmente vira ok', async () => {
+    const raw = JSON.stringify({ mcpServers: { ragx: { command: 'ragx' } } })
+    const check = await checkClaude(baseDeps({ readFile: () => raw, resolveRagx: () => 'C:/tools/ragx.exe' }), null)
+    expect(check.state).toBe('ok')
+    expect(check.summary).toBe('O RAGX está registrado para todos os projetos.')
+  })
+
+  it('mcpServers.ragx com command "nu" que não é ragx fica ok mesmo se resolveRagx() falhar (não é o comando checado)', async () => {
+    const raw = JSON.stringify({ mcpServers: { ragx: { command: 'npx' } } })
+    const check = await checkClaude(
+      baseDeps({
+        readFile: () => raw,
+        resolveRagx: () => {
+          throw new Error('não deveria ser chamado pra comando que não é ragx')
+        },
+      }),
+      null,
+    )
+    expect(check.state).toBe('ok')
+    expect(check.summary).toBe('O RAGX está registrado para todos os projetos.')
+  })
+
   it('caso real desta máquina: sem mcpServers.ragx no topo, só em projects[...].mcpServers.ragx de 1 projeto', async () => {
     const raw = JSON.stringify({
       projects: {
@@ -249,6 +287,16 @@ describe('checkClaude', () => {
     )
     expect(check.state).toBe('error')
     expect(check.summary).toContain('disco falhou')
+  })
+
+  it('snapshot malformado (projects não é array) nunca rejeita: cálculo de lastMcpCallAt fica dentro do try', async () => {
+    const malformed = { projects: 'lixo', generatedAt: '2026-09-23T10:00:00Z' } as unknown as Snapshot
+    // Se `checkClaude` rejeitasse, este `await` lançaria e o teste falharia
+    // por exceção não tratada em vez de por asserção - é exatamente o que
+    // este teste garante que não acontece mais.
+    const check = await checkClaude(baseDeps(), malformed)
+    expect(check.state).toBe('error')
+    expect(check.lastMcpCallAt).toBeNull()
   })
 })
 
@@ -385,11 +433,47 @@ describe('checkOllama', () => {
     expect(check.state).toBe('error')
     expect(check.summary).toContain('rede caiu')
   })
+
+  it('snapshot malformado (entrada sem embeddingModel/embeddingProvider/name) nunca rejeita: cálculo de dependências fica dentro do try', async () => {
+    const malformed = { projects: [{}], generatedAt: '2026-09-23T10:00:00Z' } as unknown as Snapshot
+    // baseDeps() default (docker sem container, stdout vazio) já dá error
+    // por conta própria - o ponto do teste é que a chamada não rejeita por
+    // causa da entrada malformada em `projects`.
+    const check = await checkOllama(baseDeps(), malformed)
+    expect(check.state).toBe('error')
+    expect(check.lastMcpCallAt).toBeNull()
+  })
 })
 
 describe('checkAll', () => {
   it('roda as 3 checagens e devolve na ordem ragx, claude, ollama', async () => {
     const checks = await checkAll(baseDeps(), null)
+    expect(checks.map((c) => c.id)).toEqual(['ragx', 'claude', 'ollama'])
+  })
+
+  it('nunca rejeita mesmo se uma dependência lança de forma síncrona: as 3 checagens voltam', async () => {
+    const brokenDeps = baseDeps({
+      resolveRagx: () => {
+        throw new Error('boom síncrono')
+      },
+    })
+    const checks = await checkAll(brokenDeps, null)
+    expect(checks).toHaveLength(3)
+    expect(checks.map((c) => c.id)).toEqual(['ragx', 'claude', 'ollama'])
+    expect(checks[0].state).toBe('error')
+    expect(checks[0].summary).toContain('boom síncrono')
+    // As outras duas checagens não usam `resolveRagx` diretamente
+    // (`claude` só usa via `commandNoLongerExists` se houver um comando
+    // "nu" chamado ragx, e não há mcpServers.ragx aqui por causa do
+    // `readFile` default) e continuam respondendo normalmente.
+    expect(checks[1].id).toBe('claude')
+    expect(checks[2].id).toBe('ollama')
+  })
+
+  it('snapshot malformado não derruba checkAll inteiro: as 3 checagens voltam mesmo assim', async () => {
+    const malformed = { projects: 'lixo', generatedAt: '2026-09-23T10:00:00Z' } as unknown as Snapshot
+    const checks = await checkAll(baseDeps(), malformed)
+    expect(checks).toHaveLength(3)
     expect(checks.map((c) => c.id)).toEqual(['ragx', 'claude', 'ollama'])
   })
 })
