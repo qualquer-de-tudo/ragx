@@ -1,8 +1,16 @@
 import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { JobQueue, createLineBuffer, defaultSpawn, type SpawnFn, type QueueDeps } from '../queue'
-import type { ResolvedJob } from '../catalog'
-import type { JobView } from '../../../src/types/ragx-bridge'
+import {
+  JobQueue,
+  createLineBuffer,
+  defaultSpawn,
+  resolveSpawnCommand,
+  type SpawnFn,
+  type QueueDeps,
+} from '../queue'
+import { resolveJob, type ResolvedJob, type Step, type StepCondition } from '../catalog'
+import type { JobView, OllamaEnvironment } from '../../../src/types/ragx-bridge'
 
 function fakeSpawn() {
   const children: Array<{
@@ -13,8 +21,9 @@ function fakeSpawn() {
     err: (l: string) => void
     exit: (c: number | null, spawnError?: string) => void
     killed: boolean
+    opts?: { detached?: boolean }
   }> = []
-  const spawn: SpawnFn = (cmd, args, cwd) => {
+  const spawn: SpawnFn = (cmd, args, cwd, opts) => {
     let out: (l: string) => void = () => {}
     let err: (l: string) => void = () => {}
     let exit: (c: number | null, spawnError?: string) => void = () => {}
@@ -22,6 +31,7 @@ function fakeSpawn() {
       cmd,
       args,
       cwd,
+      opts,
       out: (l: string) => out(l),
       err: (l: string) => err(l),
       exit: (c: number | null, spawnError?: string) => exit(c, spawnError),
@@ -801,5 +811,568 @@ describe('defaultSpawn - ambiente, cwd e erros', () => {
     const { code, spawnError } = await run('ragx-comando-que-nao-existe-xyz', [], null)
     expect(code).toBeNull()
     expect(spawnError).toBe('Comando não encontrado: ragx-comando-que-nao-existe-xyz')
+  })
+})
+
+// -- Task 4: passos condicionais, destacados e de espera --------------------
+
+const P = { cwd: null, progress: false }
+const API_TIMEOUT_ERROR = 'O Ollama não respondeu em localhost:11434 a tempo.'
+
+function ollamaJob(steps: Step[], over: Partial<ResolvedJob> = {}): ResolvedJob {
+  return job({ kind: 'ollama-use-native', projectId: null, steps, ...over })
+}
+
+/** Condições simuladas: o que não estiver no mapa é falso. */
+function conditions(map: Partial<Record<StepCondition, boolean>>, log?: string[]) {
+  return vi.fn(async (c: StepCondition) => {
+    log?.push(`cond:${c}`)
+    return map[c] === true
+  })
+}
+
+describe('JobQueue - passo com when', () => {
+  it('condição falsa: pula o passo, registra a skipNote e segue para o próximo', async () => {
+    const { spawn, children } = fakeSpawn()
+    const stepCondition = conditions({})
+    const { queue } = makeQueue(spawn, { stepCondition })
+
+    const j = queue.enqueue(
+      ollamaJob([
+        { cmd: 'ollama', args: ['serve'], ...P, when: 'native-not-running', skipNote: 'O Ollama local já estava rodando.' },
+        { cmd: 'ollama', args: ['pull', 'm'], ...P },
+      ]),
+    )
+    expect(children).toHaveLength(0)
+    await flush()
+
+    expect(stepCondition).toHaveBeenCalledWith('native-not-running')
+    expect(children.map((c) => c.args)).toEqual([['pull', 'm']])
+    expect(findView(queue.list(), j.id).step).toBe(2)
+    children[0].exit(0)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('done')
+    expect(view.note).toBe('O Ollama local já estava rodando.')
+  })
+
+  it('condição falsa sem skipNote: pula sem nota', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { stepCondition: conditions({}) })
+
+    const j = queue.enqueue(ollamaJob([{ cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running' }]))
+    await flush()
+
+    expect(children).toHaveLength(0)
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('done')
+    expect(view.note).toBeNull()
+  })
+
+  it('condição verdadeira: roda o passo', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { stepCondition: conditions({ 'container-running': true }) })
+
+    const j = queue.enqueue(ollamaJob([{ cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running' }]))
+    await flush()
+
+    expect(children.map((c) => [c.cmd, ...c.args])).toEqual([['docker', 'stop', 'ollama']])
+    children[0].exit(0)
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('avalia a condição uma vez por passo condicional, logo antes do passo (nunca de antemão)', async () => {
+    const log: string[] = []
+    const { spawn: rawSpawn, children } = fakeSpawn()
+    const spawn: SpawnFn = (cmd, args, cwd, opts) => {
+      log.push(`spawn:${cmd} ${args.join(' ')}`)
+      return rawSpawn(cmd, args, cwd, opts)
+    }
+    const stepCondition = conditions({ 'container-running': true, 'native-running': true }, log)
+    const { queue } = makeQueue(spawn, { stepCondition })
+
+    queue.enqueue(
+      ollamaJob([
+        { cmd: 'ragx', args: ['a'], ...P },
+        { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running' },
+        { cmd: 'taskkill', args: ['/IM', 'ollama.exe'], ...P, when: 'native-running' },
+      ]),
+    )
+    // O primeiro passo não tem condição: nada foi avaliado ainda.
+    expect(log).toEqual(['spawn:ragx a'])
+    children[0].exit(0)
+    await flush()
+    children[1].exit(0)
+    await flush()
+
+    expect(log).toEqual([
+      'spawn:ragx a',
+      'cond:container-running',
+      'spawn:docker stop ollama',
+      'cond:native-running',
+      'spawn:taskkill /IM ollama.exe',
+    ])
+    expect(stepCondition).toHaveBeenCalledTimes(2)
+  })
+
+  it('sem deps.stepCondition o passo roda (compatibilidade), na hora', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    queue.enqueue(ollamaJob([{ cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running' }]))
+    expect(children).toHaveLength(1)
+  })
+
+  it('a skipNote se junta à nota que já existia, sem apagá-la', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { stepCondition: conditions({}) })
+
+    const j = queue.enqueue(
+      ollamaJob(
+        [
+          { cmd: 'ollama', args: ['pull', 'a'], ...P },
+          { cmd: 'ollama', args: ['serve'], ...P, when: 'native-not-running', skipNote: 'O Ollama local já estava rodando.' },
+        ],
+        { notes: ['Modelo ignorado por nome inválido: --help'] },
+      ),
+    )
+    children[0].exit(0)
+    await flush()
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('done')
+    expect(view.note).toBe('Modelo ignorado por nome inválido: --help. O Ollama local já estava rodando.')
+  })
+
+  it('falha ao avaliar a condição (lança ou rejeita): a tarefa falha com texto claro, sem travar', async () => {
+    for (const stepCondition of [
+      () => {
+        throw new Error('boom')
+      },
+      async () => {
+        throw new Error('boom')
+      },
+    ]) {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { spawn, children } = fakeSpawn()
+      const { queue } = makeQueue(spawn, { stepCondition })
+
+      const j = queue.enqueue(
+        ollamaJob([
+          { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running' },
+          { cmd: 'ollama', args: ['pull', 'm'], ...P },
+        ]),
+      )
+      await flush()
+
+      expect(children).toHaveLength(0)
+      const view = findView(queue.list(), j.id)
+      expect(view.state).toBe('failed')
+      expect(view.error).toBe('Não foi possível conferir o estado do Ollama antes do passo 1.')
+      expect(queue.hasActive()).toBe(false)
+      errorSpy.mockRestore()
+    }
+  })
+
+  it('cancelar durante a avaliação encerra na hora e o passo não roda', async () => {
+    const { spawn, children } = fakeSpawn()
+    let answer: (v: boolean) => void = () => {}
+    const { queue } = makeQueue(spawn, { stepCondition: () => new Promise<boolean>((r) => (answer = r)) })
+
+    const j = queue.enqueue(ollamaJob([{ cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running' }]))
+    expect(queue.cancel(j.id)).toBe(true)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+    answer(true)
+    await flush()
+
+    expect(children).toHaveLength(0)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+  })
+})
+
+describe('JobQueue - okExitCodes', () => {
+  const kill = (): Step => ({
+    cmd: 'taskkill',
+    args: ['/IM', 'ollama.exe', '/T', '/F'],
+    ...P,
+    okExitCodes: [128],
+  })
+
+  it('saída listada (128 = nada a encerrar) conta como sucesso e segue', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([kill(), { cmd: 'docker', args: ['start', 'ollama'], ...P }]))
+    children[0].exit(128)
+    expect(children).toHaveLength(2)
+    children[1].exit(0)
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('saída fora da lista falha', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([kill(), { cmd: 'docker', args: ['start', 'ollama'], ...P }]))
+    children[0].err('ERRO: acesso negado.')
+    children[0].exit(1)
+    expect(children).toHaveLength(1)
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('ERRO: acesso negado.')
+  })
+
+  it('saída 0 continua valendo com a lista, e lista vazia não aceita nada além de 0', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([kill(), { cmd: 'docker', args: ['stop', 'ollama'], ...P, okExitCodes: [] }]))
+    children[0].exit(0)
+    children[1].exit(1)
+    expect(findView(queue.list(), j.id).state).toBe('failed')
+  })
+})
+
+describe('JobQueue - passo destacado', () => {
+  const serve: Step = { cmd: 'ollama', args: ['serve'], ...P, detached: true }
+
+  it('spawna com detached, conclui quando o processo nasce e o passo seguinte roda', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([serve, { cmd: 'ollama', args: ['pull', 'm'], ...P }]))
+    expect(children[0].opts).toEqual({ detached: true })
+    children[0].exit(0) // o `spawn` confirmou que nasceu; o processo continua vivo
+    expect(children.map((c) => c.args)).toEqual([['serve'], ['pull', 'm']])
+    expect(children[1].opts).toBeUndefined()
+    children[1].exit(0)
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('cancelar depois não mata o processo destacado (só o passo em andamento)', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([serve, { cmd: 'ollama', args: ['pull', 'm'], ...P }]))
+    children[0].exit(0)
+    queue.cancel(j.id)
+
+    expect(children[0].killed).toBe(false)
+    expect(children[1].killed).toBe(true)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+  })
+
+  it('cancelar antes da confirmação encerra na hora, sem matar, e o passo seguinte não roda', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([serve, { cmd: 'ollama', args: ['pull', 'm'], ...P }]))
+    expect(queue.cancel(j.id)).toBe(true)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+    children[0].exit(0)
+
+    expect(children[0].killed).toBe(false)
+    expect(children).toHaveLength(1)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+  })
+
+  it('processo que nem nasce: falha com o texto do spawn', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([serve, { cmd: 'ollama', args: ['pull', 'm'], ...P }]))
+    children[0].exit(null, 'Comando não encontrado: ollama')
+
+    expect(children).toHaveLength(1)
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('Comando não encontrado: ollama')
+  })
+})
+
+describe('JobQueue - espera pela API do Ollama', () => {
+  const wait: Step = { cmd: 'ollama', args: [], ...P, waitForOllamaApi: { timeoutMs: 60000 } }
+  const pull: Step = { cmd: 'ollama', args: ['pull', 'm'], ...P }
+
+  it('respondeu: nenhum processo para a espera, e segue', async () => {
+    const { spawn, children } = fakeSpawn()
+    const waitForOllamaApi = vi.fn(async () => true)
+    const { queue } = makeQueue(spawn, { waitForOllamaApi })
+
+    const j = queue.enqueue(ollamaJob([wait, pull]))
+    expect(children).toHaveLength(0)
+    expect(waitForOllamaApi).toHaveBeenCalledWith(60000)
+    await flush()
+
+    expect(children.map((c) => c.args)).toEqual([['pull', 'm']])
+    children[0].exit(0)
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('não respondeu a tempo: falha com a mensagem', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { waitForOllamaApi: async () => false })
+
+    const j = queue.enqueue(ollamaJob([wait, pull]))
+    await flush()
+
+    expect(children).toHaveLength(0)
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe(API_TIMEOUT_ERROR)
+  })
+
+  it('a espera que lança ou rejeita conta como sem resposta', async () => {
+    for (const waitForOllamaApi of [
+      () => {
+        throw new Error('x')
+      },
+      async () => {
+        throw new Error('x')
+      },
+    ]) {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { spawn } = fakeSpawn()
+      const { queue } = makeQueue(spawn, { waitForOllamaApi })
+      const j = queue.enqueue(ollamaJob([wait, pull]))
+      await flush()
+      expect(findView(queue.list(), j.id).error).toBe(API_TIMEOUT_ERROR)
+      errorSpy.mockRestore()
+    }
+  })
+
+  it('sem a dependência: o passo é pulado, sem processo', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    queue.enqueue(ollamaJob([wait, pull]))
+    expect(children.map((c) => c.args)).toEqual([['pull', 'm']])
+  })
+
+  it('cancelar durante a espera encerra na hora, e o passo seguinte não roda', async () => {
+    const { spawn, children } = fakeSpawn()
+    let answer: (v: boolean) => void = () => {}
+    const { queue } = makeQueue(spawn, { waitForOllamaApi: () => new Promise<boolean>((r) => (answer = r)) })
+
+    const j = queue.enqueue(ollamaJob([wait, pull]))
+    expect(queue.cancel(j.id)).toBe(true)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+    answer(true)
+    await flush()
+
+    expect(children).toHaveLength(0)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+  })
+
+  it('cancelar libera a fila: a próxima tarefa começa sem esperar a espera terminar', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { waitForOllamaApi: () => new Promise<boolean>(() => {}) })
+
+    const j = queue.enqueue(ollamaJob([wait, pull]))
+    queue.enqueue(job({ projectId: 'p9' }))
+    queue.cancel(j.id)
+    expect(children).toHaveLength(1)
+    expect(children[0].cmd).toBe('ragx')
+  })
+})
+
+describe('JobQueue - robustez', () => {
+  it('spawn que lança na hora vira falha legível, sem exceção para quem enfileirou', () => {
+    const spawn: SpawnFn = () => {
+      throw new Error('EINVAL')
+    }
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(ollamaJob([{ cmd: 'winget', args: ['install'], ...P }]))
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('Não foi possível iniciar winget: EINVAL')
+  })
+
+  it('spawn que lança depois de uma condição não vira rejeição solta', async () => {
+    const spawn: SpawnFn = () => {
+      throw new Error('EINVAL')
+    }
+    const { queue } = makeQueue(spawn, { stepCondition: async () => true })
+
+    const j = queue.enqueue(ollamaJob([{ cmd: 'winget', args: ['install'], ...P, when: 'native-missing' }]))
+    await flush()
+    expect(findView(queue.list(), j.id).state).toBe('failed')
+  })
+
+  it('notas do catálogo (modelos inválidos ignorados) aparecem no job desde a fila', () => {
+    const { spawn } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    queue.enqueue(job({ projectId: 'p1' }))
+    const j = queue.enqueue(
+      ollamaJob([{ cmd: 'ollama', args: ['pull', 'ok'], ...P }], {
+        notes: ['Modelo ignorado por nome inválido: x; rm -rf /', 'Modelo ignorado por nome inválido: --help'],
+      }),
+    )
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('queued')
+    expect(view.note).toBe('Modelo ignorado por nome inválido: x; rm -rf /. Modelo ignorado por nome inválido: --help')
+  })
+})
+
+describe('JobQueue - ponta a ponta com o catálogo real', () => {
+  function dockerEnv(): OllamaEnvironment {
+    return {
+      platform: 'win32',
+      gpu: { vendor: 'none', name: null },
+      docker: { installed: true, running: true },
+      container: { exists: true, running: true },
+      native: { installed: false, path: null, running: false },
+      canInstallNative: true,
+      apiUp: true,
+      models: [],
+      mode: 'docker',
+      recommendation: { mode: 'native', reason: 'x' },
+    }
+  }
+  const catalogCtx = (models: string[]) => ({
+    projectById: () => undefined,
+    folderByToken: () => undefined,
+    ollamaEnv: dockerEnv,
+    requiredModels: () => models,
+  })
+
+  it('ollama-use-native com o Docker em uso: stop, winget, serve destacado, espera sem processo, pull', async () => {
+    const log: string[] = []
+    const { spawn: rawSpawn, children } = fakeSpawn()
+    const spawn: SpawnFn = (cmd, args, cwd, opts) => {
+      log.push(`spawn:${cmd}`)
+      return rawSpawn(cmd, args, cwd, opts)
+    }
+    const stepCondition = conditions({ 'container-running': true, 'native-missing': true, 'native-not-running': true }, log)
+    const waitForOllamaApi = vi.fn(async (ms: number) => {
+      log.push(`wait:${ms}`)
+      return true
+    })
+    const { queue } = makeQueue(spawn, { stepCondition, waitForOllamaApi })
+
+    const resolved = resolveJob({ kind: 'ollama-use-native' }, catalogCtx(['nomic-embed-text']))
+    const j = queue.enqueue(resolved)
+    for (let i = 0; i < 4; i++) {
+      await flush()
+      children[i].exit(0)
+    }
+    await flush()
+
+    expect(children.map((c) => ({ cmd: c.cmd, args: c.args, opts: c.opts }))).toEqual([
+      { cmd: 'docker', args: ['stop', 'ollama'], opts: undefined },
+      {
+        cmd: 'winget',
+        args: [
+          'install',
+          '-e',
+          '--id',
+          'Ollama.Ollama',
+          '--silent',
+          '--accept-package-agreements',
+          '--accept-source-agreements',
+        ],
+        opts: undefined,
+      },
+      { cmd: 'ollama', args: ['serve'], opts: { detached: true } },
+      { cmd: 'ollama', args: ['pull', 'nomic-embed-text'], opts: undefined },
+    ])
+    expect(log).toEqual([
+      'cond:container-running',
+      'spawn:docker',
+      'cond:native-missing',
+      'spawn:winget',
+      'cond:native-not-running',
+      'spawn:ollama',
+      'wait:60000',
+      'spawn:ollama',
+    ])
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('done')
+    expect(view.step).toBe(5)
+    expect(view.note).toBeNull()
+  })
+
+  it('ollama-stop com nada rodando: todos os passos pulados, done', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { stepCondition: conditions({}) })
+
+    const j = queue.enqueue(resolveJob({ kind: 'ollama-stop' }, catalogCtx([])))
+    await flush()
+
+    expect(children).toHaveLength(0)
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('ollama-stop: taskkill de algo que parou entre a checagem e o passo (128) não derruba a tarefa', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { stepCondition: conditions({ 'native-running': true }) })
+
+    const j = queue.enqueue(resolveJob({ kind: 'ollama-stop' }, catalogCtx([])))
+    await flush()
+    children[0].exit(128)
+    await flush()
+    children[1].exit(128)
+
+    expect(children.map((c) => c.cmd)).toEqual(['taskkill', 'taskkill'])
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+})
+
+describe('resolveSpawnCommand', () => {
+  const base = { ragx: () => 'C:/r/ragx.exe', ollama: () => 'C:/o/ollama.exe' }
+
+  it('ragx e ollama pelos resolvedores; ollama resolvido a cada chamada (PATH velho depois do winget)', () => {
+    let calls = 0
+    const ollama = () => (++calls === 1 ? 'ollama' : 'C:/o/ollama.exe')
+    const deps = { ...base, ollama, platform: 'win32' as const, env: {} }
+    expect(resolveSpawnCommand('ragx', deps)).toBe('C:/r/ragx.exe')
+    expect(resolveSpawnCommand('ollama', deps)).toBe('ollama')
+    expect(resolveSpawnCommand('ollama', deps)).toBe('C:/o/ollama.exe')
+  })
+
+  it('taskkill no Windows vem de %SystemRoot%\\System32', () => {
+    expect(resolveSpawnCommand('taskkill', { ...base, platform: 'win32', env: { SystemRoot: 'C:\\Windows' } })).toBe(
+      path.win32.join('C:\\Windows', 'System32', 'taskkill.exe'),
+    )
+  })
+
+  it('taskkill sem SystemRoot, ou fora do Windows, fica com o nome nu', () => {
+    expect(resolveSpawnCommand('taskkill', { ...base, platform: 'win32', env: {} })).toBe('taskkill')
+    expect(resolveSpawnCommand('taskkill', { ...base, platform: 'linux', env: { SystemRoot: 'C:\\Windows' } })).toBe(
+      'taskkill',
+    )
+  })
+
+  it('winget, docker e pkill ficam como estão', () => {
+    for (const cmd of ['winget', 'docker', 'pkill']) {
+      expect(resolveSpawnCommand(cmd, { ...base, platform: 'win32', env: { SystemRoot: 'C:\\Windows' } })).toBe(cmd)
+    }
+  })
+})
+
+describe('defaultSpawn - destacado', () => {
+  it('avisa onExit(0) assim que o processo nasce, sem esperar ele terminar', async () => {
+    // O filho vive 4 s e sai sozinho; o aviso precisa chegar bem antes disso.
+    const started = Date.now()
+    const child = defaultSpawn()(process.execPath, ['-e', 'setTimeout(() => {}, 4000)'], null, { detached: true })
+
+    const result = await new Promise<{ code: number | null; spawnError?: string }>((resolve) => {
+      child.onExit((code, spawnError) => resolve({ code, spawnError }))
+    })
+
+    expect(result.code).toBe(0)
+    expect(result.spawnError).toBeUndefined()
+    expect(Date.now() - started).toBeLessThan(3000)
+  })
+
+  it('comando inexistente destacado: onExit(null, "Comando não encontrado: ...")', async () => {
+    const child = defaultSpawn()('ragx-comando-que-nao-existe-xyz', [], null, { detached: true })
+    const result = await new Promise<{ code: number | null; spawnError?: string }>((resolve) => {
+      child.onExit((code, spawnError) => resolve({ code, spawnError }))
+    })
+    expect(result.code).toBeNull()
+    expect(result.spawnError).toBe('Comando não encontrado: ragx-comando-que-nao-existe-xyz')
   })
 })

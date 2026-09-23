@@ -1,12 +1,22 @@
 import { spawn as nodeSpawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
+import path from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
+import { ollamaCommand } from '../ollama/paths'
 import { ragxCommand } from '../system/ragx-exe'
-import type { ResolvedJob, Step } from './catalog'
+import type { ResolvedJob, Step, StepCondition } from './catalog'
 import type { JobKind, JobView, JobState } from '../../src/types/ragx-bridge'
 
-export type SpawnFn = (cmd: string, args: string[], cwd: string | null) => ChildLike
+export interface SpawnOptions {
+  /**
+   * Processo de longa vida (ex.: `ollama serve`): nasce independente do
+   * painel e `onExit(0)` chega assim que ele nasce, sem esperar terminar.
+   */
+  detached?: boolean
+}
+
+export type SpawnFn = (cmd: string, args: string[], cwd: string | null, opts?: SpawnOptions) => ChildLike
 
 /**
  * `spawnError` só vem quando o processo nem chegou a nascer (ENOENT etc.):
@@ -36,6 +46,16 @@ export interface QueueDeps {
    * (ex.: `add-project` que não entrou no hub); `null` quando está tudo certo.
    */
   verify?: (job: ResolvedJob) => string | null
+  /**
+   * Avalia, NA HORA, a condição `when` de um passo (o main re-detecta o
+   * ambiente). Sem ela, passos com `when` rodam sempre (compatibilidade).
+   */
+  stepCondition?: (c: StepCondition) => Promise<boolean>
+  /**
+   * Espera a API do Ollama responder; `true` quando respondeu dentro do
+   * prazo. Sem ela, passos `waitForOllamaApi` são pulados.
+   */
+  waitForOllamaApi?: (timeoutMs: number) => Promise<boolean>
 }
 
 const MAX_LOG_TAIL = 20
@@ -47,6 +67,18 @@ const MAX_ERROR_LENGTH = 300
 const BUSY_EXIT_CODE = 4
 const BUSY_EXIT_NOTE = 'Outra indexação estava rodando. Tente de novo quando ela terminar.'
 const NO_GIT_NOTE = 'Sem hooks: a pasta não é um repositório git.'
+const OLLAMA_API_TIMEOUT_ERROR = 'O Ollama não respondeu em localhost:11434 a tempo.'
+
+function conditionErrorText(stepNumber: number): string {
+  return `Não foi possível conferir o estado do Ollama antes do passo ${stepNumber}.`
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+/** Resultado das checagens que antecedem um passo (`onlyIfGitRepo`, `when`). */
+type Gate = { kind: 'run' } | { kind: 'skip'; note?: string } | { kind: 'fail'; error: string } | { kind: 'stale' }
 
 /**
  * Nota da linha `{"phase":"busy"}` de `ragx index --progress`. O core drena o
@@ -94,7 +126,17 @@ interface InternalJob {
   stepIndex: number
   /** Quando a fase atual começou (`deps.now()`), para calcular `etaSeconds`/`ratePerSecond`. */
   phaseStartedAt: number | null
+  /**
+   * Processo do passo atual que `cancel()` deve matar. Fica `null` durante
+   * checagens e esperas sem processo e em passos destacados (o processo
+   * destacado é independente de propósito: cancelar nunca o mata).
+   */
   child: ChildLike | null
+  /**
+   * Muda a cada passo iniciado: callbacks assíncronos (condição, espera,
+   * saída de processo) de um passo que já não é o atual são ignorados.
+   */
+  stepRun: number
   cancelRequested: boolean
   lastStdoutLine: string | null
   /** stderr do passo atual (as últimas `MAX_STDERR_LINES`), para montar o texto do erro. */
@@ -156,11 +198,14 @@ export class JobQueue {
       stepIndex: 0,
       phaseStartedAt: null,
       child: null,
+      stepRun: 0,
       cancelRequested: false,
       lastStdoutLine: null,
       stderrLines: [],
       embedError: null,
     }
+    // Avisos do catálogo (ex.: modelo inválido ignorado) aparecem desde a fila.
+    for (const note of job.notes ?? []) this.addNote(internal, note)
     this.jobs.push(internal)
     this.notify()
     this.pump()
@@ -177,10 +222,16 @@ export class JobQueue {
     }
 
     if (job.view.state === 'running') {
-      // Sem processo (ex.: esperando a checagem de git de um passo), o
-      // pedido é atendido quando a checagem voltar - ver `startStep`.
       job.cancelRequested = true
-      job.child?.kill()
+      if (job.child !== null) {
+        // Vira `cancelled` quando o processo sair (ver `onExit`).
+        job.child.kill()
+        return true
+      }
+      // Sem processo para matar (checagem de git ou de condição, espera da
+      // API, passo destacado): encerra já, sem prender a fila por até 60 s.
+      // O callback que ainda está no ar é ignorado ao voltar (`isCurrent`).
+      this.end(job, 'cancelled')
       return true
     }
 
@@ -237,7 +288,26 @@ export class JobQueue {
   private addNote(job: InternalJob, text: string): void {
     const current = job.view.note
     if (current === null) job.view.note = text
-    else if (!current.includes(text)) job.view.note = `${current} ${text}`
+    else if (!current.includes(text)) job.view.note = /[.!?]$/.test(current) ? `${current} ${text}` : `${current}. ${text}`
+  }
+
+  /** O passo `run` ainda é o atual de uma tarefa em andamento? */
+  private isCurrent(job: InternalJob, run: number): boolean {
+    return job.view.state === 'running' && job.stepRun === run
+  }
+
+  private fail(job: InternalJob, error: string): void {
+    job.view.error = error
+    this.end(job, 'failed')
+  }
+
+  /**
+   * Rede de segurança dos callbacks assíncronos: um erro inesperado nunca
+   * vira rejeição solta nem deixa a tarefa presa em `running`.
+   */
+  private failUnexpected(job: InternalJob, run: number, err: unknown): void {
+    console.error(`tarefa "${job.view.label}" falhou inesperadamente:`, err)
+    if (this.isCurrent(job, run)) this.fail(job, `Erro inesperado: ${errorMessage(err)}`.slice(0, MAX_ERROR_LENGTH))
   }
 
   private startStep(job: InternalJob): void {
@@ -251,45 +321,152 @@ export class JobQueue {
     job.lastStdoutLine = null
     job.stderrLines = []
     job.child = null
+    job.stepRun += 1
+    const run = job.stepRun
 
     const step: Step = job.resolved.steps[job.stepIndex]
-    const isGitRepo = this.deps.isGitRepo
-    if (step.onlyIfGitRepo !== undefined && isGitRepo) {
-      this.notify()
-      let check: Promise<boolean>
-      try {
-        check = isGitRepo(step.onlyIfGitRepo)
-      } catch {
-        check = Promise.resolve(false)
-      }
-      check
-        .catch(() => false)
-        .then((inRepo) => {
-          if (job.cancelRequested) {
-            this.end(job, 'cancelled')
-            return
-          }
-          if (!inRepo) {
-            this.addNote(job, NO_GIT_NOTE)
-            this.stepSucceeded(job)
-            return
-          }
-          this.spawnStep(job, step)
-        })
+    const checksGit = step.onlyIfGitRepo !== undefined && this.deps.isGitRepo !== undefined
+    const checksWhen = step.when !== undefined && this.deps.stepCondition !== undefined
+    if (!checksGit && !checksWhen) {
+      this.runStep(job, step, run)
       return
     }
-    this.spawnStep(job, step)
-  }
-
-  private spawnStep(job: InternalJob, step: Step): void {
-    const child = this.deps.spawn(step.cmd, step.args, step.cwd)
-    job.child = child
-
-    child.onStdoutLine((line) => this.onLine(job, 'stdout', line))
-    child.onStderrLine((line) => this.onLine(job, 'stderr', line))
-    child.onExit((code, spawnError) => this.onExit(job, code, spawnError))
 
     this.notify()
+    this.evaluateGates(job, step, run)
+      .then((gate) => {
+        if (gate.kind === 'stale' || !this.isCurrent(job, run)) return
+        if (job.cancelRequested) {
+          this.end(job, 'cancelled')
+          return
+        }
+        if (gate.kind === 'fail') {
+          this.fail(job, gate.error)
+          return
+        }
+        if (gate.kind === 'skip') {
+          if (gate.note !== undefined) this.addNote(job, gate.note)
+          this.stepSucceeded(job)
+          return
+        }
+        this.runStep(job, step, run)
+      })
+      .catch((err: unknown) => this.failUnexpected(job, run, err))
+  }
+
+  /**
+   * Checagens antes do passo, em ordem: `onlyIfGitRepo` e depois `when`.
+   * A condição é avaliada agora (nunca com um ambiente guardado de antes),
+   * porque passos anteriores da mesma tarefa mudam o ambiente.
+   */
+  private async evaluateGates(job: InternalJob, step: Step, run: number): Promise<Gate> {
+    const isGitRepo = this.deps.isGitRepo
+    if (step.onlyIfGitRepo !== undefined && isGitRepo) {
+      let inRepo: boolean
+      try {
+        inRepo = await isGitRepo(step.onlyIfGitRepo)
+      } catch {
+        inRepo = false
+      }
+      if (!this.isCurrent(job, run)) return { kind: 'stale' }
+      if (!inRepo) return { kind: 'skip', note: NO_GIT_NOTE }
+    }
+
+    const stepCondition = this.deps.stepCondition
+    if (step.when !== undefined && stepCondition) {
+      let holds: boolean
+      try {
+        holds = (await stepCondition(step.when)) === true
+      } catch (err) {
+        console.error(`condição "${step.when}" da tarefa "${job.view.label}" falhou:`, err)
+        return { kind: 'fail', error: conditionErrorText(job.stepIndex + 1) }
+      }
+      if (!holds) return { kind: 'skip', note: step.skipNote }
+    }
+    return { kind: 'run' }
+  }
+
+  private runStep(job: InternalJob, step: Step, run: number): void {
+    if (step.waitForOllamaApi !== undefined) {
+      this.waitApiStep(job, step.waitForOllamaApi.timeoutMs, run)
+      return
+    }
+
+    let child: ChildLike
+    try {
+      child = step.detached
+        ? this.deps.spawn(step.cmd, step.args, step.cwd, { detached: true })
+        : this.deps.spawn(step.cmd, step.args, step.cwd)
+    } catch (err) {
+      this.fail(job, `Não foi possível iniciar ${step.cmd}: ${errorMessage(err)}`.slice(0, MAX_ERROR_LENGTH))
+      return
+    }
+
+    if (step.detached) {
+      // Não vai para `job.child`: cancelar a tarefa nunca mata o processo
+      // destacado. `onExit(0)` aqui quer dizer só "nasceu".
+      child.onExit((code, spawnError) => {
+        if (!this.isCurrent(job, run)) return
+        if (code === 0) {
+          this.stepSucceeded(job)
+          return
+        }
+        this.fail(job, spawnError ?? `código de saída ${String(code)}`)
+      })
+      this.notify()
+      return
+    }
+
+    job.child = child
+    child.onStdoutLine((line) => {
+      if (this.isCurrent(job, run)) this.onLine(job, 'stdout', line)
+    })
+    child.onStderrLine((line) => {
+      if (this.isCurrent(job, run)) this.onLine(job, 'stderr', line)
+    })
+    child.onExit((code, spawnError) => {
+      if (this.isCurrent(job, run)) this.onExit(job, step, code, spawnError)
+    })
+
+    this.notify()
+  }
+
+  /** Passo sem processo: espera a API do Ollama responder. Sem a dependência, é pulado. */
+  private waitApiStep(job: InternalJob, timeoutMs: number, run: number): void {
+    const wait = this.deps.waitForOllamaApi
+    if (!wait) {
+      this.stepSucceeded(job)
+      return
+    }
+    this.notify()
+
+    let pending: Promise<boolean>
+    try {
+      pending = Promise.resolve(wait(timeoutMs))
+    } catch (err) {
+      pending = Promise.reject(err)
+    }
+    pending
+      .then(
+        (up) => up === true,
+        (err: unknown) => {
+          console.error('espera pela API do Ollama falhou:', err)
+          return false
+        },
+      )
+      .then((up) => {
+        if (!this.isCurrent(job, run)) return
+        if (job.cancelRequested) {
+          this.end(job, 'cancelled')
+          return
+        }
+        if (!up) {
+          this.fail(job, OLLAMA_API_TIMEOUT_ERROR)
+          return
+        }
+        this.stepSucceeded(job)
+      })
+      .catch((err: unknown) => this.failUnexpected(job, run, err))
   }
 
   private onLine(job: InternalJob, source: 'stdout' | 'stderr', line: string): void {
@@ -352,7 +529,7 @@ export class JobQueue {
       phase === 'embed' && haveProgress && elapsedSeconds > 0 ? (job.view.done as number) / elapsedSeconds : null
   }
 
-  private onExit(job: InternalJob, code: number | null, spawnError?: string): void {
+  private onExit(job: InternalJob, step: Step, code: number | null, spawnError?: string): void {
     job.child = null
 
     if (job.cancelRequested) {
@@ -360,7 +537,9 @@ export class JobQueue {
       return
     }
 
-    if (code === 0) {
+    // `okExitCodes`: ex.: `taskkill` 128 / `pkill` 1 = nada a encerrar, o que
+    // não pode derrubar a tarefa inteira.
+    if (code === 0 || (code !== null && step.okExitCodes?.includes(code) === true)) {
       this.stepSucceeded(job)
       return
     }
@@ -498,10 +677,79 @@ function spawnErrorText(err: NodeJS.ErrnoException, cmd: string, cwd: string): s
   return `Não foi possível iniciar ${cmd}: ${err.message}`
 }
 
+export interface ResolveCommandDeps {
+  env?: NodeJS.ProcessEnv
+  platform?: NodeJS.Platform
+  ragx?: () => string
+  ollama?: () => string
+}
+
+/**
+ * Caminho do executável de cada `Step.cmd`, resolvido na hora do spawn:
+ *
+ * - `ragx` e `ollama`: caminho absoluto (o app aberto pelo menu Iniciar não
+ *   tem o PATH completo). `ollamaCommand()` não guarda um "não achei": logo
+ *   depois do `winget install` o PATH deste processo continua velho, e o
+ *   passo `ollama serve` seguinte precisa achar o recém-instalado.
+ * - `taskkill` no Windows: `%SystemRoot%\System32\taskkill.exe`, sem
+ *   depender do PATH; sem `SystemRoot`, o nome nu.
+ * - O resto (`docker`, `winget`, `pkill`) fica como está: `winget` mora em
+ *   WindowsApps, que está no PATH.
+ */
+export function resolveSpawnCommand(cmd: string, deps: ResolveCommandDeps = {}): string {
+  if (cmd === 'ragx') return (deps.ragx ?? ragxCommand)()
+  if (cmd === 'ollama') return (deps.ollama ?? ollamaCommand)()
+  if (cmd === 'taskkill') {
+    const platform = deps.platform ?? process.platform
+    const systemRoot = (deps.env ?? process.env).SystemRoot
+    if (platform === 'win32' && systemRoot) return path.win32.join(systemRoot, 'System32', 'taskkill.exe')
+  }
+  return cmd
+}
+
+/**
+ * Processo destacado (`ollama serve`): sem stdio, fora do grupo do painel e
+ * com `unref()`, para sobreviver ao painel e nunca prender o event loop.
+ * Avisa `onExit(0)` no evento `spawn` (nasceu) ou `onExit(null, texto)` no
+ * `error`; nunca espera o processo terminar, e `kill()` não faz nada.
+ */
+function spawnDetached(resolvedCmd: string, args: string[], workDir: string): ChildLike {
+  const child = nodeSpawn(resolvedCmd, args, {
+    cwd: workDir,
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+  })
+  child.unref()
+
+  let exitCb: ExitCallback = () => {}
+  let settled = false
+  child.once('spawn', () => {
+    if (settled) return
+    settled = true
+    exitCb(0)
+  })
+  // `on`, não `once`: um segundo `error` sem ouvinte derrubaria o processo principal.
+  child.on('error', (err: NodeJS.ErrnoException) => {
+    if (settled) return
+    settled = true
+    exitCb(null, spawnErrorText(err, resolvedCmd, workDir))
+  })
+
+  return {
+    onStdoutLine: () => {},
+    onStderrLine: () => {},
+    onExit: (cb) => {
+      exitCb = cb
+    },
+    kill: () => {},
+  }
+}
+
 /**
  * `spawn` real, sem shell (obrigatório - ver global-constraints.md).
- * `'ragx'` resolve para o caminho absoluto achado por `ragxCommand()` (fora
- * do PATH do app aberto pelo menu Iniciar).
+ * `cmd` passa por `resolveSpawnCommand` (caminho absoluto de `ragx`,
+ * `ollama` e `taskkill`); `opts.detached` vai para `spawnDetached`.
  *
  * - `cwd` `null` (comandos globais: `init`, `mcp install`, `project
  *   unregister`, `docker`) roda na pasta do usuário, nunca no cwd do Electron.
@@ -514,9 +762,11 @@ function spawnErrorText(err: NodeJS.ErrnoException, cmd: string, cwd: string): s
  * legítimas sem dar nenhuma proteção que `cancel()` já não dê.
  */
 export function defaultSpawn(): SpawnFn {
-  return (cmd, args, cwd) => {
-    const resolvedCmd = cmd === 'ragx' ? ragxCommand() : cmd
+  return (cmd, args, cwd, opts) => {
+    const resolvedCmd = resolveSpawnCommand(cmd)
     const workDir = cwd ?? os.homedir()
+    if (opts?.detached === true) return spawnDetached(resolvedCmd, args, workDir)
+
     const child = nodeSpawn(resolvedCmd, args, {
       cwd: workDir,
       windowsHide: true,

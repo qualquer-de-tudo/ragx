@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import path from 'node:path'
-import { resolveOllama, resetOllamaCache } from '../paths'
+import { ollamaCommand, resolveOllama, resetOllamaCache } from '../paths'
 
 describe('resolveOllama', () => {
   beforeEach(() => resetOllamaCache())
@@ -68,5 +68,29 @@ describe('resolveOllama', () => {
   it('devolve null quando não acha', () => {
     expect(resolveOllama({ env: { PATH: '' }, platform: 'linux', exists: () => false })).toBeNull()
     expect(resolveOllama({ env: { PATH: '' }, platform: 'win32', exists: () => false })).toBeNull()
+  })
+})
+
+describe('ollamaCommand', () => {
+  beforeEach(() => resetOllamaCache())
+
+  const local = path.join('C:', 'Users', 'fulano', 'AppData', 'Local')
+  const installed = path.join(local, 'Programs', 'Ollama', 'ollama.exe')
+  const deps = (present: boolean) => ({
+    env: { PATH: '', LOCALAPPDATA: local },
+    platform: 'win32' as const,
+    exists: (p: string) => present && p === installed,
+  })
+
+  it('não guarda o "não achei": depois do winget install, a próxima chamada acha o executável', () => {
+    expect(ollamaCommand(deps(false))).toBe('ollama')
+    expect(ollamaCommand(deps(true))).toBe(installed)
+  })
+
+  it('guarda o que achou, e resetOllamaCache limpa', () => {
+    expect(ollamaCommand(deps(true))).toBe(installed)
+    expect(ollamaCommand(deps(false))).toBe(installed)
+    resetOllamaCache()
+    expect(ollamaCommand(deps(false))).toBe('ollama')
   })
 })

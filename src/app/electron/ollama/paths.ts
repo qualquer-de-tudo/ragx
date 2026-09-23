@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-let cached: string | null | undefined
+let cached: string | undefined
 
 export function resetOllamaCache(): void {
   cached = undefined
@@ -45,8 +45,15 @@ export function resolveOllama(deps: Deps = {}): string | null {
   return null
 }
 
-/** Caminho resolvido (com cache) ou o nome nu `ollama`, que confia no PATH. */
-export function ollamaCommand(): string {
-  if (cached === undefined) cached = resolveOllama()
-  return cached ?? 'ollama'
+/**
+ * Caminho resolvido ou o nome nu `ollama`, que confia no PATH. Só guarda em
+ * cache quando ACHA: logo depois do `winget install` o PATH deste processo
+ * continua velho, e um "não achei" guardado faria o passo seguinte
+ * (`ollama serve`) nunca enxergar o executável recém-instalado.
+ */
+export function ollamaCommand(deps: Deps = {}): string {
+  if (cached !== undefined) return cached
+  const found = resolveOllama(deps)
+  if (found !== null) cached = found
+  return found ?? 'ollama'
 }
