@@ -62,11 +62,14 @@ function ActionButton({
   action,
   jobs,
   measuring,
+  locked,
   onAction,
 }: {
   action: ConnectionAction
   jobs: readonly JobView[]
   measuring: boolean
+  /** Troca do Ollama em andamento: nenhuma ação do card roda no meio dela. */
+  locked: boolean
   onAction: (action: ConnectionAction) => void
 }) {
   const active = activeConnectionJob(jobs, action)
@@ -81,7 +84,7 @@ function ActionButton({
     <button
       type="button"
       className={action.secondary ? 'btn conn-btn-more' : 'btn btn-primary btn-block'}
-      disabled={busy !== null}
+      disabled={busy !== null || locked}
       aria-busy={isMeasuring || undefined}
       aria-label={busy ? `${action.label}: ${busy.spoken}` : undefined}
       onClick={() => onAction(action)}
@@ -128,6 +131,9 @@ export function ConnectionCard({
   const [measuring, setMeasuring] = useState(false)
   const [benchError, setBenchError] = useState<string | null>(null)
   const alive = useRef(true)
+  // Troca de modo do Ollama na fila ou rodando: todas as ações do card ficam
+  // desabilitadas (parar ou medir no meio dela brigaria com os passos).
+  const switching = check.id === 'ollama' ? activeOllamaSwitch(jobs) : null
   useEffect(() => {
     alive.current = true
     return () => {
@@ -146,6 +152,7 @@ export function ConnectionCard({
   }
 
   function act(action: ConnectionAction) {
+    if (switching) return
     if (action.kind === 'ollama-benchmark') void measure()
     else onAction(action)
   }
@@ -161,11 +168,17 @@ export function ConnectionCard({
           },
         ]
       : check.facts
-  const switching = check.id === 'ollama' ? activeOllamaSwitch(jobs) : null
   const main = check.actions.filter((a) => !a.secondary)
   const more = check.actions.filter((a) => a.secondary)
   const button = (a: ConnectionAction) => (
-    <ActionButton key={`${a.kind}|${a.model ?? ''}`} action={a} jobs={jobs} measuring={measuring} onAction={act} />
+    <ActionButton
+      key={`${a.kind}|${a.model ?? ''}`}
+      action={a}
+      jobs={jobs}
+      measuring={measuring}
+      locked={switching !== null}
+      onAction={act}
+    />
   )
 
   return (

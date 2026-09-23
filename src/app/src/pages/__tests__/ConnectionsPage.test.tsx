@@ -334,8 +334,52 @@ describe('ConnectionsPage: card do Ollama', () => {
     const note = within(ollamaCard()).getByRole('status', { name: 'Troca do Ollama em andamento' })
     expect(within(note).getByText('Usar o Ollama local')).toBeInTheDocument()
     expect(within(note).getByText('A troca leva alguns minutos; acompanhe pela fila no topo.')).toBeInTheDocument()
-    // As outras ações continuam livres.
-    expect(button('Parar o Ollama')).toBeEnabled()
+    // Durante a troca nenhuma outra ação do card fica livre: parar ou medir
+    // no meio dela brigaria com os passos da tarefa.
+    expect(button('Parar o Ollama')).toBeDisabled()
+    expect(button('Medir velocidade')).toBeDisabled()
+  })
+
+  it('troca em andamento: todas as ações do card do Ollama desabilitadas, e clicar não faz nada', () => {
+    const b = installBridge()
+    renderPage({
+      connections: connectionChecks({
+        ollama: {
+          ...OLLAMA_DOCKER,
+          // Sem texto de ajuda: o "Copiar" dele não é ação e segue livre.
+          help: null,
+          actions: [
+            { kind: 'ollama-pull', label: 'Baixar bge-m3', model: 'bge-m3' },
+            { kind: 'ollama-benchmark', label: 'Medir velocidade', secondary: true },
+            { kind: 'ollama-stop', label: 'Parar o Ollama', secondary: true },
+          ],
+        },
+      }),
+      jobs: [
+        job({ id: 's', kind: 'ollama-use-docker', label: 'Usar o Ollama no Docker', projectId: null, state: 'queued' }),
+      ],
+    })
+    const all = within(ollamaCard()).getAllByRole('button')
+    expect(all.map((el) => el.textContent)).toEqual(['Baixar bge-m3', 'Medir velocidade', 'Parar o Ollama'])
+    for (const el of all) {
+      expect(el).toBeDisabled()
+      fireEvent.click(el)
+    }
+    expect(b.enqueueJob).not.toHaveBeenCalled()
+    expect(b.runOllamaBenchmark).not.toHaveBeenCalled()
+    expect(within(ollamaCard()).getByRole('status', { name: 'Troca do Ollama em andamento' })).toBeInTheDocument()
+  })
+
+  it('a troca não trava os botões dos outros cards', () => {
+    installBridge()
+    renderPage({
+      connections: connectionChecks({
+        ollama: OLLAMA_DOCKER,
+        claude: { state: 'error', actions: [{ kind: 'mcp-register', label: 'Registrar no Claude Code' }] },
+      }),
+      jobs: [job({ id: 's', kind: 'ollama-use-native', label: 'Usar o Ollama local', projectId: null })],
+    })
+    expect(within(card('Claude Code')).getByRole('button', { name: 'Registrar no Claude Code' })).toBeEnabled()
   })
 
   it('o aviso da troca aparece mesmo quando o card já não oferece o botão de trocar', () => {
