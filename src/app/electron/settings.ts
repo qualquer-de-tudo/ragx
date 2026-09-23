@@ -1,8 +1,18 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export interface PanelSettings {
+/** O que o renderer vê de `getSettings()`: nada além disso sai do processo principal. */
+export interface RendererSettings {
   onboardingDone: boolean
+}
+
+export interface PanelSettings extends RendererSettings {
+  /**
+   * Modo do Ollama que o usuário escolheu por último (gravado quando uma
+   * troca de modo termina bem). Ausente: nunca escolheu. Só o processo
+   * principal lê, para o catálogo decidir o `ollama-start`.
+   */
+  ollamaMode?: 'docker' | 'native'
 }
 
 const FILE_NAME = 'settings.json'
@@ -17,11 +27,21 @@ function filePath(dir: string): string {
 export function readSettings(dir: string): PanelSettings {
   try {
     const raw = fs.readFileSync(filePath(dir), 'utf-8')
-    const parsed = JSON.parse(raw) as Partial<PanelSettings>
-    return { onboardingDone: parsed.onboardingDone === true }
+    const parsed = JSON.parse(raw) as { onboardingDone?: unknown; ollamaMode?: unknown } | null
+    const settings: PanelSettings = { onboardingDone: parsed?.onboardingDone === true }
+    const mode = parsed?.ollamaMode
+    if (mode === 'docker' || mode === 'native') settings.ollamaMode = mode
+    return settings
   } catch {
     return { ...DEFAULT_SETTINGS }
   }
+}
+
+/** Lê, aplica `patch` e grava: um campo alterado nunca apaga os outros. */
+export function updateSettings(dir: string, patch: Partial<PanelSettings>): PanelSettings {
+  const next: PanelSettings = { ...readSettings(dir), ...patch }
+  writeSettings(dir, next)
+  return next
 }
 
 /**

@@ -13,8 +13,19 @@ import { isInsideGitWorkTree } from './data/git'
 import { DEV_SERVER_URL, isDevServerUrl } from './navigation'
 import { FolderTokens } from './projects/tokens'
 import { discoverProjects } from './projects/discovery'
-import { readSettings, writeSettings } from './settings'
+import { readSettings, updateSettings, writeSettings } from './settings'
 import { createHandlers } from './ipc'
+import { defaultEnvDeps, detectOllama } from './ollama/environment'
+import { defaultBenchDeps, runOllamaBenchmark } from './ollama/benchmark'
+import { resetOllamaCache } from './ollama/paths'
+import {
+  conditionFrom,
+  createOllamaEnvCache,
+  defaultWaitDeps,
+  distinctRequiredModels,
+  ollamaFollowUps,
+  waitForApi,
+} from './ollama/wiring'
 import type { ConnectionCheck, JobView, Snapshot } from '../src/types/ragx-bridge'
 
 const isDev = !app.isPackaged
@@ -67,6 +78,25 @@ function refreshSnapshot(): Promise<Snapshot> {
   return promise
 }
 
+// -- Ollama ------------------------------------------------------------
+
+// Último ambiente detectado: alimenta o catálogo (`CatalogContext.ollamaEnv`).
+// Atualizado a cada checagem de conexões (startup, polling de 30 s, fim de
+// tarefa) e a cada condição de passo da fila, que sempre detecta de novo.
+const ollamaEnv = createOllamaEnvCache(() => detectOllama(defaultEnvDeps()))
+
+function userDataDir(): string {
+  return app.getPath('userData')
+}
+
+function persistOllamaMode(mode: 'docker' | 'native'): void {
+  try {
+    updateSettings(userDataDir(), { ollamaMode: mode })
+  } catch (err) {
+    console.error('nao foi possivel gravar o modo preferido do Ollama:', err)
+  }
+}
+
 // -- fila de tarefas ---------------------------------------------------
 
 const queue = new JobQueue(
@@ -76,6 +106,9 @@ const queue = new JobQueue(
     newId: () => randomUUID(),
     isGitRepo: (folder) => isInsideGitWorkTree(folder),
     verify: (job) => verifyJob(job, defaultVerifyDeps()),
+    // Detecta NA HORA (passos anteriores da mesma tarefa mudam o ambiente).
+    stepCondition: async (c) => conditionFrom(await ollamaEnv.fresh(), c),
+    waitForOllamaApi: (timeoutMs) => waitForApi(timeoutMs, defaultWaitDeps()),
   },
   (jobs) => onJobsChange(jobs),
 )
@@ -105,6 +138,13 @@ function onJobsChange(jobs: JobView[]): void {
   const finished = justFinishedJobs(previousJobStates, jobs)
   const justFinished = finished.length > 0
   previousJobStates = new Map(jobs.map((j) => [j.id, j.state]))
+
+  // Tarefa do Ollama terminou (qualquer estado): o executável pode ter
+  // mudado de lugar (`winget install`), e uma troca de modo concluída vira o
+  // modo preferido. Antes da checagem de conexões abaixo, que já vê o novo.
+  const ollama = ollamaFollowUps(finished)
+  if (ollama.resetCache) resetOllamaCache()
+  if (ollama.persistMode !== null) persistOllamaMode(ollama.persistMode)
 
   // Terminou uma correção de conexão ("Registrar", "Iniciar container",
   // "Baixar modelo"): confere de novo na hora; o resultado chega ao
@@ -148,7 +188,12 @@ const handlers = createHandlers({
   getCachedSnapshot: () => (latestSnapshot ? withConnectionsHealth(latestSnapshot) : null),
   runRagxCommand,
   checkAll: async (snapshot) => {
-    const checks = await checkAll(defaultCheckDeps(), snapshot)
+    // Uma detecção do ambiente do Ollama por ciclo de checagem, em paralelo
+    // (`getConnections` já garante um ciclo por vez).
+    const [checks] = await Promise.all([
+      checkAll(defaultCheckDeps(), snapshot),
+      ollamaEnv.fresh().catch((err: unknown) => console.error('detectOllama() falhou:', err)),
+    ])
     latestConnections = checks
     return checks
   },
@@ -169,8 +214,16 @@ const handlers = createHandlers({
     if (result.canceled || result.filePaths.length === 0) return null
     return result.filePaths[0]
   },
-  readSettings: () => readSettings(app.getPath('userData')),
-  writeSettings: (s) => writeSettings(app.getPath('userData'), s),
+  readSettings: () => readSettings(userDataDir()),
+  writeSettings: (s) => writeSettings(userDataDir(), s),
+  getOllamaEnv: () => ollamaEnv.get(),
+  getRequiredModels: () => distinctRequiredModels(latestSnapshot),
+  getPreferredOllamaMode: () => readSettings(userDataDir()).ollamaMode ?? null,
+  // Pedido do renderer: junta-se a uma detecção em andamento em vez de
+  // disparar outra leva de processos a cada clique.
+  detectOllama: () => ollamaEnv.shared(),
+  // O resultado fica em `handlers.getLastBenchmark()` (a checagem do Ollama o usa).
+  runOllamaBenchmark: (model) => runOllamaBenchmark(defaultBenchDeps(model)),
 })
 
 /**
@@ -206,6 +259,9 @@ handleIpc('ragx:pickFolder', () => handlers.pickFolder())
 handleIpc('ragx:discover', (token: unknown) => handlers.discover(token))
 handleIpc('ragx:getSettings', () => handlers.getSettings())
 handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDone(done))
+// Sem argumentos: o que vier do renderer é descartado aqui.
+handleIpc('ragx:get-ollama-environment', () => handlers.getOllamaEnvironment())
+handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
 
 // -- polling ---------------------------------------------------------------
 

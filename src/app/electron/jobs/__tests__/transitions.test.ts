@@ -39,7 +39,14 @@ describe('justFinishedJobs', () => {
 })
 
 describe('CONNECTION_JOB_KINDS', () => {
-  it('são as correções de um clique da tela Conexões', () => {
-    expect([...CONNECTION_JOB_KINDS].sort()).toEqual(['mcp-register', 'ollama-pull', 'ollama-start'])
+  it('são as correções de um clique da tela Conexões e as trocas de modo do Ollama', () => {
+    expect([...CONNECTION_JOB_KINDS].sort()).toEqual([
+      'mcp-register',
+      'ollama-pull',
+      'ollama-start',
+      'ollama-stop',
+      'ollama-use-docker',
+      'ollama-use-native',
+    ])
   })
 })

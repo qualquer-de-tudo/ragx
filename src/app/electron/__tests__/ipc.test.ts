@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createHandlers, type HandlerDeps, type QueueLike } from '../ipc'
 import { FolderTokens } from '../projects/tokens'
 import type { ResolvedJob } from '../jobs/catalog'
-import type { JobView, ProjectSnapshot, Snapshot } from '../../src/types/ragx-bridge'
+import type { JobView, OllamaBenchmark, OllamaEnvironment, ProjectSnapshot, Snapshot } from '../../src/types/ragx-bridge'
 
 const PROJECT_A: ProjectSnapshot = {
   id: 'a',
@@ -73,8 +73,33 @@ function makeDeps(over: Partial<HandlerDeps> = {}): HandlerDeps {
     showOpenDialog: vi.fn(async () => null),
     readSettings: vi.fn(() => ({ onboardingDone: false })),
     writeSettings: vi.fn(),
+    detectOllama: vi.fn(async () => ENV),
+    runOllamaBenchmark: vi.fn(async (model: string | null) => ({ ...BENCH, model: model ?? 'nomic-embed-text' })),
     ...over,
   }
+}
+
+const ENV: OllamaEnvironment = {
+  platform: 'win32',
+  gpu: { vendor: 'nvidia', name: 'RTX 4070' },
+  docker: { installed: true, running: true },
+  container: { exists: true, running: false },
+  native: { installed: true, path: 'C:/ollama.exe', running: false },
+  canInstallNative: true,
+  apiUp: false,
+  models: [],
+  mode: 'none',
+  recommendation: { mode: 'docker', reason: 'x' },
+}
+
+const BENCH: OllamaBenchmark = {
+  ok: true,
+  chunksPerSecond: 42,
+  processor: 'gpu',
+  vramMB: 512,
+  model: 'nomic-embed-text',
+  measuredAt: '2026-09-23T10:00:00Z',
+  error: null,
 }
 
 describe('createHandlers - runTrial/getProjectStatus/runSecurityScan validam projectId contra o snapshot', () => {
@@ -348,6 +373,163 @@ describe('createHandlers - getSettings/setOnboardingDone', () => {
     const handlers = createHandlers(makeDeps({ writeSettings }))
     handlers.setOnboardingDone(true)
     expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true })
+  })
+
+  it('setOnboardingDone preserva o modo preferido do Ollama (lê, altera, grava)', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(
+      makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: false, ollamaMode: 'native' }) }),
+    )
+    handlers.setOnboardingDone(true)
+    expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true, ollamaMode: 'native' })
+  })
+
+  it('getSettings devolve ao renderer só onboardingDone (o modo preferido fica no processo principal)', () => {
+    const handlers = createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, ollamaMode: 'docker' }) }))
+    expect(handlers.getSettings()).toStrictEqual({ onboardingDone: true })
+  })
+})
+
+describe('createHandlers - getOllamaEnvironment', () => {
+  it('devolve o que detectOllama devolve', async () => {
+    const detectOllama = vi.fn(async () => ENV)
+    const handlers = createHandlers(makeDeps({ detectOllama }))
+    expect(await handlers.getOllamaEnvironment()).toBe(ENV)
+    expect(detectOllama).toHaveBeenCalledOnce()
+  })
+
+  it('ignora argumentos vindos do renderer', async () => {
+    const detectOllama = vi.fn(async () => ENV)
+    const handlers = createHandlers(makeDeps({ detectOllama }))
+    const call = handlers.getOllamaEnvironment as (...args: unknown[]) => Promise<OllamaEnvironment>
+    await call('C:/Windows', { kind: 'x' })
+    expect(detectOllama).toHaveBeenCalledWith()
+  })
+})
+
+describe('createHandlers - runOllamaBenchmark', () => {
+  it('devolve o resultado e o guarda para getLastBenchmark', async () => {
+    const handlers = createHandlers(makeDeps())
+    expect(handlers.getLastBenchmark()).toBeNull()
+    const result = await handlers.runOllamaBenchmark()
+    expect(result).toMatchObject({ ok: true, chunksPerSecond: 42 })
+    expect(handlers.getLastBenchmark()).toBe(result)
+  })
+
+  it('escolhe o modelo no servidor: o primeiro requerido pelos projetos', async () => {
+    const runOllamaBenchmark = vi.fn(async () => BENCH)
+    const handlers = createHandlers(
+      makeDeps({ runOllamaBenchmark, getRequiredModels: () => ['mxbai-embed-large', 'nomic-embed-text'] }),
+    )
+    await handlers.runOllamaBenchmark()
+    expect(runOllamaBenchmark).toHaveBeenCalledWith('mxbai-embed-large')
+  })
+
+  it('sem modelo requerido: null (o benchmark usa o padrão)', async () => {
+    const runOllamaBenchmark = vi.fn(async () => BENCH)
+    const handlers = createHandlers(makeDeps({ runOllamaBenchmark, getRequiredModels: () => [] }))
+    await handlers.runOllamaBenchmark()
+    expect(runOllamaBenchmark).toHaveBeenCalledWith(null)
+
+    const semDep = vi.fn(async () => BENCH)
+    await createHandlers(makeDeps({ runOllamaBenchmark: semDep })).runOllamaBenchmark()
+    expect(semDep).toHaveBeenCalledWith(null)
+  })
+
+  it('pula modelo requerido com nome inválido', async () => {
+    const runOllamaBenchmark = vi.fn(async () => BENCH)
+    const handlers = createHandlers(
+      makeDeps({ runOllamaBenchmark, getRequiredModels: () => ['x; rm -rf /', '--help', 'nomic-embed-text'] }),
+    )
+    await handlers.runOllamaBenchmark()
+    expect(runOllamaBenchmark).toHaveBeenCalledWith('nomic-embed-text')
+  })
+
+  it('ignora argumentos vindos do renderer (o modelo nunca vem de lá)', async () => {
+    const runOllamaBenchmark = vi.fn(async () => BENCH)
+    const handlers = createHandlers(makeDeps({ runOllamaBenchmark, getRequiredModels: () => [] }))
+    const call = handlers.runOllamaBenchmark as (...args: unknown[]) => Promise<OllamaBenchmark>
+    await call('x; rm -rf /')
+    expect(runOllamaBenchmark).toHaveBeenCalledWith(null)
+  })
+
+  it('duas chamadas simultâneas rodam um benchmark só', async () => {
+    let release: () => void = () => {}
+    const runOllamaBenchmark = vi.fn(
+      () =>
+        new Promise<OllamaBenchmark>((resolve) => {
+          release = () => resolve(BENCH)
+        }),
+    )
+    const handlers = createHandlers(makeDeps({ runOllamaBenchmark }))
+    const a = handlers.runOllamaBenchmark()
+    const b = handlers.runOllamaBenchmark()
+    await Promise.resolve()
+    release()
+    expect(await a).toBe(await b)
+    expect(runOllamaBenchmark).toHaveBeenCalledOnce()
+
+    // Terminado, o próximo pedido mede de novo.
+    const c = handlers.runOllamaBenchmark()
+    await Promise.resolve()
+    release()
+    await c
+    expect(runOllamaBenchmark).toHaveBeenCalledTimes(2)
+  })
+
+  it('falha inesperada vira resultado legível, nunca rejeita para o renderer', async () => {
+    const runOllamaBenchmark = vi.fn(async () => {
+      throw new Error('boom')
+    })
+    const handlers = createHandlers(makeDeps({ runOllamaBenchmark, getRequiredModels: () => ['nomic-embed-text'] }))
+    const result = await handlers.runOllamaBenchmark()
+    expect(result.ok).toBe(false)
+    expect(result.model).toBe('nomic-embed-text')
+    expect(result.error).toMatch(/boom/)
+    expect(handlers.getLastBenchmark()).toBe(result)
+  })
+})
+
+describe('createHandlers - kinds novos do Ollama no enqueueJob', () => {
+  it('recusa model malicioso mesmo num kind que não usa model', () => {
+    const queue = fakeQueue()
+    const handlers = createHandlers(makeDeps({ queue }))
+    for (const kind of ['ollama-use-native', 'ollama-use-docker', 'ollama-stop'] as const) {
+      expect(() => handlers.enqueueJob({ kind, model: 'x; rm -rf /' })).toThrow(/pedido recusado/)
+      expect(() => handlers.enqueueJob({ kind, model: '--help' })).toThrow(/pedido recusado/)
+      expect(() => handlers.enqueueJob({ kind, model: 42 })).toThrow(/pedido recusado/)
+    }
+    expect(queue.enqueued).toHaveLength(0)
+  })
+
+  it('recusa os kinds novos com chave extra', () => {
+    const queue = fakeQueue()
+    const handlers = createHandlers(makeDeps({ queue }))
+    for (const kind of ['ollama-use-native', 'ollama-use-docker', 'ollama-stop'] as const) {
+      expect(() => handlers.enqueueJob({ kind, cmd: 'powershell' })).toThrow(/pedido recusado/)
+    }
+    expect(queue.enqueued).toHaveLength(0)
+  })
+
+  it('o catálogo recebe o ambiente, os modelos requeridos e o modo preferido do processo principal', () => {
+    const queue = fakeQueue()
+    const handlers = createHandlers(
+      makeDeps({
+        queue,
+        getOllamaEnv: () => ENV,
+        getRequiredModels: () => ['nomic-embed-text'],
+        getPreferredOllamaMode: () => 'native',
+      }),
+    )
+
+    // ENV recomenda docker, mas o usuário escolheu o local por último.
+    handlers.enqueueJob({ kind: 'ollama-start' })
+    expect(queue.enqueued[0].steps[0]).toMatchObject({ cmd: 'ollama', args: ['serve'] })
+
+    handlers.enqueueJob({ kind: 'ollama-use-docker' })
+    const args = queue.enqueued[1].steps.map((s) => [s.cmd, ...s.args].join(' '))
+    expect(args).toContain('docker exec ollama ollama pull nomic-embed-text')
+    expect(args.some((a) => a.includes('--gpus all'))).toBe(true)
   })
 })
 

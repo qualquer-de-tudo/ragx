@@ -287,7 +287,7 @@ function extractInstalledNames(json: unknown): string[] {
  * (`embeddingModel`/`embeddingProvider`/`name`). Entrada malformada é
  * ignorada (não conta como "necessita modelo"), não derruba a checagem.
  */
-function neededModelsFor(snapshot: Snapshot | null): { models: string[]; projectNames: string[] } {
+export function neededModelsFor(snapshot: Snapshot | null): { models: string[]; projectNames: string[] } {
   if (!snapshot || !Array.isArray(snapshot.projects)) return { models: [], projectNames: [] }
   const relevant = snapshot.projects.filter((p): p is Snapshot['projects'][number] => {
     if (!p || typeof p !== 'object') return false

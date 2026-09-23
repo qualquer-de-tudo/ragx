@@ -1,12 +1,13 @@
-import { resolveJob, JobRejected, type CatalogContext, type ResolvedJob } from './jobs/catalog'
+import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
-import type { PanelSettings } from './settings'
+import type { PanelSettings, RendererSettings } from './settings'
 import type {
   ConnectionCheck,
   DiscoverItem,
   DiscoverResult,
   JobRequest,
   JobView,
+  OllamaBenchmark,
   OllamaEnvironment,
   ProjectSnapshot,
   SecurityScanResult,
@@ -59,6 +60,12 @@ export interface HandlerDeps {
   getOllamaEnv?: () => OllamaEnvironment | null
   /** Modelos de embedding exigidos pelos projetos com provider ollama. */
   getRequiredModels?: () => string[]
+  /** Modo do Ollama escolhido por último (persistido); `null` se nunca escolheu. */
+  getPreferredOllamaMode?: () => 'docker' | 'native' | null
+  /** Detecta o ambiente do Ollama agora (e atualiza o cache de `getOllamaEnv`). Nunca recebe nada do renderer. */
+  detectOllama: () => Promise<OllamaEnvironment>
+  /** Mede embeddings/s. `model` é escolhido aqui no processo principal; `null` = modelo padrão. */
+  runOllamaBenchmark: (model: string | null) => Promise<OllamaBenchmark>
 }
 
 function rejected(message: string): Error {
@@ -77,11 +84,58 @@ function validateJobRequestShape(input: unknown): JobRequest {
   if (typeof (input as { kind?: unknown }).kind !== 'string') {
     throw rejected('kind precisa ser texto')
   }
+  // `model` presente precisa ser um nome de modelo válido em QUALQUER kind,
+  // não só no `ollama-pull` (onde o catálogo já confere): um valor hostil
+  // nunca passa daqui, mesmo num kind que hoje o ignora.
+  if ('model' in input) {
+    const model = (input as { model?: unknown }).model
+    if (model !== undefined && (typeof model !== 'string' || !MODEL_PATTERN.test(model))) {
+      throw rejected(`nome de modelo inválido: ${String(model)}`)
+    }
+  }
   return input as JobRequest
+}
+
+function benchmarkFailure(model: string | null, err: unknown): OllamaBenchmark {
+  return {
+    ok: false,
+    chunksPerSecond: null,
+    processor: 'unknown',
+    vramMB: null,
+    model,
+    measuredAt: new Date().toISOString(),
+    error: `Falha ao medir o Ollama: ${err instanceof Error ? err.message : String(err)}`,
+  }
 }
 
 export function createHandlers(deps: HandlerDeps) {
   let inFlightConnections: Promise<ConnectionCheck[]> | null = null
+  let inFlightBenchmark: Promise<OllamaBenchmark> | null = null
+  let lastBenchmark: OllamaBenchmark | null = null
+
+  /** Primeiro modelo requerido com nome válido; `null` = o benchmark usa o padrão. */
+  function benchmarkModel(): string | null {
+    let models: unknown[]
+    try {
+      models = deps.getRequiredModels?.() ?? []
+    } catch {
+      return null
+    }
+    const first = models.find((m): m is string => typeof m === 'string' && MODEL_PATTERN.test(m))
+    return first ?? null
+  }
+
+  async function measure(): Promise<OllamaBenchmark> {
+    const model = benchmarkModel()
+    let result: OllamaBenchmark
+    try {
+      result = await deps.runOllamaBenchmark(model)
+    } catch (err) {
+      result = benchmarkFailure(model, err)
+    }
+    lastBenchmark = result
+    return result
+  }
 
   async function runConnectionChecks(): Promise<ConnectionCheck[]> {
     deps.resetRagxCache()
@@ -105,6 +159,7 @@ export function createHandlers(deps: HandlerDeps) {
       folderByToken: (token) => deps.folderTokens.get(token),
       ollamaEnv: deps.getOllamaEnv,
       requiredModels: deps.getRequiredModels,
+      preferredOllamaMode: deps.getPreferredOllamaMode,
     }
   }
 
@@ -228,15 +283,41 @@ export function createHandlers(deps: HandlerDeps) {
       return { items: mapped, truncated }
     },
 
-    getSettings(): PanelSettings {
-      return deps.readSettings()
+    /** Só `onboardingDone` sai para o renderer; o resto das configurações fica aqui. */
+    getSettings(): RendererSettings {
+      return { onboardingDone: deps.readSettings().onboardingDone }
     },
 
     setOnboardingDone(doneUnknown: unknown): void {
       if (typeof doneUnknown !== 'boolean') {
         throw rejected('done precisa ser booleano')
       }
-      deps.writeSettings({ onboardingDone: doneUnknown })
+      // Lê, altera e grava: não apaga o modo preferido do Ollama.
+      deps.writeSettings({ ...deps.readSettings(), onboardingDone: doneUnknown })
+    },
+
+    /** Detecção nova do ambiente do Ollama. Não aceita argumento: nada do renderer chega aos comandos. */
+    getOllamaEnvironment(): Promise<OllamaEnvironment> {
+      return deps.detectOllama()
+    },
+
+    /**
+     * Benchmark de embeddings. O modelo é escolhido aqui (o primeiro
+     * requerido pelos projetos), nunca pelo renderer. Um por vez: quem pede
+     * no meio de uma medição recebe o mesmo resultado. Nunca rejeita.
+     */
+    runOllamaBenchmark(): Promise<OllamaBenchmark> {
+      if (inFlightBenchmark) return inFlightBenchmark
+      const run: Promise<OllamaBenchmark> = measure().finally(() => {
+        if (inFlightBenchmark === run) inFlightBenchmark = null
+      })
+      inFlightBenchmark = run
+      return run
+    },
+
+    /** Último benchmark medido nesta sessão (para a checagem do Ollama); `null` se nenhum. */
+    getLastBenchmark(): OllamaBenchmark | null {
+      return lastBenchmark
     },
   }
 }

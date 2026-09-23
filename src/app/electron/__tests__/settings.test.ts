@@ -2,7 +2,7 @@ import { describe, expect, it, vi, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { readSettings, writeSettings } from '../settings'
+import { readSettings, updateSettings, writeSettings } from '../settings'
 
 function mkTmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'ragx-settings-test-'))
@@ -22,7 +22,40 @@ describe('readSettings', () => {
   it('le o que writeSettings gravou', () => {
     const dir = mkTmp()
     writeSettings(dir, { onboardingDone: true })
-    expect(readSettings(dir)).toEqual({ onboardingDone: true })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true })
+  })
+
+  it('le e preserva o modo preferido do Ollama (docker ou native)', () => {
+    const dir = mkTmp()
+    writeSettings(dir, { onboardingDone: true, ollamaMode: 'native' })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, ollamaMode: 'native' })
+    writeSettings(dir, { onboardingDone: false, ollamaMode: 'docker' })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: false, ollamaMode: 'docker' })
+  })
+
+  it('modo invalido no arquivo vira ausente', () => {
+    const dir = mkTmp()
+    for (const bad of ['gpu', 'none', 'conflict', 42, null, ['docker']]) {
+      fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, ollamaMode: bad }))
+      expect(readSettings(dir)).toStrictEqual({ onboardingDone: true })
+    }
+  })
+})
+
+describe('updateSettings', () => {
+  it('altera so o que foi pedido e preserva o resto', () => {
+    const dir = mkTmp()
+    writeSettings(dir, { onboardingDone: true, ollamaMode: 'docker' })
+    updateSettings(dir, { ollamaMode: 'native' })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, ollamaMode: 'native' })
+    updateSettings(dir, { onboardingDone: false })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: false, ollamaMode: 'native' })
+  })
+
+  it('funciona sem arquivo anterior', () => {
+    const dir = mkTmp()
+    updateSettings(dir, { ollamaMode: 'docker' })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: false, ollamaMode: 'docker' })
   })
 })
 

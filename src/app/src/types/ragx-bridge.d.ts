@@ -1,7 +1,8 @@
 import type { TelemetrySummary } from '../../electron/data/types'
-import type { PanelSettings } from '../../electron/settings'
+import type { RendererSettings } from '../../electron/settings'
 
-export type { PanelSettings }
+/** Só o que o renderer vê; o modo preferido do Ollama fica no processo principal. */
+export type PanelSettings = RendererSettings
 
 export interface IndexInfo {
   finishedAt: string
@@ -216,6 +217,10 @@ export interface RagxBridge {
   discover: (token: string) => Promise<DiscoverResult>
   getSettings: () => Promise<PanelSettings>
   setOnboardingDone: (done: boolean) => Promise<void>
+  /** Detecta agora como o Ollama roda (docker, local ou nada), a GPU e a recomendação. Sem argumentos. */
+  getOllamaEnvironment: () => Promise<OllamaEnvironment>
+  /** Mede embeddings/s no Ollama em uso; o modelo é escolhido pelo processo principal. Sem argumentos. */
+  runOllamaBenchmark: () => Promise<OllamaBenchmark>
 }
 
 declare global {

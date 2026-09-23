@@ -4,6 +4,8 @@ import type {
   DiscoverResult,
   JobRequest,
   JobView,
+  OllamaBenchmark,
+  OllamaEnvironment,
   PanelSettings,
   RagxBridge,
   SecurityScanResult,
@@ -40,6 +42,9 @@ const ragx: RagxBridge = {
   discover: (token: string): Promise<DiscoverResult> => ipcRenderer.invoke('ragx:discover', token),
   getSettings: (): Promise<PanelSettings> => ipcRenderer.invoke('ragx:getSettings'),
   setOnboardingDone: (done: boolean): Promise<void> => ipcRenderer.invoke('ragx:setOnboardingDone', done),
+  // Sem argumentos de propósito: nada que o renderer passe chega ao processo principal.
+  getOllamaEnvironment: (): Promise<OllamaEnvironment> => ipcRenderer.invoke('ragx:get-ollama-environment'),
+  runOllamaBenchmark: (): Promise<OllamaBenchmark> => ipcRenderer.invoke('ragx:run-ollama-benchmark'),
 }
 
 contextBridge.exposeInMainWorld('ragx', ragx)
