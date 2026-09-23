@@ -1,62 +1,11 @@
 /*
  * Marcadores provisórios das páginas (Task 7). Cada um é trocado pela página
- * de verdade nas Tasks 8 a 10; ficam aqui só para a casca ser navegável.
+ * de verdade nas Tasks 9 e 10 (Projetos já é a página real, Task 8); ficam
+ * aqui só para a casca ser navegável.
  */
 import type { ConnectionCheck, ProjectSnapshot } from '../types/ragx-bridge'
 import { deriveProjectState, STATE_LABEL, STATE_TONE } from '../state'
 import { Badge, type Tone } from '../components/shell/Badge'
-
-const fold = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLocaleLowerCase('pt-BR')
-
-export function ProjectsPlaceholder({
-  projects,
-  busyIds,
-  query,
-  onOpen,
-}: {
-  projects: ProjectSnapshot[]
-  busyIds: ReadonlySet<string>
-  query: string
-  onOpen: (id: string) => void
-}) {
-  const q = fold(query.trim())
-  const shown = q ? projects.filter((p) => fold(`${p.name} ${p.path ?? ''}`).includes(q)) : projects
-  return (
-    <section className="page">
-      <header className="page-head">
-        <h1 className="page-title">Projetos</h1>
-        <p className="page-lede">
-          {projects.length === 1 ? '1 projeto no hub' : `${projects.length} projetos no hub`}
-        </p>
-      </header>
-      {shown.length === 0 ? (
-        <p className="empty">{q ? `Nenhum projeto encontrado para "${query.trim()}".` : 'Nenhum projeto no hub ainda.'}</p>
-      ) : (
-        <ul className="stack">
-          {shown.map((p) => {
-            const state = deriveProjectState(p, busyIds)
-            return (
-              <li key={p.id} className="card row">
-                <div className="row-main">
-                  <h2 className="card-title">{p.name}</h2>
-                  <p className="mono dim">{p.path ?? 'sem dados'}</p>
-                </div>
-                <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>
-                <button type="button" className="btn" onClick={() => onOpen(p.id)}>
-                  Abrir
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </section>
-  )
-}
 
 export function ProjectPlaceholder({
   project,

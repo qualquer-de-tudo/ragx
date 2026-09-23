@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import App from '../App'
-import type { ProjectSnapshot, RagxBridge, Snapshot } from '../types/ragx-bridge'
+import type { RagxBridge, Snapshot } from '../types/ragx-bridge'
+import { snap } from '../test/snap'
 
-const project = { id: 'juriflux', name: 'Juriflux' } as ProjectSnapshot
+const project = snap({ id: 'juriflux', name: 'Juriflux' })
 
 function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): RagxBridge {
   const b: RagxBridge = {

@@ -64,13 +64,7 @@ export function parentHint(projectPath: string | null, base: string[] = []): str
   return parents.length ? parents[parents.length - 1] : null
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  ok: 'ok',
-  degraded: 'degradado',
-  stale: 'desatualizado',
-  missing: 'pasta ausente',
-}
-
-export function statusLabel(status: string): string {
-  return STATUS_LABEL[status] ?? status
+/** Texto para busca: sem acento e sem diferença de maiúsculas ("São" acha "sao"). */
+export function foldForSearch(s: string): string {
+  return s.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR')
 }

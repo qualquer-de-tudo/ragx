@@ -30,8 +30,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   `ragx security scan`). Atualiza por polling a cada 5s; instalador `.exe`
   gerado com `electron-builder`.
 
-  A lista lateral compara o tamanho do índice entre projetos e mostra onde
-  cada um mora (dois projetos chamados `src` deixam de ser indistinguíveis).
+  Cada projeto mostra onde mora (dois projetos chamados `src` deixam de ser
+  indistinguíveis).
   O painel avisa quando há chunks sem embedding — nesse caso a busca semântica
   cai para só palavra-chave, o que antes passava despercebido — e o scan lista
   os arquivos bloqueados com severidade e regra, sem exibir o trecho do
@@ -52,6 +52,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   dizer o estado real do projeto: "Atualizado", "Defasado" (branch ou commit
   mudou desde a última indexação), "Embeddings faltando", "Sem hooks", "Com
   problema" ou "Pasta ausente" — em vez de só "ok"/"degradado".
+
+  A tela Projetos virou uma grade de cards: selo com o estado, pasta, branch
+  atual (com aviso "índice da branch X" quando o índice é de outra branch),
+  "Indexado há 2 h", cobertura de embeddings ("4 de 10 chunks com embedding",
+  em âmbar quando faltam) e um botão que faz o que o estado pede ("Atualizar
+  agora", "Gerar embeddings", "Instalar hooks", "Abrir"). Um filtro no topo
+  separa "Todos", "Defasados" e "Com problema", e a busca ignora maiúsculas e
+  acentos. "Adicionar projeto" pede uma pasta, lista os projetos do RAGX dentro
+  dela (os que já estão no painel aparecem desmarcados) e instala os hooks de
+  git por padrão.
 
 - **O índice acompanha a branch.** Cada indexação registra branch, commit e quem
   disparou (`cli`, `panel`, `watch`, `sync`, `mcp:*`, `hook:*`). `ragx status --json`

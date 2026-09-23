@@ -9,8 +9,8 @@ interface Props {
   project: ProjectSnapshot | null
 }
 
-// Sem fila de tarefas nesta tarefa (Task 5) - ver o mesmo comentário em
-// ProjectList.tsx.
+// Componente da v1, fora da navegação nova (o detalhe novo é da Task 9):
+// não recebe a fila de tarefas.
 const NO_BUSY_IDS = new Set<string>()
 
 export function ProjectDetail({ project }: Props) {

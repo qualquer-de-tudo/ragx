@@ -11,8 +11,9 @@ import {
   HowPlaceholder,
   OnboardingPlaceholder,
   ProjectPlaceholder,
-  ProjectsPlaceholder,
 } from './pages/Placeholders'
+import { ProjectsPage } from './pages/ProjectsPage'
+import { busyProjectIds } from './state'
 import './App.css'
 
 export type { Route } from './route'
@@ -65,15 +66,7 @@ function App() {
   }
 
   const projects = useMemo(() => [...(snapshot?.projects ?? [])].sort(byName), [snapshot])
-  const busyIds = useMemo(
-    () =>
-      new Set(
-        jobs
-          .filter((j) => j.state === 'queued' || j.state === 'running')
-          .flatMap((j) => (j.projectId === null ? [] : [j.projectId])),
-      ),
-    [jobs],
-  )
+  const busyIds = useMemo(() => busyProjectIds(jobs), [jobs])
   // O processo principal guarda o resultado da última checagem no snapshot;
   // enquanto ele não tem, vale a checagem feita daqui.
   const health: Health = snapshot?.connectionsHealth ?? worstOf(connections)
@@ -113,9 +106,9 @@ function App() {
   switch (route.page) {
     case 'projects':
       page = (
-        <ProjectsPlaceholder
+        <ProjectsPage
           projects={projects}
-          busyIds={busyIds}
+          jobs={jobs}
           query={query}
           onOpen={(id) => setRoute({ page: 'project', id })}
         />

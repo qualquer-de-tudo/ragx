@@ -9,7 +9,7 @@ export type Tone = 'good' | 'warning' | 'critical' | 'accent' | 'muted'
 export function Badge({ tone, children }: { tone: Tone; children: ReactNode }) {
   return (
     <span className={`badge badge-${tone}`}>
-      <span aria-hidden="true">●</span> {children}
+      <span aria-hidden="true">●</span> <span className="badge-text">{children}</span>
     </span>
   )
 }

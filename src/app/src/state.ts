@@ -1,4 +1,4 @@
-import type { ProjectSnapshot, JobKind } from './types/ragx-bridge'
+import type { JobKind, JobView, ProjectSnapshot } from './types/ragx-bridge'
 
 export type ProjectState = 'missing' | 'indexing' | 'error' | 'embeddings' | 'stale' | 'no-hooks' | 'ok'
 
@@ -60,4 +60,13 @@ export function isOutdated(s: ProjectState): boolean {
 
 export function hasProblem(s: ProjectState): boolean {
   return s === 'missing' || s === 'error'
+}
+
+/** Ids dos projetos com tarefa na fila ou rodando: o `busyIds` de `deriveProjectState`. */
+export function busyProjectIds(jobs: readonly JobView[]): Set<string> {
+  return new Set(
+    jobs
+      .filter((j) => j.state === 'queued' || j.state === 'running')
+      .flatMap((j) => (j.projectId === null ? [] : [j.projectId])),
+  )
 }
