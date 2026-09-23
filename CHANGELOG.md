@@ -41,6 +41,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   A janela abre com fundo preto e título "RAGX Painel". Fechar o painel com
   alguma tarefa em andamento pergunta antes de cancelar todas elas.
 
+  Nova casca: barra lateral com ícones e rótulo (Projetos, Conexões, Como
+  funciona), busca de projeto no topo, indicador da fila ("2 tarefas") que abre
+  a lista com estado, progresso, previsão ("Faltam cerca de 2 min") e botão
+  "Cancelar", e um ponto de saúde das conexões que diz o estado em texto
+  ("Conexões atenção"), não só pela cor. Na primeira abertura, ou com o hub
+  vazio, o painel começa pela configuração inicial.
+
   Cada card agora lê `.ragx/status.json` e a branch/commit atuais do git para
   dizer o estado real do projeto: "Atualizado", "Defasado" (branch ou commit
   mudou desde a última indexação), "Embeddings faltando", "Sem hooks", "Com

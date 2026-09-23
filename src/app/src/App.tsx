@@ -1,29 +1,159 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from './hooks/useSnapshot'
-import { ProjectList } from './components/ProjectList'
-import { ProjectDetail } from './components/ProjectDetail'
+import { useJobs } from './hooks/useJobs'
+import { useConnections } from './hooks/useConnections'
+import { Sidebar } from './components/shell/Sidebar'
+import { TopBar, type Health } from './components/shell/TopBar'
+import type { Route } from './route'
+import type { ConnectionCheck } from './types/ragx-bridge'
+import {
+  ConnectionsPlaceholder,
+  HowPlaceholder,
+  OnboardingPlaceholder,
+  ProjectPlaceholder,
+  ProjectsPlaceholder,
+} from './pages/Placeholders'
 import './App.css'
+
+export type { Route } from './route'
 
 const byName = (a: { name: string }, b: { name: string }) =>
   a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
 
+const RANK = { ok: 0, warn: 1, error: 2 } as const
+
+function worstOf(checks: ConnectionCheck[] | null): Health {
+  if (!checks || checks.length === 0) return null
+  return checks.reduce<ConnectionCheck['state']>((w, c) => (RANK[c.state] > RANK[w] ? c.state : w), 'ok')
+}
+
 function App() {
   const { snapshot } = useSnapshot()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const jobs = useJobs()
+  const { connections, checking, refresh } = useConnections()
 
-  const projects = [...(snapshot?.projects ?? [])].sort(byName)
-  const selected = projects.find((p) => p.id === selectedId) ?? projects[0] ?? null
+  // `null` enquanto não se sabe. Uma falha ao ler as preferências não prende
+  // ninguém no onboarding.
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null)
+  const [route, setRoute] = useState<Route | null>(null)
+  const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    window.ragx.getSettings().then(
+      (s) => {
+        if (!cancelled) setOnboardingDone(s.onboardingDone)
+      },
+      (err) => {
+        console.error('getSettings() falhou:', err)
+        if (!cancelled) setOnboardingDone(true)
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Rota inicial: decidida uma vez só, quando há dado para isso (preferências
+  // e, se o onboarding já foi feito, o primeiro snapshot). Depois disso só o
+  // usuário muda a rota: um snapshot novo não arranca ninguém do onboarding.
+  // (Ajuste de estado durante o render, com guarda: padrão documentado do React.)
+  if (route === null) {
+    if (onboardingDone === false) setRoute({ page: 'onboarding' })
+    else if (onboardingDone === true && snapshot !== null)
+      setRoute(snapshot.projects.length === 0 ? { page: 'onboarding' } : { page: 'projects' })
+  }
+
+  const projects = useMemo(() => [...(snapshot?.projects ?? [])].sort(byName), [snapshot])
+  const busyIds = useMemo(
+    () =>
+      new Set(
+        jobs
+          .filter((j) => j.state === 'queued' || j.state === 'running')
+          .flatMap((j) => (j.projectId === null ? [] : [j.projectId])),
+      ),
+    [jobs],
+  )
+  // O processo principal guarda o resultado da última checagem no snapshot;
+  // enquanto ele não tem, vale a checagem feita daqui.
+  const health: Health = snapshot?.connectionsHealth ?? worstOf(connections)
+
+  const onQuery = useCallback((q: string) => {
+    setQuery(q)
+    // A busca é de projetos: digitar em outra página leva à lista.
+    setRoute((r) => (r && r.page !== 'projects' && r.page !== 'onboarding' ? { page: 'projects' } : r))
+  }, [])
+
+  const onCancelJob = useCallback((id: string) => {
+    window.ragx.cancelJob(id).catch((err: unknown) => console.error('cancelJob() falhou:', err))
+  }, [])
+
+  const skipOnboarding = useCallback(() => {
+    window.ragx
+      .setOnboardingDone(true)
+      .catch((err: unknown) => console.error('setOnboardingDone() falhou:', err))
+    setOnboardingDone(true)
+    setRoute({ page: 'projects' })
+  }, [])
+
+  if (route === null) {
+    return (
+      <div className="boot" role="status">
+        Carregando…
+      </div>
+    )
+  }
+
+  // Onboarding é tela cheia, sem barra lateral nem barra superior.
+  if (route.page === 'onboarding') {
+    return <OnboardingPlaceholder onSkip={skipOnboarding} />
+  }
+
+  let page
+  switch (route.page) {
+    case 'projects':
+      page = (
+        <ProjectsPlaceholder
+          projects={projects}
+          busyIds={busyIds}
+          query={query}
+          onOpen={(id) => setRoute({ page: 'project', id })}
+        />
+      )
+      break
+    case 'project':
+      page = (
+        <ProjectPlaceholder
+          project={projects.find((p) => p.id === route.id) ?? null}
+          busyIds={busyIds}
+          onBack={() => setRoute({ page: 'projects' })}
+        />
+      )
+      break
+    case 'connections':
+      page = <ConnectionsPlaceholder connections={connections} checking={checking} onRefresh={() => void refresh()} />
+      break
+    case 'how':
+      page = <HowPlaceholder onRestart={() => setRoute({ page: 'onboarding' })} />
+      break
+  }
 
   return (
-    <div className="app-shell">
-      <ProjectList
-        projects={projects}
-        selectedId={selected?.id ?? null}
-        onSelect={setSelectedId}
-        loading={snapshot === null}
-        updatedAt={snapshot?.generatedAt ?? null}
-      />
-      <ProjectDetail key={selected?.id} project={selected} />
+    <div className="shell">
+      <Sidebar route={route} onNavigate={setRoute} />
+      <div className="shell-main">
+        <TopBar
+          query={query}
+          onQuery={onQuery}
+          jobs={jobs}
+          health={health}
+          onOpenConnections={() => setRoute({ page: 'connections' })}
+          onCancelJob={onCancelJob}
+        />
+        <main className="content">
+          <div className="content-inner">{page}</div>
+        </main>
+      </div>
     </div>
   )
 }
