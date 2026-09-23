@@ -1,12 +1,17 @@
 import type { ProjectSnapshot } from '../types/ragx-bridge'
 import type { ProjectStats, TelemetrySummary } from '../../electron/data/types'
-import { formatNumber, formatPercent, statusLabel } from '../format'
+import { formatNumber, formatPercent } from '../format'
+import { deriveProjectState, STATE_LABEL } from '../state'
 import { EstimatePanel } from './EstimatePanel'
 import { SecurityPanel } from './SecurityPanel'
 
 interface Props {
   project: ProjectSnapshot | null
 }
+
+// Sem fila de tarefas nesta tarefa (Task 5) - ver o mesmo comentário em
+// ProjectList.tsx.
+const NO_BUSY_IDS = new Set<string>()
 
 export function ProjectDetail({ project }: Props) {
   if (!project) {
@@ -17,7 +22,8 @@ export function ProjectDetail({ project }: Props) {
     )
   }
 
-  const ok = project.status === 'ok'
+  const state = deriveProjectState(project, NO_BUSY_IDS)
+  const ok = state === 'ok'
 
   return (
     <main className="detail">
@@ -28,7 +34,7 @@ export function ProjectDetail({ project }: Props) {
           <div>
             <dt>Status</dt>
             <dd className={`status-line tone-${ok ? 'good' : 'serious'}`}>
-              <span aria-hidden="true">{ok ? '✓' : '!'}</span> {statusLabel(project.status)}
+              <span aria-hidden="true">{ok ? '✓' : '!'}</span> {STATE_LABEL[state]}
             </dd>
           </div>
           <div>
@@ -46,10 +52,10 @@ export function ProjectDetail({ project }: Props) {
 
       <section className="block" aria-labelledby="index-title">
         <h2 id="index-title">Índice</h2>
-        {'unavailable' in project.stats ? (
-          <p className="callout">{project.stats.reason}</p>
+        {project.counts === null ? (
+          <p className="callout">{project.countsUnavailableReason ?? 'sem dados'}</p>
         ) : (
-          <IndexFigures stats={project.stats} />
+          <IndexFigures stats={project.counts} />
         )}
       </section>
 

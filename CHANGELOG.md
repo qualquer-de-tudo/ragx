@@ -37,6 +37,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   os arquivos bloqueados com severidade e regra, sem exibir o trecho do
   segredo. Tema claro e escuro seguem o Windows.
 
+  Cada card agora lê `.ragx/status.json` e a branch/commit atuais do git para
+  dizer o estado real do projeto: "Atualizado", "Defasado" (branch ou commit
+  mudou desde a última indexação), "Embeddings faltando", "Sem hooks", "Com
+  problema" ou "Pasta ausente" — em vez de só "ok"/"degradado".
+
 - **O índice acompanha a branch.** Cada indexação registra branch, commit e quem
   disparou (`cli`, `panel`, `watch`, `sync`, `mcp:*`, `hook:*`). `ragx status --json`
   diz se o índice está defasado e por quê (troca de branch, commits novos,

@@ -1,7 +1,33 @@
-import type { HubProject, ProjectStats, ProjectStatsUnavailable, TelemetrySummary } from '../../electron/data/types'
+import type { TelemetrySummary } from '../../electron/data/types'
 
-export interface ProjectSnapshot extends HubProject {
-  stats: ProjectStats | ProjectStatsUnavailable
+export interface IndexInfo {
+  finishedAt: string
+  mode: string
+  source: string
+  branch: string | null
+  commit: string | null
+}
+
+export interface ProjectSnapshot {
+  id: string
+  name: string
+  path: string | null
+  /** A pasta existe no disco. */
+  exists: boolean
+  embeddingModel: string | null
+  /** Vem de `status.json`; sem ele, `null`. */
+  embeddingProvider: string | null
+  visibility: string
+  counts: { documents: number; chunks: number; embeddings: number; pendingEmbeddings: number } | null
+  countsUnavailableReason: string | null
+  /** Último run útil (de `status.json`). */
+  index: IndexInfo | null
+  git: { branch: string | null; commit: string } | null
+  hooksInstalled: boolean | null
+  running: { source: string; startedAt: string } | null
+  pending: boolean
+  lastError: string | null
+  hasStatusFile: boolean
   telemetry: TelemetrySummary
 }
 

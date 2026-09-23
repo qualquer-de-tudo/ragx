@@ -13,7 +13,34 @@ describe('readTelemetry', () => {
 
   it('devolve zerado quando mcp.jsonl nao existe', () => {
     const result = readTelemetry(projectPath, 24)
-    expect(result).toEqual({ callsByTool: [], totalCalls: 0, tokensDelivered: 0 })
+    expect(result).toEqual({ callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null })
+  })
+
+  it('lastCallAt e null sem log', () => {
+    const result = readTelemetry(projectPath, 24)
+    expect(result.lastCallAt).toBeNull()
+  })
+
+  it('lastCallAt e o maior ts mesmo fora da janela de sinceHours', () => {
+    const logDir = path.join(projectPath, '.ragx', 'logs')
+    fs.mkdirSync(logDir, { recursive: true })
+    const older = new Date(Date.now() - 72 * 3600 * 1000).toISOString()
+    const lessOld = new Date(Date.now() - 48 * 3600 * 1000).toISOString()
+    const lines = [
+      { ts: older, tool: 'search_hybrid', ms: 10, project: 't' },
+      { ts: lessOld, tool: 'search_hybrid', ms: 10, project: 't' },
+    ]
+    fs.writeFileSync(
+      path.join(logDir, 'mcp.jsonl'),
+      lines.map((l) => JSON.stringify(l)).join('\n') + '\n',
+      'utf-8',
+    )
+
+    const result = readTelemetry(projectPath, 24)
+    // as duas linhas estao fora da janela de 24h - nao entram na agregacao...
+    expect(result.totalCalls).toBe(0)
+    // ...mas lastCallAt reflete a mais recente das duas mesmo assim.
+    expect(result.lastCallAt).toBe(lessOld)
   })
 
   it('agrega chamadas por ferramenta e soma tokens_delivered', () => {

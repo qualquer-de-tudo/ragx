@@ -1,62 +1,12 @@
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
 import path from 'node:path'
-import { readHubRegistry } from './data/hub'
-import { initSqlWasm, readProjectStats } from './data/project-stats'
-import { readTelemetry } from './data/telemetry'
+import { initSqlWasm } from './data/project-stats'
+import { buildSnapshot } from './data/snapshot'
 import { runRagxCommand } from './data/run-ragx-command'
-import type { Snapshot } from '../src/types/ragx-bridge'
 
 const isDev = !app.isPackaged
 
 const POLL_INTERVAL_MS = 5000
-const TELEMETRY_WINDOW_HOURS = 24
-
-// Cache do ultimo snapshot valido - usado como fallback se readHubRegistry()
-// em si falhar (ex.: registry.json corrompido/truncado por escrita
-// concorrente), para nao propagar um erro nao tratado ate o poll timer ou o
-// handler IPC (ver Finding 2 da revisao final).
-let lastGoodSnapshot: Snapshot | null = null
-
-function buildSnapshot(): Snapshot {
-  let registry: ReturnType<typeof readHubRegistry>
-  try {
-    registry = readHubRegistry()
-  } catch (err) {
-    console.error('readHubRegistry() falhou - registry.json pode estar corrompido/em escrita:', err)
-    // Sem dado por projeto para isolar aqui - devolve o ultimo snapshot bom
-    // conhecido (se houver) em vez de deixar o erro propagar e derrubar o
-    // painel inteiro.
-    return lastGoodSnapshot ?? { projects: [], generatedAt: new Date().toISOString() }
-  }
-
-  const projects = registry.map((proj) => {
-    let stats: Snapshot['projects'][number]['stats']
-    try {
-      stats = proj.path
-        ? readProjectStats(proj.path)
-        : { unavailable: true as const, reason: 'projeto sem caminho local (só federação)' }
-    } catch (err) {
-      console.error(`readProjectStats falhou para o projeto "${proj.name}":`, err)
-      stats = { unavailable: true as const, reason: 'falha ao ler estatísticas do projeto' }
-    }
-
-    let telemetry: Snapshot['projects'][number]['telemetry']
-    try {
-      telemetry = proj.path
-        ? readTelemetry(proj.path, TELEMETRY_WINDOW_HOURS)
-        : { callsByTool: [], totalCalls: 0, tokensDelivered: 0 }
-    } catch (err) {
-      console.error(`readTelemetry falhou para o projeto "${proj.name}":`, err)
-      telemetry = { callsByTool: [], totalCalls: 0, tokensDelivered: 0 }
-    }
-
-    return { ...proj, stats, telemetry }
-  })
-
-  const snapshot = { projects, generatedAt: new Date().toISOString() }
-  lastGoodSnapshot = snapshot
-  return snapshot
-}
 
 let mainWindow: BrowserWindow | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -64,7 +14,9 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 function startPolling(): void {
   if (pollTimer) return
   pollTimer = setInterval(() => {
-    mainWindow?.webContents.send('ragx:snapshot', buildSnapshot())
+    buildSnapshot()
+      .then((snapshot) => mainWindow?.webContents.send('ragx:snapshot', snapshot))
+      .catch((err) => console.error('buildSnapshot() falhou no polling:', err))
   }, POLL_INTERVAL_MS)
 }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ProjectSnapshot } from '../types/ragx-bridge'
-import { commonBase, formatCompact, formatTime, parentHint, statusLabel } from '../format'
+import { commonBase, formatCompact, formatTime, parentHint } from '../format'
+import { deriveProjectState, STATE_LABEL } from '../state'
 
 interface Props {
   projects: ProjectSnapshot[]
@@ -11,9 +12,13 @@ interface Props {
 }
 
 const FILTER_THRESHOLD = 6
+// Sem fila de tarefas nesta tarefa (Task 5) - nenhum projeto está "ocupado"
+// pelo lado do renderer ainda; o estado "indexing" ainda pode vir do próprio
+// status.json (`p.running`).
+const NO_BUSY_IDS = new Set<string>()
 
 function chunksOf(p: ProjectSnapshot): number | null {
-  return 'unavailable' in p.stats ? null : p.stats.chunks
+  return p.counts?.chunks ?? null
 }
 
 export function ProjectList({ projects, selectedId, onSelect, loading = false, updatedAt = null }: Props) {
@@ -66,6 +71,7 @@ export function ProjectList({ projects, selectedId, onSelect, loading = false, u
             const chunks = chunksOf(p)
             const hint = parentHint(p.path, base)
             const selected = p.id === selectedId
+            const state = deriveProjectState(p, NO_BUSY_IDS)
             return (
               <li key={p.id}>
                 <button
@@ -76,12 +82,12 @@ export function ProjectList({ projects, selectedId, onSelect, loading = false, u
                 >
                   <span className="item-top">
                     <span className="item-name">{p.name}</span>
-                    <span className="item-count">{chunks === null ? '—' : formatCompact(chunks)}</span>
+                    <span className="item-count">{chunks === null ? 'sem dados' : formatCompact(chunks)}</span>
                   </span>
                   <span className="item-bottom">
                     <span className="item-hint">{hint ?? 'só federação'}</span>
-                    {p.status !== 'ok' && (
-                      <span className={`item-status status-${p.status}`}>{statusLabel(p.status)}</span>
+                    {state !== 'ok' && (
+                      <span className={`item-status status-${state}`}>{STATE_LABEL[state]}</span>
                     )}
                   </span>
                   <span className="item-bar" aria-hidden="true">

@@ -17,6 +17,27 @@ export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
+const MINUTE_S = 60
+const HOUR_S = 3600
+const DAY_S = 86400
+
+/** "agora" / "há N min" / "há N h" / "há N dias" (1 dia: "há 1 dia"). */
+export function formatRelative(iso: string, now: Date = new Date()): string {
+  const diffSeconds = Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 1000))
+  if (diffSeconds < MINUTE_S) return 'agora'
+  if (diffSeconds < HOUR_S) return `há ${Math.floor(diffSeconds / MINUTE_S)} min`
+  if (diffSeconds < DAY_S) return `há ${Math.floor(diffSeconds / HOUR_S)} h`
+  const days = Math.floor(diffSeconds / DAY_S)
+  return days === 1 ? 'há 1 dia' : `há ${days} dias`
+}
+
+/** "menos de 1 min" / "cerca de N min" / "cerca de N h". */
+export function formatEta(seconds: number): string {
+  if (seconds < MINUTE_S) return 'menos de 1 min'
+  if (seconds < HOUR_S) return `cerca de ${Math.round(seconds / MINUTE_S)} min`
+  return `cerca de ${Math.round(seconds / HOUR_S)} h`
+}
+
 function segmentsOf(p: string): string[] {
   return p.split(/[\\/]+/).filter(Boolean)
 }

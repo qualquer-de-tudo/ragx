@@ -30,4 +30,6 @@ export interface TelemetrySummary {
   callsByTool: TelemetryCallCount[]
   totalCalls: number
   tokensDelivered: number
+  /** Maior `ts` de todas as linhas válidas do log, sem o filtro de `sinceHours`. `null` sem log. */
+  lastCallAt: string | null
 }
