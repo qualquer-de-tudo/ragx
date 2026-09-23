@@ -66,7 +66,7 @@ def test_build_context_logs_tokens_delivered(proj: Path) -> None:
     asyncio.run(_call_tool(cfg, "build_context", query="login sso", tokens=500))
 
     lines = _log_lines(proj)
-    matching = [l for l in lines if l["tool"] == "build_context"]
+    matching = [entry for entry in lines if entry["tool"] == "build_context"]
     assert len(matching) == 1
     assert isinstance(matching[0]["tokens_delivered"], int)
 
@@ -81,3 +81,32 @@ def test_failed_call_still_logs(proj: Path) -> None:
     lines = _log_lines(proj)
     assert len(lines) == 1
     assert lines[0]["tool"] == "get_chunk"
+
+
+def test_validation_error_still_logs(proj: Path) -> None:
+    """`query=""` viola `min_length=1` de `SearchRequest.query` -> ValidationError
+    -> `invalid_argument`. Mesmo assim deve gerar uma linha de telemetria: a
+    reclamacao original de que 'toda chamada gera uma linha' nao se sustentava
+    quando so o caminho de sucesso logava."""
+    import asyncio
+
+    cfg = load_config(proj)
+    asyncio.run(_call_tool(cfg, "search_hybrid", query=""))
+
+    lines = _log_lines(proj)
+    assert len(lines) == 1
+    assert lines[0]["tool"] == "search_hybrid"
+
+
+def test_chamada_sem_indice_nao_cria_pasta_ragx(tmp_path: Path) -> None:
+    """Uma pasta que nao e um projeto RAGX (sem ragx.toml, sem indice) nao pode
+    ganhar um `.ragx/` so por causa de uma chamada MCP bem-sucedida como
+    `get_playbook`, que nao precisa de indice."""
+    import asyncio
+
+    cfg = load_config(tmp_path)
+    assert not cfg.db_path.exists()
+
+    asyncio.run(_call_tool(cfg, "get_playbook"))
+
+    assert not (tmp_path / ".ragx").exists(), "chamada MCP sem indice nao deve criar .ragx/"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import subprocess
 from pathlib import Path
@@ -108,17 +109,24 @@ def init(
         console.print("  [dim]nada a fazer — já estava inicializado[/]")
     console.print(f"\n  project_id: [cyan]{cfg.project.id}[/]")
 
+    from ragx.core.errors import UsageError
     from ragx.federation import hub as hub_mod
 
     try:
         hub_mod.register(cfg, path=root)
         console.print(f"  [dim]registrado no hub ({cfg.hub_dir})[/]")
+    except UsageError:
+        # Projeto private (ou, raro, ragx.toml sumiu entre a escrita acima e
+        # aqui). Uma entrada antiga do hub — de antes do projeto virar
+        # private — não pode sobreviver: ela vazaria em buscas cross-project
+        # (docs/17-multiprojeto-e-federacao.md, critério "private nunca
+        # aparece em consulta cross-project").
+        with contextlib.suppress(Exception):
+            hub_mod.unregister_by_id(cfg, cfg.project.id)
     except Exception:
-        # UsageError: projeto private, ou (raro) ragx.toml sumiu entre a
-        # escrita acima e aqui. Qualquer outra falha (ex.: colisão de nome
-        # no hub — dois projetos com o mesmo basename, IntegrityError) também
-        # é engolida aqui: registro no hub é um extra, best-effort, nunca
-        # motivo pra falhar o init.
-        pass
+        # Qualquer outra falha (ex.: colisão de nome no hub — dois projetos
+        # com o mesmo basename, IntegrityError) também é engolida: registro
+        # no hub é um extra, best-effort, nunca motivo pra falhar o init.
+        console.print("  [dim]não registrado no hub (falha ao registrar)[/]")
 
     console.print("\nPróximo passo: [bold]ragx security scan .[/]\n")

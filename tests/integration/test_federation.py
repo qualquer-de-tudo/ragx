@@ -316,6 +316,27 @@ def test_projeto_privado_invisivel_em_todo_scope(ws: dict[str, Path], tmp_path: 
     assert explicito.results == [], "nem `project:<nome>` explícito pode ver um private"
 
 
+def test_projeto_flipado_para_private_no_disco_nao_vaza_via_hub_desatualizado(
+    ws: dict[str, Path],
+) -> None:
+    """Hub ainda diz "workspace" (sem re-sync), mas o ragx.toml do projeto
+    clonado ja foi editado para "private" -- _search_cloned deve honrar a
+    visibilidade ATUAL do projeto, nao a armazenada (stale) no hub."""
+    cfg = load_config(ws["order"])
+    hub_mod.register(cfg, ws["pay"])  # registra como "workspace" (default)
+
+    pay_toml = ws["pay"] / "ragx.toml"
+    pay_toml.write_text(
+        pay_toml.read_text(encoding="utf-8").replace(
+            'visibility = "workspace"', 'visibility = "private"'
+        ),
+        encoding="utf-8",
+    )
+
+    todos = search_scoped(cfg, "cobranca pagamento", scope="all", limit=10)
+    assert "payment-service" not in {r.project for r in todos.results}
+
+
 def test_sem_hub_orienta_o_usuario(ws: dict[str, Path]) -> None:
     with pytest.raises(UsageError, match="register"):
         search_scoped(load_config(ws["order"]), "x", scope="all")

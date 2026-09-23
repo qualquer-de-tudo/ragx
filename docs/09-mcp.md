@@ -283,10 +283,13 @@ delegam ao mesmo serviço que a CLI usa, e a escrita acontece lá, não aqui.
 
 ## Observabilidade
 
-Toda chamada gera uma linha em `.ragx/logs/mcp.jsonl`:
+Toda chamada MCP feita a um projeto já inicializado gera uma linha em
+`.ragx/logs/mcp.jsonl` — uma pasta sem índice (o estado normal de qualquer
+diretório que não é um projeto RAGX) não gera log nem cria `.ragx/` só por
+causa de uma chamada:
 
 ```json
-{"ts":"2026-09-15T12:31:02Z","tool":"search_hybrid","ms":84,"project":"ragx","tokens_delivered":3847}
+{"ts":"2026-09-15T12:31:02Z","tool":"build_context","ms":84,"project":"ragx","tokens_delivered":3847}
 ```
 
 Cada linha registra `ts` (timestamp), `tool` (ferramenta chamada), `ms` (latência em

@@ -101,6 +101,33 @@ def test_init_nao_falha_se_projeto_e_private(tmp_path: Path, monkeypatch: pytest
     result2 = runner.invoke(app, ["init"])
     assert result2.exit_code == 0, result2.output
 
+    from ragx.config import load_config
+    from ragx.federation import hub
+
+    cfg = load_config(proj_dir)
+    nomes = {p["name"] for p in hub.list_projects(cfg)}
+    assert "projeto-privado" not in nomes, "projeto private nao deve sobreviver no hub apos re-registrar"
+
+
+def test_init_sobrevive_a_colisao_de_nome_no_hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("USERPROFILE", str(fake_home))
+
+    grupo_a = tmp_path / "grupo-a" / "backend"
+    grupo_b = tmp_path / "grupo-b" / "backend"
+    grupo_a.mkdir(parents=True)
+    grupo_b.mkdir(parents=True)
+
+    monkeypatch.chdir(grupo_a)
+    r1 = runner.invoke(app, ["init"])
+    assert r1.exit_code == 0, r1.output
+
+    monkeypatch.chdir(grupo_b)
+    r2 = runner.invoke(app, ["init"])
+    assert r2.exit_code == 0, r2.output
+
 
 def test_scan_bloqueia_e_retorna_exit_1(projeto: Path) -> None:
     runner.invoke(app, ["init", "."])

@@ -43,7 +43,7 @@ def log_mcp_call(state_dir: Path, entry: dict[str, Any]) -> None:
         folder = Path(state_dir) / "logs"
         folder.mkdir(parents=True, exist_ok=True)
         path = folder / "mcp.jsonl"
-        with path.open("a", encoding="utf-8") as f:
+        with path.open("a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass

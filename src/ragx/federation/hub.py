@@ -185,6 +185,18 @@ def unregister(cfg: Config, name: str) -> bool:
     return removed
 
 
+def unregister_by_id(cfg: Config, project_id: str) -> bool:
+    conn = open_hub(cfg)
+    try:
+        cur = conn.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+        conn.commit()
+        removed = (cur.rowcount or 0) > 0
+    finally:
+        conn.close()
+    _write_registry(cfg)
+    return removed
+
+
 def list_projects(cfg: Config) -> list[dict[str, Any]]:
     if not hub_db(cfg).exists():
         return []

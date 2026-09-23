@@ -117,6 +117,11 @@ def _search_cloned(
         other = load_config(p["path"])
     except Exception:
         return [], "configuração ilegível"
+    if other.project.visibility == "private":
+        # Projeto privado ou inexistente: indistinguíveis de propósito. O hub
+        # pode ainda guardar a visibilidade antiga (stale) — a config LIVE do
+        # projeto é quem manda, não o que foi registrado no hub no passado.
+        return [], None
     if not other.db_path.exists():
         return [], "sem índice local (rode `ragx index` lá)"
 

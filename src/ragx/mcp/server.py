@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import ValidationError
@@ -34,6 +33,7 @@ from ragx.mcp.tools import (
     safe_echo,
     validate_path,
 )
+from ragx.storage.db import utcnow
 
 
 def _explain(exc: ValidationError) -> str:
@@ -58,9 +58,14 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
     o suficiente para decidir o que fazer.
     """
     inicio = time.monotonic()
+    # Telemetria só faz sentido para um projeto de fato indexado: fora disso
+    # (ver ramo `not_indexed` abaixo) toda chamada bem-sucedida deixaria uma
+    # pasta `.ragx/` num diretório que nem é um projeto RAGX.
+    indexado = cfg.db_path.exists()
     try:
         resultado = fn()
-        _log_call(cfg, tool, inicio, resultado)
+        if indexado:
+            _log_call(cfg, tool, inicio, resultado)
         return resultado
     except ValidationError as exc:
         # Argumento fora do contrato é erro de QUEM CHAMOU, não falha interna.
@@ -68,6 +73,8 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
         # caçar num log de traceback o que a própria mensagem já sabe dizer:
         # qual campo, qual limite, qual valor veio. Quem recebe "ValidationError.
         # Detalhe em .ragx/logs/errors.log" não tem como corrigir a chamada.
+        if indexado:
+            _log_call(cfg, tool, inicio, None)
         return err("invalid_argument", f"{tool}: {_explain(exc)}")
     except Exception as exc:
         # "Ainda não há índice aqui" NÃO é falha interna: é o estado normal de
@@ -75,7 +82,7 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
         # globalmente, isso acontece em boa parte das sessões — e responder
         # `internal` mandando olhar um log que não existe faz o agente concluir
         # que o RAGX está quebrado.
-        if not cfg.db_path.exists():
+        if not indexado:
             return err(
                 "not_indexed",
                 f"nenhum índice em {cfg.root}. Se este é o projeto certo, rode "
@@ -83,6 +90,7 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
                 f"sessão dentro de um projeto já indexado.",
             )
         log_exception(cfg.state_dir, tool, exc)
+        _log_call(cfg, tool, inicio, None)
         return err(
             "internal",
             f"{tool} falhou: {type(exc).__name__}. "
@@ -96,19 +104,24 @@ def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
     O agente decide sozinho quando reindexar; isto é o que deixa visível,
     depois, o que ele de fato chamou e quanto cada chamada custou.
     """
-    ms = round((time.monotonic() - started_at) * 1000, 1)
-    entry: dict[str, Any] = {
-        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "tool": tool,
-        "ms": ms,
-        "project": cfg.project.name,
-    }
-    if tool == "build_context" and isinstance(result, dict) and result.get("ok"):
-        tokens = (result.get("data") or {}).get("estimated_tokens")
-        if isinstance(tokens, int):
-            entry["tokens_delivered"] = tokens
+    try:
+        ms = round((time.monotonic() - started_at) * 1000, 1)
+        entry: dict[str, Any] = {
+            "ts": utcnow(),
+            "tool": tool,
+            "ms": ms,
+            "project": cfg.project.name,
+        }
+        if tool == "build_context" and isinstance(result, dict) and result.get("ok"):
+            tokens = (result.get("data") or {}).get("estimated_tokens")
+            if isinstance(tokens, int):
+                entry["tokens_delivered"] = tokens
 
-    log_mcp_call(cfg.state_dir, entry)
+        log_mcp_call(cfg.state_dir, entry)
+    except Exception:
+        # Um bug na construção da entrada nunca pode virar `internal` para uma
+        # chamada que, de resto, teve sucesso.
+        pass
 
 
 _ORDER_HINT = (
