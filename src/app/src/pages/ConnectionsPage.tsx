@@ -2,9 +2,11 @@ import type { ConnectionCheck, JobView } from '../types/ragx-bridge'
 import { ConnectionGrid } from '../components/connections/ConnectionCard'
 
 /**
- * Tela Conexões: RAGX CLI, Claude Code e Ollama (Docker), cada um com selo,
- * fatos e as correções de um clique. A checagem mora no `App`
- * (`useConnections`), que também alimenta o ponto de saúde do topo.
+ * Tela Conexões: RAGX CLI, Claude Code e Ollama (no Docker ou local), cada um
+ * com selo, fatos e as correções de um clique; no Ollama também trocar de
+ * modo, parar e medir a velocidade. A checagem mora no `App`
+ * (`useConnections`), que também alimenta o ponto de saúde do topo; a medição
+ * pede uma checagem nova, cujo resultado chega por `ragx:connections`.
  */
 export function ConnectionsPage({
   connections,

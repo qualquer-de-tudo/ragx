@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { busyProjectIds, deriveProjectState } from '../state'
+import { activeConnectionJob, activeOllamaSwitch, busyProjectIds, deriveProjectState } from '../state'
 import { job, snap } from '../test/snap'
 
 const none = new Set<string>()
@@ -55,4 +55,40 @@ describe('busyProjectIds', () => {
 
   it('um embed rodando deixa o projeto "Indexando…"', () =>
     expect(deriveProjectState(snap(), busyProjectIds([job({ kind: 'embed', state: 'running' })]))).toBe('indexing'))
+})
+
+describe('activeConnectionJob', () => {
+  it('reconhece trocar, parar e iniciar o Ollama pelo tipo', () => {
+    for (const kind of ['ollama-use-native', 'ollama-use-docker', 'ollama-stop', 'ollama-start'] as const) {
+      const running = job({ id: kind, kind, projectId: null })
+      expect(activeConnectionJob([running], { kind, label: 'x' })).toBe(running)
+      expect(activeConnectionJob([{ ...running, state: 'done' }], { kind, label: 'x' })).toBeNull()
+    }
+    // Outro tipo não ocupa o botão.
+    expect(
+      activeConnectionJob([job({ kind: 'ollama-use-docker', projectId: null })], { kind: 'ollama-use-native', label: 'x' }),
+    ).toBeNull()
+  })
+
+  it('o pull só conta se for do mesmo modelo; a rodando vence a da fila', () => {
+    const queued = job({ id: 'q', kind: 'ollama-pull', model: 'bge-m3', projectId: null, state: 'queued' })
+    const running = job({ id: 'r', kind: 'ollama-pull', model: 'bge-m3', projectId: null, state: 'running' })
+    const pull = { kind: 'ollama-pull' as const, label: 'Baixar bge-m3', model: 'bge-m3' }
+    expect(activeConnectionJob([queued, running], pull)).toBe(running)
+    expect(activeConnectionJob([queued], { ...pull, model: 'nomic-embed-text' })).toBeNull()
+  })
+
+  it('medir velocidade nunca é tarefa da fila', () =>
+    expect(activeConnectionJob([job({ kind: 'ollama-stop', projectId: null })], { kind: 'ollama-benchmark', label: 'x' })).toBeNull())
+})
+
+describe('activeOllamaSwitch', () => {
+  it('troca para local ou Docker, na fila ou rodando', () => {
+    const native = job({ id: 'n', kind: 'ollama-use-native', label: 'Usar o Ollama local', projectId: null, state: 'queued' })
+    const docker = job({ id: 'd', kind: 'ollama-use-docker', label: 'Usar o Ollama no Docker', projectId: null })
+    expect(activeOllamaSwitch([native])).toBe(native)
+    expect(activeOllamaSwitch([native, docker])).toBe(docker)
+    expect(activeOllamaSwitch([{ ...docker, state: 'failed' }])).toBeNull()
+    expect(activeOllamaSwitch([job({ kind: 'ollama-stop', projectId: null })])).toBeNull()
+  })
 })

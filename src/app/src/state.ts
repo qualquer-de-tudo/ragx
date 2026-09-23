@@ -101,7 +101,10 @@ export function missingEmbeddings(counts: ProjectSnapshot['counts']): number {
 
 /**
  * Tarefa na fila ou rodando para uma ação de conexão (a rodando tem
- * prioridade). `ollama-pull` só conta se for do mesmo modelo.
+ * prioridade), casada pelo tipo: vale para `mcp-register`, `ollama-start`,
+ * `ollama-stop`, `ollama-use-native` e `ollama-use-docker`. `ollama-pull` só
+ * conta se for do mesmo modelo. `ollama-benchmark` nunca é tarefa da fila,
+ * então nunca casa.
  */
 export function activeConnectionJob(jobs: readonly JobView[], action: ConnectionAction): JobView | null {
   const mine = jobs.filter(
@@ -110,5 +113,17 @@ export function activeConnectionJob(jobs: readonly JobView[], action: Connection
       (j.state === 'queued' || j.state === 'running') &&
       (action.kind !== 'ollama-pull' || j.model === (action.model ?? null)),
   )
+  return mine.find((j) => j.state === 'running') ?? mine[0] ?? null
+}
+
+const OLLAMA_SWITCH_KINDS: readonly JobKind[] = ['ollama-use-native', 'ollama-use-docker']
+
+/**
+ * Troca de modo do Ollama (para local ou para o Docker) na fila ou rodando, a
+ * rodando primeiro. O card do Ollama avisa enquanto ela existe, mesmo que a
+ * checagem já não ofereça o botão de trocar (a API cai no meio da troca).
+ */
+export function activeOllamaSwitch(jobs: readonly JobView[]): JobView | null {
+  const mine = jobs.filter((j) => OLLAMA_SWITCH_KINDS.includes(j.kind) && (j.state === 'queued' || j.state === 'running'))
   return mine.find((j) => j.state === 'running') ?? mine[0] ?? null
 }

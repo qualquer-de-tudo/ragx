@@ -91,6 +91,45 @@ describe('Onboarding', () => {
     expect(screen.queryByText('Você pode continuar e resolver depois na tela Conexões.')).not.toBeInTheDocument()
   })
 
+  it('passo 2: o card do Ollama tem as mesmas ações da tela Conexões (trocar, medir, parar)', async () => {
+    const ollama: Partial<ConnectionCheck> = {
+      title: 'Ollama (Docker)',
+      state: 'ok',
+      stateLabel: 'Conectado',
+      facts: [
+        { label: 'Modo', value: 'Docker' },
+        { label: 'Processador', value: 'ainda não medido' },
+      ],
+      actions: [
+        { kind: 'ollama-use-native', label: 'Trocar para o Ollama local (usa sua GPU)' },
+        { kind: 'ollama-benchmark', label: 'Medir velocidade', secondary: true },
+        { kind: 'ollama-stop', label: 'Parar o Ollama', secondary: true },
+      ],
+    }
+    const { b } = setup(
+      {
+        runOllamaBenchmark: vi.fn().mockResolvedValue({
+          ok: false, chunksPerSecond: null, processor: 'unknown', vramMB: null, model: null,
+          measuredAt: '2026-09-23T12:00:00Z', error: 'O Ollama não respondeu.',
+        }),
+      },
+      connectionChecks({ ollama }),
+    )
+    next()
+    const card = screen.getByRole('article', { name: 'Ollama (Docker)' })
+    expect(within(card).getByRole('button', { name: 'Trocar para o Ollama local (usa sua GPU)' })).toHaveClass('btn-primary')
+    const group = within(card).getByRole('group', { name: 'Outras ações' })
+    expect(within(group).getByRole('button', { name: 'Parar o Ollama' })).not.toHaveClass('btn-primary')
+
+    fireEvent.click(within(group).getByRole('button', { name: 'Medir velocidade' }))
+    expect(await within(card).findByRole('alert')).toHaveTextContent('Não foi possível medir: O Ollama não respondeu.')
+    expect(b.runOllamaBenchmark).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(b.getConnections).toHaveBeenCalledTimes(1))
+
+    fireEvent.click(within(card).getByRole('button', { name: 'Trocar para o Ollama local (usa sua GPU)' }))
+    await waitFor(() => expect(b.enqueueJob).toHaveBeenCalledWith({ kind: 'ollama-use-native' }))
+  })
+
   it('passo 2: ação de conexão enfileira a tarefa', async () => {
     const { b } = setup()
     next()

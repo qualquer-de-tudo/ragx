@@ -797,6 +797,62 @@
   text-align: center;
 }
 
+/* Ações de apoio (medir, parar): neutras, mais baixas e em linha. Lado a lado
+   quando cabem; num card estreito cada uma ocupa a linha inteira. */
+.conn-actions-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.conn-actions .conn-btn-more {
+  flex: 1 1 auto;
+  min-height: 28px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+}
+
+/* Troca de modo em andamento: a tarefa é longa, o card avisa onde acompanhar. */
+.conn-note {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-wash);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.conn-note-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.conn-note-head > strong {
+  min-width: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.conn-note-state {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.conn-note-body {
+  color: var(--ink-2);
+}
+
+.conn-callout {
+  padding: 10px 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 /* No onboarding o painel é mais estreito: os três cards cabem lado a lado. */
 .onboarding .conn-grid {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
