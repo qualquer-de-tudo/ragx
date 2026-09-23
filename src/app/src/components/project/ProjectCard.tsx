@@ -4,7 +4,7 @@ import { STATE_ACTION, STATE_LABEL, STATE_TONE, type ProjectState } from '../../
 import { formatCompact, formatEta, formatRelative } from '../../format'
 import { Badge } from '../shell/Badge'
 
-function BranchIcon() {
+export function BranchIcon() {
   return (
     <svg
       className="project-card-icon"

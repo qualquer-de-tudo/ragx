@@ -6,14 +6,9 @@ import { Sidebar } from './components/shell/Sidebar'
 import { TopBar, type Health } from './components/shell/TopBar'
 import type { Route } from './route'
 import type { ConnectionCheck } from './types/ragx-bridge'
-import {
-  ConnectionsPlaceholder,
-  HowPlaceholder,
-  OnboardingPlaceholder,
-  ProjectPlaceholder,
-} from './pages/Placeholders'
+import { ConnectionsPlaceholder, HowPlaceholder, OnboardingPlaceholder } from './pages/Placeholders'
 import { ProjectsPage } from './pages/ProjectsPage'
-import { busyProjectIds } from './state'
+import { ProjectPage } from './pages/ProjectPage'
 import './App.css'
 
 export type { Route } from './route'
@@ -66,7 +61,6 @@ function App() {
   }
 
   const projects = useMemo(() => [...(snapshot?.projects ?? [])].sort(byName), [snapshot])
-  const busyIds = useMemo(() => busyProjectIds(jobs), [jobs])
   // O processo principal guarda o resultado da última checagem no snapshot;
   // enquanto ele não tem, vale a checagem feita daqui.
   const health: Health = snapshot?.connectionsHealth ?? worstOf(connections)
@@ -116,9 +110,10 @@ function App() {
       break
     case 'project':
       page = (
-        <ProjectPlaceholder
+        <ProjectPage
+          key={route.id}
           project={projects.find((p) => p.id === route.id) ?? null}
-          busyIds={busyIds}
+          jobs={jobs}
           onBack={() => setRoute({ page: 'projects' })}
         />
       )

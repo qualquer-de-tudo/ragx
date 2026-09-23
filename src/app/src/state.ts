@@ -70,3 +70,24 @@ export function busyProjectIds(jobs: readonly JobView[]): Set<string> {
       .flatMap((j) => (j.projectId === null ? [] : [j.projectId])),
   )
 }
+
+/**
+ * Tarefa na fila ou rodando deste projeto, de um dos tipos pedidos: é o que
+ * deixa um botão de ação "Na fila" ou "Rodando" (a rodando tem prioridade).
+ */
+export function activeJobFor(jobs: readonly JobView[], projectId: string, kinds: readonly JobKind[]): JobView | null {
+  const mine = jobs.filter(
+    (j) => j.projectId === projectId && kinds.includes(j.kind) && (j.state === 'queued' || j.state === 'running'),
+  )
+  return mine.find((j) => j.state === 'running') ?? mine[0] ?? null
+}
+
+export function jobStateLabel(j: JobView): string {
+  return j.state === 'running' ? 'Rodando' : 'Na fila'
+}
+
+/** Chunks que ainda não têm embedding (0 sem contagens). */
+export function missingEmbeddings(counts: ProjectSnapshot['counts']): number {
+  if (counts === null) return 0
+  return Math.max(counts.pendingEmbeddings, counts.chunks - counts.embeddings, 0)
+}

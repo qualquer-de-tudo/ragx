@@ -1,48 +1,10 @@
 /*
  * Marcadores provisórios das páginas (Task 7). Cada um é trocado pela página
- * de verdade nas Tasks 9 e 10 (Projetos já é a página real, Task 8); ficam
- * aqui só para a casca ser navegável.
+ * de verdade na Task 10 (Projetos e o detalhe do projeto já são páginas
+ * reais, Tasks 8 e 9); ficam aqui só para a casca ser navegável.
  */
-import type { ConnectionCheck, ProjectSnapshot } from '../types/ragx-bridge'
-import { deriveProjectState, STATE_LABEL, STATE_TONE } from '../state'
+import type { ConnectionCheck } from '../types/ragx-bridge'
 import { Badge, type Tone } from '../components/shell/Badge'
-
-export function ProjectPlaceholder({
-  project,
-  busyIds,
-  onBack,
-}: {
-  project: ProjectSnapshot | null
-  busyIds: ReadonlySet<string>
-  onBack: () => void
-}) {
-  const state = project ? deriveProjectState(project, busyIds) : null
-  return (
-    <section className="page">
-      <button type="button" className="btn btn-quiet btn-icon back" aria-label="Voltar para Projetos" onClick={onBack}>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path d="M15 5l-7 7 7 7" />
-        </svg>
-      </button>
-      <header className="page-head">
-        <h1 className="page-title">{project?.name ?? 'Projeto não encontrado'}</h1>
-        {state && <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>}
-      </header>
-      {project && <p className="mono dim">{project.path ?? 'sem dados'}</p>}
-    </section>
-  )
-}
 
 const CONNECTION_BADGE: Record<ConnectionCheck['state'], { tone: Tone; label: string }> = {
   ok: { tone: 'good', label: 'Conectado' },

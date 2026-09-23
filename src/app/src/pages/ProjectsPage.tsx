@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import type { JobKind, JobView, ProjectSnapshot } from '../types/ragx-bridge'
+import type { JobView, ProjectSnapshot } from '../types/ragx-bridge'
+import { enqueue } from '../jobs'
 import { busyProjectIds, deriveProjectState, hasProblem, isOutdated, type ProjectState } from '../state'
 import { commonBase, foldForSearch, parentHint } from '../format'
 import { ProjectCard } from '../components/project/ProjectCard'
@@ -12,12 +13,6 @@ const FILTERS: Array<{ id: Filter; label: string; test: (s: ProjectState) => boo
   { id: 'outdated', label: 'Defasados', test: isOutdated },
   { id: 'problem', label: 'Com problema', test: hasProblem },
 ]
-
-function enqueue(kind: JobKind, projectId: string) {
-  window.ragx
-    .enqueueJob({ kind, projectId })
-    .catch((err: unknown) => console.error(`enqueueJob(${kind}) falhou:`, err))
-}
 
 /** Controle segmentado com semântica de grupo de rádio: setas mudam a escolha. */
 function SegmentedFilter({
@@ -128,7 +123,7 @@ export function ProjectsPage({
               hint={r.hint}
               job={r.job}
               onOpen={onOpen}
-              onAction={(kind) => enqueue(kind, r.project.id)}
+              onAction={(kind) => void enqueue(kind, r.project.id)}
             />
           </li>
         ))}

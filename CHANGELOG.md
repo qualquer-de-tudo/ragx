@@ -63,6 +63,21 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   dela (os que já estão no painel aparecem desmarcados) e instala os hooks de
   git por padrão.
 
+  O detalhe do projeto responde "o índice está em dia?" com os motivos exatos
+  de `ragx status --json` ("O índice é da branch main; você está em feat/x.",
+  "3 commit(s) depois da última indexação.", arquivos alterados, embeddings
+  pendentes) e mostra a linha do tempo das 10 últimas indexações: quando, quem
+  disparou (Terminal, Painel, Watcher, Sync, Agente, Troca de branch, Commit,
+  Merge ou pull), o modo, a branch e o commit, e quantos arquivos mudaram ou o
+  erro. Na mesma página: os números do índice com a cobertura de embeddings,
+  um interruptor para os hooks de git, "Atualizar agora", "Gerar embeddings
+  faltantes", "Reindexar do zero" (pede um segundo clique), as ações que
+  alteram `knowledge/` (sincronizar, reconstruir grafo, gerar dicionário) com
+  o aviso para revisar o diff, o uso pelos agentes nas últimas 24 h, a
+  economia estimada, os achados de segurança e "Remover do hub" (também com
+  segundo clique; nada é apagado no disco). Um botão cuja tarefa já está na
+  fila ou rodando fica desabilitado e diz "Na fila" ou "Rodando".
+
 - **O índice acompanha a branch.** Cada indexação registra branch, commit e quem
   disparou (`cli`, `panel`, `watch`, `sync`, `mcp:*`, `hook:*`). `ragx status --json`
   diz se o índice está defasado e por quê (troca de branch, commits novos,
