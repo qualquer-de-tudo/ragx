@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import pytest
 
 from ragx.core.ids import (
     CHUNKER_VERSION,
+    SCHEMA_VERSION,
     chunk_id,
     content_hash,
     document_id,
@@ -15,6 +19,8 @@ from ragx.core.ids import (
 )
 
 pytestmark = pytest.mark.unit
+
+_MIGRATIONS_DIR = Path(__file__).parents[2] / "src" / "ragx" / "storage" / "migrations"
 
 CODE = "def login(self):\n    return True\n"
 
@@ -81,3 +87,18 @@ def test_snapshot_de_ids() -> None:
     for expected_id in esperado.values():
         assert len(expected_id) == 32
         assert all(c in "0123456789abcdef" for c in expected_id)
+
+
+def test_schema_version_bate_com_a_migracao_mais_recente() -> None:
+    """SCHEMA_VERSION (usado por `ragx doctor` para aceitar/recusar um banco)
+    tem que acompanhar a migração mais alta em disco. Já ficou pra trás uma
+    vez: 0006_run_provenance.sql chegou a mover `PRAGMA user_version` para 6
+    sem que ninguém bumpasse esta constante, e `ragx doctor` passou a recusar
+    todo banco recém-indexado ("banco mais novo que esta instalação")."""
+    numeros = [
+        int(m.group(1))
+        for f in _MIGRATIONS_DIR.glob("*.sql")
+        if (m := re.match(r"^(\d{4})_", f.name))
+    ]
+    assert numeros, f"nenhuma migração encontrada em {_MIGRATIONS_DIR}"
+    assert max(numeros) == SCHEMA_VERSION
