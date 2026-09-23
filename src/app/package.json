@@ -12,7 +12,7 @@
     "build:electron:ts": "tsc -p tsconfig.electron.json",
     "test": "vitest run",
     "predev:electron": "node -e \"require('fs').mkdirSync('dist-electron',{recursive:true});require('fs').copyFileSync('electron/package.json','dist-electron/package.json')\"",
-    "dev:electron": "concurrently -k \"npm:dev\" \"npm run build:electron:ts -- --watch\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron dist-electron/main.js\"",
+    "dev:electron": "concurrently -k \"npm:dev\" \"npm run build:electron:ts -- --watch\" \"wait-on tcp:5173 dist-electron/main.js && cross-env NODE_ENV=development electron dist-electron/main.js\"",
     "package": "npm run build && npm run build:electron:ts && node -e \"require('fs').copyFileSync('electron/package.json','dist-electron/package.json')\" && electron-builder"
   },
   "dependencies": {

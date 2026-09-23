@@ -18,7 +18,7 @@ function App() {
         selectedId={selected?.id ?? null}
         onSelect={setSelectedId}
       />
-      <ProjectDetail project={selected} />
+      <ProjectDetail key={selected?.id} project={selected} />
     </div>
   )
 }

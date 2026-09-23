@@ -6,16 +6,16 @@ interface Props {
 }
 
 export function ProjectDetail({ project }: Props) {
-  const [trial, setTrial] = useState<TrialResult | 'loading' | 'error' | null>(null)
-  const [scan, setScan] = useState<SecurityScanResult | 'loading' | 'error' | null>(null)
+  const [trial, setTrial] = useState<TrialResult | 'loading' | { error: string } | null>(null)
+  const [scan, setScan] = useState<SecurityScanResult | 'loading' | { error: string } | null>(null)
 
   async function handleRunTrial() {
     if (!project || !project.path) return
     setTrial('loading')
     try {
       setTrial(await window.ragx.runTrial(project.path))
-    } catch {
-      setTrial('error')
+    } catch (err) {
+      setTrial({ error: err instanceof Error ? err.message : String(err) })
     }
   }
 
@@ -24,8 +24,8 @@ export function ProjectDetail({ project }: Props) {
     setScan('loading')
     try {
       setScan(await window.ragx.runSecurityScan(project.path))
-    } catch {
-      setScan('error')
+    } catch (err) {
+      setScan({ error: err instanceof Error ? err.message : String(err) })
     }
   }
 
@@ -78,13 +78,15 @@ export function ProjectDetail({ project }: Props) {
         {!project.path && (
           <p className="empty-hint">Disponível apenas para projetos clonados localmente.</p>
         )}
-        {trial && trial !== 'loading' && trial !== 'error' && (
+        {trial && trial !== 'loading' && !('error' in trial) && (
           <p className="estimate-result">
             Estimativa: {(trial.totals.saved_ratio * 100).toFixed(0)}% de economia ·
             cobertura de fonte {(trial.totals.source_coverage * 100).toFixed(0)}%
           </p>
         )}
-        {trial === 'error' && <p className="warning">Não foi possível calcular agora.</p>}
+        {trial && trial !== 'loading' && 'error' in trial && (
+          <p className="warning">Não foi possível calcular agora: {trial.error}</p>
+        )}
       </section>
 
       <section>
@@ -95,10 +97,12 @@ export function ProjectDetail({ project }: Props) {
         {!project.path && (
           <p className="empty-hint">Disponível apenas para projetos clonados localmente.</p>
         )}
-        {scan && scan !== 'loading' && scan !== 'error' && (
+        {scan && scan !== 'loading' && !('error' in scan) && (
           <p>{scan.blocked.length} bloqueados · {scan.redacted.length} redigidos</p>
         )}
-        {scan === 'error' && <p className="warning">Não foi possível escanear agora.</p>}
+        {scan && scan !== 'loading' && 'error' in scan && (
+          <p className="warning">Não foi possível escanear agora: {scan.error}</p>
+        )}
       </section>
     </main>
   )

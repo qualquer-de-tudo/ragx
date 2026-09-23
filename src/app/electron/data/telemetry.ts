@@ -30,6 +30,10 @@ export function readTelemetry(projectPath: string, sinceHours: number): Telemetr
     } catch {
       continue // linha corrompida (escrita concorrente truncada) - ignora, nao quebra o painel
     }
+    // `JSON.parse` aceita `null`, `123`, `"texto"` etc. como JSON valido, mas
+    // essas linhas nao sao um LogLine - acessar entry.tool/.ts quebraria (ou
+    // poluiria a agregacao com `undefined`). Trata como corrompida.
+    if (typeof entry !== 'object' || entry === null) continue
     if (new Date(entry.ts).getTime() < cutoff) continue
 
     totalCalls += 1

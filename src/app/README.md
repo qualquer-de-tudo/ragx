@@ -1,75 +1,26 @@
-# React + TypeScript + Vite
+# RAGX — Painel Desktop
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Painel Electron local para o RAGX: mostra os projetos registrados no hub
+(`~/.ragx/hub/registry.json`), contagem de documentos/chunks/embeddings de
+cada um, telemetria de chamadas MCP das últimas 24h, e resultados sob demanda
+de `ragx trial` (economia estimada) e `ragx security scan` (achados de
+segurança). Roda 100% local, sem login e sem enviar dados para fora da
+máquina — lê arquivos e bancos SQLite locais e invoca o CLI `ragx` já
+instalado no sistema.
 
-Currently, two official plugins are available:
+## Comandos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run dev:electron   # modo desenvolvimento (Vite + Electron com hot reload)
+npm run build           # build do renderer (Vite) + checagem de tipos
+npm run package          # gera o instalador Windows (.exe) em release/
+npm test                  # suíte de testes (vitest)
+npm run lint               # eslint
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Estrutura
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+- `src/` — UI React (renderer process).
+- `electron/` — main process: leitura do registry/hub, stats via `sql.js`,
+  telemetria (`electron/data/telemetry.ts`) e execução do CLI `ragx`
+  (`electron/data/run-ragx-command.ts`).

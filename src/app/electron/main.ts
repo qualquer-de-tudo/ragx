@@ -11,15 +11,51 @@ const isDev = !app.isPackaged
 const POLL_INTERVAL_MS = 5000
 const TELEMETRY_WINDOW_HOURS = 24
 
+// Cache do ultimo snapshot valido - usado como fallback se readHubRegistry()
+// em si falhar (ex.: registry.json corrompido/truncado por escrita
+// concorrente), para nao propagar um erro nao tratado ate o poll timer ou o
+// handler IPC (ver Finding 2 da revisao final).
+let lastGoodSnapshot: Snapshot | null = null
+
 function buildSnapshot(): Snapshot {
-  const projects = readHubRegistry().map((proj) => ({
-    ...proj,
-    stats: proj.path
-      ? readProjectStats(proj.path)
-      : { unavailable: true as const, reason: 'projeto sem caminho local (só federação)' },
-    telemetry: proj.path ? readTelemetry(proj.path, TELEMETRY_WINDOW_HOURS) : { callsByTool: [], totalCalls: 0, tokensDelivered: 0 },
-  }))
-  return { projects, generatedAt: new Date().toISOString() }
+  let registry: ReturnType<typeof readHubRegistry>
+  try {
+    registry = readHubRegistry()
+  } catch (err) {
+    console.error('readHubRegistry() falhou - registry.json pode estar corrompido/em escrita:', err)
+    // Sem dado por projeto para isolar aqui - devolve o ultimo snapshot bom
+    // conhecido (se houver) em vez de deixar o erro propagar e derrubar o
+    // painel inteiro.
+    return lastGoodSnapshot ?? { projects: [], generatedAt: new Date().toISOString() }
+  }
+
+  const projects = registry.map((proj) => {
+    let stats: Snapshot['projects'][number]['stats']
+    try {
+      stats = proj.path
+        ? readProjectStats(proj.path)
+        : { unavailable: true as const, reason: 'projeto sem caminho local (só federação)' }
+    } catch (err) {
+      console.error(`readProjectStats falhou para o projeto "${proj.name}":`, err)
+      stats = { unavailable: true as const, reason: 'falha ao ler estatísticas do projeto' }
+    }
+
+    let telemetry: Snapshot['projects'][number]['telemetry']
+    try {
+      telemetry = proj.path
+        ? readTelemetry(proj.path, TELEMETRY_WINDOW_HOURS)
+        : { callsByTool: [], totalCalls: 0, tokensDelivered: 0 }
+    } catch (err) {
+      console.error(`readTelemetry falhou para o projeto "${proj.name}":`, err)
+      telemetry = { callsByTool: [], totalCalls: 0, tokensDelivered: 0 }
+    }
+
+    return { ...proj, stats, telemetry }
+  })
+
+  const snapshot = { projects, generatedAt: new Date().toISOString() }
+  lastGoodSnapshot = snapshot
+  return snapshot
 }
 
 let mainWindow: BrowserWindow | null = null
@@ -73,7 +109,9 @@ app.whenReady().then(async () => {
   // antes de qualquer chamada a readProjectStats (via buildSnapshot), que
   // acontece a partir de startPolling() ou do handler ragx:get-snapshot —
   // ambos disparados so depois que a janela carrega (ver Ruling D, Task 2).
-  await initSqlWasm()
+  await initSqlWasm().catch((err) => {
+    console.error('initSqlWasm falhou — stats de projetos ficarão indisponíveis:', err)
+  })
 
   createWindow()
 
