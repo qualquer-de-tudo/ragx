@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
 import path from 'node:path'
 import { readHubRegistry } from './data/hub'
 import { initSqlWasm, readProjectStats } from './data/project-stats'
@@ -70,9 +70,14 @@ function startPolling(): void {
 
 function createWindow(): void {
   const win = new BrowserWindow({
-    width: 1100,
-    height: 720,
+    width: 1280,
+    height: 820,
+    minWidth: 900,
+    minHeight: 600,
     title: 'RAGX — Painel',
+    autoHideMenuBar: true,
+    // Mesma cor do fundo da página: sem flash branco antes do React montar.
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#131b24' : '#f8fafc',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

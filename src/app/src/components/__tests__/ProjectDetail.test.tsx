@@ -72,3 +72,99 @@ describe('ProjectDetail', () => {
     )
   })
 })
+
+function bridge(overrides: Partial<typeof window.ragx>) {
+  window.ragx = {
+    getSnapshot: vi.fn(),
+    onSnapshot: vi.fn(() => () => {}),
+    runTrial: vi.fn(),
+    runSecurityScan: vi.fn(),
+    ...overrides,
+  }
+}
+
+function withId(id: string): ProjectSnapshot {
+  return { ...makeProject(`C:\\${id}`), id }
+}
+
+describe('ProjectDetail — resultados sob demanda', () => {
+  it('rotula a economia como estimativa e diz quando o RAGX gasta mais tokens', async () => {
+    bridge({
+      runTrial: vi.fn().mockResolvedValue({
+        totals: { baseline_tokens: 1000, ragx_tokens: 1350, saved_ratio: -0.35, source_coverage: 0.5 },
+      }),
+    })
+    render(<ProjectDetail project={withId('trial-neg')} />)
+    expect(screen.getByText('estimativa')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /ver economia estimada/i }))
+
+    await waitFor(() => expect(screen.getByText('mais tokens')).toBeInTheDocument())
+    expect(screen.getByText('35%')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /recalcular estimativa/i })).toBeEnabled()
+  })
+
+  it('lista os arquivos bloqueados com severidade em texto e sem mostrar o trecho do segredo', async () => {
+    bridge({
+      runSecurityScan: vi.fn().mockResolvedValue({
+        root: 'C:\\a', scanned: 40, skipped: 0, policy: 'strict',
+        ruleset: { version: 'builtin@1', rules: 10, disabled: [] },
+        blocked: [{ path: 'config/.env', rule: 'filename-deny:env', severity: 'critical', line: 3, preview: 'AKIA-SEGREDO' }],
+        redacted: [{ path: 'docs/setup.md', findings: 2 }],
+      }),
+    })
+    render(<ProjectDetail project={withId('scan-dirty')} />)
+    fireEvent.click(screen.getByRole('button', { name: /atualizar achados de segurança/i }))
+
+    await waitFor(() => expect(screen.getByText('.env')).toBeInTheDocument())
+    expect(screen.getByText('config')).toBeInTheDocument()
+    expect(screen.getByText(':3')).toBeInTheDocument()
+    expect(screen.getByText(/crítico/)).toBeInTheDocument()
+    expect(screen.getByText('filename-deny:env')).toBeInTheDocument()
+    expect(screen.queryByText(/AKIA-SEGREDO/)).not.toBeInTheDocument()
+  })
+
+  it('confirma quando o scan não encontra nada', async () => {
+    bridge({
+      runSecurityScan: vi.fn().mockResolvedValue({
+        root: 'C:\\a', scanned: 12, skipped: 0, policy: 'strict',
+        ruleset: { version: 'builtin@1', rules: 10, disabled: [] },
+        blocked: [], redacted: [],
+      }),
+    })
+    render(<ProjectDetail project={withId('scan-clean')} />)
+    fireEvent.click(screen.getByRole('button', { name: /atualizar achados de segurança/i }))
+
+    await waitFor(() => expect(screen.getByText(/nenhum segredo encontrado em 12 arquivos/i)).toBeInTheDocument())
+  })
+
+  it('mantém o último resultado ao voltar para o projeto', async () => {
+    bridge({
+      runTrial: vi.fn().mockResolvedValue({
+        totals: { baseline_tokens: 1000, ragx_tokens: 760, saved_ratio: 0.24, source_coverage: 0.63 },
+      }),
+    })
+    const { unmount } = render(<ProjectDetail project={withId('trial-cache')} />)
+    fireEvent.click(screen.getByRole('button', { name: /ver economia estimada/i }))
+    await waitFor(() => expect(screen.getByText('menos tokens')).toBeInTheDocument())
+    unmount()
+
+    render(<ProjectDetail project={withId('trial-cache')} />)
+    expect(screen.getByText('menos tokens')).toBeInTheDocument()
+    expect(screen.getByText('24%')).toBeInTheDocument()
+  })
+})
+
+describe('ProjectDetail — cobertura de embeddings', () => {
+  it('avisa quando nenhum chunk tem embedding e diz como corrigir', () => {
+    const p = { ...makeProject('C:/x'), stats: { documents: 10, chunks: 200, embeddings: 0 } }
+    render(<ProjectDetail project={p} />)
+    expect(screen.getByText(/nenhum chunk tem embedding/i)).toBeInTheDocument()
+    expect(screen.getByText('ragx index --embed-only')).toBeInTheDocument()
+  })
+
+  it('não avisa quando todos os chunks têm embedding', () => {
+    render(<ProjectDetail project={makeProject('C:/x')} />)
+    expect(screen.queryByText(/embed-only/)).not.toBeInTheDocument()
+  })
+})

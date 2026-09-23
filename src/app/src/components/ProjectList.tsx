@@ -1,39 +1,104 @@
+import { useState } from 'react'
 import type { ProjectSnapshot } from '../types/ragx-bridge'
+import { commonBase, formatCompact, formatTime, parentHint, statusLabel } from '../format'
 
 interface Props {
   projects: ProjectSnapshot[]
   selectedId: string | null
   onSelect: (id: string) => void
+  loading?: boolean
+  updatedAt?: string | null
 }
 
-export function ProjectList({ projects, selectedId, onSelect }: Props) {
-  if (projects.length === 0) {
-    return (
-      <aside className="project-list">
-        <p className="empty-hint">
-          Nenhum projeto no hub ainda. Rode <code>ragx project register &lt;caminho&gt;</code> num
-          projeto já indexado.
-        </p>
-      </aside>
-    )
-  }
+const FILTER_THRESHOLD = 6
+
+function chunksOf(p: ProjectSnapshot): number | null {
+  return 'unavailable' in p.stats ? null : p.stats.chunks
+}
+
+export function ProjectList({ projects, selectedId, onSelect, loading = false, updatedAt = null }: Props) {
+  const [query, setQuery] = useState('')
+
+  const needle = query.trim().toLowerCase()
+  const visible = needle
+    ? projects.filter((p) => `${p.name} ${p.path ?? ''}`.toLowerCase().includes(needle))
+    : projects
+  const largest = Math.max(1, ...projects.map((p) => chunksOf(p) ?? 0))
+  const base = commonBase(projects.map((p) => p.path))
 
   return (
-    <aside className="project-list">
-      <ul>
-        {projects.map((p) => (
-          <li key={p.id}>
-            <button
-              type="button"
-              className={p.id === selectedId ? 'selected' : ''}
-              onClick={() => onSelect(p.id)}
-            >
-              <span className="name">{p.name}</span>
-              <span className={`status status-${p.status}`}>{p.status}</span>
-            </button>
+    <aside className="sidebar" aria-label="Projetos">
+      <header className="sidebar-head">
+        <p className="brand">RAGX</p>
+        <p className="sidebar-sub">
+          {loading ? 'Lendo o hub…' : projects.length === 1 ? '1 projeto no hub' : `${projects.length} projetos no hub`}
+        </p>
+      </header>
+
+      {projects.length > FILTER_THRESHOLD && (
+        <input
+          className="filter"
+          type="search"
+          placeholder="Filtrar projetos"
+          aria-label="Filtrar projetos"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      )}
+
+      {loading ? null : projects.length === 0 ? (
+        <div className="sidebar-empty">
+          <p>Nenhum projeto no hub ainda.</p>
+          <p>
+            Rode <code>ragx project register &lt;caminho&gt;</code> num projeto já indexado, ou{' '}
+            <code>ragx init</code> num projeto novo.
+          </p>
+        </div>
+      ) : visible.length === 0 ? (
+        <p className="sidebar-empty">Nenhum projeto corresponde a “{query}”.</p>
+      ) : (
+        <ul className="project-list">
+          <li className="list-head" aria-hidden="true">
+            <span>Projeto</span>
+            <span>Chunks</span>
           </li>
-        ))}
-      </ul>
+          {visible.map((p) => {
+            const chunks = chunksOf(p)
+            const hint = parentHint(p.path, base)
+            const selected = p.id === selectedId
+            return (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  className={selected ? 'project-item selected' : 'project-item'}
+                  aria-current={selected ? 'true' : undefined}
+                  onClick={() => onSelect(p.id)}
+                >
+                  <span className="item-top">
+                    <span className="item-name">{p.name}</span>
+                    <span className="item-count">{chunks === null ? '—' : formatCompact(chunks)}</span>
+                  </span>
+                  <span className="item-bottom">
+                    <span className="item-hint">{hint ?? 'só federação'}</span>
+                    {p.status !== 'ok' && (
+                      <span className={`item-status status-${p.status}`}>{statusLabel(p.status)}</span>
+                    )}
+                  </span>
+                  <span className="item-bar" aria-hidden="true">
+                    {chunks !== null && chunks > 0 && (
+                      <span style={{ width: `${Math.max(2, (chunks / largest) * 100)}%` }} />
+                    )}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      <footer className="sidebar-foot">
+        {updatedAt ? `Atualizado às ${formatTime(updatedAt)}` : 'Aguardando a primeira leitura'}
+      </footer>
     </aside>
   )
 }

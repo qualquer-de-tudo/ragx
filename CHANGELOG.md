@@ -30,6 +30,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   `ragx security scan`). Atualiza por polling a cada 5s; instalador `.exe`
   gerado com `electron-builder`.
 
+  A lista lateral compara o tamanho do índice entre projetos e mostra onde
+  cada um mora (dois projetos chamados `src` deixam de ser indistinguíveis).
+  O painel avisa quando há chunks sem embedding — nesse caso a busca semântica
+  cai para só palavra-chave, o que antes passava despercebido — e o scan lista
+  os arquivos bloqueados com severidade e regra, sem exibir o trecho do
+  segredo. Tema claro e escuro seguem o Windows.
+
 ## [1.0.0-beta.3] — 2026-09-17
 
 ### Corrigido

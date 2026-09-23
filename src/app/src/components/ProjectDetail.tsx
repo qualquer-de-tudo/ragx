@@ -1,109 +1,159 @@
-import { useState } from 'react'
-import type { ProjectSnapshot, TrialResult, SecurityScanResult } from '../types/ragx-bridge'
+import type { ProjectSnapshot } from '../types/ragx-bridge'
+import type { ProjectStats, TelemetrySummary } from '../../electron/data/types'
+import { formatNumber, formatPercent, statusLabel } from '../format'
+import { EstimatePanel } from './EstimatePanel'
+import { SecurityPanel } from './SecurityPanel'
 
 interface Props {
   project: ProjectSnapshot | null
 }
 
 export function ProjectDetail({ project }: Props) {
-  const [trial, setTrial] = useState<TrialResult | 'loading' | { error: string } | null>(null)
-  const [scan, setScan] = useState<SecurityScanResult | 'loading' | { error: string } | null>(null)
-
-  async function handleRunTrial() {
-    if (!project || !project.path) return
-    setTrial('loading')
-    try {
-      setTrial(await window.ragx.runTrial(project.path))
-    } catch (err) {
-      setTrial({ error: err instanceof Error ? err.message : String(err) })
-    }
-  }
-
-  async function handleRunScan() {
-    if (!project || !project.path) return
-    setScan('loading')
-    try {
-      setScan(await window.ragx.runSecurityScan(project.path))
-    } catch (err) {
-      setScan({ error: err instanceof Error ? err.message : String(err) })
-    }
-  }
-
   if (!project) {
-    return <main className="project-detail"><p>Selecione um projeto à esquerda.</p></main>
+    return (
+      <main className="detail detail-empty">
+        <p>Selecione um projeto na lista.</p>
+      </main>
+    )
   }
 
-  const { stats, telemetry } = project
+  const ok = project.status === 'ok'
 
   return (
-    <main className="project-detail">
-      <h1>{project.name}</h1>
-      <p className="path">{project.path}</p>
+    <main className="detail">
+      <header className="detail-head">
+        <h1>{project.name}</h1>
+        {project.path && <p className="detail-path">{project.path}</p>}
+        <dl className="meta">
+          <div>
+            <dt>Status</dt>
+            <dd className={`status-line tone-${ok ? 'good' : 'serious'}`}>
+              <span aria-hidden="true">{ok ? '✓' : '!'}</span> {statusLabel(project.status)}
+            </dd>
+          </div>
+          <div>
+            <dt>Visibilidade</dt>
+            <dd>{project.visibility}</dd>
+          </div>
+          {project.embeddingModel && (
+            <div className="meta-model">
+              <dt>Modelo de embedding</dt>
+              <dd title={project.embeddingModel}>{project.embeddingModel}</dd>
+            </div>
+          )}
+        </dl>
+      </header>
 
-      <section>
-        <h2>Índice</h2>
-        {'unavailable' in stats ? (
-          <p className="warning">{stats.reason}</p>
+      <section className="block" aria-labelledby="index-title">
+        <h2 id="index-title">Índice</h2>
+        {'unavailable' in project.stats ? (
+          <p className="callout">{project.stats.reason}</p>
         ) : (
-          <dl className="stat-grid">
-            <div><dt>Documentos</dt><dd>{stats.documents}</dd></div>
-            <div><dt>Chunks</dt><dd>{stats.chunks}</dd></div>
-            <div><dt>Embeddings</dt><dd>{stats.embeddings}</dd></div>
-          </dl>
+          <IndexFigures stats={project.stats} />
         )}
       </section>
 
-      <section>
-        <h2>Chamadas MCP (últimas 24h)</h2>
-        {telemetry.totalCalls === 0 ? (
-          <p className="empty-hint">Nenhuma chamada registrada ainda.</p>
-        ) : (
-          <>
-            <p>
-              <strong>{telemetry.totalCalls}</strong> chamadas · <strong>{telemetry.tokensDelivered}</strong> tokens entregues (real)
-            </p>
-            <ul className="call-breakdown">
-              {telemetry.callsByTool.map((c) => (
-                <li key={c.tool}>{c.tool}: {c.count}</li>
-              ))}
-            </ul>
-          </>
-        )}
-        <p className="estimate-note">
-          Economia estimada não é calculada automaticamente — é um proxy (ver <code>ragx trial</code>), não um número ao vivo.
-        </p>
-        <button type="button" onClick={handleRunTrial} disabled={trial === 'loading' || !project.path}>
-          {trial === 'loading' ? 'Calculando…' : 'Ver economia estimada'}
-        </button>
-        {!project.path && (
-          <p className="empty-hint">Disponível apenas para projetos clonados localmente.</p>
-        )}
-        {trial && trial !== 'loading' && !('error' in trial) && (
-          <p className="estimate-result">
-            Estimativa: {(trial.totals.saved_ratio * 100).toFixed(0)}% de economia ·
-            cobertura de fonte {(trial.totals.source_coverage * 100).toFixed(0)}%
-          </p>
-        )}
-        {trial && trial !== 'loading' && 'error' in trial && (
-          <p className="warning">Não foi possível calcular agora: {trial.error}</p>
-        )}
+      <section className="block" aria-labelledby="usage-title">
+        <h2 id="usage-title">Uso pelos agentes nas últimas 24h</h2>
+        <UsageFigures telemetry={project.telemetry} />
       </section>
 
-      <section>
-        <h2>Segurança</h2>
-        <button type="button" onClick={handleRunScan} disabled={scan === 'loading' || !project.path}>
-          {scan === 'loading' ? 'Escaneando…' : 'Atualizar achados de segurança'}
-        </button>
-        {!project.path && (
-          <p className="empty-hint">Disponível apenas para projetos clonados localmente.</p>
-        )}
-        {scan && scan !== 'loading' && !('error' in scan) && (
-          <p>{scan.blocked.length} bloqueados · {scan.redacted.length} redigidos</p>
-        )}
-        {scan && scan !== 'loading' && 'error' in scan && (
-          <p className="warning">Não foi possível escanear agora: {scan.error}</p>
-        )}
-      </section>
+      <div className="panels">
+        <EstimatePanel projectId={project.id} projectPath={project.path} />
+        <SecurityPanel projectId={project.id} projectPath={project.path} />
+      </div>
     </main>
+  )
+}
+
+function IndexFigures({ stats }: { stats: ProjectStats }) {
+  const coverage = stats.chunks > 0 ? Math.min(1, stats.embeddings / stats.chunks) : null
+  const missing = stats.chunks - Math.min(stats.embeddings, stats.chunks)
+  return (
+    <>
+    <div className="kpis">
+      <div className="kpi">
+        <p className="kpi-label">Documentos</p>
+        <p className="kpi-value">{formatNumber(stats.documents)}</p>
+      </div>
+      <div className="kpi">
+        <p className="kpi-label">Chunks</p>
+        <p className="kpi-value">{formatNumber(stats.chunks)}</p>
+      </div>
+      <div className="kpi kpi-wide">
+        <p className="kpi-label">Embeddings</p>
+        <p className="kpi-value">{formatNumber(stats.embeddings)}</p>
+        {coverage !== null && (
+          <div className="meter-row">
+            <div
+              className={coverage < 1 ? 'meter meter-short' : 'meter'}
+              role="meter"
+              aria-label="Chunks com embedding"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(coverage * 100)}
+            >
+              <span style={{ width: `${coverage * 100}%` }} />
+            </div>
+            <span className="meter-caption">{formatPercent(coverage)} dos chunks com embedding</span>
+          </div>
+        )}
+      </div>
+    </div>
+    {missing > 0 && (
+      <p className="callout callout-warning">
+        <span className="tone-warning" aria-hidden="true">▲ </span>
+        {stats.embeddings === 0
+          ? 'Nenhum chunk tem embedding: a busca semântica e a híbrida caem para só palavra-chave neste projeto.'
+          : `${formatNumber(missing)} chunks sem embedding ficam de fora da busca semântica.`}{' '}
+        Com o provedor de embedding rodando, gere os que faltam com <code>ragx index --embed-only</code>{' '}
+        na pasta do projeto.
+      </p>
+    )}
+    </>
+  )
+}
+
+function UsageFigures({ telemetry }: { telemetry: TelemetrySummary }) {
+  if (telemetry.totalCalls === 0) {
+    return (
+      <p className="empty-state">
+        Nenhuma chamada nas últimas 24h. Elas aparecem aqui assim que um agente usar o servidor MCP do
+        ragx neste projeto.
+      </p>
+    )
+  }
+
+  const tools = [...telemetry.callsByTool].sort((a, b) => b.count - a.count)
+  const top = tools[0]?.count ?? 1
+
+  return (
+    <>
+      <div className="kpis">
+        <div className="kpi">
+          <p className="kpi-label">Chamadas MCP</p>
+          <p className="kpi-value">{formatNumber(telemetry.totalCalls)}</p>
+        </div>
+        <div className="kpi">
+          <p className="kpi-label">Tokens entregues</p>
+          <p className="kpi-value">{formatNumber(telemetry.tokensDelivered)}</p>
+          <p className="kpi-note">Medido nas respostas do build_context</p>
+        </div>
+      </div>
+      <ul className="bars" aria-label="Chamadas por ferramenta">
+        {tools.map((t) => (
+          <li
+            key={t.tool}
+            title={`${t.tool}: ${formatNumber(t.count)} chamadas (${formatPercent(t.count / telemetry.totalCalls)})`}
+          >
+            <span className="bar-label">{t.tool}</span>
+            <span className="bar-track">
+              <span className="bar-fill" style={{ width: `${Math.max(1.5, (t.count / top) * 100)}%` }} />
+            </span>
+            <span className="bar-value">{formatNumber(t.count)}</span>
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
