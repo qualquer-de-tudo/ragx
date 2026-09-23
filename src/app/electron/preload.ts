@@ -1,7 +1,11 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
+import type { Snapshot } from '../src/types/ragx-bridge'
 
-// A ponte real (leitura de projetos/telemetria) entra na Task 2. Por ora,
-// so confirma que o preload carregou, pra Task 1 validar a integracao.
 contextBridge.exposeInMainWorld('ragx', {
-  ping: () => 'pong',
+  getSnapshot: (): Promise<Snapshot> => ipcRenderer.invoke('ragx:get-snapshot'),
+  onSnapshot: (cb: (snapshot: Snapshot) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, snapshot: Snapshot) => cb(snapshot)
+    ipcRenderer.on('ragx:snapshot', listener)
+    return () => ipcRenderer.removeListener('ragx:snapshot', listener)
+  },
 })
