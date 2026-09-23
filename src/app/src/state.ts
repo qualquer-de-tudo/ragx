@@ -62,11 +62,18 @@ export function hasProblem(s: ProjectState): boolean {
   return s === 'missing' || s === 'error'
 }
 
-/** Ids dos projetos com tarefa na fila ou rodando: o `busyIds` de `deriveProjectState`. */
+/** Tarefas que indexam o projeto (mexem no índice): só elas deixam o selo "Indexando…". */
+const INDEX_KINDS: readonly JobKind[] = ['add-project', 'update', 'embed', 'reindex-full']
+
+/**
+ * Ids dos projetos com tarefa de indexação na fila ou rodando: o `busyIds` de
+ * `deriveProjectState`. Sync, grafo, dicionário e hooks não contam: o índice
+ * continua valendo enquanto rodam (o botão de cada um já diz "Na fila"/"Rodando").
+ */
 export function busyProjectIds(jobs: readonly JobView[]): Set<string> {
   return new Set(
     jobs
-      .filter((j) => j.state === 'queued' || j.state === 'running')
+      .filter((j) => INDEX_KINDS.includes(j.kind) && (j.state === 'queued' || j.state === 'running'))
       .flatMap((j) => (j.projectId === null ? [] : [j.projectId])),
   )
 }

@@ -76,7 +76,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   o aviso para revisar o diff, o uso pelos agentes nas últimas 24 h, a
   economia estimada, os achados de segurança e "Remover do hub" (também com
   segundo clique; nada é apagado no disco). Um botão cuja tarefa já está na
-  fila ou rodando fica desabilitado e diz "Na fila" ou "Rodando".
+  fila ou rodando fica desabilitado e diz "Na fila" ou "Rodando". O selo
+  "Indexando…" (no card e no detalhe) só aparece para tarefas que indexam
+  (adicionar, atualizar, gerar embeddings, reindexar); sincronizar knowledge,
+  reconstruir grafo, gerar dicionário e mexer nos hooks não contam.
 
 - **O índice acompanha a branch.** Cada indexação registra branch, commit e quem
   disparou (`cli`, `panel`, `watch`, `sync`, `mcp:*`, `hook:*`). `ragx status --json`

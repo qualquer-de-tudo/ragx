@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { deriveProjectState } from '../state'
-import { snap } from '../test/snap'
+import { busyProjectIds, deriveProjectState } from '../state'
+import { job, snap } from '../test/snap'
 
 const none = new Set<string>()
 
@@ -33,4 +33,26 @@ describe('deriveProjectState', () => {
     expect(deriveProjectState(snap({ hooksInstalled: false }), none)).toBe('no-hooks'))
   it('hooks desconhecidos (fora de repo) não viram "sem hooks"', () =>
     expect(deriveProjectState(snap({ hooksInstalled: null, git: null }), none)).toBe('ok'))
+})
+
+describe('busyProjectIds', () => {
+  it('só tarefas de indexação na fila ou rodando contam', () => {
+    for (const kind of ['add-project', 'update', 'embed', 'reindex-full'] as const) {
+      expect(busyProjectIds([job({ kind, state: 'running' })])).toEqual(new Set(['p1']))
+      expect(busyProjectIds([job({ kind, state: 'queued' })])).toEqual(new Set(['p1']))
+    }
+    expect(busyProjectIds([job({ kind: 'embed', state: 'done' })])).toEqual(new Set())
+  })
+
+  it('sync, grafo, dicionário e hooks não deixam o projeto "Indexando…"', () => {
+    const jobs = (['sync', 'graph', 'dictionary', 'hooks-install', 'hooks-uninstall', 'remove-from-hub'] as const).map(
+      (kind, i) => job({ id: `j${i}`, kind, state: 'running' }),
+    )
+    const busy = busyProjectIds(jobs)
+    expect(busy).toEqual(new Set())
+    expect(deriveProjectState(snap(), busy)).toBe('ok')
+  })
+
+  it('um embed rodando deixa o projeto "Indexando…"', () =>
+    expect(deriveProjectState(snap(), busyProjectIds([job({ kind: 'embed', state: 'running' })]))).toBe('indexing'))
 })

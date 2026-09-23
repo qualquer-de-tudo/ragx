@@ -80,6 +80,15 @@ describe('ProjectPage: topo', () => {
     await screen.findByText('Em dia com o que está no disco')
   })
 
+  it('tarefa que não indexa (dicionário) não deixa o selo "Indexando…"; embed deixa', async () => {
+    const { rerender, onBack } = renderPage({ jobs: [job({ kind: 'dictionary', state: 'running' })] })
+    expect(screen.getByText('Atualizado').closest('.badge')).toHaveTextContent('● Atualizado')
+    expect(screen.queryByText('Indexando…')).not.toBeInTheDocument()
+    rerender(<ProjectPage project={snap()} jobs={[job({ kind: 'embed', state: 'running' })]} onBack={onBack} />)
+    expect(screen.getByText('Indexando…').closest('.badge')).toHaveTextContent('● Indexando…')
+    await screen.findByText('Em dia com o que está no disco')
+  })
+
   it('projeto que sumiu do hub: avisa e deixa voltar', () => {
     const { onBack, bridge } = renderPage({ project: null })
     expect(screen.getByRole('heading', { level: 1, name: 'Projeto não encontrado' })).toBeInTheDocument()
@@ -225,6 +234,29 @@ describe('ProjectPage: está em dia?', () => {
     expect(
       within(section('Está em dia?')).getByText('Não foi possível verificar agora: pasta do projeto não existe mais'),
     ).toBeInTheDocument()
+  })
+
+  it('resposta atrasada do projeto anterior não aparece no projeto novo', async () => {
+    let resolveA: (v: unknown) => void = () => {}
+    const getProjectStatus = vi.fn((id: string) =>
+      id === 'a'
+        ? new Promise((resolve) => {
+            resolveA = resolve
+          })
+        : Promise.resolve(status()),
+    )
+    const { rerender, onBack } = renderPage({ project: snap({ id: 'a', name: 'A' }), bridge: { getProjectStatus } })
+    expect(within(section('Está em dia?')).getByText('Verificando…')).toBeInTheDocument()
+
+    // Mesmo componente (sem `key`): o caso mais difícil para a guarda.
+    rerender(<ProjectPage project={snap({ id: 'b', name: 'B' })} jobs={[]} onBack={onBack} />)
+    expect(await screen.findByText('Em dia com o que está no disco')).toBeInTheDocument()
+
+    resolveA(stale([{ kind: 'branch_changed', indexed: 'main', current: 'feat/a' }]))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(screen.queryByText('O índice é da branch main; você está em feat/a.')).not.toBeInTheDocument()
+    expect(screen.getByText('Em dia com o que está no disco')).toBeInTheDocument()
+    expect(getProjectStatus.mock.calls.map((c) => c[0])).toEqual(['a', 'b'])
   })
 
   it('verifica de novo quando o snapshot traz uma indexação nova', async () => {
@@ -480,6 +512,38 @@ describe('ProjectPage: uso pelos agentes', () => {
 })
 
 describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
+  it('desabilita as ações sob demanda e explica o motivo quando o projeto não tem path local (só federação)', () => {
+    const { bridge } = renderPage({
+      project: snap({
+        id: 'fed',
+        path: null,
+        exists: false,
+        counts: null,
+        countsUnavailableReason: 'projeto sem caminho local (só federação)',
+        git: null,
+        hooksInstalled: null,
+      }),
+    })
+    const trial = screen.getByRole('button', { name: /ver economia estimada/i })
+    const scan = screen.getByRole('button', { name: /atualizar achados de segurança/i })
+    expect(trial).toBeDisabled()
+    expect(scan).toBeDisabled()
+    expect(screen.getAllByText('Disponível apenas para projetos clonados localmente.')).toHaveLength(2)
+    fireEvent.click(trial)
+    fireEvent.click(scan)
+    expect(bridge.runTrial).not.toHaveBeenCalled()
+    expect(bridge.runSecurityScan).not.toHaveBeenCalled()
+    expect(bridge.getProjectStatus).not.toHaveBeenCalled()
+  })
+
+  it('mantém as ações sob demanda habilitadas quando o projeto tem path local', async () => {
+    renderPage({ project: snap({ id: 'local', path: 'C:\\a' }) })
+    expect(screen.getByRole('button', { name: /ver economia estimada/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /atualizar achados de segurança/i })).toBeEnabled()
+    expect(screen.queryByText('Disponível apenas para projetos clonados localmente.')).not.toBeInTheDocument()
+    await screen.findByText('Em dia com o que está no disco')
+  })
+
   it('rotula a economia como estimativa e diz quando o RAGX gasta mais tokens', async () => {
     const runTrial = vi.fn().mockResolvedValue({
       totals: { baseline_tokens: 1000, ragx_tokens: 1350, saved_ratio: -0.35, source_coverage: 0.5 },

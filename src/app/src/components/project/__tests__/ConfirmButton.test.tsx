@@ -67,6 +67,23 @@ describe('ConfirmButton', () => {
     expect(onConfirm).not.toHaveBeenCalled()
   })
 
+  it('desmontar armado limpa o prazo e o ouvinte do Esc', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const removed = vi.spyOn(document, 'removeEventListener')
+    const { unmount } = renderButton()
+    fireEvent.click(screen.getByRole('button', { name: 'Reindexar do zero' }))
+    expect(vi.getTimerCount()).toBe(1)
+    unmount()
+    expect(vi.getTimerCount()).toBe(0)
+    expect(removed).toHaveBeenCalledWith('keydown', expect.any(Function))
+    act(() => {
+      vi.advanceTimersByTime(5000)
+    })
+    expect(errors).not.toHaveBeenCalled()
+    errors.mockRestore()
+    removed.mockRestore()
+  })
+
   it('desabilitado não arma nem confirma', () => {
     const { onConfirm } = renderButton({ disabled: true })
     const button = screen.getByRole('button', { name: 'Reindexar do zero' })
