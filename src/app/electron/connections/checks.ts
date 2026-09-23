@@ -5,6 +5,7 @@ import { execFileText } from '../system/exec'
 import type { ExecFn } from '../system/exec'
 import { httpGetJson } from '../system/http'
 import { resolveRagx } from '../system/ragx-exe'
+import { chooseStartMode } from '../ollama/choose-start'
 import type {
   ConnectionAction,
   ConnectionCheck,
@@ -316,9 +317,22 @@ function formatDependents(names: string[]): string {
   return `${names.length} projeto(s): ${shown}`
 }
 
+type PreferredMode = 'docker' | 'native' | null
+
+/**
+ * API respondendo sem container nem processo local detectado (ex.: a
+ * checagem do processo falhou): quem responde na porta é um Ollama fora do
+ * Docker, então conta como local. `detectOllama` já faz isso; aqui fecha o
+ * caso para qualquer ambiente que chegue com `none` e a API no ar.
+ */
+function normalizeEnv(env: OllamaEnvironment): OllamaEnvironment {
+  return env.mode === 'none' && env.apiUp ? { ...env, mode: 'native' } : env
+}
+
 /** Título do card: acompanha o modo detectado; sem ambiente mantém o de sempre. */
-function ollamaTitleFor(env: OllamaEnvironment | null | undefined): string {
-  if (!env) return 'Ollama (Docker)'
+function ollamaTitleFor(rawEnv: OllamaEnvironment | null | undefined): string {
+  if (!rawEnv) return 'Ollama (Docker)'
+  const env = normalizeEnv(rawEnv)
   if (env.mode === 'docker') return 'Ollama (Docker)'
   if (env.mode === 'native') return 'Ollama (local)'
   return 'Ollama'
@@ -340,11 +354,18 @@ function recommendedSwitch(env: OllamaEnvironment, label: { native: string; dock
     : { kind: 'ollama-use-docker', label: label.docker }
 }
 
+function installedModelsFact(env: OllamaEnvironment): { label: string; value: string } {
+  if (!env.apiUp) return { label: 'Modelos instalados', value: 'sem dados' }
+  return { label: 'Modelos instalados', value: env.models.length > 0 ? env.models.join(', ') : 'nenhum' }
+}
+
 function ollamaCheckFromEnv(
-  env: OllamaEnvironment,
+  rawEnv: OllamaEnvironment,
   snapshot: Snapshot | null,
   bench: OllamaBenchmark | null | undefined,
+  preferred: PreferredMode,
 ): ConnectionCheck {
+  const env = normalizeEnv(rawEnv)
   const id = 'ollama' as const
   const title = ollamaTitleFor(env)
   const { models: needed, projectNames } = neededModelsFor(snapshot)
@@ -358,7 +379,7 @@ function ollamaCheckFromEnv(
       state: 'warn',
       stateLabel: stateLabelFor('warn'),
       summary: 'O Ollama está rodando no Docker e no computador ao mesmo tempo. Os dois disputam a mesma porta.',
-      facts: [semDadosFact, dependFact],
+      facts: [installedModelsFact(env), dependFact],
       actions: [recommendedSwitch(env, { native: 'Usar o Ollama local', docker: 'Usar o Ollama no Docker' })],
       help: env.recommendation.reason,
     }
@@ -366,9 +387,12 @@ function ollamaCheckFromEnv(
 
   if (!env.apiUp) {
     const actions: ConnectionAction[] = []
-    if (env.container.exists) {
+    // A mesma escolha que o catálogo faz para `ollama-start`: o botão diz o
+    // que a tarefa de fato liga.
+    const start = chooseStartMode(env, preferred)
+    if (start === 'docker') {
       actions.push({ kind: 'ollama-start', label: 'Iniciar container' })
-    } else if (env.native.installed) {
+    } else if (start === 'native') {
       actions.push({ kind: 'ollama-start', label: 'Iniciar o Ollama local' })
     } else if (env.recommendation.mode === 'native' && env.canInstallNative) {
       actions.push({ kind: 'ollama-use-native', label: 'Instalar e usar o Ollama local' })
@@ -412,7 +436,9 @@ function ollamaCheckFromEnv(
     model: m,
   }))
   const processor = bench?.processor ?? 'unknown'
-  const suggestSwitch = env.mode !== env.recommendation.mode && processor !== 'gpu'
+  // O usuário já escolheu este modo (a última troca foi para ele): não
+  // insiste em sugerir o outro.
+  const suggestSwitch = env.mode !== env.recommendation.mode && processor !== 'gpu' && preferred !== env.mode
   if (suggestSwitch) {
     actions.push(
       recommendedSwitch(env, {
@@ -456,10 +482,11 @@ export async function checkOllama(
   snapshot: Snapshot | null,
   env?: OllamaEnvironment | null,
   lastBenchmark?: OllamaBenchmark | null,
+  preferred: PreferredMode = null,
 ): Promise<ConnectionCheck> {
   if (env) {
     try {
-      return ollamaCheckFromEnv(env, snapshot, lastBenchmark)
+      return ollamaCheckFromEnv(env, snapshot, lastBenchmark, preferred)
     } catch (err) {
       return {
         id: 'ollama',
@@ -638,11 +665,12 @@ export async function checkAll(
   snapshot: Snapshot | null,
   env?: OllamaEnvironment | null,
   lastBenchmark?: OllamaBenchmark | null,
+  preferred: PreferredMode = null,
 ): Promise<ConnectionCheck[]> {
   return Promise.all([
     guardCheck('ragx', 'RAGX CLI', () => checkRagx(d)),
     guardCheck('claude', 'Claude Code', () => checkClaude(d, snapshot)),
-    guardCheck('ollama', ollamaTitleFor(env), () => checkOllama(d, snapshot, env, lastBenchmark)),
+    guardCheck('ollama', ollamaTitleFor(env), () => checkOllama(d, snapshot, env, lastBenchmark, preferred)),
   ])
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { checkAll, checkOllama, type CheckDeps } from '../checks'
+import { resolveJob } from '../../jobs/catalog'
 import type {
   ConnectionCheck,
   OllamaBenchmark,
@@ -282,5 +283,97 @@ describe('checkOllama com ambiente', () => {
   it('checkAll usa o ambiente e o título do modo', async () => {
     const checks = await checkAll(baseDeps(), snap1, env({ mode: 'native' }), bench())
     expect(checks.find((x) => x.id === 'ollama')?.title).toBe('Ollama (local)')
+  })
+
+  it('conflict com a API no ar mostra os modelos instalados; API fora, sem dados', async () => {
+    const up = await checkOllama(baseDeps(), snap1, env({ mode: 'conflict', models: ['a:latest', 'b'] }))
+    expect(up.facts).toContainEqual({ label: 'Modelos instalados', value: 'a:latest, b' })
+    const none = await checkOllama(baseDeps(), snap1, env({ mode: 'conflict', models: [] }))
+    expect(none.facts).toContainEqual({ label: 'Modelos instalados', value: 'nenhum' })
+    const down = await checkOllama(baseDeps(), snap1, env({ mode: 'conflict', apiUp: false, models: [] }))
+    expect(down.facts).toContainEqual({ label: 'Modelos instalados', value: 'sem dados' })
+  })
+
+  it('modo none com a API no ar (processo não detectado) conta como local, sem sugerir trocar para o local', async () => {
+    const c = await checkOllama(
+      baseDeps(),
+      snap1,
+      env({ mode: 'none', container: stopped, recommendation: { mode: 'native', reason: 'r' } }),
+      bench({ processor: 'cpu', vramMB: null }),
+    )
+    expect(c.state).toBe('ok')
+    expect(c.title).toBe('Ollama (local)')
+    expect(c.facts[0]).toEqual({ label: 'Modo', value: 'Local' })
+    expect(kinds(c)).not.toContain('ollama-use-native')
+    const checks = await checkAll(baseDeps(), snap1, env({ mode: 'none', container: stopped }), null)
+    expect(checks.find((x) => x.id === 'ollama')?.title).toBe('Ollama (local)')
+  })
+})
+
+describe('checkOllama - botão Iniciar diz o que a tarefa liga (chooseStartMode)', () => {
+  const both = (rec: 'docker' | 'native'): OllamaEnvironment =>
+    env({
+      apiUp: false,
+      mode: 'none',
+      container: { exists: true, running: false },
+      native: { installed: true, path: 'C:/o.exe', running: false },
+      recommendation: { mode: rec, reason: 'r' },
+    })
+
+  it('preferido nativo com container existente: Iniciar o Ollama local', async () => {
+    const c = await checkOllama(baseDeps(), snap1, both('docker'), null, 'native')
+    expect(c.actions).toEqual([{ kind: 'ollama-start', label: 'Iniciar o Ollama local' }])
+  })
+
+  it('preferido docker com nativo recomendado: Iniciar container', async () => {
+    const c = await checkOllama(baseDeps(), snap1, both('native'), null, 'docker')
+    expect(c.actions).toEqual([{ kind: 'ollama-start', label: 'Iniciar container' }])
+  })
+
+  it('sem preferência: segue a recomendação (antes, o container vencia sempre)', async () => {
+    const c = await checkOllama(baseDeps(), snap1, both('native'), null, null)
+    expect(c.actions).toEqual([{ kind: 'ollama-start', label: 'Iniciar o Ollama local' }])
+  })
+
+  it('o rótulo bate com o label e os passos do catálogo para as mesmas entradas', async () => {
+    const cases: Array<[OllamaEnvironment, 'docker' | 'native' | null]> = [
+      [both('docker'), 'native'],
+      [both('native'), 'docker'],
+      [both('native'), null],
+      [both('docker'), null],
+    ]
+    for (const [e, pref] of cases) {
+      const c = await checkOllama(baseDeps(), snap1, e, null, pref)
+      const job = resolveJob(
+        { kind: 'ollama-start' },
+        { projectById: () => undefined, folderByToken: () => undefined, ollamaEnv: () => e, preferredOllamaMode: () => pref },
+      )
+      const runsDocker = job.steps.some((st) => st.cmd === 'docker')
+      expect(c.actions[0].label).toBe(runsDocker ? 'Iniciar container' : 'Iniciar o Ollama local')
+    }
+  })
+
+  it('checkAll repassa o modo preferido', async () => {
+    const checks = await checkAll(baseDeps(), snap1, both('docker'), null, 'native')
+    expect(checks.find((x) => x.id === 'ollama')?.actions).toEqual([
+      { kind: 'ollama-start', label: 'Iniciar o Ollama local' },
+    ])
+  })
+})
+
+describe('checkOllama - sem sugerir a troca que o usuário já recusou', () => {
+  it('preferido igual ao modo atual: nenhuma sugestão de troca, mesmo em CPU', async () => {
+    const e = env({ mode: 'docker', recommendation: { mode: 'native', reason: 'Use o local.' } })
+    const c = await checkOllama(baseDeps(), snap1, e, bench({ processor: 'cpu', vramMB: null }), 'docker')
+    expect(kinds(c)).toEqual(['ollama-benchmark', 'ollama-stop'])
+    expect(c.help).toBeNull()
+  })
+
+  it('preferido diferente do modo atual (ou nenhum): a sugestão continua', async () => {
+    const e = env({ mode: 'docker', recommendation: { mode: 'native', reason: 'Use o local.' } })
+    const other = await checkOllama(baseDeps(), snap1, e, bench({ processor: 'cpu', vramMB: null }), 'native')
+    expect(kinds(other)).toContain('ollama-use-native')
+    const none = await checkOllama(baseDeps(), snap1, e, bench({ processor: 'cpu', vramMB: null }), null)
+    expect(kinds(none)).toContain('ollama-use-native')
   })
 })
