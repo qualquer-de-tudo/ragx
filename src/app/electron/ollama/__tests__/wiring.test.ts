@@ -252,6 +252,17 @@ describe('ollamaFollowUps', () => {
     expect(ollamaFollowUps([]).resetCache).toBe(false)
   })
 
+  it('troca, parada ou início do Ollama terminados (qualquer estado) esquecem o benchmark', () => {
+    for (const kind of ['ollama-use-native', 'ollama-use-docker', 'ollama-stop', 'ollama-start'] as const) {
+      for (const state of ['done', 'failed', 'cancelled'] as const) {
+        expect(ollamaFollowUps([job(kind, state)]).clearBenchmark, `${kind} ${state}`).toBe(true)
+      }
+    }
+    expect(ollamaFollowUps([job('ollama-pull', 'done')]).clearBenchmark).toBe(false)
+    expect(ollamaFollowUps([job('update', 'done')]).clearBenchmark).toBe(false)
+    expect(ollamaFollowUps([]).clearBenchmark).toBe(false)
+  })
+
   it('só troca de modo concluída grava o modo preferido', () => {
     expect(ollamaFollowUps([job('ollama-use-native', 'done')]).persistMode).toBe('native')
     expect(ollamaFollowUps([job('ollama-use-docker', 'done')]).persistMode).toBe('docker')

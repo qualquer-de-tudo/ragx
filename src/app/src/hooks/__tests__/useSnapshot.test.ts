@@ -32,7 +32,6 @@ describe('useSnapshot', () => {
       discover: vi.fn(),
       getSettings: vi.fn(),
       setOnboardingDone: vi.fn(),
-      getOllamaEnvironment: vi.fn(),
       runOllamaBenchmark: vi.fn(),
     }
   })

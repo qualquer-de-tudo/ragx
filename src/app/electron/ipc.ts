@@ -63,8 +63,6 @@ export interface HandlerDeps {
   getRequiredModels?: () => string[]
   /** Modo do Ollama escolhido por último (persistido); `null` se nunca escolheu. */
   getPreferredOllamaMode?: () => 'docker' | 'native' | null
-  /** Detecta o ambiente do Ollama agora (e atualiza o cache de `getOllamaEnv`). Nunca recebe nada do renderer. */
-  detectOllama: () => Promise<OllamaEnvironment>
   /** Mede embeddings/s. `model` é escolhido aqui no processo principal; `null` = modelo padrão. */
   runOllamaBenchmark: (model: string | null) => Promise<OllamaBenchmark>
 }
@@ -117,9 +115,25 @@ function benchmarkFailure(model: string | null, err: unknown): OllamaBenchmark {
   }
 }
 
+/** Benchmark guardado com o modo do Ollama em que foi medido. */
+interface StoredBenchmark {
+  benchmark: OllamaBenchmark
+  mode: OllamaEnvironment['mode'] | null
+}
+
 export function createHandlers(deps: HandlerDeps) {
   let inFlightBenchmark: Promise<OllamaBenchmark> | null = null
-  let lastBenchmark: OllamaBenchmark | null = null
+  let lastBenchmark: StoredBenchmark | null = null
+  // Sobe a cada `clearLastBenchmark`: uma medição que começou antes não é guardada.
+  let benchmarkGeneration = 0
+
+  function currentMode(): OllamaEnvironment['mode'] | null {
+    try {
+      return deps.getOllamaEnv?.()?.mode ?? null
+    } catch {
+      return null
+    }
+  }
 
   /** Primeiro modelo requerido com nome válido; `null` = o benchmark usa o padrão. */
   function benchmarkModel(): string | null {
@@ -135,13 +149,15 @@ export function createHandlers(deps: HandlerDeps) {
 
   async function measure(): Promise<OllamaBenchmark> {
     const model = benchmarkModel()
+    const mode = currentMode()
+    const generation = benchmarkGeneration
     let result: OllamaBenchmark
     try {
       result = await deps.runOllamaBenchmark(model)
     } catch (err) {
       result = benchmarkFailure(model, err)
     }
-    lastBenchmark = result
+    if (generation === benchmarkGeneration) lastBenchmark = { benchmark: result, mode }
     return result
   }
 
@@ -311,11 +327,6 @@ export function createHandlers(deps: HandlerDeps) {
       deps.writeSettings({ ...deps.readSettings(), onboardingDone: doneUnknown })
     },
 
-    /** Detecção nova do ambiente do Ollama. Não aceita argumento: nada do renderer chega aos comandos. */
-    getOllamaEnvironment(): Promise<OllamaEnvironment> {
-      return deps.detectOllama()
-    },
-
     /**
      * Benchmark de embeddings. O modelo é escolhido aqui (o primeiro
      * requerido pelos projetos), nunca pelo renderer. Um por vez: quem pede
@@ -330,9 +341,21 @@ export function createHandlers(deps: HandlerDeps) {
       return run
     },
 
-    /** Último benchmark medido nesta sessão (para a checagem do Ollama); `null` se nenhum. */
+    /**
+     * Último benchmark medido nesta sessão (para a checagem do Ollama);
+     * `null` se nenhum ou se o Ollama mudou de modo desde a medição (a
+     * velocidade do Docker não diz nada sobre o local, e vice-versa).
+     */
     getLastBenchmark(): OllamaBenchmark | null {
-      return lastBenchmark
+      if (lastBenchmark === null) return null
+      if (lastBenchmark.mode !== currentMode()) return null
+      return lastBenchmark.benchmark
+    },
+
+    /** Esquece o benchmark: uma troca, parada ou início do Ollama terminou (processo principal, não é canal de IPC). */
+    clearLastBenchmark(): void {
+      lastBenchmark = null
+      benchmarkGeneration += 1
     },
   }
 }

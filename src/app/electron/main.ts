@@ -89,6 +89,10 @@ function userDataDir(): string {
   return app.getPath('userData')
 }
 
+function preferredOllamaMode(): 'docker' | 'native' | null {
+  return readSettings(userDataDir()).ollamaMode ?? null
+}
+
 function persistOllamaMode(mode: 'docker' | 'native'): void {
   try {
     updateSettings(userDataDir(), { ollamaMode: mode })
@@ -150,6 +154,8 @@ function onJobsChange(jobs: JobView[]): void {
     ollamaEnv.invalidate()
   }
   if (ollama.persistMode !== null) persistOllamaMode(ollama.persistMode)
+  // Outro Ollama servindo (ou nenhum): a velocidade medida antes não vale.
+  if (ollama.clearBenchmark) handlers.clearLastBenchmark()
 
   // Terminou uma correção de conexão ("Registrar", "Iniciar container",
   // "Baixar modelo", trocas de modo do Ollama): confere de novo. Se uma
@@ -201,7 +207,8 @@ const handlers = createHandlers({
       console.error('detectOllama() falhou:', err)
       return null
     })
-    const checks = await checkAll(defaultCheckDeps(), snapshot, env, handlers.getLastBenchmark())
+    // O modo preferido decide o texto do "Iniciar" (o mesmo que o catálogo roda).
+    const checks = await checkAll(defaultCheckDeps(), snapshot, env, handlers.getLastBenchmark(), preferredOllamaMode())
     latestConnections = checks
     return checks
   },
@@ -226,10 +233,7 @@ const handlers = createHandlers({
   writeSettings: (s) => writeSettings(userDataDir(), s),
   getOllamaEnv: () => ollamaEnv.get(),
   getRequiredModels: () => distinctRequiredModels(latestSnapshot),
-  getPreferredOllamaMode: () => readSettings(userDataDir()).ollamaMode ?? null,
-  // Pedido do renderer: junta-se a uma detecção em andamento em vez de
-  // disparar outra leva de processos a cada clique.
-  detectOllama: () => ollamaEnv.shared(),
+  getPreferredOllamaMode: preferredOllamaMode,
   // O resultado fica em `handlers.getLastBenchmark()` (a checagem do Ollama o usa).
   runOllamaBenchmark: (model) => runOllamaBenchmark(defaultBenchDeps(model)),
 })
@@ -268,7 +272,6 @@ handleIpc('ragx:discover', (token: unknown) => handlers.discover(token))
 handleIpc('ragx:getSettings', () => handlers.getSettings())
 handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDone(done))
 // Sem argumentos: o que vier do renderer é descartado aqui.
-handleIpc('ragx:get-ollama-environment', () => handlers.getOllamaEnvironment())
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
 
 // -- polling ---------------------------------------------------------------

@@ -73,7 +73,6 @@ function makeDeps(over: Partial<HandlerDeps> = {}): HandlerDeps {
     showOpenDialog: vi.fn(async () => null),
     readSettings: vi.fn(() => ({ onboardingDone: false })),
     writeSettings: vi.fn(),
-    detectOllama: vi.fn(async () => ENV),
     runOllamaBenchmark: vi.fn(async (model: string | null) => ({ ...BENCH, model: model ?? 'nomic-embed-text' })),
     ...over,
   }
@@ -390,20 +389,54 @@ describe('createHandlers - getSettings/setOnboardingDone', () => {
   })
 })
 
-describe('createHandlers - getOllamaEnvironment', () => {
-  it('devolve o que detectOllama devolve', async () => {
-    const detectOllama = vi.fn(async () => ENV)
-    const handlers = createHandlers(makeDeps({ detectOllama }))
-    expect(await handlers.getOllamaEnvironment()).toBe(ENV)
-    expect(detectOllama).toHaveBeenCalledOnce()
+describe('createHandlers - sem canal de ambiente do Ollama para o renderer', () => {
+  it('não expõe getOllamaEnvironment (o ambiente leva o caminho do executável)', () => {
+    const handlers = createHandlers(makeDeps({ getOllamaEnv: () => ENV }))
+    expect('getOllamaEnvironment' in handlers).toBe(false)
+  })
+})
+
+describe('createHandlers - benchmark guardado vale só para o modo em que foi medido', () => {
+  const inMode = (mode: OllamaEnvironment['mode']): OllamaEnvironment => ({ ...ENV, mode })
+
+  it('modo atual igual ao da medição: devolve o benchmark', async () => {
+    let current = inMode('docker')
+    const handlers = createHandlers(makeDeps({ getOllamaEnv: () => current }))
+    const result = await handlers.runOllamaBenchmark()
+    current = inMode('docker')
+    expect(handlers.getLastBenchmark()).toBe(result)
   })
 
-  it('ignora argumentos vindos do renderer', async () => {
-    const detectOllama = vi.fn(async () => ENV)
-    const handlers = createHandlers(makeDeps({ detectOllama }))
-    const call = handlers.getOllamaEnvironment as (...args: unknown[]) => Promise<OllamaEnvironment>
-    await call('C:/Windows', { kind: 'x' })
-    expect(detectOllama).toHaveBeenCalledWith()
+  it('o modo mudou depois da medição: null (a velocidade do outro modo não vale)', async () => {
+    let current = inMode('docker')
+    const handlers = createHandlers(makeDeps({ getOllamaEnv: () => current }))
+    await handlers.runOllamaBenchmark()
+    current = inMode('native')
+    expect(handlers.getLastBenchmark()).toBeNull()
+  })
+
+  it('clearLastBenchmark esquece a medição', async () => {
+    const handlers = createHandlers(makeDeps({ getOllamaEnv: () => inMode('docker') }))
+    await handlers.runOllamaBenchmark()
+    handlers.clearLastBenchmark()
+    expect(handlers.getLastBenchmark()).toBeNull()
+  })
+
+  it('medição que começou antes do clear não é guardada quando termina', async () => {
+    let release: () => void = () => {}
+    const runOllamaBenchmark = vi.fn(
+      () =>
+        new Promise<OllamaBenchmark>((resolve) => {
+          release = () => resolve(BENCH)
+        }),
+    )
+    const handlers = createHandlers(makeDeps({ runOllamaBenchmark, getOllamaEnv: () => inMode('docker') }))
+    const pending = handlers.runOllamaBenchmark()
+    await Promise.resolve()
+    handlers.clearLastBenchmark()
+    release()
+    expect(await pending).toBe(BENCH)
+    expect(handlers.getLastBenchmark()).toBeNull()
   })
 })
 

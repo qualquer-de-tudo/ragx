@@ -135,14 +135,25 @@ export function createOllamaEnvCache(detect: () => Promise<OllamaEnvironment>): 
   }
 }
 
+/** Tarefas que mudam qual Ollama está servindo (e portanto a velocidade medida). */
+const BENCHMARK_RESET_KINDS: ReadonlySet<JobView['kind']> = new Set<JobView['kind']>([
+  'ollama-use-native',
+  'ollama-use-docker',
+  'ollama-stop',
+  'ollama-start',
+])
+
 /** O que o processo principal faz quando tarefas terminam (qualquer estado final). */
 export function ollamaFollowUps(finished: readonly JobView[]): {
   /** Alguma tarefa `ollama-*` terminou: o caminho do executável pode ter mudado (ex.: `winget install`). */
   resetCache: boolean
   /** Troca de modo concluída: o modo a gravar como preferido (a que terminou por último). */
   persistMode: 'docker' | 'native' | null
+  /** Troca, parada ou início do Ollama terminou (qualquer estado): o benchmark guardado não vale mais. */
+  clearBenchmark: boolean
 } {
   const resetCache = finished.some((j) => j.kind.startsWith('ollama-'))
+  const clearBenchmark = finished.some((j) => BENCHMARK_RESET_KINDS.has(j.kind))
   let persistMode: 'docker' | 'native' | null = null
   let persistAt = -Infinity
   for (const j of finished) {
@@ -156,5 +167,5 @@ export function ollamaFollowUps(finished: readonly JobView[]): {
       persistAt = when
     }
   }
-  return { resetCache, persistMode }
+  return { resetCache, persistMode, clearBenchmark }
 }

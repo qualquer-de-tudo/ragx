@@ -37,7 +37,6 @@ describe('preload', () => {
         'discover',
         'enqueueJob',
         'getConnections',
-        'getOllamaEnvironment',
         'getProjectStatus',
         'getSettings',
         'getSnapshot',
@@ -60,10 +59,12 @@ describe('preload', () => {
     }
   })
 
-  it('getOllamaEnvironment chama o canal certo sem repassar argumentos', async () => {
+  it('nenhum método da ponte usa o canal removido ragx:get-ollama-environment', async () => {
     electron.invoke.mockClear()
-    await ragx.getOllamaEnvironment('C:/Windows', { x: 1 })
-    expect(electron.invoke).toHaveBeenCalledWith('ragx:get-ollama-environment')
+    await ragx.runOllamaBenchmark()
+    await ragx.getConnections()
+    expect(electron.invoke.mock.calls.map((c) => (c as unknown[])[0])).not.toContain('ragx:get-ollama-environment')
+    expect(ragx.getOllamaEnvironment).toBeUndefined()
   })
 
   it('runOllamaBenchmark chama o canal certo sem repassar argumentos', async () => {

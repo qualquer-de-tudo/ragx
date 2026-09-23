@@ -21,7 +21,6 @@ function bridge(over: Partial<RagxBridge> = {}): RagxBridge {
     discover: vi.fn(),
     getSettings: vi.fn(),
     setOnboardingDone: vi.fn(),
-    getOllamaEnvironment: vi.fn(),
     runOllamaBenchmark: vi.fn(),
     ...over,
   }

@@ -58,8 +58,10 @@ conectado" no card, porque a checagem procura o container.
   `ollama-use-docker`, `ollama-stop`; `ollama-start` e `ollama-pull` passam a seguir o
   modo. Passos ganham condição (`when`), execução destacada e espera pela API.
 - `electron/connections/checks.ts`: `checkOllama` reescrito sobre o ambiente.
-- IPC: `getOllamaEnvironment` e `runOllamaBenchmark`; o painel guarda o último
-  benchmark em memória e o mostra no card.
+- IPC: só `runOllamaBenchmark`; o painel guarda o último benchmark em memória, com o
+  modo em que foi medido, e o mostra no card enquanto o modo não mudar. O ambiente
+  detectado fica no processo principal (a checagem de conexões já o leva ao card); não
+  há canal que o entregue ao renderer, porque ele traz o caminho do executável.
 - Renderer: card de Ollama com modo, processador, velocidade e ações (trocar, parar,
   medir); o mesmo card aparece no passo 2 do onboarding.
 - Card de projeto (RAGX-0115): botão desabilitado com o estado da tarefa ativa do mesmo

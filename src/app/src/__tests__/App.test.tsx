@@ -23,7 +23,6 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
     discover: vi.fn(),
     getSettings: vi.fn().mockResolvedValue(settings),
     setOnboardingDone: vi.fn(),
-    getOllamaEnvironment: vi.fn(),
     runOllamaBenchmark: vi.fn(),
   }
   window.ragx = b
