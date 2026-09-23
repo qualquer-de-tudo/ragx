@@ -59,6 +59,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   indexação disparada por hook pode, raramente, gerar dois escritores;
   cobertura completa da trava para os três fica para uma tarefa futura.
 
+### Corrigido
+
+- `ragx mcp install` voltou a funcionar. O pacote `ragx.clients` tinha se perdido
+  num merge e o comando (e os instaladores, que o chamam) quebrava com
+  `ModuleNotFoundError`.
+
 ## [1.0.0-beta.3] — 2026-09-17
 
 ### Corrigido
