@@ -119,6 +119,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   num merge e o comando (e os instaladores, que o chamam) quebrava com
   `ModuleNotFoundError`.
 
+- `ragx mcp install` não afrouxa mais as permissões do arquivo de configuração
+  do cliente. A escrita atômica criava o temporário com o umask padrão (0644
+  no Linux e no macOS) e trocava um `~/.claude.json` 0600, que pode guardar
+  tokens de outros servidores MCP, por um legível por todos. Agora o arquivo
+  mantém o modo que já tinha, e um arquivo novo nasce 0600.
+
 - `freshness.state` não diz mais "fresh" para um projeto git cujo último run
   útil é anterior à migração 0006 (sem `git_commit` gravado). Sem proveniência
   para comparar, o estado agora fica "unknown" a menos que outro motivo, como

@@ -19,6 +19,7 @@ Daí as quatro regras de cada gravação:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -301,9 +302,20 @@ def _escrever(destino: Path, conteudo: str) -> None:
     Escrever por cima do arquivo deixa uma janela em que ele está truncado. Se
     a máquina desligar ali, a pessoa perde a configuração de TODOS os servidores
     MCP dela, não só a do RAGX.
+
+    A troca também não pode afrouxar permissões: esses arquivos costumam
+    guardar tokens de outros servidores MCP. Se o destino existe, o temporário
+    herda o modo dele; se não existe, nasce legível só pelo dono (0600 no
+    POSIX; no Windows o modo só controla o bit de somente leitura).
     """
     temp = destino.with_name(f"{destino.name}.ragx-tmp")
-    temp.write_text(conteudo, encoding="utf-8", newline="\n")
+    with contextlib.suppress(FileNotFoundError):
+        temp.unlink()  # sobra de uma escrita interrompida manteria o modo antigo
+    fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(conteudo)
+    if destino.exists():
+        shutil.copymode(destino, temp)
     os.replace(temp, destino)
 
 

@@ -394,3 +394,50 @@ def test_detect_so_lista_o_que_existe(casa: Path) -> None:
     assert registry.detect() == []
     _instalar("cursor")
     assert [c.id for c in registry.detect()] == ["cursor"]
+
+
+# ── permissões do arquivo de configuração ───────────────────────────────
+# `~/.claude.json` e afins podem guardar tokens de outros servidores MCP. A
+# troca atômica (temporário + os.replace) não pode trocar um arquivo 0600 por
+# um 0644 criado com o umask padrão.
+@pytest.mark.skipif(sys.platform == "win32", reason="bits de permissão POSIX")
+def test_registrar_preserva_a_permissao_do_arquivo_existente(casa: Path) -> None:
+    alvo = _instalar("claude-code")
+    alvo.write_text('{"mcpServers": {}}', encoding="utf-8")
+    alvo.chmod(0o600)
+
+    r = register(_cliente("claude-code"))
+
+    assert r.outcome is Outcome.UPDATED
+    assert stat.S_IMODE(alvo.stat().st_mode) == 0o600
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="bits de permissão POSIX")
+def test_arquivo_novo_nasce_legivel_so_pelo_dono(casa: Path) -> None:
+    alvo = _instalar("claude-code")
+    assert not alvo.exists()
+
+    r = register(_cliente("claude-code"))
+
+    assert r.outcome is Outcome.CREATED
+    assert stat.S_IMODE(alvo.stat().st_mode) == 0o600
+
+
+def test_escrita_copia_o_modo_do_destino_para_o_temporario(
+    casa: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Roda em qualquer SO: o modo do destino vai para o temporário antes da troca."""
+    alvo = _instalar("cursor")
+    alvo.write_text("{}", encoding="utf-8")
+    chamadas: list[tuple[Path, Path]] = []
+    original = registry.shutil.copymode
+
+    def espiao(src: Path, dst: Path) -> None:
+        chamadas.append((Path(src), Path(dst)))
+        original(src, dst)
+
+    monkeypatch.setattr(registry.shutil, "copymode", espiao)
+
+    register(_cliente("cursor"))
+
+    assert chamadas == [(alvo, alvo.with_name(f"{alvo.name}.ragx-tmp"))]
