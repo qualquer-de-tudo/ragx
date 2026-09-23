@@ -6,6 +6,6 @@
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/dictionary/builder.py",
-  "size_bytes": 15852,
+  "size_bytes": 15450,
   "title": "Knowledge Dictionary — o mapa barato do projeto.\n\nUm agente que chega no repositório não sabe o que perguntar. Sem orientação ele\nfaz a pergunta mais cara possível (\"me explique todo o projeto\"). O dicionário\ncabe em poucos KB e responde \"o que existe aqui\" antes de gastar contexto.\n\nRegra dura: TUDO que é determinístico é gerado sem LLM, e todo item carrega\n`evidence` — sem isso ninguém pode auditar, e alucinação entra por aí.\n\nVer docs/08-dictionary.md."
 }

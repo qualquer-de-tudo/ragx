@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "fa93728e14bab0a0ec868283959177030bbac3e88b9b4f6ad151fd644cff16ce",
+  "doc_kind": "code",
+  "id": "a34bf988f9599cde5ddf19578c8ecced",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/decomposer.py",
+  "size_bytes": 11748,
+  "title": "Task Decomposer — do plano para tarefas executáveis, com dependências.\n\nDuas regras governam este módulo:\n\n  1. **Toda tarefa nasce com critério de aceite.** Sem isso, `completed` não\n     significa nada e a validação não tem o que verificar. O repositório\n     recusa a tarefa sem critério; aqui ela nunca é criada assim.\n\n  2. **O grafo é acíclico por construção.** O ciclo é recusado na criação da\n     aresta, com o caminho completo na mensagem — descobrir na execução\n     significa descobrir com o board já montado e a fila travada."
+}

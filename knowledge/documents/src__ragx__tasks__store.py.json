@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "5c3a942c5388cb0b2228ab466ec4c170da77b0b469fbb0dfde26e96459cbd383",
+  "doc_kind": "code",
+  "id": "0d29fde4effe8bb5fa48b35b24ac221b",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/store.py",
+  "size_bytes": 32104,
+  "title": "Persistência da orquestração. O único módulo que escreve SQL de tarefa.\n\nBanco próprio, `.ragx/ragx.sqlite`, separado do `knowledge.db` (ADR-0014):\n`ragx vacuum` roda `VACUUM`, que bloqueia o banco inteiro — com os dois juntos,\nou o vacuum falha ou o worker trava. E `ragx reset` apaga `.ragx/` para\nreconstruir o índice, o que é seguro porque o índice é derivado; o histórico de\nexecução não é."
+}

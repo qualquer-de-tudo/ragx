@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "6fbefd75cc0f4f704c09a66bb530cd2389a7d1132a4a94ff546233e8ae9b1094",
+  "doc_kind": "code",
+  "id": "ef51b2fd4036e29c2304bba3e34450c9",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tokens.py",
+  "size_bytes": 1861,
+  "title": "Contagem de tokens.\n\nAbstração (`TokenCounter`) com implementação padrão heurística e sem dependência\nnativa. `tiktoken` entra como upgrade opcional: mesma interface, mais precisão.\n\nA contagem é declaradamente ESTIMATIVA — o ContextPack sempre reporta\n`estimated_tokens` e garante `estimated_tokens <= budget` com margem."
+}

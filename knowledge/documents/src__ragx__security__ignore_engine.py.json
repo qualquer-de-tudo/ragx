@@ -6,6 +6,6 @@
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/security/ignore_engine.py",
-  "size_bytes": 3647,
+  "size_bytes": 3547,
   "title": "IgnoreEngine — reduz ruído, NÃO protege segredo.\n\nUm .env não listado no .gitignore continua sendo bloqueado pelo scanner.\nPrecedência (o último vence): defaults -> .gitignore (inclusive aninhados)\n-> .dockerignore -> .ragignore -> ragx.toml -> flags da CLI.\n\nVer docs/02-seguranca.md."
 }

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "8ac4940402b74f5ce67b1e2e5b0bf4d7ec5ed78d6cac563dd4a3e3ded1bd4506",
+  "doc_kind": "code",
+  "id": "3244d274a07ed5ce4e5a921595bda958",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tiers.py",
+  "size_bytes": 3255,
+  "title": "Camada do documento: conhecimento, registro de trabalho ou teste.\n\nUm repositório não guarda só conhecimento. Guarda também o REGISTRO de como o\nconhecimento foi construído — tarefas, backlog, rascunhos de ADR — e os testes.\nOs três falam do mesmo assunto, com o mesmo vocabulário, e disputam as mesmas\nvagas do top-K.\n\nMedido neste repositório: `task/` é **22% dos chunks** (543 contra 321 de\n`docs/`). Para a consulta *\"como o security gate decide bloquear um arquivo\"*,\no primeiro fragmento devolvido era o enunciado da TAREFA que pediu para\nconstruir o gate — não o `admit()` que o implementa. Documento de planejamento\né quase-duplicata semântica da documentação: mesmo assunto, mesmas palavras,\nmenos informação.\n\nA correção não é excluir: às vezes a resposta está mesmo na tarefa, e um\n`task/` invisível seria pior que um `task/` ruidoso. É **pesar**.\n\n## Por que a classificação acontece na LEITURA\n\nA alternativa seria uma coluna `tier` em `documents`, gravada na indexação.\nEla seria mais rápida por uma margem que não importa (uma comparação de\ncaminho por resultado) e teria um defeito real: mudar `work_paths` no\n`ragx.toml` só surtiria efeito depois de reindexar o projeto inteiro. Como a\nclassificação é uma POLÍTICA — e política se ajusta —, ela mora onde pode\nmudar sem custo.\n\nVer `task/fase-14-evolucao-do-rag/RAGX-0102-*.md`."
+}

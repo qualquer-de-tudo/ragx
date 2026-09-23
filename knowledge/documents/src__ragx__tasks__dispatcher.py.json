@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "2bfdc17573e563fba808c1352a7691f2db63f4d6783c3c09883435fb23d7b162",
+  "doc_kind": "code",
+  "id": "f19bf83cddf9d0c2a2e7e23a444ba08d",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/dispatcher.py",
+  "size_bytes": 16127,
+  "title": "Dispatcher, contexto por tarefa, validação e processamento de resultado.\n\nO RAGX é a fila e o árbitro; o agente é o executor (ADR-0015). Este módulo é a\nfronteira entre os dois: entrega trabalho pronto, recebe resultado, verifica o\nque dá para verificar, e libera o que ficou pronto.\n\nO validador é **determinístico e sem juízo sobre qualidade de código**. Ele\nconfere escopo, evidência e gate. Um validador que fingisse avaliar qualidade\naprovaria o errado com autoridade, que é pior que não validar."
+}

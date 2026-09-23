@@ -5,6 +5,15 @@
       "contract": null,
       "detected_by": "reference",
       "handler": null,
+      "normalized": "messageevent",
+      "raw": "MessageEvent",
+      "source": "vscode-plugin/tests/webview/app.test.tsx:79"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
       "normalized": "payment.captured",
       "raw": "payment.captured",
       "source": "tests/integration/test_federation.py:1"
@@ -54,7 +63,7 @@
       "handler": null,
       "normalized": "POST /api/shipping/quote",
       "raw": "POST /api/shipping/quote",
-      "source": "tests/integration/test_federation.py:63"
+      "source": "tests/integration/test_federation.py:1"
     }
   ],
   "package": [
@@ -74,6 +83,33 @@
       "contract": null,
       "detected_by": "graph",
       "handler": null,
+      "normalized": "agent_runs",
+      "raw": "agent_runs",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "agents",
+      "raw": "agents",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "approvals",
+      "raw": "approvals",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
       "normalized": "chunks",
       "raw": "chunks",
       "source": "src/ragx/storage/migrations/0002_documents.sql"
@@ -86,6 +122,15 @@
       "normalized": "cross_links",
       "raw": "cross_links",
       "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "decisions",
+      "raw": "decisions",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
     },
     {
       "confidence": 1.0,
@@ -155,9 +200,27 @@
       "contract": null,
       "detected_by": "graph",
       "handler": null,
+      "normalized": "knowledge_documents",
+      "raw": "knowledge_documents",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "knowledge_versions",
+      "raw": "knowledge_versions",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
       "normalized": "meta",
       "raw": "meta",
-      "source": "src/ragx/storage/migrations/0001_init.sql"
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
     },
     {
       "confidence": 1.0,
@@ -166,7 +229,7 @@
       "handler": null,
       "normalized": "projects",
       "raw": "projects",
-      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
     },
     {
       "confidence": 1.0,
@@ -176,6 +239,15 @@
       "normalized": "relations",
       "raw": "relations",
       "source": "src/ragx/storage/migrations/0004_graph.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "schedules",
+      "raw": "schedules",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
     },
     {
       "confidence": 1.0,
@@ -203,6 +275,96 @@
       "normalized": "sync_state",
       "raw": "sync_state",
       "source": "docs/03-modelo-de-dados.md"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_artifacts",
+      "raw": "task_artifacts",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_attempts",
+      "raw": "task_attempts",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_context",
+      "raw": "task_context",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_dependencies",
+      "raw": "task_dependencies",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_errors",
+      "raw": "task_errors",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_events",
+      "raw": "task_events",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_logs",
+      "raw": "task_logs",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_results",
+      "raw": "task_results",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "task_runs",
+      "raw": "task_runs",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "tasks",
+      "raw": "tasks",
+      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
     },
     {
       "confidence": 1.0,

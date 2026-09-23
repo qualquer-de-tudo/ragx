@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "0bddc6ec31eea719091605eaae2f9cdd6a2abe071c1d6626636f544b94bdb5c0",
+  "doc_kind": "code",
+  "id": "fe391cf7f74ad721cdbafe71306c3c22",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/unit/test_embedder_cache.py",
+  "size_bytes": 4656,
+  "title": "O embedder é construído uma vez por processo — e isso não muda resultado.\n\n`build_embedder` era chamado a cada busca semântica, e de novo dentro do\n`build_context`. Construir o `FastEmbedEmbedder` carrega um modelo ONNX e custa\n2,5–3,6 s; embutir a consulta com ele pronto custa ~10 ms. Praticamente toda a\nlatência da busca semântica era carregar o modelo de novo.\n\nEstes testes protegem as duas metades do acordo: que a instância é reusada, e\nque reusá-la não altera o que a busca devolve. A segunda metade importa porque\num embedder com estado sujo entre chamadas seria um bug muito pior que a\nlentidão que o cache resolve.\n\nVer `task/fase-14-evolucao-do-rag/RAGX-0097-*.md`."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "774d6bdb11aa7ae5ac87591c39e08b6aae26f454250cde1d48140d1c0d53e329",
+  "doc_kind": "code",
+  "id": "3f8e541dccbc4bac55bde8f7de7d66f1",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/unit/test_plugin_contrato.py",
+  "size_bytes": 5978,
+  "title": "O plugin do VS Code chama a CLI. Esta é a única checagem que os une.\n\nO transporte de reserva do plugin monta linhas de comando como texto:\n`['documents', '--path', x]`. Nada no TypeScript sabe se essa flag existe, e\nnada no Python sabe que alguém a escreveu. O resultado, quando diverge, é o\npior tipo de falha: o `execFile` devolve erro, o plugin mostra \"não indexado\",\ne a suspeita cai sobre o Security Gate — que não fez nada.\n\nAconteceu duas vezes neste repositório: `--filter`, que nunca existiu, e\n`chunks <caminho>` posicional, quando a CLI quer `--document`.\n\nO par deste teste está em `vscode-plugin/tests/unit/client.test.ts`, que fixa\no argv que o cliente produz. Os dois juntos fecham o ciclo: um garante o que o\nplugin manda, o outro garante que a CLI aceita."
+}

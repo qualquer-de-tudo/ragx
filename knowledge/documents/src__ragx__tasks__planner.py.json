@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "6ba49fe8593e0f7ea04d0ef845370c02bb87ddc21749671d53bc7746e0ee76e2",
+  "doc_kind": "code",
+  "id": "c0b2ca25ea28f604ebc05b6de8596220",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/planner.py",
+  "size_bytes": 9730,
+  "title": "Documentation Planner — quais documentos, fundamentados no que já existe.\n\nO planner **não escreve texto**. Ele decide quais documentos o trabalho exige,\nordena por dependência entre tipos, e produz esqueletos que já carregam o que o\níndice sabe sobre o assunto. O texto é escrito pelo agente, na tarefa\ncorrespondente.\n\nA regra que não se quebra: **documentação nunca nasce isolada do conhecimento\nexistente**. Um documento que o planner não conseguiu fundamentar sai com a\nlacuna marcada — inventar é pior que admitir o buraco, porque o buraco vira\ntarefa e a invenção vira verdade."
+}

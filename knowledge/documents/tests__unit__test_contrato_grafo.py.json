@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "a50ea991cec4e4167cb770591ac6007e838c5e3d31087b583cb13b5cc68a0c18",
+  "doc_kind": "code",
+  "id": "9efa09d8230443f3d74eee77c9fe73ce",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/unit/test_contrato_grafo.py",
+  "size_bytes": 7217,
+  "title": "Contrato do grafo: o que o servidor MANDA para quem desenha o grafo.\n\nO par deste arquivo é `vscode-plugin/tests/unit/graph-contract.test.ts`, que\nfixa o que o cliente ENTENDE. Separados, cada lado passa sozinho e o grafo\naparece vazio na tela; juntos, um renomeio de campo quebra o teste em vez de\nquebrar a interface.\n\nO bug que os dois existem para impedir: `get_entity` devolvia a relação só\ncomo \"o nó do outro lado\" (`other`, `other_type`), sem dizer quem era origem e\nquem era destino. A extensão procurava `target`/`dst`, não achava, e descartava\na relação em silêncio — grafo sem nenhuma aresta, sem erro em lugar nenhum."
+}

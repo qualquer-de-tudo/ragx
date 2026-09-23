@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "e29dc56a79b534106648c503cf59d6b11981a5d978518195cc7cf9c248526677",
+  "doc_kind": "code",
+  "id": "d6a9a6e35d636a8080f0fbe59d403a7a",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/cli/commands/worker_cmd.py",
+  "size_bytes": 6517,
+  "title": "`ragx worker` e `ragx schedule` — o motor que mantém a fila correta.\n\nO worker NÃO executa tarefa. Ele expira lease, promove o que ficou pronto,\naplica retry e dispara agendamento; quem executa é o agente (ADR-0015)."
+}

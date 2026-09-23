@@ -6,6 +6,6 @@
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/mcp/tools.py",
-  "size_bytes": 3174,
+  "size_bytes": 3084,
   "title": "Contratos e implementação das ferramentas MCP.\n\nCASCA FINA (ADR-0006): cada ferramenta é validar -> chamar serviço -> serializar.\nZero lógica de negócio, zero acesso a filesystem.\n\nEste módulo NÃO pode importar `os`, `subprocess`, `pathlib`, `socket` nem\ncliente HTTP — há teste arquitetural que falha se alguém tentar."
 }

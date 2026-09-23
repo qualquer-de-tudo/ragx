@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c1b9db0ed9b2689b9099f37e610f202768c895fada0185fb914331a1a5de30e8",
+  "doc_kind": "code",
+  "id": "4300cf22524329ab77210cd2028f0e05",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/search/trial.py",
+  "size_bytes": 2055,
+  "title": "Comparação honesta: tokens que o build_context entrega vs. o baseline de\nler o arquivo inteiro. Mede o que o `ragx eval` não mede — economia real de\ntokens, não qualidade de ranking. Reusa o mesmo corpus de `evaluation.py`.\n\nIsto é um proxy, não uma sessão de agente real replayed. Ver docs/07 e o\naviso impresso por `ragx trial`."
+}

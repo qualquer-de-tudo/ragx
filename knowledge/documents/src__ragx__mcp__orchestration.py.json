@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "7d18687fdb0cdda63d4878cd9cdf7fb7eaa2bf3b03c4d675332c3b3bbef9df26",
+  "doc_kind": "code",
+  "id": "8911f0ed7d80d3aa023acb8949835100",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/mcp/orchestration.py",
+  "size_bytes": 11249,
+  "title": "Ferramentas MCP de orquestração — o contrato entre o RAGX e o agente.\n\nO RAGX é a fila e o árbitro; o agente é o executor (ADR-0015). Este módulo é a\núnica superfície por onde o agente reivindica trabalho e devolve resultado.\n\nAs invariantes do ADR-0006 valem aqui sem exceção: nada de `os`, `pathlib`,\n`subprocess`, rede ou `open`. Tudo é delegado aos serviços — os mesmos que a\nCLI chama, para que humano e agente nunca consigam coisas diferentes."
+}

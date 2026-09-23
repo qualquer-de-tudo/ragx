@@ -6,6 +6,6 @@
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/sync/rehydrate.py",
-  "size_bytes": 5511,
+  "size_bytes": 5349,
   "title": "Reidratação: reconstrói o conteúdo dos chunks a partir do working tree.\n\nÉ o mecanismo que permite não versionar conteúdo. Três propriedades:\n\n  1. AUTOVERIFICAÇÃO — reidratação errada é impossível passar despercebida:\n     o hash não bate e o documento é reprocessado.\n  2. CONVERGÊNCIA — `knowledge/` desatualizado não corrompe nada.\n  3. OFFLINE — nenhuma etapa precisa de rede nem de embedder.\n\nEste é o SEGUNDO (e último) módulo autorizado a ler o filesystem do\nprojeto-alvo. Ver ADR-0008 e ADR-0010."
 }

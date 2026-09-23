@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "5147a1372512104ab474a268087825b52d773826a6bf855fea6f32cd4ea5e882",
+  "doc_kind": "code",
+  "id": "24dfb7696ab696d0f6248eddfefef66b",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/worker.py",
+  "size_bytes": 9919,
+  "title": "Worker e scheduler — mantêm a fila correta. Nunca executam tarefa.\n\nO cron **só acorda** o RAGX (§15 do pedido). A inteligência está aqui, e o que\nestá aqui é transição de estado, não execução: quem executa é o agente\n(ADR-0015).\n\nUm ciclo é idempotente: rodar duas vezes seguidas não muda nada na segunda."
+}

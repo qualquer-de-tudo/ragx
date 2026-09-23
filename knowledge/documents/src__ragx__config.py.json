@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "dfb6e8335b292d487bfcbd93942859d86385802cdcb539413a9abed5c4bf328a",
+  "content_hash": "ed8a41335eaf637ba0651f6105d9a7cf6fd0ece9fbffe5edaffc4852e6775658",
   "doc_kind": "code",
   "id": "c79ff1bea3ef32a9f7b776684afa307b",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/config.py",
-  "size_bytes": 7980,
+  "size_bytes": 9047,
   "title": "Configuração com cascata completa.\n\nPrecedência: flags CLI > RAGX_* > ragx.toml do projeto > config do usuário > defaults.\nVer docs/15-configuracao.md.\n\nNenhuma chave de API é lida do TOML — credencial vem só de variável de ambiente."
 }

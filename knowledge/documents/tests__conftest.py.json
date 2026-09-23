@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "6e4bc38ab3315b2ffa9a725d3a0c5d9f422d5808e83d4423b47139f7355f9643",
+  "doc_kind": "code",
+  "id": "e52e4ddd58b7ef887ab03c04116e676f",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/conftest.py",
+  "size_bytes": 2282,
+  "title": "Isolamento da suíte em relação à máquina que a roda.\n\nO RAGX lê DUAS coisas fora do projeto: o hub multiprojeto (`~/.ragx/hub`) e a\nconfiguração do usuário (`~/.config/ragx/config.toml`). Sem isolamento, a\nsuíte passa a depender do que o desenvolvedor tem instalado — e foi\nexatamente isso que aconteceu: `test_list_projects` esperava o projeto `demo`\ne recebia o primeiro projeto registrado no hub da máquina. Verde no CI, vermelho\nna máquina de quem tinha outros projetos; nenhum dos dois dizia nada sobre o\ncódigo.\n\nUm teste que lê o `$HOME` real também ESCREVE nele: `hub sync` registraria\nprojetos de fixture no hub de verdade da pessoa. Redirecionar aqui, uma vez,\npara a sessão inteira, resolve os dois."
+}

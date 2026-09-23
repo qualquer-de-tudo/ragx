@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "b36e6520e51d6eaf2e4229006015d930437cab2f1c6c88817556a024193a0211",
+  "doc_kind": "code",
+  "id": "134d2c565087ca87ad5c34f3e0193dfa",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/analyzer.py",
+  "size_bytes": 15785,
+  "title": "Task Analyzer — decide executar agora ou documentar e decompor antes.\n\nDeterminístico e offline. O RAGX não tem um LLM e não vai ter (ADR-0015), então\na classificação vem de duas fontes, ambas auditáveis:\n\n  1. sinais léxicos declarados em `signals.yaml`\n  2. medição no ÍNDICE REAL — quantos módulos já falam do assunto, e se existe\n     documento cobrindo\n\nA segunda é o que separa isto de um casador de palavras: a mesma frase pontua\ndiferente num repositório onde o assunto aparece em cinco módulos e num onde\nnão aparece em lugar nenhum.\n\nA limitação, dita de frente: ele lê palavras e mede impacto. Não entende o\npedido. Um pedido escrito de forma incomum pode ser subestimado — por isso\nexiste sobreposição, e ela fica registrada."
+}

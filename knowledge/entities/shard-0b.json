@@ -1,17 +1,6 @@
 [
   {
-    "chunk_id": "08a1b272b7186a79f3a952067cd293ab",
-    "confidence": 1.0,
-    "document_id": "56b383a2a82751d848ea30dc28fe0237",
-    "id": "010fbf0b388b089b7404399d84b512a3",
-    "name": "_merge_tiny#part-2",
-    "qualified_name": "src/ragx/indexing/chunkers/__init__.py::_merge_tiny#part-2",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
-    "chunk_id": "155fc3f668f9ce4c222931656eb35717",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "01cdf33bd4cc40b504e3736c58966367",
@@ -28,6 +17,28 @@
     "id": "030997fb039b4eff50300feabde85848",
     "name": "promote_example",
     "qualified_name": "src/ragx/agents/trainer.py::promote_example",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "60c6a12e1dcd4b1dfb481d12152ca720",
+    "confidence": 1.0,
+    "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
+    "id": "0480ae5b5ce7da14bb80073be27d8dae",
+    "name": "ready_tasks",
+    "qualified_name": "src/ragx/tasks/store.py::TaskRepository.ready_tasks",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "595694f48fd1d6a9c521d5aafe6548c2",
+    "confidence": 1.0,
+    "document_id": "24dfb7696ab696d0f6248eddfefef66b",
+    "id": "068d794bce172a8d382bb9f6d1ba8408",
+    "name": "list_schedules",
+    "qualified_name": "src/ragx/tasks/worker.py::list_schedules",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -55,7 +66,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "ed7d3600c1976737d15169147bde1cc9",
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "c59d5f2e9625c70fc1ea629e26d5481c",
+    "id": "1b429a9bd73d673abc78eeced2ecd932",
+    "name": "models.py",
+    "qualified_name": "src/ragx/tasks/models.py",
+    "source": "structural",
+    "summary": "Tipos do domínio de orquestração.\n\nSem infraestrutura aqui dentro: nada de sqlite3, yaml, typer ou rich. A máquina\nde estados vive neste módulo porque é regra, não persistência — e o repositório\na consulta antes de gravar qualquer transição.",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "27afecdb41b1451d6e9cc6ec01a734c3",
     "id": "1cede2cb4787edb6aa0912ce3c522544",
@@ -88,23 +110,34 @@
     "type": "method"
   },
   {
-    "chunk_id": "d6609cac1b985e8fb6ace5112d4d65a8",
-    "confidence": 1.0,
-    "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
-    "id": "23ab1fbb1a465ace85cec9f246a94e4d",
-    "name": "knowledge_dir",
-    "qualified_name": "src/ragx/config.py::Config.knowledge_dir",
-    "source": "structural",
-    "summary": null,
-    "type": "method"
-  },
-  {
     "chunk_id": "e27ca4cb58caeae2a8ee71a4fcf7b2b1",
     "confidence": 1.0,
     "document_id": "c796e3cbf4d0c8ff536421c86e3dac4e",
     "id": "24173aab7d174d400a93678a7a1af647",
     "name": "test_treina_e_preenche_o_manifest",
     "qualified_name": "tests/integration/test_agents.py::test_treina_e_preenche_o_manifest",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "5a30872b74dda3b007f6356f010af54e",
+    "id": "2553d64be29291063c9034fc281f9b12",
+    "name": "RAGX-0096-testes-obrigatorios-e-demonstracao.md",
+    "qualified_name": "task/fase-13-task-analyzer-orquestracao/RAGX-0096-testes-obrigatorios-e-demonstracao.md",
+    "source": "structural",
+    "summary": "RAGX-0096 — Testes obrigatórios e demonstração ponta a ponta",
+    "type": "file"
+  },
+  {
+    "chunk_id": "7fd31c8c72cb01409a2f7bff7bddab52",
+    "confidence": 1.0,
+    "document_id": "134d2c565087ca87ad5c34f3e0193dfa",
+    "id": "28578f5bbb5715ffd6e59e8163a6bc3d",
+    "name": "_module_of",
+    "qualified_name": "src/ragx/tasks/analyzer.py::_module_of",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -143,7 +176,7 @@
     "type": "table"
   },
   {
-    "chunk_id": "f1eb15facc6217a3fc45b49f0c2770f9",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "385b482b8de7149cd6da8de758445031",
@@ -165,7 +198,18 @@
     "type": "file"
   },
   {
-    "chunk_id": "79f85d240a2edbf301fc88089d9e5c92",
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "8911f0ed7d80d3aa023acb8949835100",
+    "id": "3db7396b1eeca1f36af78219de0e875c",
+    "name": "orchestration.py",
+    "qualified_name": "src/ragx/mcp/orchestration.py",
+    "source": "structural",
+    "summary": "Ferramentas MCP de orquestração — o contrato entre o RAGX e o agente.\n\nO RAGX é a fila e o árbitro; o agente é o executor (ADR-0015). Este módulo é a\núnica superfície por onde o agente reivindica trabalho e devolve resultado.\n\nAs invariantes do ADR-0006 valem aqui sem exceção: nada de `os`, `pathlib`,\n`subprocess`, rede ou `open`. Tudo é delegado aos serviços — os mesmos que a\nCLI chama, para que humano e agente nunca consigam coisas diferentes.",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "44b5270ba03189ecbe3c4746d78f9677",
@@ -176,7 +220,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "b97f32abd51eadd6afc3c7a483165e71",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "992e360eb49883748047effbfda22510",
     "id": "45b68a4bc06018b540d88885b5cbb8f6",
@@ -231,7 +275,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "db3531a943bbf9a43700d149f3fe47d8",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "764e2ec438046e09e0dc7f77d227627c",
     "id": "514b446b2d12cf7166d0f94725a86e50",
@@ -253,6 +297,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "376da7740710698a81984e53a644c1ca",
+    "confidence": 1.0,
+    "document_id": "f19bf83cddf9d0c2a2e7e23a444ba08d",
+    "id": "52a7307ba2ab4bb100972656b0fbea5b",
+    "name": "_tokens",
+    "qualified_name": "src/ragx/tasks/dispatcher.py::_tokens",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "0a99a46b73759eff839d3d6f3d38cf9c",
     "confidence": 1.0,
     "document_id": "449d3c77647158006804bdb6f7788df8",
@@ -264,7 +319,7 @@
     "type": "method"
   },
   {
-    "chunk_id": "189995f2e1d27cfe7eb819e7a0fcf028",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
     "id": "5567ab4b7b896bc6e507ba3d77af4dfd",
@@ -275,7 +330,7 @@
     "type": "method"
   },
   {
-    "chunk_id": "b09c3ca4dcfdec74520887ed2f6d459b",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "55ae826b9f8d692cc1134de149fa34ff",
@@ -297,7 +352,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "b8d4e11cebaf750c5821accf089f452f",
+    "chunk_id": "5ce694e18d47b8067f8a02c2f9e2eec7",
+    "confidence": 1.0,
+    "document_id": "ef51b2fd4036e29c2304bba3e34450c9",
+    "id": "64b8461b3c2d1479d3aae808d4afb0bd",
+    "name": "count_tokens",
+    "qualified_name": "src/ragx/tokens.py::count_tokens",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "992e360eb49883748047effbfda22510",
     "id": "65dc0a5b289f0d459717e3b3237ca837",
@@ -352,7 +418,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "cab4c3242aed35abb52177a7f052c891",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "957280ba9f49e1f9aee96e2eeb397bdb",
     "id": "6fd913fb4bf3a256e2438652feff5dfb",
@@ -361,6 +427,50 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": "e7fed0f13e054d7330c0ac1020365b82",
+    "confidence": 1.0,
+    "document_id": "f2521afe7e0713a6108d67135869ece3",
+    "id": "70e5b40b37e7f117e22401059965ba07",
+    "name": "TaskSyncReport",
+    "qualified_name": "src/ragx/tasks/serialize.py::TaskSyncReport",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
+    "chunk_id": "36e9a8d6c456b492fb094901b344963e",
+    "confidence": 1.0,
+    "document_id": "134d2c565087ca87ad5c34f3e0193dfa",
+    "id": "71688f8b54b4c7eb78d392fe43f10c91",
+    "name": "_measure",
+    "qualified_name": "src/ragx/tasks/analyzer.py::_measure",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "1c4cc92d72ebb542d28cc40c3093bc9b",
+    "confidence": 1.0,
+    "document_id": "7d3ee6e4b6e3eeca859d79612ee62a9f",
+    "id": "76ed182b6d3274d34bef336cc9451449",
+    "name": "agents",
+    "qualified_name": "agents",
+    "source": "reference",
+    "summary": null,
+    "type": "table"
+  },
+  {
+    "chunk_id": "f57fb0e3536f38d18cceab0344661d26",
+    "confidence": 1.0,
+    "document_id": "c0b2ca25ea28f604ebc05b6de8596220",
+    "id": "78154e0bd77574b4212bfd516193b450",
+    "name": "_gather#part-1",
+    "qualified_name": "src/ragx/tasks/planner.py::_gather#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -374,7 +484,18 @@
     "type": "file"
   },
   {
-    "chunk_id": "2878b6972dda1fd4122e8a8a7ed5ca63",
+    "chunk_id": "099e6e2bc8f1d17351489c63ac43ee11",
+    "confidence": 1.0,
+    "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
+    "id": "7b3fe43b9e08e39eff8ed6381be6db62",
+    "name": "latest_result",
+    "qualified_name": "src/ragx/tasks/store.py::TaskRepository.latest_result",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "957280ba9f49e1f9aee96e2eeb397bdb",
     "id": "7cd6beeb0900e3fae52752033d9278ac",
@@ -393,6 +514,17 @@
     "qualified_name": "src/ragx/storage/__init__.py",
     "source": "structural",
     "summary": null,
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "dd1a52dd21d19668d809957879ea1402",
+    "id": "7fa51c4b8c58fd26cd3b9de2e325580a",
+    "name": "parse.test.ts",
+    "qualified_name": "vscode-plugin/tests/unit/parse.test.ts",
+    "source": "structural",
+    "summary": "/**",
     "type": "file"
   },
   {
@@ -418,7 +550,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "c541f41eb537104980ca1d19bf1e3465",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "858a6abb68ec4859fb1cb3c4b4852af3",
@@ -429,7 +561,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "baa1ce44194aedebedd289e12201d798",
+    "chunk_id": "a94bbc400c0524d726cd05b0e66f40ea",
     "confidence": 1.0,
     "document_id": "afc38ac4e5e44fc8bb25b84ec7e46b5d",
     "id": "8a8cb12bc21218af1c8906202a848763",
@@ -473,7 +605,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "4b325b8379e0c30cde59efda6d06641f",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
     "id": "9a37e68bb7765ca0253359d38d4f2159",
@@ -506,7 +638,29 @@
     "type": "method"
   },
   {
-    "chunk_id": "50a86cc4d77ba56d677f241977229c96",
+    "chunk_id": "ab4af5b9aebeb3731af6a4488d9da9b7",
+    "confidence": 1.0,
+    "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
+    "id": "a23681eb9fee1bad2b1b197f3d1f080c",
+    "name": "add_dependency",
+    "qualified_name": "src/ragx/tasks/store.py::TaskRepository.add_dependency",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "ce68c5c82deada808cf7a6d6b98fa425",
+    "confidence": 1.0,
+    "document_id": "8f0377bb2911e271039e5eb7922e27d3",
+    "id": "a2adf54b24c2a534b2f93764678226a1",
+    "name": "admit",
+    "qualified_name": "src/ragx/security/gate.py::SecurityGate.admit",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "b2d1971669e63f68243ab273bfbcd7dd",
     "id": "a902694b3b4ab24bd57a9d9ee90fe6f8",
@@ -550,6 +704,17 @@
     "type": "method"
   },
   {
+    "chunk_id": "0a24ed0b71b8bd5bf41a035b1ae895ce",
+    "confidence": 1.0,
+    "document_id": "c59d5f2e9625c70fc1ea629e26d5481c",
+    "id": "b257fa4b9c0e7d0ff73aef4768479a0b",
+    "name": "fail",
+    "qualified_name": "src/ragx/tasks/models.py::Validation.fail",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
     "chunk_id": "f4d2420efb5eed1993262335c786156f",
     "confidence": 1.0,
     "document_id": "c796e3cbf4d0c8ff536421c86e3dac4e",
@@ -559,6 +724,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "9011793a87d65b26782d0500a1f6dd26",
+    "confidence": 1.0,
+    "document_id": "c59d5f2e9625c70fc1ea629e26d5481c",
+    "id": "b5683eebdb145334cb7ddcaeb1d2594b",
+    "name": "__init__",
+    "qualified_name": "src/ragx/tasks/models.py::CycleError.__init__",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": null,
@@ -583,7 +759,18 @@
     "type": "file"
   },
   {
-    "chunk_id": "4e05e3fac76b409ae63c5acf7ffb6e61",
+    "chunk_id": "9392f981baf0c8a4d96c28faa3aa45ff",
+    "confidence": 1.0,
+    "document_id": "24dfb7696ab696d0f6248eddfefef66b",
+    "id": "ba31469b46b2a66b6fdb11652e402e92",
+    "name": "run_cycle",
+    "qualified_name": "src/ragx/tasks/worker.py::run_cycle",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "764e2ec438046e09e0dc7f77d227627c",
     "id": "bab6f6bbf365d61d3ff38650b21451b3",
@@ -594,12 +781,23 @@
     "type": "method"
   },
   {
-    "chunk_id": "75134623187a0cbb76cb4094d0b8a44f",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "53cfb0341bc5392d4ae5ba26445dfa6c",
     "id": "bd90ea0b1165f1a2ee67f494f0bd81e5",
     "name": "_toggle",
     "qualified_name": "src/ragx/cli/commands/base_cmd.py::_toggle",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "41c0dd89645cc6d9741784d8f37b6344",
+    "id": "bf81b19bf0efee57ab948959244e7960",
+    "name": "generate",
+    "qualified_name": "src/ragx/cli/commands/dictionary_cmd.py::generate",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -614,6 +812,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "8612a1fd9fc9bfb40afede9cb44c93ee",
+    "confidence": 1.0,
+    "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
+    "id": "c6a7a07bf4d598c78c7f5c136363091e",
+    "name": "list_tasks",
+    "qualified_name": "src/ragx/tasks/store.py::TaskRepository.list_tasks",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": null,
@@ -638,7 +847,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "f70f5815685a416699126f33aee75b1e",
+    "chunk_id": "9504aa71efb58f46859d7f8b0ab5a46e",
+    "confidence": 1.0,
+    "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
+    "id": "c9cb328b992e4ed93413bc90e14c2ee0",
+    "name": "edges",
+    "qualified_name": "src/ragx/tasks/store.py::TaskRepository.edges",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "75a231feac6c120c0e2f2a9f7ad8ae99",
     "confidence": 1.0,
     "document_id": "afc38ac4e5e44fc8bb25b84ec7e46b5d",
     "id": "ce91b53b6851e013a2566fe52601472a",
@@ -647,6 +867,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "f307a7e716ee99c0c5fbdb0abb4c94ad",
+    "id": "d1caab1b68a15f93096c0931e764290e",
+    "name": "vite.config.ts",
+    "qualified_name": "vscode-plugin/vite.config.ts",
+    "source": "structural",
+    "summary": "/**",
+    "type": "file"
   },
   {
     "chunk_id": null,
@@ -671,7 +902,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "7d83ae4d7aa1187d8fb0b66c392d7a0a",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
     "id": "d9e5096bbcdb70c5a34e567eb46985a0",
@@ -693,12 +924,23 @@
     "type": "method"
   },
   {
-    "chunk_id": "734c8e10a5823965fe099bc918b7483e",
+    "chunk_id": "61ba5dfb8ccfea671361ff8f5a67127e",
     "confidence": 1.0,
     "document_id": "6748b25689773747d50f29c12233c01b",
     "id": "de77c40bf60c487cf0907a49d2bfb826",
     "name": "_conventions#part-1",
     "qualified_name": "src/ragx/dictionary/builder.py::_conventions#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "510e4d0d3c847abf2f1f0b9e04a4424e",
+    "confidence": 1.0,
+    "document_id": "f2521afe7e0713a6108d67135869ece3",
+    "id": "e0ddfc0b1884d26e9e1bd449dd2ee39f",
+    "name": "rehydrate#part-2",
+    "qualified_name": "src/ragx/tasks/serialize.py::rehydrate#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -726,6 +968,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "986175a8ca3a305b4f0f182000d2e387",
+    "confidence": 1.0,
+    "document_id": "8911f0ed7d80d3aa023acb8949835100",
+    "id": "e9aac88b455e33be17976864cb37426b",
+    "name": "__init__",
+    "qualified_name": "src/ragx/mcp/orchestration.py::OrchestrationAPI.__init__",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "7353c7fc42cab4bf2ba5390eed5e1d9c",
+    "confidence": 1.0,
+    "document_id": "ef51b2fd4036e29c2304bba3e34450c9",
+    "id": "ec96f62bd8d7ea42b938ca70ce682ad3",
+    "name": "count",
+    "qualified_name": "src/ragx/tokens.py::TokenCounter.count",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
     "chunk_id": "641ef18a05541ef33f73c30cc40e1f32",
     "confidence": 1.0,
     "document_id": "00e74032961225ee57b7ee37f011e873",
@@ -737,7 +1001,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "ec22ba315101f3b70abdf2602dd7ce6d",
+    "chunk_id": "02f5c322ed975a1038e674a1af60e08b",
+    "confidence": 1.0,
+    "document_id": "f2521afe7e0713a6108d67135869ece3",
+    "id": "f145215bd2d38ca0c8f2e679daba06e4",
+    "name": "_update_definition",
+    "qualified_name": "src/ragx/tasks/serialize.py::_update_definition",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
     "id": "f67cdd6bce02d15987184054cd7b1459",
@@ -759,7 +1034,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "0c8c26fc82e80147122054cc3fdf9384",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "764e2ec438046e09e0dc7f77d227627c",
     "id": "f8b07e8ba7d297474d89e14b2f7a3172",
@@ -781,7 +1056,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "3186663ce205c877f63d6f0fee229aaa",
+    "chunk_id": "05f173339235f97317c3b11486a2ec63",
     "confidence": 1.0,
     "document_id": "c89a310054cdd2282225c43049c146cd",
     "id": "fc2cc9cbc9be19ba493c9b29e99ec66c",
@@ -792,7 +1067,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "08fb30adba79a2ae094490416157d74b",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "a40e9825fc54867198fc505320b4a350",
     "id": "fe39a64b5e5087667315826f82be4835",

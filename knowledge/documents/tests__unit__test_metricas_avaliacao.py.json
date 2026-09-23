@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "011d02a83f9e0b78c450b37373e0a89ae7ebe57de4dba4671648fd57a419ef0c",
+  "doc_kind": "code",
+  "id": "3e6bc1e02fd1d881a7dd5ada75d39d32",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/unit/test_metricas_avaliacao.py",
+  "size_bytes": 5397,
+  "title": "As métricas de avaliação medem o que dizem medir.\n\n`_ndcg` contava caminhos duplicados como acertos separados, com o denominador\nideal contado em arquivos. O resultado passava de 1,0 — medido: **2,131** — numa\nmétrica cuja definição tem teto 1,0.\n\nO erro tinha direção, e é isso que o torna caro: **premiava devolver o mesmo\narquivo picado em vários chunks**. Quem otimizasse contra essa métrica estaria\notimizando para fragmentar o contexto.\n\nVer `task/fase-14-evolucao-do-rag/RAGX-0098-*.md`."
+}

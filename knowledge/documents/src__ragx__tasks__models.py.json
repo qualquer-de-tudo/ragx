@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "29836401e1958342219b296f7b3ac75b6ebf5c229ffa688bf9eaed46ac86eef7",
+  "doc_kind": "code",
+  "id": "c59d5f2e9625c70fc1ea629e26d5481c",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/models.py",
+  "size_bytes": 12111,
+  "title": "Tipos do domínio de orquestração.\n\nSem infraestrutura aqui dentro: nada de sqlite3, yaml, typer ou rich. A máquina\nde estados vive neste módulo porque é regra, não persistência — e o repositório\na consulta antes de gravar qualquer transição."
+}

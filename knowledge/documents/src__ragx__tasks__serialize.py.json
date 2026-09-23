@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "d4dadac7dd9d6e958a4b9e5c2cec9c98810f152a98c5e22e773f14ce241f5dc8",
+  "doc_kind": "code",
+  "id": "f2521afe7e0713a6108d67135869ece3",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/tasks/serialize.py",
+  "size_bytes": 11622,
+  "title": "Tarefas no Git: a DEFINIÇÃO viaja, a EXECUÇÃO fica (ADR-0014).\n\n    knowledge/tasks/projects/*.json     projeto, análise, estratégia\n    knowledge/tasks/tasks/*.json        tarefa, dependências, critérios\n    knowledge/tasks/decisions/*.json    decisões registradas\n\nFora daqui, e de propósito: runs, tentativas, logs, locks, retry. Versionar\nisso produziria conflito de merge em todo pull request, sobre um arquivo que\nninguém revisa."
+}

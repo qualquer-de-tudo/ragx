@@ -22,12 +22,34 @@
     "type": "function"
   },
   {
-    "chunk_id": "11d16e6dce0d20aad0b260d0842334a3",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "53cfb0341bc5392d4ae5ba26445dfa6c",
     "id": "07643cf9c2aaf09a5f9e75aec1659217",
     "name": "sync_cmd",
     "qualified_name": "src/ragx/cli/commands/base_cmd.py::sync_cmd",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "76ef56d12a56499c834e38ebee859fdd",
+    "id": "081eba09e5d583f1c30be7e7a8ea6471",
+    "name": "test_instalador_sobrevive_a_execucao_por_pipe",
+    "qualified_name": "tests/unit/test_documentacao.py::test_instalador_sobrevive_a_execucao_por_pipe",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "371b2713f1004985da268f6bd6a25582",
+    "id": "08df89d94bbefd3ffb9756d0cc7bc8f0",
+    "name": "analyze_cmd#part-2",
+    "qualified_name": "src/ragx/cli/commands/task_cmd.py::analyze_cmd#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -44,6 +66,17 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "71ac85e107300a66ec7572ed2568b977",
+    "id": "0bf23d99301cf967e228346e0217ea79",
+    "name": "RAGX-0087-task-analyzer.md",
+    "qualified_name": "task/fase-13-task-analyzer-orquestracao/RAGX-0087-task-analyzer.md",
+    "source": "structural",
+    "summary": "RAGX-0087 — Task Analyzer — classificação por sinais",
+    "type": "file"
+  },
+  {
     "chunk_id": "eba0af112b1e8198ccbedeb49aa4e618",
     "confidence": 1.0,
     "document_id": "4d0a10319e4b1b34794369cd1fa028cb",
@@ -53,6 +86,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "2fe7e768eec1164a9df9f9eb01d1dbeb",
+    "confidence": 1.0,
+    "document_id": "7d3ee6e4b6e3eeca859d79612ee62a9f",
+    "id": "0f38d889b0b0aa5fc37698fdc159d213",
+    "name": "task_dependencies",
+    "qualified_name": "task_dependencies",
+    "source": "reference",
+    "summary": null,
+    "type": "table"
   },
   {
     "chunk_id": "a6c4c0f5afb01a37d30fe228c875725e",
@@ -75,6 +119,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "bc7c08bc85ea383ac465215d2dd5660e",
+    "confidence": 1.0,
+    "document_id": "f2521afe7e0713a6108d67135869ece3",
+    "id": "11694379676d4299c3e668d8c27eb7c9",
+    "name": "serialize#part-1",
+    "qualified_name": "src/ragx/tasks/serialize.py::serialize#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "1935720891661670a5e010f5b52c81ce",
@@ -154,7 +209,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "adf6a2a652b18f271babe31b2c3e2164",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "53cfb0341bc5392d4ae5ba26445dfa6c",
     "id": "2d4ad139589dce9747317d31da8edfe6",
@@ -187,6 +242,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "9cf45939508d051b05e47a79a967f0a6",
+    "confidence": 1.0,
+    "document_id": "3f8e541dccbc4bac55bde8f7de7d66f1",
+    "id": "3140de090c84cebf27b4afbeaa8d7995",
+    "name": "_chamadas",
+    "qualified_name": "tests/unit/test_plugin_contrato.py::_chamadas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "edc883dfdc68b2884b3f9de05be652a4",
     "confidence": 1.0,
     "document_id": "f8a310e4156a2afa13f685da62e0348f",
@@ -209,6 +275,39 @@
     "type": "function"
   },
   {
+    "chunk_id": "c9ed71884626ae918b5f85a039764a44",
+    "confidence": 1.0,
+    "document_id": "3f8e541dccbc4bac55bde8f7de7d66f1",
+    "id": "39b013d9e25d204cefb6dfc6aaa1b62b",
+    "name": "_arvore",
+    "qualified_name": "tests/unit/test_plugin_contrato.py::_arvore",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "daef288a1f2cffb78c13ddfb9cd8680a",
+    "confidence": 1.0,
+    "document_id": "a34bf988f9599cde5ddf19578c8ecced",
+    "id": "3ccb5b696591b8c4072175b01b949be1",
+    "name": "decompose#part-2",
+    "qualified_name": "src/ragx/tasks/decomposer.py::decompose#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d6860033d94d11a3803b17879cd16c5b",
+    "confidence": 1.0,
+    "document_id": "8911f0ed7d80d3aa023acb8949835100",
+    "id": "3fdc17996b643cc7bc45f274eb969f5a",
+    "name": "plan_work",
+    "qualified_name": "src/ragx/mcp/orchestration.py::OrchestrationAPI.plan_work",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
     "chunk_id": "f09d7249b451f4c0938ffb8595b6de17",
     "confidence": 1.0,
     "document_id": "9163d6eeeadb24c6f4a959ed9cdc8063",
@@ -220,7 +319,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "2c2d339385a3de474d279c864c40acaa",
+    "chunk_id": "576d38b323dac0e87a184577c463866b",
+    "confidence": 1.0,
+    "document_id": "24dfb7696ab696d0f6248eddfefef66b",
+    "id": "40acbe29388cd464366c1920f4067d14",
+    "name": "_consume",
+    "qualified_name": "src/ragx/tasks/worker.py::_consume",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "992e360eb49883748047effbfda22510",
     "id": "448466d9f02a31d5953d60161ae51530",
@@ -231,7 +341,40 @@
     "type": "function"
   },
   {
-    "chunk_id": "fdad469e72c22af2b0476299f71d5563",
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "371b2713f1004985da268f6bd6a25582",
+    "id": "487fc799413c383245e998b8ddeeb599",
+    "name": "analyze_cmd#part-1",
+    "qualified_name": "src/ragx/cli/commands/task_cmd.py::analyze_cmd#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "04cb673d09ff4e7a8b4196939e88a9c1",
+    "confidence": 1.0,
+    "document_id": "ef51b2fd4036e29c2304bba3e34450c9",
+    "id": "507a2e496270e5f9386bd20bfc01be2b",
+    "name": "HeuristicCounter",
+    "qualified_name": "src/ragx/tokens.py::HeuristicCounter",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
+    "chunk_id": "051a6a8c9a1ceff07e7f875791643856",
+    "confidence": 1.0,
+    "document_id": "8911f0ed7d80d3aa023acb8949835100",
+    "id": "51472d095627ae2e7e5b7f44b6611494",
+    "name": "set_task_status",
+    "qualified_name": "src/ragx/mcp/orchestration.py::OrchestrationAPI.set_task_status",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "76ef56d12a56499c834e38ebee859fdd",
     "id": "554690a99ac6b19d51d98119ce8b420c",
@@ -251,6 +394,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": "6d7daa63af4a4d6df1c4968b91049ba7",
+    "confidence": 1.0,
+    "document_id": "7d3ee6e4b6e3eeca859d79612ee62a9f",
+    "id": "57d1e9f9fc92f8c0f668dc71a0b84cfc",
+    "name": "task_runs",
+    "qualified_name": "task_runs",
+    "source": "reference",
+    "summary": null,
+    "type": "table"
   },
   {
     "chunk_id": "82a15751c222c7ddf1dfbd51b56e94ab",
@@ -286,6 +440,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "97ae91e0eb93b042767d9684e867ef85",
+    "confidence": 1.0,
+    "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
+    "id": "5d43ab39772c598bbe85ce2e181cd564",
+    "name": "promote_ready",
+    "qualified_name": "src/ragx/tasks/store.py::TaskRepository.promote_ready",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "ec6d7430b5130636732a6ecbf66c2b49",
@@ -295,6 +460,17 @@
     "source": "structural",
     "summary": "RAGX-0023 — Determinismo de IDs entre plataformas",
     "type": "file"
+  },
+  {
+    "chunk_id": "b0b8c41ea9475db98b0cb72a7a118c2e",
+    "confidence": 1.0,
+    "document_id": "7d3ee6e4b6e3eeca859d79612ee62a9f",
+    "id": "5f85ce49be4a5a95b8322e6da5e11ac4",
+    "name": "schedules",
+    "qualified_name": "schedules",
+    "source": "reference",
+    "summary": null,
+    "type": "table"
   },
   {
     "chunk_id": "6f2ab0e895abc25fa30f6e9caf88d145",
@@ -308,7 +484,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "80beb3b226cc93914181c80a6e5bb3ea",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
     "id": "6e45f6c9e2d070e8b58ab492f2f58f5c",
@@ -319,7 +495,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "f83ea774eb11a3b1b056dd129b998f2d",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "992e360eb49883748047effbfda22510",
     "id": "6f1701f92232b3d78b9536d897c8d9a7",
@@ -330,7 +506,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "b2b2d3b16fe16421b615f179b7e24d83",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "6f562c59a8608c342cdafbc11b7a98a7",
@@ -385,6 +561,28 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "76ef56d12a56499c834e38ebee859fdd",
+    "id": "715a7829eef5c046522b3bd3ae25420a",
+    "name": "test_registro_do_mcp_nao_destroi_a_configuracao",
+    "qualified_name": "tests/unit/test_documentacao.py::test_registro_do_mcp_nao_destroi_a_configuracao",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e32a4721ca6c3e580157d67bd8661b72",
+    "confidence": 1.0,
+    "document_id": "c59d5f2e9625c70fc1ea629e26d5481c",
+    "id": "736aed89587060967cf96149a8f6d626",
+    "name": "Task",
+    "qualified_name": "src/ragx/tasks/models.py::Task",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "5a9c2344d26ed24a77f83b04cd4f3017",
     "confidence": 1.0,
     "document_id": "00e74032961225ee57b7ee37f011e873",
@@ -394,6 +592,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "7c1f144cd5a58fc62810c445793cc5a8",
+    "id": "770362b91c7b9d746a3dce4590717a54",
+    "name": "mcp-limits.test.ts",
+    "qualified_name": "vscode-plugin/tests/unit/mcp-limits.test.ts",
+    "source": "structural",
+    "summary": "/**",
+    "type": "file"
   },
   {
     "chunk_id": "5d9582393e20c07e079835bab9041f1d",
@@ -440,6 +649,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "863f27873833e45f41e068eb11f174f2",
+    "confidence": 1.0,
+    "document_id": "24dfb7696ab696d0f6248eddfefef66b",
+    "id": "8882a8a977db526e17111721542b747b",
+    "name": "WorkerReport",
+    "qualified_name": "src/ragx/tasks/worker.py::WorkerReport",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "e8ed91f5946ef154c7596226698d9200",
     "confidence": 1.0,
     "document_id": "4cb081e8a2d34d7f91e700356cb627f5",
@@ -460,6 +680,28 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "fc59a9056d2a21a45f9213599b53ec08",
+    "id": "90aa40e91f5eb36858a51e17e9944516",
+    "name": "CliClient.ts",
+    "qualified_name": "vscode-plugin/src/rag/CliClient.ts",
+    "source": "structural",
+    "summary": "/**",
+    "type": "file"
+  },
+  {
+    "chunk_id": "4ca6a332e032d75f733f973d266739c0",
+    "confidence": 1.0,
+    "document_id": "f19bf83cddf9d0c2a2e7e23a444ba08d",
+    "id": "91572be9509727c13b8896e90219cf94",
+    "name": "_not_indexed",
+    "qualified_name": "src/ragx/tasks/dispatcher.py::_not_indexed",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -495,17 +737,6 @@
     "type": "function"
   },
   {
-    "chunk_id": "1650fd735dca1e32d7999d02f4710a3a",
-    "confidence": 1.0,
-    "document_id": "0435e4d4b8393c81fcbe6cf8497d7e92",
-    "id": "9835ca79a556a9bec1ca8bd025df751f",
-    "name": "hub_link#part-2",
-    "qualified_name": "src/ragx/cli/commands/federation_cmd.py::hub_link#part-2",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "3d8c43bca5d7698645b558659412c2d3",
     "confidence": 1.0,
     "document_id": "f114e981bb7960ddf66f0ba5b371388c",
@@ -517,7 +748,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "2abc3acdb8f5e54dfd5b242e77818d3e",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "76ef56d12a56499c834e38ebee859fdd",
     "id": "9c7614f9beae1149c21a2c10ff1e98d6",
@@ -605,17 +836,6 @@
     "type": "file"
   },
   {
-    "chunk_id": "3f4c31ed36fb7740900bd7d9a765151f",
-    "confidence": 1.0,
-    "document_id": "c89a310054cdd2282225c43049c146cd",
-    "id": "b5f55a79a025d71185ab8f79941f4ee2",
-    "name": "_write_graph#part-1",
-    "qualified_name": "src/ragx/sync/serialize.py::_write_graph#part-1",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "f69e961e8a0a8f1ed2b32e5997ffdada",
     "confidence": 1.0,
     "document_id": "c796e3cbf4d0c8ff536421c86e3dac4e",
@@ -682,7 +902,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "b4a3cb8ca4de1d14f2126254b570ba9b",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "53cfb0341bc5392d4ae5ba26445dfa6c",
     "id": "bb3c6ca9b7aeaa47213c56e1a9cf5a14",
@@ -704,12 +924,23 @@
     "type": "method"
   },
   {
-    "chunk_id": "41fc08ff79b1f650a05993552f84a1bc",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "a40e9825fc54867198fc505320b4a350",
     "id": "bcc53409aef0328a6932d91a73e5287d",
     "name": "graph_search#part-2",
     "qualified_name": "src/ragx/cli/commands/graph_cmd.py::graph_search#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "d6a9a6e35d636a8080f0fbe59d403a7a",
+    "id": "bf422ed94f7bccb57fad220089282483",
+    "name": "remove_cmd",
+    "qualified_name": "src/ragx/cli/commands/worker_cmd.py::remove_cmd",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -792,7 +1023,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "de22d6408693345803e365ce300265d6",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "de976c095306288a94c085512184c28f",
@@ -820,6 +1051,17 @@
     "id": "eb9f46f95c080e830ec5df358e364e16",
     "name": "_build",
     "qualified_name": "src/ragx/indexing/parsers/python_ast.py::_build",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "0345c92368d99e49f1145d6cc79143ec",
+    "confidence": 1.0,
+    "document_id": "f19bf83cddf9d0c2a2e7e23a444ba08d",
+    "id": "f2566139a1904a5d57e743b12131f2d1",
+    "name": "build_task_context#part-2",
+    "qualified_name": "src/ragx/tasks/dispatcher.py::build_task_context#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -880,7 +1122,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "6f64db23672de22d39534e7a387071d4",
+    "chunk_id": null,
     "confidence": 1.0,
     "document_id": "ab28a9900891fa613b861aecc2a3af53",
     "id": "fc64d0092032e77d44d147bdb63d04c4",

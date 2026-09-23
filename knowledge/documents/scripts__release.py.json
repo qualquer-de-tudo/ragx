@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "bb01eebc0d51734388e1deb5c9892762ee3c08e1c80ae7228890f2fa76e55e5b",
+  "doc_kind": "code",
+  "id": "89ed454114d0872b1f47e4be4810fc35",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/release.py",
+  "size_bytes": 6027,
+  "title": "Gera todos os artefatos instaláveis, num comando.\n\n    python scripts/release.py\n\nProduz em `release/`:\n\n    ragx-<versão>-py3-none-any.whl      pacote Python (Windows, Linux, macOS)\n    ragx-<versão>.tar.gz                fonte\n    ragx-knowledge-explorer-<v>.vsix    extensão do VS Code\n    install.sh / install.ps1            instaladores, copiados\n    SHA256SUMS.txt                      para conferir o download\n\nPor que Python e não Makefile: o RAGX já exige Python, e um Makefile não roda\nno Windows sem mais uma dependência. Este script funciona nos três sistemas\ncom o que já está instalado."
+}

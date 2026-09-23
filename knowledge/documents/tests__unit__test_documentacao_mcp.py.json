@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "8de6d393acb0d36a50d3107fb6ba6f2d13236e7e25d62fff1b2243c3abd15287",
+  "doc_kind": "code",
+  "id": "be279c82677515b5a6751ed173d07734",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/unit/test_documentacao_mcp.py",
+  "size_bytes": 3295,
+  "title": "A documentação do MCP acompanha as ferramentas — verificado, não prometido.\n\n`docs/09-mcp.md` chegou a documentar 20 das 33 ferramentas: as 13 de\norquestração de tarefas existiam, funcionavam e não estavam escritas em lugar\nnenhum. Ninguém percebeu porque nada quebra quando a documentação encolhe.\n\nEste teste é o que faz encolher doer. Ele compara a lista REGISTRADA no\nservidor com a lista CITADA no documento, nos dois sentidos:\n\n- ferramenta sem documentação: o agente não descobre que ela existe;\n- documentação sem ferramenta: o agente tenta chamar e recebe erro."
+}

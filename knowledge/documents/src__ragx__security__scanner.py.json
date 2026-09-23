@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "ea1b4d6aacdea222b714191c8f3f81131f95e3aa94d3b03200a39f6d961f8ec9",
+  "content_hash": "48f19966276d20a2f646cfcadd5c73382afa198c419b3ea7ffef132279a7675d",
   "doc_kind": "code",
   "id": "764e2ec438046e09e0dc7f77d227627c",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/security/scanner.py",
-  "size_bytes": 8163,
+  "size_bytes": 9000,
   "title": "SecurityScanner — duas fases.\n\nFase 1: nome do arquivo (deny-list), antes de qualquer leitura de conteúdo.\nFase 2: conteúdo (regras de padrão + atribuição/entropia + contexto de arquivo).\n\nVer docs/02-seguranca.md."
 }

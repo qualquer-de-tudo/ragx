@@ -6,6 +6,6 @@
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/core/ids.py",
-  "size_bytes": 2946,
+  "size_bytes": 2861,
   "title": "IDs determinísticos.\n\nRequisito duro: mesmo input + mesma versão do chunker = mesmo ID, em qualquer\nmáquina e qualquer sistema operacional. Sem isso não existe indexação incremental,\nnem merge no Git, nem reidratação.\n\nVer docs/03-modelo-de-dados.md."
 }
