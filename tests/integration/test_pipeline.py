@@ -129,6 +129,38 @@ def test_run_e_registrado(proj: Path) -> None:
     assert run and run["mode"] == "incremental" and run["finished_at"]
 
 
+def test_excecao_real_propaga_e_fica_registrada_como_erro(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regressão: o `finally` de `_index_once` só sabia gravar `error` para
+    Ctrl+C (`report.interrupted`) — qualquer outra exceção media o laço
+    quebrava para fora e a corrida ficava registrada como limpa
+    (`error=None`), contando depois como "última indexação útil"."""
+    from ragx.indexing import pipeline
+    from ragx.storage.db import open_db
+
+    cfg = load_config(proj)
+
+    def _boom(*a: object, **kw: object) -> None:
+        raise ValueError("falha simulada no meio do laco")
+
+    monkeypatch.setattr(pipeline, "chunk_document", _boom)
+    with pytest.raises(ValueError, match="falha simulada"):
+        index_project(cfg)
+
+    with open_db(cfg.db_path) as conn:
+        row = conn.execute(
+            "SELECT error, finished_at FROM index_runs ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    assert row is not None
+    assert row["finished_at"] is not None
+    assert row["error"] is not None and "falha simulada" in row["error"]
+
+    # a corrida quebrada não pode ser escolhida como "última indexação útil"
+    fr = status(cfg)["freshness"]
+    assert fr["state"] == "unknown"
+
+
 def test_acentuacao_casa_no_fts(proj: Path) -> None:
     (proj / "docs" / "acento.md").write_text(
         "# Autenticação\n\nO fluxo de autenticação usa SSO.\n", encoding="utf-8"

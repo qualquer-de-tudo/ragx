@@ -33,8 +33,13 @@ hooks_installed_probe: Callable[[Path], bool | None] = _default_probe
 
 
 def _last_finished(conn: Any) -> dict[str, Any] | None:
+    # `embed-only` não toca proveniência de git de forma útil, e uma corrida
+    # com `error` gravado não terminou de verdade: nenhuma das duas pode
+    # contar como "a última indexação que refletiu a árvore de verdade" —
+    # senão o painel mostra "em dia" com o conteúdo de uma branch antiga.
     row = conn.execute(
-        "SELECT * FROM index_runs WHERE finished_at IS NOT NULL ORDER BY id DESC LIMIT 1"
+        "SELECT * FROM index_runs WHERE finished_at IS NOT NULL "
+        "AND mode != 'embed-only' AND error IS NULL ORDER BY id DESC LIMIT 1"
     ).fetchone()
     return dict(row) if row else None
 

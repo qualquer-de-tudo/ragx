@@ -160,6 +160,7 @@ def _index_once(
         mode = "embed-only" if embed_only else ("full" if full else "incremental")
         run_id = None if dry_run else runs.start(mode, source, gitinfo.read_state(cfg.root))
         batch = 0
+        run_error: str | None = None
 
         try:
             if embed_only:
@@ -287,8 +288,17 @@ def _index_once(
             pass
         except KeyboardInterrupt:
             report.interrupted = True
+            run_error = "interrupted"
             if not dry_run:
                 conn.commit()  # preserva os lotes já processados
+            raise
+        except Exception as exc:
+            # Sem isto, qualquer exceção real (não Ctrl+C) gravava a corrida
+            # como limpa (`error=None`) — e a rodada seguinte de `freshness`/
+            # `status.json` a escolhia como "última indexação útil", relatando
+            # a árvore como em dia mesmo depois de uma corrida que quebrou no
+            # meio. A exceção continua propagando: isto só registra o erro.
+            run_error = str(exc)
             raise
         finally:
             elapsed = int((time.perf_counter() - started) * 1000)
@@ -307,7 +317,7 @@ def _index_once(
                         "embedded": report.stats.embedded,
                         "duration_ms": elapsed,
                     },
-                    error="interrupted" if report.interrupted else None,
+                    error=run_error,
                 )
                 set_meta(conn, "chunker_version", CHUNKER_VERSION)
                 conn.commit()
@@ -397,7 +407,8 @@ def status(cfg: Config) -> dict[str, object]:
             "SELECT id, dim, versioned_dim FROM embedding_models ORDER BY created_at DESC LIMIT 1"
         ).fetchone()
         last_done = conn.execute(
-            "SELECT * FROM index_runs WHERE finished_at IS NOT NULL ORDER BY id DESC LIMIT 1"
+            "SELECT * FROM index_runs WHERE finished_at IS NOT NULL "
+            "AND mode != 'embed-only' AND error IS NULL ORDER BY id DESC LIMIT 1"
         ).fetchone()
         fresh = freshness.compute(cfg, conn, dict(last_done) if last_done else None)
         return {

@@ -138,6 +138,27 @@ def test_sem_git_e_sem_pendencia_e_desconhecido(tmp_path: Path) -> None:
     assert st["freshness"]["current"] is None
 
 
+def test_embed_only_nao_mascara_troca_de_branch(tmp_path: Path) -> None:
+    """Reproduzido pelo revisor: indexa na branch A, troca pra B, roda só
+    `--embed-only` — sem a correção, essa corrida virava "a última indexação
+    útil" e a árvore de B (na verdade não reindexada) passava por em dia."""
+    proj = _repo(tmp_path)
+    cfg = load_config(proj)
+    index_project(cfg)
+    _git(proj, "checkout", "-qb", "feat/x")
+    (proj / "a.py").write_text("def f():\n    return 999\n", encoding="utf-8")
+    _git(proj, "add", "-A")
+    _git(proj, "commit", "-qm", "c2")
+
+    index_project(cfg, embed_only=True)
+
+    fr = status(cfg)["freshness"]
+    assert fr["state"] == "stale"
+    assert _kinds(fr)["branch_changed"] == {
+        "kind": "branch_changed", "indexed": "main", "current": "feat/x",
+    }
+
+
 def test_recent_runs_no_status(tmp_path: Path) -> None:
     proj = _repo(tmp_path)
     cfg = load_config(proj)
