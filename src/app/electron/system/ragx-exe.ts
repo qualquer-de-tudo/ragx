@@ -24,11 +24,18 @@ export function resolveRagx(deps: Deps = {}): string | null {
   const platform = deps.platform ?? process.platform
   const win = platform === 'win32'
   const sep = win ? ';' : ':'
-  const exts = win ? (env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';').filter(Boolean) : ['']
+  // `spawn`/`execFile` sem shell (obrigatório pelo plano) não conseguem
+  // lançar `.cmd`/`.bat` diretamente - só `.exe` é um executável de verdade
+  // no Windows. `PATHEXT` é ignorado de propósito.
+  const names = win ? ['ragx.exe'] : ['ragx']
 
-  for (const dir of (env.PATH ?? env.Path ?? '').split(sep).filter(Boolean)) {
-    for (const ext of exts) {
-      const candidate = path.join(dir, `ragx${ext}`)
+  for (const rawDir of (env.PATH ?? env.Path ?? '').split(sep).filter(Boolean)) {
+    // `"C:\Program Files\x"` (aspas ao redor de segmentos com espaço) é comum
+    // em PATH montado manualmente por instaladores; sem isso o `path.join`
+    // gera um caminho com aspas literais que nunca existe.
+    const dir = rawDir.replace(/^"(.*)"$/, '$1')
+    for (const name of names) {
+      const candidate = path.join(dir, name)
       if (exists(candidate)) return candidate
     }
   }

@@ -10,9 +10,30 @@ describe('resolveRagx', () => {
     const found = resolveRagx({
       env: { PATH: dir, PATHEXT: '.EXE;.CMD' },
       platform: 'win32',
-      exists: (p) => p === path.join(dir, 'ragx.EXE'),
+      exists: (p) => p === path.join(dir, 'ragx.exe'),
     })
-    expect(found).toBe(path.join(dir, 'ragx.EXE'))
+    expect(found).toBe(path.join(dir, 'ragx.exe'))
+  })
+
+  it('no Windows ignora .cmd (spawn sem shell não consegue lançar)', () => {
+    const dir = path.join('C:', 'tools')
+    const found = resolveRagx({
+      env: { PATH: dir, PATHEXT: '.EXE;.CMD' },
+      platform: 'win32',
+      exists: (p) => p === path.join(dir, 'ragx.cmd'),
+    })
+    expect(found).toBeNull()
+  })
+
+  it('remove aspas ao redor de segmentos do PATH', () => {
+    const dir = path.join('C:', 'Program Files', 'ragx')
+    const expected = path.join(dir, 'ragx.exe')
+    const found = resolveRagx({
+      env: { PATH: `"${dir}"`, PATHEXT: '.EXE;.CMD' },
+      platform: 'win32',
+      exists: (p) => p === expected,
+    })
+    expect(found).toBe(expected)
   })
 
   it('cai para %USERPROFILE%\\.local\\bin quando o PATH do app não tem o ragx', () => {
