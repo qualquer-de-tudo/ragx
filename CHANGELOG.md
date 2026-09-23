@@ -23,6 +23,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   usuário depois quer registrar com visibilidade diferente, continuam usando
   `ragx project register`.
 
+- **Painel desktop (Electron)** — aplicativo local, sem login, que mostra por
+  projeto registrado no hub: contagem de documentos/chunks/embeddings,
+  telemetria de chamadas MCP (tokens reais entregues), economia estimada sob
+  demanda (via `ragx trial`) e achados de segurança sob demanda (via
+  `ragx security scan`). Atualiza por polling a cada 5s; instalador `.exe`
+  gerado com `electron-builder`.
+
 ## [1.0.0-beta.3] — 2026-09-17
 
 ### Corrigido

@@ -1,0 +1,34 @@
+appId: com.ragx.painel
+productName: RAGX Painel
+directories:
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+# sql.js carrega seu binário .wasm via `fs` em tempo de execução
+# (ver electron/data/project-stats.ts). Dentro de um asar, `fs` não consegue
+# ler binários da forma que o sql.js espera, então o .wasm precisa ficar
+# fora do arquivo — asarUnpack extrai para app.asar.unpacked/, e
+# `require.resolve` no main process é redirecionado para lá de forma
+# transparente pelo Electron.
+asarUnpack:
+  - node_modules/sql.js/dist/*.wasm
+win:
+  target: nsis
+  # public/favicon.svg não é um .ico válido para o NSIS; sem `icon:` o
+  # instalador cai no ícone padrão do Electron, aceitável para esta versão.
+  #
+  # signAndEditExecutable: false — este build não assina o executável (sem
+  # certificado configurado, e não é objetivo desta versão). Sem essa flag,
+  # electron-builder ainda tenta editar recursos do .exe via rcedit, que por
+  # sua vez baixa o pacote `winCodeSign` (ferramentas third-party) — e esse
+  # download falha em Windows sem "Developer Mode" habilitado, porque o
+  # 7z contém symlinks (libs .dylib do macOS) que exigem privilégio de
+  # criar link simbólico. Desabilitar edição de recursos evita essa
+  # dependência por completo; não afeta o funcionamento do app, só deixa
+  # de embutir metadados (ProductName/FileDescription/ícone) no .exe.
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

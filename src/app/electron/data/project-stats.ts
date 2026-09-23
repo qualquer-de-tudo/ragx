@@ -9,10 +9,21 @@ let SQL: SqlJsStatic | null = null
  * Carrega o modulo WASM do sql.js uma unica vez. Deve ser chamado (e
  * aguardado) antes da primeira chamada a readProjectStats — normalmente
  * durante app.whenReady() no main process (Task 3).
+ *
+ * `locateFile` é necessário porque o lookup padrão do sql.js assume que o
+ * `.wasm` está ao lado do seu próprio JS em `node_modules/sql.js/dist/` —
+ * verdade em dev, mas não garantido depois de empacotado num asar.
+ * `require.resolve` funciona nos dois casos: em dev resolve o caminho normal
+ * em `node_modules`; empacotado, resolve o caminho "dentro" do asar, que o
+ * `fs` do Electron redireciona de forma transparente para
+ * `app.asar.unpacked/` quando o arquivo está listado em `asarUnpack`
+ * (ver `electron-builder.yml`).
  */
 export async function initSqlWasm(): Promise<void> {
   if (SQL) return
-  SQL = await initSqlJs()
+  SQL = await initSqlJs({
+    locateFile: (file) => require.resolve(`sql.js/dist/${file}`),
+  })
 }
 
 export function readProjectStats(
