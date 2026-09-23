@@ -50,3 +50,50 @@ def test_pendencia_guarda_a_ultima_origem_e_e_consumida(tmp_path: Path) -> None:
     assert lock.is_pending(tmp_path) is True
     assert lock.take_pending(tmp_path) == "hook:post-checkout"
     assert lock.is_pending(tmp_path) is False
+
+
+def test_trava_publicada_nunca_fica_vazia(tmp_path: Path) -> None:
+    assert lock.try_acquire(tmp_path, "index", "cli") is True
+    raw = (tmp_path / lock.LOCK_NAME).read_text(encoding="utf-8")
+    assert raw  # publicação por link físico: nunca vazio no caminho final
+    data = json.loads(raw)
+    assert data["pid"] == os.getpid()
+    assert data["source"] == "cli"
+    lock.release(tmp_path)
+
+
+def test_takeover_com_visao_desatualizada_nao_derruba_trava_viva(tmp_path: Path) -> None:
+    """B ainda acredita que o dono é o pid morto original (visão obsoleta).
+
+    A já assumiu a trava morta pelo caminho público (try_acquire). B tenta
+    assumir a mesma trava morta diretamente pelo helper interno, usando um
+    payload próprio — simula duas leituras concorrentes do mesmo holder
+    morto que chegam a conclusões diferentes sobre o estado atual.
+    """
+    p = subprocess.Popen([sys.executable, "-c", "pass"])
+    p.wait()
+    dead_pid = p.pid
+    (tmp_path / lock.LOCK_NAME).write_text(
+        json.dumps({"pid": dead_pid, "op": "index", "source": "cli", "started_at": "x"}),
+        encoding="utf-8",
+    )
+
+    assert lock.try_acquire(tmp_path, "index", "A") is True
+    a_holder = lock.holder(tmp_path)
+    assert a_holder is not None and a_holder["pid"] == os.getpid()
+
+    payload_b = json.dumps(
+        {"pid": 4_000_000, "op": "index", "source": "B", "started_at": "y"}
+    )
+    assert lock._take_over(tmp_path, dead_pid, payload_b) is False
+
+    # A trava de A sobrevive intacta; B não conseguiu assumir.
+    assert lock.holder(tmp_path) == a_holder
+    lock.release(tmp_path)
+
+
+def test_release_nao_mexe_em_trava_alheia(tmp_path: Path) -> None:
+    foreign = {"pid": os.getpid() + 1, "op": "index", "source": "watch", "started_at": "x"}
+    (tmp_path / lock.LOCK_NAME).write_text(json.dumps(foreign), encoding="utf-8")
+    lock.release(tmp_path)
+    assert lock.holder(tmp_path) == foreign

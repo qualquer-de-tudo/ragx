@@ -22,6 +22,7 @@ Exit codes padronizados:
 | `1` | achado bloqueante (segurança) ou falha de validação esperada |
 | `2` | erro de uso (argumento inválido) |
 | `3` | erro de ambiente (banco corrompido, embedder indisponível) |
+| `4` | índice ocupado: outra indexação está rodando e o pedido ficou agendado |
 | `130` | interrompido pelo usuário |
 
 ---

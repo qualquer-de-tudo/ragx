@@ -38,7 +38,7 @@ class ParseError(RagxError):
 class IndexBusyError(RagxError):
     """Outra indexação segura a trava; o pedido ficou agendado."""
 
-    exit_code = 3
+    exit_code = 4
 
     def __init__(self, holder: dict[str, object] | None):
         self.holder = holder or {}

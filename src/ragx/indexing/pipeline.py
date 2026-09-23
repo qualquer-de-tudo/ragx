@@ -73,20 +73,42 @@ def index_project(
         if time.monotonic() >= deadline:
             current = lock.holder(state_dir)
             lock.mark_pending(state_dir, source)
-            raise IndexBusyError(current)
+            # Entre marcar o pedido e chegar aqui o dono pode ter liberado a
+            # trava; tenta mais uma vez antes de desistir. Sem isso o pedido
+            # fica órfão: ninguém mais vai drená-lo.
+            if not lock.try_acquire(state_dir, "index", source):
+                raise IndexBusyError(current)
+            break
         time.sleep(0.5)
 
+    budget = MAX_PENDING_RERUNS
     try:
         report = _index_once(cfg, full, dry_run, progress, embed, embed_only, source)
-        for _ in range(MAX_PENDING_RERUNS):
-            pending = lock.take_pending(state_dir)
-            if pending is None:
-                break
-            _index_once(cfg, False, False, None, True, False,
-                        pending if pending in VALID_SOURCES else "cli")
+        budget = _drain_pending(cfg, state_dir, budget)
         return report
     finally:
         lock.release(state_dir)
+        # Um pedido pode ter chegado entre o último take_pending acima e o
+        # release: reobtém a trava uma vez e drena de novo antes de devolver
+        # o controle. O orçamento de reexecuções é o mesmo da primeira
+        # drenagem — não reinicia.
+        if lock.is_pending(state_dir) and lock.try_acquire(state_dir, "index", source):
+            try:
+                _drain_pending(cfg, state_dir, budget)
+            finally:
+                lock.release(state_dir)
+
+
+def _drain_pending(cfg: Config, state_dir: Path, budget: int) -> int:
+    """Roda pedidos pendentes em modo incremental, sem estourar o orçamento."""
+    while budget > 0:
+        pending = lock.take_pending(state_dir)
+        if pending is None:
+            break
+        _index_once(cfg, False, False, None, True, False,
+                    pending if pending in VALID_SOURCES else "cli")
+        budget -= 1
+    return budget
 
 
 def _index_once(
