@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 import subprocess
 import time
 from pathlib import Path
@@ -157,6 +158,37 @@ def test_embed_only_nao_mascara_troca_de_branch(tmp_path: Path) -> None:
     assert _kinds(fr)["branch_changed"] == {
         "kind": "branch_changed", "indexed": "main", "current": "feat/x",
     }
+
+
+def _apagar_provenancia(cfg) -> None:
+    """Simula um run pré-0006: `git_branch`/`git_commit`/`git_dirty` nulos."""
+    with sqlite3.connect(cfg.db_path) as conn:
+        conn.execute(
+            "UPDATE index_runs SET git_branch = NULL, git_commit = NULL, "
+            "git_dirty = NULL"
+        )
+        conn.commit()
+
+
+def test_run_pre_0006_sem_proveniencia_e_desconhecido(tmp_path: Path) -> None:
+    proj = _repo(tmp_path)
+    cfg = load_config(proj)
+    index_project(cfg)
+    _apagar_provenancia(cfg)
+    fr = status(cfg)["freshness"]
+    assert fr["state"] == "unknown"
+    assert "branch_changed" not in _kinds(fr)
+    assert "commits_since_index" not in _kinds(fr)
+
+
+def test_run_pre_0006_com_embeddings_pendentes_fica_defasado(tmp_path: Path) -> None:
+    proj = _repo(tmp_path)
+    cfg = load_config(proj)
+    index_project(cfg, embed=False)
+    _apagar_provenancia(cfg)
+    fr = status(cfg)["freshness"]
+    assert fr["state"] == "stale"
+    assert _kinds(fr)["pending_embeddings"]["count"] > 0
 
 
 def test_recent_runs_no_status(tmp_path: Path) -> None:

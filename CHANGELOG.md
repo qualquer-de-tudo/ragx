@@ -119,6 +119,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   num merge e o comando (e os instaladores, que o chamam) quebrava com
   `ModuleNotFoundError`.
 
+- `freshness.state` não diz mais "fresh" para um projeto git cujo último run
+  útil é anterior à migração 0006 (sem `git_commit` gravado). Sem proveniência
+  para comparar, o estado agora fica "unknown" a menos que outro motivo, como
+  `pending_embeddings`, indique "stale".
+
 ## [1.0.0-beta.3] — 2026-09-17
 
 ### Corrigido

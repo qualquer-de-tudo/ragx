@@ -45,13 +45,19 @@ def compute(cfg: Config, conn: Any, last_run: dict[str, Any] | None) -> dict[str
         return {"state": "unknown", "current": current, "reasons": []}
 
     reasons: list[dict[str, Any]] = []
+    old_commit = last_run.get("git_commit")
+    # Runs de antes da migração 0006 não gravavam git_branch/git_commit/git_dirty
+    # (colunas adicionadas nela). Sem commit registrado não há proveniência
+    # para comparar: old_branch/old_commit já vêm None e nenhum motivo
+    # branch_changed/commits_since_index dispara (correto), mas o veredito
+    # final não pode virar "fresh" por omissão — vira "unknown" mais abaixo.
+    provenance_unknown = state is not None and not old_commit
     if state is not None:
         old_branch = last_run.get("git_branch")
         if old_branch and state.branch and old_branch != state.branch:
             reasons.append(
                 {"kind": "branch_changed", "indexed": old_branch, "current": state.branch}
             )
-        old_commit = last_run.get("git_commit")
         if old_commit and old_commit != state.commit:
             reasons.append({
                 "kind": "commits_since_index",
@@ -66,5 +72,12 @@ def compute(cfg: Config, conn: Any, last_run: dict[str, Any] | None) -> dict[str
     if chunks > embedded:
         reasons.append({"kind": "pending_embeddings", "count": chunks - embedded})
 
-    verdict = "stale" if reasons else "fresh" if state is not None else "unknown"
+    if reasons:
+        verdict = "stale"
+    elif provenance_unknown:
+        verdict = "unknown"
+    elif state is not None:
+        verdict = "fresh"
+    else:
+        verdict = "unknown"
     return {"state": verdict, "current": current, "reasons": reasons}

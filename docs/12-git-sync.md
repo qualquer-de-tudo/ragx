@@ -220,6 +220,13 @@ reprocessa o que o `content_hash` diz que mudou.
 - `uncommitted_changes`: arquivos do working tree mudaram depois do último run.
 - `pending_embeddings`: há chunks sem vetor.
 
+`freshness.state` também é `unknown` quando o projeto é um repositório git mas
+o último run útil não tem `git_commit` gravado (runs de antes da migração
+0006, feitos por uma versão antiga do CLI): sem commit registrado não há
+proveniência para comparar, então o estado não pode virar "fresh" por
+omissão, só "stale" se outro motivo (por exemplo `pending_embeddings`)
+disparar.
+
 ## Reidratação em detalhe
 
 É o mecanismo que permite não versionar conteúdo. Roda no `ragx sync`, antes do delta:
