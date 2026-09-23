@@ -95,8 +95,10 @@ def test_init_nao_falha_se_projeto_e_private(tmp_path: Path, monkeypatch: pytest
     )
     cfg_path.write_text(texto, encoding="utf-8")
 
-    # rodar init de novo (idempotente) nao deve quebrar mesmo com o projeto private
-    result2 = runner.invoke(app, ["init", "--force"])
+    # rodar init de novo (idempotente, SEM --force: ragx.toml ja existe entao
+    # init nao reescreve a config e preserva visibility = "private" injetada
+    # acima) nao deve quebrar mesmo com hub.register levantando UsageError
+    result2 = runner.invoke(app, ["init"])
     assert result2.exit_code == 0, result2.output
 
 
