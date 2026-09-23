@@ -16,10 +16,10 @@ from pathlib import Path
 from ragx import gitinfo
 from ragx.base import source as base_source
 from ragx.config import Config
-from ragx.core.errors import UsageError
+from ragx.core.errors import IndexBusyError, UsageError
 from ragx.core.ids import CHUNKER_VERSION, content_hash, document_id
 from ragx.core.models import Document, IndexStats, Verdict
-from ragx.indexing import parsers
+from ragx.indexing import lock, parsers
 from ragx.indexing.chunkers import ChunkOptions, chunk_document
 from ragx.indexing.embed import embed_pending
 from ragx.security.gate import SecurityGate
@@ -49,6 +49,9 @@ class IndexReport:
     embed_error: str | None = None
 
 
+MAX_PENDING_RERUNS = 3
+
+
 def index_project(
     cfg: Config,
     full: bool = False,
@@ -57,9 +60,44 @@ def index_project(
     embed: bool = True,
     embed_only: bool = False,
     source: str = "cli",
+    wait_s: float = 0.0,
 ) -> IndexReport:
     if source not in VALID_SOURCES:
         raise UsageError(f"origem desconhecida: {source}")
+    if dry_run:
+        return _index_once(cfg, full, dry_run, progress, embed, embed_only, source)
+
+    state_dir = cfg.state_dir
+    deadline = time.monotonic() + max(wait_s, 0.0)
+    while not lock.try_acquire(state_dir, "index", source):
+        if time.monotonic() >= deadline:
+            current = lock.holder(state_dir)
+            lock.mark_pending(state_dir, source)
+            raise IndexBusyError(current)
+        time.sleep(0.5)
+
+    try:
+        report = _index_once(cfg, full, dry_run, progress, embed, embed_only, source)
+        for _ in range(MAX_PENDING_RERUNS):
+            pending = lock.take_pending(state_dir)
+            if pending is None:
+                break
+            _index_once(cfg, False, False, None, True, False,
+                        pending if pending in VALID_SOURCES else "cli")
+        return report
+    finally:
+        lock.release(state_dir)
+
+
+def _index_once(
+    cfg: Config,
+    full: bool = False,
+    dry_run: bool = False,
+    progress: Callable[[int, str], None] | None = None,
+    embed: bool = True,
+    embed_only: bool = False,
+    source: str = "cli",
+) -> IndexReport:
     gate = SecurityGate(
         cfg.root,
         policy=cfg.security.policy,

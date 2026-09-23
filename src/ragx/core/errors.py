@@ -33,3 +33,18 @@ class BudgetExceededError(RagxError):
 
 class ParseError(RagxError):
     """Falha de parsing: degrada para fallback, não derruba a indexação."""
+
+
+class IndexBusyError(RagxError):
+    """Outra indexação segura a trava; o pedido ficou agendado."""
+
+    exit_code = 3
+
+    def __init__(self, holder: dict[str, object] | None):
+        self.holder = holder or {}
+        who = self.holder.get("source", "outra origem")
+        pid = self.holder.get("pid", "?")
+        super().__init__(
+            f"outra indexação está rodando (origem {who}, pid {pid}). "
+            "Este pedido ficou agendado e roda quando ela terminar."
+        )
