@@ -107,4 +107,16 @@ def init(
     if not created:
         console.print("  [dim]nada a fazer — já estava inicializado[/]")
     console.print(f"\n  project_id: [cyan]{cfg.project.id}[/]")
+
+    from ragx.core.errors import UsageError
+    from ragx.federation import hub as hub_mod
+
+    try:
+        hub_mod.register(cfg, path=root)
+        console.print(f"  [dim]registrado no hub ({cfg.hub_dir})[/]")
+    except UsageError:
+        # Projeto private, ou (raro) ragx.toml sumiu entre a escrita acima e
+        # aqui: registro no hub é um extra, nao motivo pra falhar o init.
+        pass
+
     console.print("\nPróximo passo: [bold]ragx security scan .[/]\n")

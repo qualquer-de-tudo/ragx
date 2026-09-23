@@ -26,6 +26,13 @@ def projeto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RAGX_EMBEDDING_PROVIDER", "hashing")
     monkeypatch.setenv("RAGX_EMBEDDING_DIM", "128")
     monkeypatch.setenv("RAGX_EMBEDDING_VERSIONED_DIM", "64")
+    # Isola o HOME: `ragx init` registra o projeto no hub local da máquina
+    # (~/.ragx/hub por padrão) — sem isso, testes escreveriam no hub real
+    # de quem roda a suíte e vazariam estado entre testes.
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("USERPROFILE", str(fake_home))  # Windows
     monkeypatch.chdir(dst)
     return dst
 
@@ -44,6 +51,53 @@ def test_init_e_idempotente(projeto: Path) -> None:
     r = runner.invoke(app, ["init", "."])
     assert r.exit_code == 0
     assert (projeto / "ragx.toml").read_text(encoding="utf-8") == antes
+
+
+def test_init_registra_projeto_no_hub(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Isola o HOME para nao escrever no hub real da maquina rodando o teste.
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("USERPROFILE", str(fake_home))  # Windows
+
+    proj_dir = tmp_path / "meu-projeto"
+    proj_dir.mkdir()
+    monkeypatch.chdir(proj_dir)
+
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0, result.output
+
+    from ragx.config import load_config
+    from ragx.federation import hub
+
+    cfg = load_config(proj_dir)
+    projetos = hub.list_projects(cfg)
+    assert len(projetos) == 1
+    assert projetos[0]["path"] == str(proj_dir.resolve())
+
+
+def test_init_nao_falha_se_projeto_e_private(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("USERPROFILE", str(fake_home))
+
+    proj_dir = tmp_path / "projeto-privado"
+    proj_dir.mkdir()
+    monkeypatch.chdir(proj_dir)
+
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0, result.output
+    # marca como private DEPOIS do init (init cria o ragx.toml default)
+    cfg_path = proj_dir / "ragx.toml"
+    texto = cfg_path.read_text(encoding="utf-8").replace(
+        'visibility = "workspace"', 'visibility = "private"'
+    )
+    cfg_path.write_text(texto, encoding="utf-8")
+
+    # rodar init de novo (idempotente) nao deve quebrar mesmo com o projeto private
+    result2 = runner.invoke(app, ["init", "--force"])
+    assert result2.exit_code == 0, result2.output
 
 
 def test_scan_bloqueia_e_retorna_exit_1(projeto: Path) -> None:
@@ -200,6 +254,13 @@ def test_entities_mostra_tier_quando_confianca_menor_que_um(
     monkeypatch.setenv("RAGX_EMBEDDING_PROVIDER", "hashing")
     monkeypatch.setenv("RAGX_EMBEDDING_DIM", "128")
     monkeypatch.setenv("RAGX_EMBEDDING_VERSIONED_DIM", "64")
+    # Isola o HOME: `ragx init` registra o projeto no hub local — sem isso,
+    # este teste (fora da fixture `projeto`) escreveria no hub compartilhado
+    # da sessão e colidiria (UNIQUE(name)) com outros projetos de teste.
+    fake_home = tmp_path.parent / f"{tmp_path.name}-home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("USERPROFILE", str(fake_home))  # Windows
     monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text(
         "import redis\n\n\ndef connect():\n    return redis.Redis()\n", encoding="utf-8"
