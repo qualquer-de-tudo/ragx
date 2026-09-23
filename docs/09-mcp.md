@@ -286,12 +286,14 @@ delegam ao mesmo serviço que a CLI usa, e a escrita acontece lá, não aqui.
 Toda chamada gera uma linha em `.ragx/logs/mcp.jsonl`:
 
 ```json
-{"ts":"2026-09-15T12:31:02Z","tool":"search_hybrid","ms":84,"hits":10,"query_hash":"a3f1..."}
+{"ts":"2026-09-15T12:31:02Z","tool":"search_hybrid","ms":84,"project":"ragx","tokens_delivered":3847}
 ```
 
-A query é gravada por **hash** por padrão (`mcp.log_queries = false`); em modo
-debug explícito, o texto é gravado. Isso evita que o log vire uma cópia do que o
-time está perguntando sobre o próprio código.
+Cada linha registra `ts` (timestamp), `tool` (ferramenta chamada), `ms` (latência em
+milissegundos), `project` (projeto), e para `build_context` (quando bem-sucedido)
+`tokens_delivered` (tokens entregues ao agente). Query e argumentos nunca são
+gravados, evitando que o log vire uma cópia do que o time está perguntando sobre
+o próprio código.
 
 ## Critério de aceite da Fase 6
 

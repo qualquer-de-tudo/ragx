@@ -33,7 +33,12 @@ ragx init [PATH]
     --force                 sobrescreve ragx.toml existente
     --git-hooks             instala pre-commit/post-merge/post-checkout
     --profile minimal|full  conjunto inicial de configuração
+```
 
+`ragx init` agora registra automaticamente o projeto no hub local, best-effort —
+falhas de registro (projeto privado, colisão de nome) nunca fazem `init` falhar.
+
+```bash
 ragx doctor
     # valida: python, sqlite+FTS5, pathspec, embedder acessível, ruleset carregável,
     #         permissão de escrita em .ragx/, versão de schema

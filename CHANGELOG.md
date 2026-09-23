@@ -7,6 +7,22 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 > MESMA alteração que a produz. Deixar para depois é como uma correção some do
 > histórico — quem a escreveu lembra do porquê; a próxima pessoa, não.
 
+## [Não lançado]
+
+### Adicionado
+
+- **Telemetria de chamadas MCP gravada em `.ragx/logs/mcp.jsonl`** — cada
+  ferramenta MCP registra um JSON line com `ts`, `tool`, `ms` (latência),
+  `project` e (para `build_context` apenas) `tokens_delivered`. Queries e
+  argumentos nunca são gravados, evitando que a telemetria vire um log do que
+  o time está perguntando sobre o próprio código.
+
+- **Registro automático no hub durante `ragx init`** — o projeto é registrado
+  best-effort; falhas (projeto privado, colisão de nome) nunca fazem `init`
+  falhar. Projetos que predatam essa mudança, ou marcados `private` que o
+  usuário depois quer registrar com visibilidade diferente, continuam usando
+  `ragx project register`.
+
 ## [1.0.0-beta.3] — 2026-09-17
 
 ### Corrigido

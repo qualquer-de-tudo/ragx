@@ -174,6 +174,11 @@ que nenhum dos dois repositórios consegue ver sozinho.
 
 ## Registro de projetos
 
+A partir da inicialização automática, **`ragx init` registra o projeto no hub
+como best-effort** — falhas nunca fazem `init` falhar. Para projetos que
+predatam essa mudança, ou para um projeto marcado `private` que o usuário
+depois quer registrar com uma visibilidade diferente, use `ragx project register`:
+
 ```bash
 ragx project register .                       # registra o projeto atual no hub
 ragx project register ../payment-service --name payment
