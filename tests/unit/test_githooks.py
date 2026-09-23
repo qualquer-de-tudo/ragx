@@ -149,6 +149,10 @@ def test_hook_gerado_roda_com_seguranca_no_sh_de_verdade(tmp_path: Path) -> None
         "#!/bin/sh\n" f'printf \'%s\\n\' "$@" >> "{log.as_posix()}"\n',
         encoding="utf-8",
     )
+    # Sem o bit de execução o hook recebe "Permission denied" no Linux/macOS,
+    # e o `>/dev/null 2>&1 || true` do bloco engole o erro (no Windows o sh do
+    # Git executa mesmo sem o bit, por isso o teste passava lá).
+    logger.chmod(0o755)
     prefix = f'"{logger.as_posix()}"'
     written = githooks.install(root, prefix)
     hook = next(p for p in written if p.name == "post-commit")
