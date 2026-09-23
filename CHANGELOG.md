@@ -23,79 +23,73 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   usuário depois quer registrar com visibilidade diferente, continuam usando
   `ragx project register`.
 
-- **Painel desktop (Electron)** — aplicativo local, sem login, que mostra por
-  projeto registrado no hub: contagem de documentos/chunks/embeddings,
-  telemetria de chamadas MCP (tokens reais entregues), economia estimada sob
-  demanda (via `ragx trial`) e achados de segurança sob demanda (via
-  `ragx security scan`). Atualiza por polling a cada 5s; instalador `.exe`
-  gerado com `electron-builder`.
+- **Painel desktop (Electron)**: aplicativo local, sem login, tema sempre
+  escuro (fundo preto, sem seguir o tema do Windows), título de janela
+  "RAGX Painel". Fechar o painel com alguma tarefa em andamento pergunta
+  antes de cancelar todas elas.
 
-  Cada projeto mostra onde mora (dois projetos chamados `src` deixam de ser
-  indistinguíveis).
-  O painel avisa quando há chunks sem embedding — nesse caso a busca semântica
-  cai para só palavra-chave, o que antes passava despercebido — e o scan lista
-  os arquivos bloqueados com severidade e regra, sem exibir o trecho do
-  segredo. O tema é sempre escuro, com fundo preto; não muda mais com o tema
-  do Windows.
+  A tela Projetos é uma grade de cards, um por projeto registrado no hub.
+  Cada card mostra onde o projeto mora (dois projetos chamados `src`
+  deixam de ser indistinguíveis), o selo de estado ("Atualizado",
+  "Defasado", "Embeddings faltando", "Sem hooks", "Com problema", "Pasta
+  ausente" ou "Indexando…"), a branch atual (com aviso quando o índice é
+  de outra branch), há quanto tempo foi indexado, a cobertura de
+  embeddings e um botão que faz o que o estado pede ("Atualizar agora",
+  "Gerar embeddings", "Instalar hooks", "Abrir"). O estado vem de
+  `.ragx/status.json` e da branch/commit atuais do git, não só de
+  "ok"/"degradado". Um filtro segmentado separa "Todos", "Defasados" e
+  "Com problema"; a busca ignora maiúsculas e acentos. "Adicionar
+  projeto" pede uma pasta, lista os projetos do RAGX encontrados dentro
+  dela (os já registrados aparecem desmarcados) e instala os hooks de git
+  por padrão.
 
-  A janela abre com fundo preto e título "RAGX Painel". Fechar o painel com
-  alguma tarefa em andamento pergunta antes de cancelar todas elas.
+  O detalhe do projeto responde "o índice está em dia?" com os motivos
+  exatos de `ragx status --json` (troca de branch, commits novos depois da
+  última indexação, arquivos alterados, embeddings pendentes) e mostra a
+  linha do tempo das últimas 10 indexações: quando, quem disparou
+  (Terminal, Painel, Watcher, Sync, Agente, Troca de branch, Commit, Merge
+  ou pull), o modo, a branch, o commit e quantos arquivos mudaram ou o
+  erro. Na mesma página: os números do índice com a cobertura de
+  embeddings, um interruptor para os hooks de git, "Atualizar agora",
+  "Gerar embeddings faltantes", "Reindexar do zero" (pede um segundo
+  clique), as ações que alteram `knowledge/` versionado (sincronizar,
+  reconstruir grafo, gerar dicionário) com o aviso para revisar o diff, o
+  uso pelos agentes nas últimas 24 h, a economia estimada sob demanda (via
+  `ragx trial`), os achados de segurança sob demanda (via
+  `ragx security scan`, sem exibir o trecho do segredo) e "Remover do hub"
+  (também com segundo clique; nada é apagado no disco).
 
-  Nova casca: barra lateral com ícones e rótulo (Projetos, Conexões, Como
-  funciona), busca de projeto no topo, indicador da fila ("2 tarefas") que abre
-  a lista com estado, progresso, previsão ("Faltam cerca de 2 min") e botão
-  "Cancelar", e um ponto de saúde das conexões que diz o estado em texto
-  ("Conexões atenção"), não só pela cor. Na primeira abertura, ou com o hub
-  vazio, o painel começa pela configuração inicial.
-
-  Cada card agora lê `.ragx/status.json` e a branch/commit atuais do git para
-  dizer o estado real do projeto: "Atualizado", "Defasado" (branch ou commit
-  mudou desde a última indexação), "Embeddings faltando", "Sem hooks", "Com
-  problema" ou "Pasta ausente" — em vez de só "ok"/"degradado".
-
-  A tela Projetos virou uma grade de cards: selo com o estado, pasta, branch
-  atual (com aviso "índice da branch X" quando o índice é de outra branch),
-  "Indexado há 2 h", cobertura de embeddings ("4 de 10 chunks com embedding",
-  em âmbar quando faltam) e um botão que faz o que o estado pede ("Atualizar
-  agora", "Gerar embeddings", "Instalar hooks", "Abrir"). Um filtro no topo
-  separa "Todos", "Defasados" e "Com problema", e a busca ignora maiúsculas e
-  acentos. "Adicionar projeto" pede uma pasta, lista os projetos do RAGX dentro
-  dela (os que já estão no painel aparecem desmarcados) e instala os hooks de
-  git por padrão.
-
-  O detalhe do projeto responde "o índice está em dia?" com os motivos exatos
-  de `ragx status --json` ("O índice é da branch main; você está em feat/x.",
-  "3 commit(s) depois da última indexação.", arquivos alterados, embeddings
-  pendentes) e mostra a linha do tempo das 10 últimas indexações: quando, quem
-  disparou (Terminal, Painel, Watcher, Sync, Agente, Troca de branch, Commit,
-  Merge ou pull), o modo, a branch e o commit, e quantos arquivos mudaram ou o
-  erro. Na mesma página: os números do índice com a cobertura de embeddings,
-  um interruptor para os hooks de git, "Atualizar agora", "Gerar embeddings
-  faltantes", "Reindexar do zero" (pede um segundo clique), as ações que
-  alteram `knowledge/` (sincronizar, reconstruir grafo, gerar dicionário) com
-  o aviso para revisar o diff, o uso pelos agentes nas últimas 24 h, a
-  economia estimada, os achados de segurança e "Remover do hub" (também com
-  segundo clique; nada é apagado no disco). Um botão cuja tarefa já está na
-  fila ou rodando fica desabilitado e diz "Na fila" ou "Rodando". O selo
-  "Indexando…" (no card e no detalhe) só aparece para tarefas que indexam
-  (adicionar, atualizar, gerar embeddings, reindexar); sincronizar knowledge,
+  Uma fila única e serial (o Ollama é compartilhado) roda as tarefas de
+  cada projeto e mostra progresso, previsão ("Faltam cerca de 2 min") e um
+  botão "Cancelar" por tarefa, com pedidos duplicados do mesmo tipo e
+  projeto deduplicados em vez de empilhados. Um botão cuja tarefa já está
+  na fila ou rodando fica desabilitado e diz "Na fila" ou "Rodando". O
+  selo "Indexando…" só aparece para tarefas que indexam (adicionar,
+  atualizar, gerar embeddings, reindexar); sincronizar knowledge,
   reconstruir grafo, gerar dicionário e mexer nos hooks não contam.
 
-  A tela Conexões mostra três cards (RAGX CLI, Claude Code e Ollama no Docker),
-  cada um com o selo "Conectado", "Atenção" ou "Não conectado", os fatos da
-  checagem (versão e local do ragx, projetos onde o RAGX está registrado,
-  última chamada MCP, modelos instalados e projetos que dependem deles), a
-  ajuda em bloco de texto que dá para copiar e as correções de um clique
-  ("Registrar para todos os projetos", "Iniciar container", "Baixar
-  nomic-embed-text"). O painel confere tudo a cada 30 segundos, na hora com
-  "Verificar agora" e logo depois que uma dessas correções termina; antes da
-  primeira resposta os cards ficam em "Verificando…", nunca verdes. RAGX
-  registrado no Claude Code só no escopo de um projeto aparece como
-  "Atenção", não como conectado. A configuração inicial ganhou quatro passos
-  (como o RAGX funciona, conexões, escolher os projetos, indexar), com
-  "Voltar", "Continuar" e "Pular configuração"; "Começar" enfileira a
-  indexação dos projetos marcados. "Como funciona" repete a explicação e
-  permite refazer a configuração.
+  A tela Conexões mostra três cards (RAGX CLI, Claude Code e Ollama no
+  Docker), cada um com o selo "Conectado", "Atenção" ou "Não conectado",
+  os fatos da checagem (versão e local do ragx, projetos onde o RAGX está
+  registrado, última chamada MCP, modelos instalados e projetos que
+  dependem deles), a ajuda em bloco de texto que dá para copiar e as
+  correções de um clique ("Registrar para todos os projetos", "Iniciar
+  container", "Baixar nomic-embed-text"). O painel confere tudo a cada 30
+  segundos, na hora com "Verificar agora" e logo depois que uma dessas
+  correções termina; antes da primeira resposta os cards ficam em
+  "Verificando…", nunca verdes. RAGX registrado no Claude Code só no
+  escopo de um projeto aparece como "Atenção", não como conectado.
+
+  Na primeira abertura, ou com o hub vazio, o painel começa pela
+  configuração inicial: quatro passos (como o RAGX funciona, conexões,
+  escolher os projetos, indexar) com "Voltar", "Continuar" e "Pular
+  configuração"; "Começar" enfileira a indexação dos projetos marcados.
+  "Como funciona" repete a explicação e permite refazer a configuração.
+
+  Telemetria de chamadas MCP (tokens reais entregues) por projeto vem do
+  log em `.ragx/logs/mcp.jsonl`. O painel atualiza por polling a cada 5 s
+  e logo depois que uma tarefa termina; instalador `.exe` gerado com
+  `electron-builder`.
 
 - **O índice acompanha a branch.** Cada indexação registra branch, commit e quem
   disparou (`cli`, `panel`, `watch`, `sync`, `mcp:*`, `hook:*`). `ragx status --json`
