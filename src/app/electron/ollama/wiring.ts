@@ -55,15 +55,17 @@ export interface WaitDeps {
  * máximo o que falta (nunca 0, que no Node desliga o timeout). Nunca rejeita.
  */
 export async function waitForApi(timeoutMs: number, d: WaitDeps): Promise<boolean> {
+  // Prazo inválido (NaN, infinito, zero ou negativo) nunca vira espera sem fim.
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return false
   const deadline = d.now() + timeoutMs
   for (;;) {
     const requestTimeout = Math.max(1, Math.min(POLL_REQUEST_TIMEOUT_MS, deadline - d.now()))
     const up = await Promise.resolve()
       .then(() => d.poll(requestTimeout))
       .then(
-      (answered) => answered === true,
-      () => false,
-    )
+        (answered) => answered === true,
+        () => false,
+      )
     if (up) return true
     const remaining = deadline - d.now()
     if (remaining <= 0) return false
@@ -87,6 +89,12 @@ export interface OllamaEnvCache {
   fresh: () => Promise<OllamaEnvironment>
   /** Junta-se à detecção em andamento, se houver (pedidos do renderer). */
   shared: () => Promise<OllamaEnvironment>
+  /**
+   * O ambiente mudou (uma tarefa `ollama-*` terminou): esquece a detecção em
+   * andamento, que começou antes, para o próximo `shared()` detectar de novo.
+   * A antiga ainda termina, mas não sobrescreve um resultado mais novo.
+   */
+  invalidate: () => void
 }
 
 /**
@@ -121,6 +129,9 @@ export function createOllamaEnvCache(detect: () => Promise<OllamaEnvironment>): 
     get: () => latest,
     fresh,
     shared: () => inFlight ?? fresh(),
+    invalidate: () => {
+      inFlight = null
+    },
   }
 }
 

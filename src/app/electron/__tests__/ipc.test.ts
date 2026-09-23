@@ -502,6 +502,21 @@ describe('createHandlers - kinds novos do Ollama no enqueueJob', () => {
     expect(queue.enqueued).toHaveLength(0)
   })
 
+  it('a mensagem de recusa corta um model enorme (não inunda o log)', () => {
+    const handlers = createHandlers(makeDeps())
+    const huge = `x; ${'a'.repeat(10_000)}`
+    let message = ''
+    try {
+      handlers.enqueueJob({ kind: 'ollama-stop', model: huge })
+    } catch (err) {
+      message = (err as Error).message
+    }
+    expect(message).toMatch(/pedido recusado/)
+    expect(message).toContain(`${huge.slice(0, 60)}…`)
+    expect(message).not.toContain(huge.slice(0, 61))
+    expect(message.length).toBeLessThan(150)
+  })
+
   it('recusa os kinds novos com chave extra', () => {
     const queue = fakeQueue()
     const handlers = createHandlers(makeDeps({ queue }))
@@ -591,6 +606,32 @@ describe('createHandlers - getConnections publica e não roda duas checagens ao 
     await Promise.resolve()
     release()
     await c
+    expect(checkAll).toHaveBeenCalledTimes(2)
+  })
+
+  it('recheckConnections (fim de tarefa) com checagem em andamento: exatamente mais uma depois dela', async () => {
+    const releases: Array<() => void> = []
+    const checkAll = vi.fn(
+      () =>
+        new Promise<typeof CHECKS>((resolve) => {
+          releases.push(() => resolve(CHECKS))
+        }),
+    )
+    const handlers = createHandlers(makeDeps({ checkAll }))
+
+    const polling = handlers.getConnections()
+    for (let i = 0; i < 5; i++) await Promise.resolve()
+    const aposTarefa = handlers.recheckConnections()
+    expect(checkAll).toHaveBeenCalledTimes(1)
+
+    releases[0]()
+    await polling
+    for (let i = 0; i < 10; i++) await Promise.resolve()
+    expect(checkAll).toHaveBeenCalledTimes(2)
+
+    releases[1]()
+    expect(await aposTarefa).toBe(CHECKS)
+    for (let i = 0; i < 10; i++) await Promise.resolve()
     expect(checkAll).toHaveBeenCalledTimes(2)
   })
 

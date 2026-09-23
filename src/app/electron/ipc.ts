@@ -1,4 +1,5 @@
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
+import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
 import type { PanelSettings, RendererSettings } from './settings'
 import type {
@@ -72,6 +73,14 @@ function rejected(message: string): Error {
   return new Error(`pedido recusado: ${message}`)
 }
 
+const MAX_ECHO_LENGTH = 60
+
+/** Valor vindo do renderer repetido numa mensagem de erro: cortado, para um texto enorme não inundar o log. */
+function echo(value: unknown): string {
+  const text = String(value)
+  return text.length > MAX_ECHO_LENGTH ? `${text.slice(0, MAX_ECHO_LENGTH)}…` : text
+}
+
 function validateJobRequestShape(input: unknown): JobRequest {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     throw rejected('formato de pedido inválido')
@@ -90,7 +99,7 @@ function validateJobRequestShape(input: unknown): JobRequest {
   if ('model' in input) {
     const model = (input as { model?: unknown }).model
     if (model !== undefined && (typeof model !== 'string' || !MODEL_PATTERN.test(model))) {
-      throw rejected(`nome de modelo inválido: ${String(model)}`)
+      throw rejected(`nome de modelo inválido: ${echo(model)}`)
     }
   }
   return input as JobRequest
@@ -109,7 +118,6 @@ function benchmarkFailure(model: string | null, err: unknown): OllamaBenchmark {
 }
 
 export function createHandlers(deps: HandlerDeps) {
-  let inFlightConnections: Promise<ConnectionCheck[]> | null = null
   let inFlightBenchmark: Promise<OllamaBenchmark> | null = null
   let lastBenchmark: OllamaBenchmark | null = null
 
@@ -145,6 +153,8 @@ export function createHandlers(deps: HandlerDeps) {
     deps.publishConnections?.(checks)
     return checks
   }
+
+  const connections = createCoalescedRun(runConnectionChecks)
 
   function cachedProjects(): ProjectSnapshot[] {
     return deps.getCachedSnapshot()?.projects ?? []
@@ -216,12 +226,17 @@ export function createHandlers(deps: HandlerDeps) {
      * recebe o mesmo resultado em vez de disparar outra.
      */
     getConnections(): Promise<ConnectionCheck[]> {
-      if (inFlightConnections) return inFlightConnections
-      const run: Promise<ConnectionCheck[]> = runConnectionChecks().finally(() => {
-        if (inFlightConnections === run) inFlightConnections = null
-      })
-      inFlightConnections = run
-      return run
+      return connections.join()
+    },
+
+    /**
+     * Checagem pedida pelo processo principal quando uma tarefa de conexão
+     * termina (não é um canal de IPC). Se já tem uma checagem em andamento,
+     * ela começou ANTES do fim da tarefa: agenda exatamente mais uma depois
+     * dela, para o resultado final refletir o estado novo.
+     */
+    recheckConnections(): Promise<ConnectionCheck[]> {
+      return connections.fresh()
     },
 
     listJobs(): JobView[] {

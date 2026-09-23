@@ -141,16 +141,22 @@ function onJobsChange(jobs: JobView[]): void {
 
   // Tarefa do Ollama terminou (qualquer estado): o executável pode ter
   // mudado de lugar (`winget install`), e uma troca de modo concluída vira o
-  // modo preferido. Antes da checagem de conexões abaixo, que já vê o novo.
+  // modo preferido. Uma detecção do ambiente em andamento começou antes do
+  // fim da tarefa: é descartada, e o próximo pedido detecta de novo. Tudo
+  // antes da checagem de conexões abaixo, que já vê o novo.
   const ollama = ollamaFollowUps(finished)
-  if (ollama.resetCache) resetOllamaCache()
+  if (ollama.resetCache) {
+    resetOllamaCache()
+    ollamaEnv.invalidate()
+  }
   if (ollama.persistMode !== null) persistOllamaMode(ollama.persistMode)
 
   // Terminou uma correção de conexão ("Registrar", "Iniciar container",
-  // "Baixar modelo"): confere de novo na hora; o resultado chega ao
-  // renderer por `ragx:connections`, como o do polling.
+  // "Baixar modelo", trocas de modo do Ollama): confere de novo. Se uma
+  // checagem já está no ar (começou antes), roda mais uma depois dela. O
+  // resultado chega ao renderer por `ragx:connections`, como o do polling.
   if (finished.some((j) => CONNECTION_JOB_KINDS.has(j.kind))) {
-    handlers.getConnections().catch((err) => console.error('getConnections() falhou apos tarefa de conexao:', err))
+    handlers.recheckConnections().catch((err) => console.error('checagem de conexoes falhou apos tarefa:', err))
   }
 
   sendJobsThrottled(jobs)

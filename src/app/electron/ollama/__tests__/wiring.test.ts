@@ -138,13 +138,14 @@ describe('waitForApi', () => {
     expect(await waitForApi(10_000, { poll, ...c })).toBe(true)
   })
 
-  it('prazo zero ou negativo: uma sondagem só', async () => {
-    const c = clock()
-    const poll = vi.fn(async () => false)
-    expect(await waitForApi(0, { poll, ...c })).toBe(false)
-    expect(poll).toHaveBeenCalledTimes(1)
-    expect((poll.mock.calls as unknown as Array<[number]>)[0][0]).toBeGreaterThan(0)
-    expect(c.sleep).not.toHaveBeenCalled()
+  it('prazo zero, negativo, NaN ou infinito: false na hora, sem sondar nem esperar', async () => {
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const c = clock()
+      const poll = vi.fn(async () => true)
+      expect(await waitForApi(bad, { poll, ...c }), String(bad)).toBe(false)
+      expect(poll).not.toHaveBeenCalled()
+      expect(c.sleep).not.toHaveBeenCalled()
+    }
   })
 })
 
@@ -197,6 +198,36 @@ describe('createOllamaEnvCache', () => {
     d.resolve(env())
     expect(await s).toBe(await f)
     expect(detect).toHaveBeenCalledTimes(1)
+  })
+
+  it('invalidate: detecção A em andamento, tarefa termina, o próximo shared começa B e A atrasada não sobrescreve B', async () => {
+    const a = deferred<OllamaEnvironment>()
+    const b = deferred<OllamaEnvironment>()
+    const detect = vi.fn().mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise)
+    const cache = createOllamaEnvCache(detect)
+
+    const antes = cache.shared() // A: polling de 30 s, começou antes da tarefa terminar
+    await Promise.resolve()
+    cache.invalidate() // a tarefa ollama-* terminou
+
+    const depois = cache.shared() // pedido do renderer depois do fim da tarefa
+    await Promise.resolve()
+    expect(detect).toHaveBeenCalledTimes(2)
+    expect(cache.shared()).toBe(depois) // quem chega agora junta-se a B, não a A
+
+    b.resolve(env({ mode: 'docker' }))
+    expect((await depois).mode).toBe('docker')
+    a.resolve(env({ mode: 'native' }))
+    expect((await antes).mode).toBe('native')
+    expect(cache.get()?.mode).toBe('docker')
+  })
+
+  it('invalidate sem nada em andamento não faz nada de estranho', async () => {
+    const detect = vi.fn(async () => env({ mode: 'docker' }))
+    const cache = createOllamaEnvCache(detect)
+    cache.invalidate()
+    expect((await cache.shared()).mode).toBe('docker')
+    expect(detect).toHaveBeenCalledOnce()
   })
 
   it('detecção que falha não derruba o cache nem trava as seguintes', async () => {
