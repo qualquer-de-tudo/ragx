@@ -21,13 +21,15 @@ STATUS_NAME = "status.json"
 SCHEMA = 1
 
 
-def _no_probe(_root: Path) -> bool | None:
-    return None
+def _default_probe(root: Path) -> bool | None:
+    from ragx import githooks  # import tardio: sem ciclo com o pipeline
+
+    return githooks.installed(root)
 
 
-# Substituída em ragx.githooks (Task 5). Indireção para não importar o módulo
-# de hooks, que conhece o shell, a partir do pipeline.
-hooks_installed_probe: Callable[[Path], bool | None] = _no_probe
+# Indireção para não importar o módulo de hooks, que conhece o shell, direto
+# no topo do arquivo (evita ciclo com o pipeline).
+hooks_installed_probe: Callable[[Path], bool | None] = _default_probe
 
 
 def _last_finished(conn: Any) -> dict[str, Any] | None:

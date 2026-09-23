@@ -51,6 +51,15 @@ def read_state(root: Path) -> GitState | None:
     return GitState(branch=branch or None, commit=commit, dirty=bool(porcelain))
 
 
+def hooks_dir(root: Path) -> Path | None:
+    """Pasta de hooks do repositório, respeitando `core.hooksPath`."""
+    out = git(root, "rev-parse", "--git-path", "hooks")
+    if not out:
+        return None
+    p = Path(out)
+    return p if p.is_absolute() else (root / p).resolve()
+
+
 def commits_between(root: Path, old: str, new: str) -> int | None:
     out = git(root, "rev-list", "--count", f"{old}..{new}")
     try:

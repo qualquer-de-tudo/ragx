@@ -107,7 +107,10 @@ def test_apenas_modulos_autorizados_leem_o_filesystem() -> None:
                       "ragx.dictionary", "ragx.portability", "ragx.embeddings",
                       "ragx.context", "ragx.graph", "ragx.sizing", "ragx.indexing",
                       "ragx.federation", "ragx.sync", "ragx.tokens", "ragx.search",
-                      "ragx.agents", "ragx.base", "ragx.tasks")
+                      "ragx.agents", "ragx.base", "ragx.tasks", "ragx.githooks")
+            # `ragx.githooks` lê e escreve os SCRIPTS de hook em `.git/hooks/`
+            # (ou `core.hooksPath`), máquina do próprio git, nunca o
+            # código-fonte do projeto-alvo.
         ):
             continue
         if _called_names(path) & _READ_CALLS:

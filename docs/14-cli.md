@@ -32,12 +32,24 @@ Exit codes padronizados:
 ```bash
 ragx init [PATH]
     --force                 sobrescreve ragx.toml existente
-    --git-hooks             instala pre-commit/post-merge/post-checkout
+    --git-hooks             instala post-checkout/post-commit/post-merge (ragx hooks install)
     --profile minimal|full  conjunto inicial de configuração
 ```
 
 `ragx init` agora registra automaticamente o projeto no hub local, best-effort —
 falhas de registro (projeto privado, colisão de nome) nunca fazem `init` falhar.
+
+```bash
+ragx hooks install [PATH]       hooks que reindexam ao trocar de branch, commitar e fazer merge
+ragx hooks uninstall [PATH]     remove só o bloco do RAGX deste projeto
+ragx hooks status [PATH] [--json]
+ragx hook-run EVENTO --root PATH [ARGS]   uso interno dos hooks; não chame à mão
+```
+
+Os hooks convivem com hooks de outras ferramentas (o RAGX só mexe no bloco
+entre `# ragx-hook-start` e `# ragx-hook-end`), respeitam `core.hooksPath` e
+nunca bloqueiam o git: a indexação roda destacada e o log fica em
+`.ragx/logs/hooks.log`. `RAGX_SKIP_HOOK=1` desliga por comando.
 
 ```bash
 ragx doctor

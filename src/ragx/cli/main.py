@@ -17,6 +17,7 @@ from ragx.cli.commands import (
     eval_cmd,
     federation_cmd,
     graph_cmd,
+    hooks_cmd,
     index_cmd,
     init,
     maintenance_cmd,
@@ -64,6 +65,11 @@ app.command("export")(portability_cmd.export)
 app.command("import")(portability_cmd.import_)
 app.command("inspect")(portability_cmd.inspect)
 app.command("contract")(federation_cmd.contract)
+app.command(
+    "hook-run",
+    hidden=True,
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(hooks_cmd.hook_run)
 app.add_typer(agent_cmd.app, name="agent", help="Perfis de agente.")
 app.add_typer(base_cmd.app, name="base", help="Conhecimento base compartilhado entre projetos.")
 app.add_typer(task_cmd.app, name="task", help="Análise, planejamento e execução de trabalho.")
@@ -74,6 +80,7 @@ app.add_typer(federation_cmd.federation_app, name="federation", help="Superfíci
 app.add_typer(federation_cmd.project_app, name="project", help="Projetos registrados no hub.")
 app.add_typer(federation_cmd.hub_app, name="hub", help="Hub multiprojeto local.")
 app.add_typer(mcp_cmd.app, name="mcp", help="Servidor MCP.")
+app.add_typer(hooks_cmd.app, name="hooks", help="Hooks de git que mantêm o índice na branch atual.")
 app.add_typer(security.app, name="security", help="Varredura e regras de segurança.")
 app.add_typer(config_cmd.app, name="config", help="Inspeção e ajuste de configuração.")
 

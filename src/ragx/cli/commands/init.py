@@ -52,6 +52,9 @@ def init(
     path: Annotated[Path, typer.Argument()] = Path("."),
     force: Annotated[bool, typer.Option("--force", help="Sobrescreve ragx.toml.")] = False,
     name: Annotated[str | None, typer.Option("--name")] = None,
+    git_hooks: Annotated[
+        bool, typer.Option("--git-hooks", help="Instala hooks que reindexam ao trocar de branch.")
+    ] = False,
 ) -> None:
     """Prepara o projeto para o RAGX."""
     from ragx.core.ids import CHUNKER_VERSION, SCHEMA_VERSION
@@ -101,6 +104,16 @@ def init(
         set_meta(conn, "created_at", utcnow())
         conn.commit()
         created.append(".ragx/knowledge.db")
+
+    if git_hooks:
+        from ragx import githooks
+        from ragx.core.errors import RagxError
+
+        try:
+            githooks.install(root)
+            created.append("hooks de git (post-checkout, post-commit, post-merge)")
+        except RagxError as exc:
+            console.print(f"[yellow]hooks não instalados:[/] {exc}")
 
     console.print(f"\n[bold green]RAGX inicializado[/] em {root}\n")
     for c in created:
