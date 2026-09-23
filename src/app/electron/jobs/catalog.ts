@@ -60,6 +60,8 @@ export interface CatalogContext {
   ollamaEnv?: () => OllamaEnvironment | null
   /** Modelos de embedding em uso pelos projetos com provider ollama, sem repetição. */
   requiredModels?: () => string[]
+  /** Modo que o usuário escolheu por último (persistido pelo processo principal); `null` se nunca escolheu. */
+  preferredOllamaMode?: () => 'docker' | 'native' | null
 }
 
 /** Recusa de `resolveJob`: pedido fora do catálogo fechado, nunca vira processo. */
@@ -213,7 +215,25 @@ function validateFieldTypes(req: JobRequest): void {
   }
 }
 
-export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
+/** Falha ao ler o ambiente do Ollama vira recusa legível, nunca exceção crua para o renderer. */
+function guarded<T>(fn: (() => T) | undefined): (() => T) | undefined {
+  if (fn === undefined) return undefined
+  return () => {
+    try {
+      return fn()
+    } catch {
+      throw new JobRejected('Não foi possível ler o ambiente do Ollama.')
+    }
+  }
+}
+
+export function resolveJob(req: JobRequest, rawCtx: CatalogContext): ResolvedJob {
+  const ctx: CatalogContext = {
+    ...rawCtx,
+    ollamaEnv: guarded(rawCtx.ollamaEnv),
+    requiredModels: guarded(rawCtx.requiredModels),
+    preferredOllamaMode: guarded(rawCtx.preferredOllamaMode),
+  }
   const job = resolveSteps(req, ctx)
   // Só chega aqui um `ollama-pull` com modelo já validado por `MODEL_PATTERN`.
   return { ...job, model: job.kind === 'ollama-pull' ? (req.model as string) : null }
@@ -267,12 +287,20 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
   if (kind === 'ollama-start') {
     const env = ctx.ollamaEnv?.() ?? null
     let steps: Step[] = [plainStep('docker', ['start', 'ollama'])]
-    if (env !== null && env.container.exists) {
-      steps = [{ ...plainStep('docker', ['start', 'ollama']), when: 'container-exists' }]
-    } else if (env !== null && env.native.installed) {
-      steps = [serveStep(), waitApiStep()]
+    let label = 'Iniciar o container ollama'
+    if (env !== null) {
+      const available = (m: 'docker' | 'native' | null | undefined): boolean =>
+        m === 'docker' ? env.container.exists : m === 'native' ? env.native.installed : false
+      const candidates = [ctx.preferredOllamaMode?.() ?? null, env.recommendation.mode, 'docker', 'native'] as const
+      const chosen = candidates.find((m) => available(m))
+      if (chosen === 'docker') {
+        steps = [{ ...plainStep('docker', ['start', 'ollama']), when: 'container-exists' }]
+      } else if (chosen === 'native') {
+        steps = [serveStep(), waitApiStep()]
+        label = 'Iniciar o Ollama local'
+      }
     }
-    return { kind, label: 'Iniciar o container ollama', projectId: null, steps, dedupeKey: dedupeKey(kind, null) }
+    return { kind, label, projectId: null, steps, dedupeKey: dedupeKey(kind, null) }
   }
 
   if (kind === 'ollama-use-native') {

@@ -98,7 +98,20 @@ describe('resolveJob - ollama-use-native', () => {
       canInstallNative: false,
       native: { installed: true, path: '/usr/bin/ollama', running: false },
     })
-    expect(resolveJob({ kind: 'ollama-use-native' }, ctx({ ollamaEnv: () => e })).steps.length).toBeGreaterThanOrEqual(4)
+    const steps = resolveJob({ kind: 'ollama-use-native' }, ctx({ ollamaEnv: () => e })).steps
+    expect(steps).toEqual([
+      { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running', okExitCodes: [] },
+      expect.objectContaining({ cmd: 'winget', when: 'native-missing' }),
+      SERVE,
+      WAIT,
+    ])
+  })
+
+  it('modo conflict: mesmos passos do docker em uso (as condições cobrem)', () => {
+    const conflict = env({ mode: 'conflict', native: { installed: true, path: 'x', running: true } })
+    const a = resolveJob({ kind: 'ollama-use-native' }, ctx({ ollamaEnv: () => conflict }))
+    const b = resolveJob({ kind: 'ollama-use-native' }, ctx({ ollamaEnv: () => env() }))
+    expect(a.steps).toEqual(b.steps)
   })
 })
 
@@ -165,6 +178,23 @@ describe('resolveJob - ollama-use-docker', () => {
   })
 })
 
+describe('resolveJob - conflict e model no pedido', () => {
+  it('ollama-use-docker em conflict: mesmos passos', () => {
+    const conflict = env({ mode: 'conflict', native: { installed: true, path: 'x', running: true } })
+    const a = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => conflict }))
+    const b = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => env() }))
+    expect(a.steps).toEqual(b.steps)
+  })
+
+  it('model enviado em use-native, use-docker e stop nunca aparece no argv', () => {
+    for (const kind of ['ollama-use-native', 'ollama-use-docker', 'ollama-stop'] as const) {
+      const job = resolveJob({ kind, model: 'injetado' }, ctx({ ollamaEnv: () => env() }))
+      expect(job.steps.flatMap((s) => s.args)).not.toContain('injetado')
+      expect(job.model).toBeNull()
+    }
+  })
+})
+
 describe('resolveJob - ollama-stop', () => {
   it('Windows', () => {
     const job = resolveJob({ kind: 'ollama-stop' }, ctx({ ollamaEnv: () => env() }))
@@ -200,6 +230,61 @@ describe('resolveJob - ollama-start segue o ambiente', () => {
       mode: 'native',
     })
     expect(resolveJob({ kind: 'ollama-start' }, ctx({ ollamaEnv: () => e })).steps).toEqual([SERVE, WAIT])
+  })
+
+  describe('preferência de modo', () => {
+    const both = (rec: 'docker' | 'native'): OllamaEnvironment =>
+      env({
+        native: { installed: true, path: 'x', running: false },
+        recommendation: { mode: rec, reason: 'x' },
+      })
+    const start = (e: OllamaEnvironment, pref: 'docker' | 'native' | null) =>
+      resolveJob({ kind: 'ollama-start' }, ctx({ ollamaEnv: () => e, preferredOllamaMode: () => pref }))
+    const DOCKER = [{ cmd: 'docker', args: ['start', 'ollama'], ...P, when: 'container-exists' }]
+
+    it('preferido nativo com container existente: nativo', () => {
+      const job = start(both('docker'), 'native')
+      expect(job.steps).toEqual([SERVE, WAIT])
+      expect(job.label).toBe('Iniciar o Ollama local')
+    })
+
+    it('preferido docker com nativo instalado: docker', () => {
+      const job = start(both('native'), 'docker')
+      expect(job.steps).toEqual(DOCKER)
+      expect(job.label).toBe('Iniciar o container ollama')
+    })
+
+    it('preferido indisponível cai na recomendação', () => {
+      // preferido docker, sem container: recomendação nativa (instalada) vence.
+      const e = env({
+        container: { exists: false, running: false },
+        native: { installed: true, path: 'x', running: false },
+        recommendation: { mode: 'native', reason: 'x' },
+      })
+      expect(start(e, 'docker').steps).toEqual([SERVE, WAIT])
+      // preferido nativo, sem nativo: recomendação docker vence.
+      expect(start(env({ recommendation: { mode: 'docker', reason: 'x' } }), 'native').steps).toEqual(DOCKER)
+    })
+
+    it('sem preferência: recomendação; recomendação indisponível: o que houver', () => {
+      expect(start(both('docker'), null).steps).toEqual(DOCKER)
+      expect(start(both('native'), null).steps).toEqual([SERVE, WAIT])
+      const onlyContainer = env({ recommendation: { mode: 'native', reason: 'x' } })
+      expect(start(onlyContainer, null).steps).toEqual(DOCKER)
+    })
+
+    it('falha ao ler o ambiente vira JobRejected', () => {
+      const boom = (): never => {
+        throw new Error('x')
+      }
+      expect(() => resolveJob({ kind: 'ollama-start' }, ctx({ ollamaEnv: boom }))).toThrow(JobRejected)
+      expect(() =>
+        resolveJob({ kind: 'ollama-use-native' }, ctx({ ollamaEnv: () => env(), requiredModels: boom })),
+      ).toThrow('Não foi possível ler o ambiente do Ollama.')
+      expect(() =>
+        resolveJob({ kind: 'ollama-start' }, ctx({ ollamaEnv: () => env(), preferredOllamaMode: boom })),
+      ).toThrow(JobRejected)
+    })
   })
 
   it('sem ollamaEnv: comportamento antigo', () => {
