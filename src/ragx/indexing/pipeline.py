@@ -19,7 +19,7 @@ from ragx.config import Config
 from ragx.core.errors import IndexBusyError, UsageError
 from ragx.core.ids import CHUNKER_VERSION, content_hash, document_id
 from ragx.core.models import Document, IndexStats, Verdict
-from ragx.indexing import lock, parsers
+from ragx.indexing import lock, parsers, status_file
 from ragx.indexing.chunkers import ChunkOptions, chunk_document
 from ragx.indexing.embed import embed_pending
 from ragx.security.gate import SecurityGate
@@ -77,16 +77,19 @@ def index_project(
             # trava; tenta mais uma vez antes de desistir. Sem isso o pedido
             # fica órfão: ninguém mais vai drená-lo.
             if not lock.try_acquire(state_dir, "index", source):
+                status_file.write_status(cfg)
                 raise IndexBusyError(current)
             break
         time.sleep(0.5)
 
+    status_file.write_status(cfg)  # depois do while da trava: mostra "running"
     budget = MAX_PENDING_RERUNS
     try:
         report = _index_once(cfg, full, dry_run, progress, embed, embed_only, source)
         budget = _drain_pending(cfg, state_dir, budget)
     finally:
         lock.release(state_dir)
+        status_file.write_status(cfg)  # estado final, running = null
 
     # Só chega aqui em caminho de sucesso: Ctrl+C ou erro dentro do `try`
     # acima já teria propagado no `finally`, sem passar por esta linha. Sem
@@ -104,6 +107,7 @@ def index_project(
             budget = _drain_pending(cfg, state_dir, budget)
         finally:
             lock.release(state_dir)
+            status_file.write_status(cfg)
 
     return report
 
