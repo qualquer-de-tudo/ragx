@@ -168,7 +168,10 @@ def _embedder_status(cfg, _row) -> bool:  # type: ignore[no-untyped-def]
             with urllib.request.urlopen(f"{cfg.embedding.base_url}/api/tags", timeout=2) as r:
                 body = r.read().decode("utf-8", "replace")
             if cfg.embedding.model.split(":")[0] in body:
-                return _row("Embedder", label, True)
+                ok = _row("Embedder", label, True)
+                # Informativo: sempre ok=True, nunca muda o veredito do doctor.
+                _row("Ollama", _processador_do_ollama(cfg), True)
+                return ok
             return _row("Embedder", label, False, [
                 f"modelo ausente: ollama pull {cfg.embedding.model}"])
         except (urllib.error.URLError, OSError, TimeoutError):
@@ -178,6 +181,36 @@ def _embedder_status(cfg, _row) -> bool:  # type: ignore[no-untyped-def]
                 "ou use: ragx config set embedding.provider fastembed",
             ])
     return _row("Embedder", label, True)
+
+
+def _processador_do_ollama(cfg) -> str:  # type: ignore[no-untyped-def]
+    """Diz se o modelo do projeto está na GPU ou na CPU, segundo `GET /api/ps`.
+
+    Só informa: qualquer erro, timeout ou JSON inesperado vira um texto, nunca
+    uma exceção, para que isto jamais derrube o `doctor`.
+    """
+    import urllib.request
+
+    indisponivel = "não foi possível consultar o processador"
+    try:
+        with urllib.request.urlopen(f"{cfg.embedding.base_url}/api/ps", timeout=2) as r:
+            dados = json.loads(r.read().decode("utf-8", "replace"))
+        modelos = dados["models"]
+        if not isinstance(modelos, list):
+            return indisponivel
+        alvo = cfg.embedding.model.removesuffix(":latest")
+        for m in modelos:
+            if not isinstance(m, dict) or str(m.get("name", "")).removesuffix(":latest") != alvo:
+                continue
+            vram = m.get("size_vram", 0)
+            if isinstance(vram, bool) or not isinstance(vram, int):
+                return indisponivel
+            if vram > 0:
+                return f"GPU ({round(vram / (1024 * 1024))} MB de VRAM)"
+            return "CPU"
+        return "processador ainda não medido (nenhum modelo carregado)"
+    except Exception:
+        return indisponivel
 
 
 def _orphans(conn) -> dict[str, int]:  # type: ignore[no-untyped-def]

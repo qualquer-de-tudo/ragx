@@ -303,6 +303,12 @@ ragx doctor --full               inclui checagem de integridade do banco
 ragx doctor --json               as mesmas checagens em JSON, saindo com 0
 ```
 
+> Com o provider `ollama` respondendo e o modelo baixado, o `doctor` acrescenta a
+> linha `Ollama` (lida de `GET /api/ps`): "GPU (N MB de VRAM)", "CPU" ou
+> "processador ainda não medido (nenhum modelo carregado)". É só informação:
+> a linha nunca falha o `doctor`, e uma consulta que falha vira "não foi
+> possível consultar o processador".
+
 > `ragx doctor --json` **sai com código 0 mesmo havendo problema**: o veredito
 > está em `ok` e `problems`, dentro do payload. Quem pede JSON quer ler o
 > diagnóstico, e um código de saída diferente de zero faz o chamador descartar

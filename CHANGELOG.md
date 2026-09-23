@@ -11,6 +11,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **`ragx doctor` informa se o Ollama usa GPU ou CPU.** Quando o Ollama
+  responde e o modelo do projeto está baixado, o diagnóstico ganha a linha
+  `Ollama`, lida de `GET /api/ps`: "GPU (N MB de VRAM)", "CPU" ou
+  "processador ainda não medido (nenhum modelo carregado)". Se a consulta
+  falhar, a linha diz "não foi possível consultar o processador". É só
+  informação: a linha nunca falha o `doctor` nem muda o código de saída.
+
 - **Telemetria de chamadas MCP gravada em `.ragx/logs/mcp.jsonl`** — cada
   ferramenta MCP registra um JSON line com `ts`, `tool`, `ms` (latência),
   `project` e (para `build_context` apenas) `tokens_delivered`. Queries e
@@ -85,8 +92,7 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   última linha quebrada em 80 colunas, e um comando que não existe aparece
   como "Comando não encontrado".
 
-  A tela Conexões mostra três cards (RAGX CLI, Claude Code e Ollama no
-  Docker), cada um com o selo "Conectado", "Atenção" ou "Não conectado",
+  A tela Conexões mostra três cards (RAGX CLI, Claude Code e Ollama), cada um com o selo "Conectado", "Atenção" ou "Não conectado",
   os fatos da checagem (versão e local do ragx, projetos onde o RAGX está
   registrado, última chamada MCP, modelos instalados e projetos que
   dependem deles), a ajuda em bloco de texto que dá para copiar e as
@@ -98,6 +104,28 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   não como "não está rodando". Antes da primeira resposta os cards ficam em
   "Verificando…", nunca verdes. RAGX registrado no Claude Code só no
   escopo de um projeto aparece como "Atenção", não como conectado.
+
+  O card de Ollama funciona com o Ollama no Docker ou instalado na máquina.
+  "Conectado" passa a significar API respondendo e modelos baixados, não
+  "existe um container". O card mostra o modo (Docker ou local), o
+  processador (GPU ou CPU) e a velocidade em chunks/s, medida por um
+  benchmark curto que só roda quando a pessoa pede ("Medir velocidade"). O
+  painel detecta Docker, GPU e Ollama nativo e recomenda um modo (no macOS e
+  com GPU AMD, o local; com GPU NVIDIA e Docker, o container com acesso à
+  GPU); a recomendação é sempre substituível, e o modo escolhido fica
+  guardado. Trocar de modo é uma tarefa da fila (para o outro modo, cria ou
+  inicia o escolhido e baixa os modelos que os projetos usam), assim como
+  "Parar" e "Iniciar", e "Iniciar" respeita o modo escolhido. Os dois modos
+  de pé ao mesmo tempo aparecem como conflito na porta 11434. No Windows, o
+  painel instala o Ollama local sozinho, por usuário e via winget; em
+  macOS e Linux ele mostra o link de download. Numa RX 7700 XT, o Ollama
+  local passou de 12,1 chunks/s (Docker, CPU) para 85,2 e 114,3 chunks/s
+  (GPU).
+
+  O card de projeto confirma que a ação entrou na fila ("Adicionado à
+  fila"), desabilita o botão enquanto há tarefa do mesmo tipo ativa para o
+  projeto e mostra o motivo quando a tarefa falha, em vez de só a fila
+  mostrar.
 
   Na primeira abertura, ou com o hub vazio, o painel começa pela
   configuração inicial: quatro passos (como o RAGX funciona, conexões,

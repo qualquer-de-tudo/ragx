@@ -29,10 +29,12 @@ instalado no sistema. Tema sempre escuro; título da janela "RAGX Painel".
   estimada sob demanda (`ragx trial`), os achados de segurança sob demanda
   (`ragx security scan`) e "Remover do hub" (com segundo clique; nada é
   apagado no disco).
-- **Conexões**: três cards (RAGX CLI, Claude Code e Ollama no Docker), cada
+- **Conexões**: três cards (RAGX CLI, Claude Code e Ollama), cada
   um com o selo "Conectado", "Atenção" ou "Não conectado", os fatos da
   checagem e as correções de um clique ("Registrar para todos os
-  projetos", "Iniciar container", "Baixar nomic-embed-text"). O painel
+  projetos", "Iniciar container", "Baixar nomic-embed-text"). O card do
+  Ollama mostra o modo (Docker ou local), o processador (GPU ou CPU) e a
+  velocidade em chunks/s (ver "Ollama: Docker ou local"). O painel
   confere as três a cada 30 segundos, na hora com "Verificar agora" e logo
   depois que uma correção termina.
 - **Como funciona**: repete a explicação do primeiro passo da configuração
@@ -131,7 +133,7 @@ registro do hub também falha, com o motivo. O texto de erro vem do bloco
 `erro:` do stderr (os processos rodam com `COLUMNS=500` para o Rich não
 quebrar a mensagem), e comandos globais rodam na pasta do usuário.
 
-O catálogo é fechado: só estes 13 tipos existem, e cada um sabe qual
+O catálogo é fechado: só estes 16 tipos existem, e cada um sabe qual
 comando roda.
 
 | `kind`            | Comando                                                                                                                |
@@ -147,8 +149,59 @@ comando roda.
 | `hooks-uninstall` | `ragx hooks uninstall <pasta>`                                                                                          |
 | `remove-from-hub` | `ragx project unregister -- <nome>`                                                                                    |
 | `mcp-register`    | `ragx mcp install --client claude-code`                                                                                |
-| `ollama-start`    | `docker start ollama`                                                                                                  |
-| `ollama-pull`     | `docker exec ollama ollama pull <modelo>`                                                                              |
+| `ollama-start`    | segue o modo: `docker start ollama` (Docker) ou `ollama serve` destacado e espera da API (local)                       |
+| `ollama-pull`     | segue o modo: `docker exec ollama ollama pull <modelo>` (Docker) ou `ollama pull <modelo>` (local)                     |
+| `ollama-use-native` | `docker stop ollama` (se estiver rodando), `winget install -e --id Ollama.Ollama --silent --accept-package-agreements --accept-source-agreements` (se não estiver instalado), `ollama serve` destacado (se não estiver rodando), espera da API e `ollama pull <modelo>` para cada modelo em uso |
+| `ollama-use-docker` | encerra o Ollama local (`taskkill /IM "ollama app.exe" /T /F` e `/IM ollama.exe`, ou `pkill -x ollama`), `docker start ollama` (se o container existe) ou `docker run -d --name ollama -p 11434:11434 -v ollama:/root/.ollama --restart unless-stopped [--gpus all] ollama/ollama` (se não existe), espera da API e `docker exec ollama ollama pull <modelo>` para cada modelo em uso |
+| `ollama-stop`     | `docker stop ollama` (se estiver rodando) e o encerramento do Ollama local (mesmos comandos de `ollama-use-docker`)     |
+
+## Ollama: Docker ou local
+
+O RAGX fala com o Ollama em `http://localhost:11434` (`/api/embed`,
+`/api/tags`), seja um container Docker ou uma instalação na máquina, então
+nada muda na configuração do RAGX entre os modos. Toda a novidade fica no
+painel, no processo principal (`electron/ollama/`).
+
+**Detecção.** O painel detecta, a cada checagem de conexões, o Docker
+(instalado, rodando, container `ollama` existente ou parado), a placa de
+vídeo (`nvidia`, `amd`, `intel`, `apple`, `none` ou `unknown`), o Ollama
+local (instalado ou respondendo) e a API na porta 11434. O modo é um fato
+detectado, não uma preferência: `docker` (container rodando), `native`
+(Ollama local respondendo), `none` (nada responde) ou `conflict` (os dois de
+pé, disputando a porta). "Conectado" significa API respondendo e modelos
+baixados, não "existe um container".
+
+**Recomendação.** Sempre substituível, com o motivo mostrado no card:
+
+| Situação | Recomendado |
+| --- | --- |
+| macOS | local (o Docker não usa a GPU no macOS) |
+| GPU NVIDIA e Docker instalado | Docker (container com `--gpus all`) |
+| GPU NVIDIA sem Docker | local |
+| GPU AMD, em qualquer sistema | local (o Docker não repassa GPU AMD) |
+| GPU Intel, nenhuma ou desconhecida | Docker se instalado, senão local |
+
+**Tarefas.** Trocar de modo é uma tarefa da fila: `ollama-use-native` e
+`ollama-use-docker` param o outro modo, instalam, criam ou iniciam o
+escolhido, esperam a API e baixam os modelos que os projetos usam (cada
+passo só roda se ainda for necessário, decidido na hora); `ollama-stop`
+para os dois modos e não apaga nada (o container, o volume dos modelos e a
+instalação local ficam). `ollama-start` e `ollama-pull`, que já existiam,
+agora seguem o modo detectado. O modo escolhido por último fica guardado nas
+configurações do painel, e "Iniciar" sobe esse modo (se ele estiver
+disponível na máquina). O renderer pede só o tipo de tarefa (mais o modelo,
+validado por `MODEL_PATTERN`); nenhum comando ou argumento livre.
+
+**Benchmark.** "Medir velocidade" não é tarefa da fila: manda 64 textos para
+`/api/embed`, consulta `/api/ps` e mostra chunks/s e o processador (`gpu`
+quando o modelo está na VRAM, `cpu` quando não, `unknown` quando não deu para
+saber). Só roda quando a pessoa pede, e o painel guarda o último resultado
+em memória para mostrá-lo no card.
+
+**Instalação automática.** Só existe no Windows: `ollama-use-native` roda
+`winget install -e --id Ollama.Ollama --silent`, por usuário, sem
+elevação. Em macOS e Linux o painel recusa a instalação e mostra o link
+https://ollama.com/download.
 
 ## Estrutura
 
