@@ -34,7 +34,10 @@ describe('runRagxCommand', () => {
     const result = await runRagxCommand('C:\\projeto', ['trial', '--json'])
 
     expect(result).toEqual({ ok: true, n: 3 })
-    expect(spawn).toHaveBeenCalledWith('ragx', ['trial', '--json'], { cwd: 'C:\\projeto' })
+    expect(spawn).toHaveBeenCalledWith(expect.any(String), ['trial', '--json'], {
+      cwd: 'C:\\projeto',
+      windowsHide: true,
+    })
   })
 
   it('rejeita quando o comando sai com codigo diferente de zero e stdout nao e JSON valido', async () => {

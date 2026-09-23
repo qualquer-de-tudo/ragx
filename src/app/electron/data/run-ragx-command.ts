@@ -1,10 +1,11 @@
 import { spawn } from 'node:child_process'
+import { ragxCommand } from '../system/ragx-exe'
 
 const TIMEOUT_MS = 60_000
 
 export function runRagxCommand(cwd: string, args: string[]): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const child = spawn('ragx', args, { cwd })
+    const child = spawn(ragxCommand(), args, { cwd, windowsHide: true })
     let stdout = ''
     let stderr = ''
     let settled = false
