@@ -14,6 +14,8 @@ export interface SpawnOptions {
    * painel e `onExit(0)` chega assim que ele nasce, sem esperar terminar.
    */
   detached?: boolean
+  /** Variáveis somadas ao ambiente do processo (`Step.env`); nunca vão para o texto do comando. */
+  env?: Record<string, string>
 }
 
 export type SpawnFn = (cmd: string, args: string[], cwd: string | null, opts?: SpawnOptions) => ChildLike
@@ -63,7 +65,11 @@ const MAX_STDERR_LINES = 50
 const MAX_FINISHED_HISTORY = 20
 const MAX_ERROR_LENGTH = 300
 
-/** `IndexBusyError.exit_code` no core (`ragx sync`, `graph`, `dictionary` com a trava ocupada). */
+/**
+ * `IndexBusyError.exit_code` no core (`ragx sync`, `graph`, `dictionary` com
+ * a trava ocupada). Só vale para passos `ragx`: o 4 de outro programa
+ * (`docker`, `winget`) é um erro comum.
+ */
 const BUSY_EXIT_CODE = 4
 const BUSY_EXIT_NOTE = 'Outra indexação estava rodando. Tente de novo quando ela terminar.'
 const NO_GIT_NOTE = 'Sem hooks: a pasta não é um repositório git.'
@@ -392,11 +398,15 @@ export class JobQueue {
       return
     }
 
+    const opts: SpawnOptions = {}
+    if (step.detached) opts.detached = true
+    if (step.env !== undefined) opts.env = { ...step.env }
     let child: ChildLike
     try {
-      child = step.detached
-        ? this.deps.spawn(step.cmd, step.args, step.cwd, { detached: true })
-        : this.deps.spawn(step.cmd, step.args, step.cwd)
+      child =
+        Object.keys(opts).length > 0
+          ? this.deps.spawn(step.cmd, step.args, step.cwd, opts)
+          : this.deps.spawn(step.cmd, step.args, step.cwd)
     } catch (err) {
       this.fail(job, `Não foi possível iniciar ${step.cmd}: ${errorMessage(err)}`.slice(0, MAX_ERROR_LENGTH))
       return
@@ -537,14 +547,14 @@ export class JobQueue {
       return
     }
 
-    // `okExitCodes`: ex.: `taskkill` 128 / `pkill` 1 = nada a encerrar, o que
-    // não pode derrubar a tarefa inteira.
+    // `okExitCodes`: ex.: `pkill` 1 = nada a encerrar, o que não pode
+    // derrubar a tarefa inteira.
     if (code === 0 || (code !== null && step.okExitCodes?.includes(code) === true)) {
       this.stepSucceeded(job)
       return
     }
 
-    if (code === BUSY_EXIT_CODE) {
+    if (code === BUSY_EXIT_CODE && step.cmd === 'ragx') {
       this.addNote(job, BUSY_EXIT_NOTE)
       this.end(job, 'done')
       return
@@ -691,7 +701,8 @@ export interface ResolveCommandDeps {
  *   tem o PATH completo). `ollamaCommand()` não guarda um "não achei": logo
  *   depois do `winget install` o PATH deste processo continua velho, e o
  *   passo `ollama serve` seguinte precisa achar o recém-instalado.
- * - `taskkill` no Windows: `%SystemRoot%\System32\taskkill.exe`, sem
+ * - `powershell` no Windows:
+ *   `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`, sem
  *   depender do PATH; sem `SystemRoot`, o nome nu.
  * - O resto (`docker`, `winget`, `pkill`) fica como está: `winget` mora em
  *   WindowsApps, que está no PATH.
@@ -699,10 +710,12 @@ export interface ResolveCommandDeps {
 export function resolveSpawnCommand(cmd: string, deps: ResolveCommandDeps = {}): string {
   if (cmd === 'ragx') return (deps.ragx ?? ragxCommand)()
   if (cmd === 'ollama') return (deps.ollama ?? ollamaCommand)()
-  if (cmd === 'taskkill') {
+  if (cmd === 'powershell') {
     const platform = deps.platform ?? process.platform
     const systemRoot = (deps.env ?? process.env).SystemRoot
-    if (platform === 'win32' && systemRoot) return path.win32.join(systemRoot, 'System32', 'taskkill.exe')
+    if (platform === 'win32' && systemRoot) {
+      return path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+    }
   }
   return cmd
 }
@@ -713,12 +726,18 @@ export function resolveSpawnCommand(cmd: string, deps: ResolveCommandDeps = {}):
  * Avisa `onExit(0)` no evento `spawn` (nasceu) ou `onExit(null, texto)` no
  * `error`; nunca espera o processo terminar, e `kill()` não faz nada.
  */
-function spawnDetached(resolvedCmd: string, args: string[], workDir: string): ChildLike {
+function spawnDetached(
+  resolvedCmd: string,
+  args: string[],
+  workDir: string,
+  extraEnv: Record<string, string> | undefined,
+): ChildLike {
   const child = nodeSpawn(resolvedCmd, args, {
     cwd: workDir,
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
+    env: { ...process.env, ...extraEnv },
   })
   child.unref()
 
@@ -749,7 +768,8 @@ function spawnDetached(resolvedCmd: string, args: string[], workDir: string): Ch
 /**
  * `spawn` real, sem shell (obrigatório - ver global-constraints.md).
  * `cmd` passa por `resolveSpawnCommand` (caminho absoluto de `ragx`,
- * `ollama` e `taskkill`); `opts.detached` vai para `spawnDetached`.
+ * `ollama` e `powershell`); `opts.detached` vai para `spawnDetached`, e
+ * `opts.env` é somado ao ambiente herdado.
  *
  * - `cwd` `null` (comandos globais: `init`, `mcp install`, `project
  *   unregister`, `docker`) roda na pasta do usuário, nunca no cwd do Electron.
@@ -765,12 +785,12 @@ export function defaultSpawn(): SpawnFn {
   return (cmd, args, cwd, opts) => {
     const resolvedCmd = resolveSpawnCommand(cmd)
     const workDir = cwd ?? os.homedir()
-    if (opts?.detached === true) return spawnDetached(resolvedCmd, args, workDir)
+    if (opts?.detached === true) return spawnDetached(resolvedCmd, args, workDir, opts.env)
 
     const child = nodeSpawn(resolvedCmd, args, {
       cwd: workDir,
       windowsHide: true,
-      env: { ...process.env, COLUMNS: '500' },
+      env: { ...process.env, COLUMNS: '500', ...opts?.env },
     })
 
     let outCb: (line: string) => void = () => {}

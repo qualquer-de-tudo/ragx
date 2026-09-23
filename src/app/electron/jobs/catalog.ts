@@ -1,3 +1,5 @@
+import path from 'node:path'
+import { chooseStartMode } from '../ollama/choose-start'
 import type { JobKind, JobRequest, OllamaEnvironment } from '../../src/types/ragx-bridge'
 
 export type StepCondition =
@@ -9,7 +11,7 @@ export type StepCondition =
   | 'native-not-running'
 
 export interface Step {
-  cmd: 'ragx' | 'docker' | 'ollama' | 'winget' | 'taskkill' | 'pkill'
+  cmd: 'ragx' | 'docker' | 'ollama' | 'winget' | 'powershell' | 'pkill'
   args: string[]
   cwd: string | null
   progress: boolean
@@ -24,10 +26,16 @@ export interface Step {
   detached?: boolean
   /** Passo sem processo: espera `GET /api/tags` responder (até `timeoutMs`). */
   waitForOllamaApi?: { timeoutMs: number }
-  /** Códigos de saída que contam como sucesso além de 0 (ex.: `taskkill` 128 = nada a encerrar). */
+  /** Códigos de saída que contam como sucesso além de 0 (ex.: `pkill` 1 = nada a encerrar). */
   okExitCodes?: number[]
   /** Nota registrada no job quando o passo é pulado por `when`. */
   skipNote?: string
+  /**
+   * Variáveis somadas ao ambiente do processo. É por aqui que um dado da
+   * máquina (ex.: a pasta do Ollama local) chega a um script, nunca
+   * interpolado no texto do comando.
+   */
+  env?: Record<string, string>
 }
 
 export interface ResolvedJob {
@@ -148,15 +156,49 @@ function waitApiStep(): Step {
   return { ...plainStep('ollama', []), waitForOllamaApi: { timeoutMs: 60000 } }
 }
 
-/** Encerra o Ollama nativo: `taskkill` das duas imagens no Windows, `pkill` nos demais. */
+/**
+ * Encerra, no Windows, só o Ollama instalado na pasta `OLLAMA_DIR` (a do
+ * executável detectado): `ollama.exe` e `ollama app.exe` (a bandeja) cujo
+ * `ExecutablePath` começa nessa pasta. Outro app que traz o seu próprio
+ * `ollama.exe` (ex.: AnythingLLM) fica de fora, o que um `taskkill /IM`
+ * não garantia.
+ *
+ * A pasta chega pelo ambiente do processo (`Step.env`), nunca dentro deste
+ * texto. `StartsWith` com `OrdinalIgnoreCase` compara sem curingas (um `[`
+ * no caminho não vira padrão, como viraria no `-like`), e a barra no fim
+ * impede `...\Ollama` de casar com `...\Ollama2`. Pasta vazia: não encerra
+ * nada. Sai com 1 só se algum desses processos continuar vivo depois.
+ */
+export const STOP_NATIVE_WINDOWS_SCRIPT = [
+  '$d = $env:OLLAMA_DIR',
+  'if (-not $d) { exit 0 }',
+  "$d = $d.TrimEnd('\\') + '\\'",
+  "$names = @('ollama.exe', 'ollama app.exe')",
+  'function Get-Alvos { @(Get-CimInstance Win32_Process | Where-Object { $names -contains $_.Name -and $_.ExecutablePath -and $_.ExecutablePath.StartsWith($d, [System.StringComparison]::OrdinalIgnoreCase) }) }',
+  'Get-Alvos | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
+  'Start-Sleep -Milliseconds 500',
+  "if ((Get-Alvos).Count -gt 0) { [Console]::Error.WriteLine('O Ollama local continua rodando.'); exit 1 }",
+  'exit 0',
+].join('; ')
+
+/**
+ * Encerra o Ollama nativo: no Windows, um passo de PowerShell que só mata o
+ * Ollama da pasta detectada (sem caminho conhecido, não há passo); nos
+ * demais, `pkill -x ollama` (1 = nada a encerrar).
+ */
 function stopNativeSteps(env: OllamaEnvironment | null): Step[] {
   const win = (env?.platform ?? process.platform) === 'win32'
   if (!win) {
     return [{ ...plainStep('pkill', ['-x', 'ollama']), when: 'native-running', okExitCodes: [1] }]
   }
+  const exe = env?.native.path ?? null
+  if (exe === null) return []
   return [
-    { ...plainStep('taskkill', ['/IM', 'ollama app.exe', '/T', '/F']), when: 'native-running', okExitCodes: [128] },
-    { ...plainStep('taskkill', ['/IM', 'ollama.exe', '/T', '/F']), when: 'native-running', okExitCodes: [128] },
+    {
+      ...plainStep('powershell', ['-NoProfile', '-NonInteractive', '-Command', STOP_NATIVE_WINDOWS_SCRIPT]),
+      when: 'native-running',
+      env: { OLLAMA_DIR: path.win32.dirname(exe) },
+    },
   ]
 }
 
@@ -289,10 +331,8 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
     let steps: Step[] = [plainStep('docker', ['start', 'ollama'])]
     let label = 'Iniciar o container ollama'
     if (env !== null) {
-      const available = (m: 'docker' | 'native' | null | undefined): boolean =>
-        m === 'docker' ? env.container.exists : m === 'native' ? env.native.installed : false
-      const candidates = [ctx.preferredOllamaMode?.() ?? null, env.recommendation.mode, 'docker', 'native'] as const
-      const chosen = candidates.find((m) => available(m))
+      // A mesma escolha dá o texto do botão na checagem de conexões.
+      const chosen = chooseStartMode(env, ctx.preferredOllamaMode?.() ?? null)
       if (chosen === 'docker') {
         steps = [{ ...plainStep('docker', ['start', 'ollama']), when: 'container-exists' }]
       } else if (chosen === 'native') {
@@ -311,8 +351,9 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
       )
     }
     const { models, notes } = requiredModelsOf(ctx)
+    // Instala ANTES de parar o container: se o `winget` falhar (o passo lento
+    // e arriscado), o Docker continua servindo e a máquina nunca fica sem Ollama.
     const steps: Step[] = [
-      { ...plainStep('docker', ['stop', 'ollama']), when: 'container-running', okExitCodes: [] },
       {
         ...plainStep('winget', [
           'install',
@@ -325,6 +366,7 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
         ]),
         when: 'native-missing',
       },
+      { ...plainStep('docker', ['stop', 'ollama']), when: 'container-running', okExitCodes: [] },
       serveStep(),
       waitApiStep(),
       ...models.map((m) => plainStep('ollama', ['pull', m])),
@@ -337,10 +379,18 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
     if (env !== null && !env.docker.installed) {
       throw new JobRejected('O Docker não está instalado nesta máquina.')
     }
+    // Docker parado: o `docker run` falharia DEPOIS de o Ollama local já ter
+    // sido encerrado. Recusa antes de mexer em qualquer coisa.
+    if (env !== null && !env.docker.running) {
+      throw new JobRejected('Abra o Docker Desktop e aguarde ele iniciar.')
+    }
     const { models, notes } = requiredModelsOf(ctx)
     // `--gpus all` precisa vir ANTES da imagem: depois dela viraria argumento do container.
     const gpu = env?.gpu.vendor === 'nvidia' ? ['--gpus', 'all'] : []
     const steps: Step[] = [
+      // A imagem (o download lento) vem enquanto o Ollama local ainda serve:
+      // uma falha de rede aqui não deixa a máquina sem nenhum Ollama.
+      { ...plainStep('docker', ['pull', 'ollama/ollama']), when: 'container-missing' },
       ...stopNativeSteps(env),
       { ...plainStep('docker', ['start', 'ollama']), when: 'container-exists' },
       {

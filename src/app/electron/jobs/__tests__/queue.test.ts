@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -9,7 +10,7 @@ import {
   type SpawnFn,
   type QueueDeps,
 } from '../queue'
-import { resolveJob, type ResolvedJob, type Step, type StepCondition } from '../catalog'
+import { resolveJob, STOP_NATIVE_WINDOWS_SCRIPT, type ResolvedJob, type Step, type StepCondition } from '../catalog'
 import type { JobView, OllamaEnvironment } from '../../../src/types/ragx-bridge'
 
 function fakeSpawn() {
@@ -21,7 +22,7 @@ function fakeSpawn() {
     err: (l: string) => void
     exit: (c: number | null, spawnError?: string) => void
     killed: boolean
-    opts?: { detached?: boolean }
+    opts?: { detached?: boolean; env?: Record<string, string> }
   }> = []
   const spawn: SpawnFn = (cmd, args, cwd, opts) => {
     let out: (l: string) => void = () => {}
@@ -616,6 +617,26 @@ describe('JobQueue - código de saída 4 (ocupado)', () => {
     children[0].exit(4)
     expect(children).toHaveLength(1)
   })
+
+  it('só vale para o ragx: um docker que sai com 4 é falha', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(
+      ollamaJob([
+        { cmd: 'docker', args: ['start', 'ollama'], ...P },
+        { cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', 'm'], ...P },
+      ]),
+    )
+    children[0].err('Error response from daemon: algo deu errado')
+    children[0].exit(4)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.note).toBeNull()
+    expect(view.error).toBe('Error response from daemon: algo deu errado')
+    expect(children).toHaveLength(1)
+  })
 })
 
 describe('JobQueue - texto do erro', () => {
@@ -793,6 +814,18 @@ describe('defaultSpawn - ambiente, cwd e erros', () => {
     const script = 'console.log(process.env.COLUMNS); console.log(process.env.PATH || process.env.Path ? "path" : "sem")'
     const { lines } = await run(process.execPath, ['-e', script], null)
     expect(lines).toEqual(['500', 'path'])
+  })
+
+  it('opts.env soma variáveis ao ambiente do processo, sem perder COLUMNS nem o PATH', async () => {
+    const script =
+      'console.log(process.env.OLLAMA_DIR); console.log(process.env.COLUMNS); console.log(process.env.PATH || process.env.Path ? "path" : "sem")'
+    const child = defaultSpawn()(process.execPath, ['-e', script], null, { env: { OLLAMA_DIR: 'C:\\x\\Ollama' } })
+    const lines: string[] = []
+    await new Promise<void>((resolve) => {
+      child.onStdoutLine((l) => lines.push(l))
+      child.onExit(() => resolve())
+    })
+    expect(lines).toEqual(['C:\\x\\Ollama', '500', 'path'])
   })
 
   it('cwd null roda na pasta do usuário, não no cwd do Electron', async () => {
@@ -1238,7 +1271,7 @@ describe('JobQueue - ponta a ponta com o catálogo real', () => {
     requiredModels: () => models,
   })
 
-  it('ollama-use-native com o Docker em uso: stop, winget, serve destacado, espera sem processo, pull', async () => {
+  it('ollama-use-native com o Docker em uso: winget, stop, serve destacado, espera sem processo, pull', async () => {
     const log: string[] = []
     const { spawn: rawSpawn, children } = fakeSpawn()
     const spawn: SpawnFn = (cmd, args, cwd, opts) => {
@@ -1261,7 +1294,6 @@ describe('JobQueue - ponta a ponta com o catálogo real', () => {
     await flush()
 
     expect(children.map((c) => ({ cmd: c.cmd, args: c.args, opts: c.opts }))).toEqual([
-      { cmd: 'docker', args: ['stop', 'ollama'], opts: undefined },
       {
         cmd: 'winget',
         args: [
@@ -1275,14 +1307,15 @@ describe('JobQueue - ponta a ponta com o catálogo real', () => {
         ],
         opts: undefined,
       },
+      { cmd: 'docker', args: ['stop', 'ollama'], opts: undefined },
       { cmd: 'ollama', args: ['serve'], opts: { detached: true } },
       { cmd: 'ollama', args: ['pull', 'nomic-embed-text'], opts: undefined },
     ])
     expect(log).toEqual([
-      'cond:container-running',
-      'spawn:docker',
       'cond:native-missing',
       'spawn:winget',
+      'cond:container-running',
+      'spawn:docker',
       'cond:native-not-running',
       'spawn:ollama',
       'wait:60000',
@@ -1305,18 +1338,111 @@ describe('JobQueue - ponta a ponta com o catálogo real', () => {
     expect(findView(queue.list(), j.id).state).toBe('done')
   })
 
-  it('ollama-stop: taskkill de algo que parou entre a checagem e o passo (128) não derruba a tarefa', async () => {
+  it('ollama-use-native falhando no winget: o container nunca é parado', async () => {
+    const { spawn, children } = fakeSpawn()
+    const stepCondition = conditions({ 'container-running': true, 'native-missing': true, 'native-not-running': true })
+    const { queue } = makeQueue(spawn, { stepCondition })
+
+    const j = queue.enqueue(resolveJob({ kind: 'ollama-use-native' }, catalogCtx([])))
+    await flush()
+    children[0].exit(1)
+    await flush()
+
+    expect(children.map((c) => c.cmd)).toEqual(['winget'])
+    expect(findView(queue.list(), j.id).state).toBe('failed')
+  })
+
+  const NATIVE_EXE = 'C:\\Users\\ana\\AppData\\Local\\Programs\\Ollama\\ollama.exe'
+  const NATIVE_DIR = 'C:\\Users\\ana\\AppData\\Local\\Programs\\Ollama'
+  const nativeCtx = (over: Partial<OllamaEnvironment> = {}) => ({
+    ...catalogCtx([]),
+    ollamaEnv: () => ({ ...dockerEnv(), native: { installed: true, path: NATIVE_EXE, running: true }, ...over }),
+  })
+
+  it('ollama-stop no Windows: um passo de PowerShell com a pasta no ambiente do processo', async () => {
     const { spawn, children } = fakeSpawn()
     const { queue } = makeQueue(spawn, { stepCondition: conditions({ 'native-running': true }) })
 
-    const j = queue.enqueue(resolveJob({ kind: 'ollama-stop' }, catalogCtx([])))
+    const j = queue.enqueue(resolveJob({ kind: 'ollama-stop' }, nativeCtx()))
     await flush()
-    children[0].exit(128)
-    await flush()
-    children[1].exit(128)
+    expect(children).toHaveLength(1)
+    expect(children[0].cmd).toBe('powershell')
+    expect(children[0].args).toEqual(['-NoProfile', '-NonInteractive', '-Command', STOP_NATIVE_WINDOWS_SCRIPT])
+    expect(children[0].opts).toEqual({ env: { OLLAMA_DIR: NATIVE_DIR } })
+    expect(children[0].args.join(' ')).not.toContain(NATIVE_DIR)
+    children[0].exit(0)
 
-    expect(children.map((c) => c.cmd)).toEqual(['taskkill', 'taskkill'])
     expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('ollama-stop no Windows: o Ollama local que continua vivo (saída 1) derruba a tarefa', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { stepCondition: conditions({ 'native-running': true }) })
+
+    const j = queue.enqueue(resolveJob({ kind: 'ollama-stop' }, nativeCtx()))
+    await flush()
+    children[0].err('O Ollama local continua rodando.')
+    children[0].exit(1)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('O Ollama local continua rodando.')
+  })
+
+  it('ollama-use-docker sem container: baixa a imagem, para o local, cria, espera e baixa o modelo', async () => {
+    const log: string[] = []
+    const { spawn: rawSpawn, children } = fakeSpawn()
+    const spawn: SpawnFn = (cmd, args, cwd, opts) => {
+      log.push(`spawn:${cmd}:${args[0] ?? ''}`)
+      return rawSpawn(cmd, args, cwd, opts)
+    }
+    const stepCondition = conditions({ 'container-missing': true, 'native-running': true }, log)
+    const waitForOllamaApi = vi.fn(async (ms: number) => {
+      log.push(`wait:${ms}`)
+      return true
+    })
+    const { queue } = makeQueue(spawn, { stepCondition, waitForOllamaApi })
+
+    const ctx = {
+      ...nativeCtx({ container: { exists: false, running: false }, mode: 'native' }),
+      requiredModels: () => ['m1'],
+    }
+    const j = queue.enqueue(resolveJob({ kind: 'ollama-use-docker' }, ctx))
+    for (let i = 0; i < 4; i++) {
+      await flush()
+      children[i].exit(0)
+    }
+    await flush()
+
+    expect(log).toEqual([
+      'cond:container-missing',
+      'spawn:docker:pull',
+      'cond:native-running',
+      'spawn:powershell:-NoProfile',
+      'cond:container-exists',
+      'cond:container-missing',
+      'spawn:docker:run',
+      'wait:60000',
+      'spawn:docker:exec',
+    ])
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('ollama-use-docker: falha ao baixar a imagem não encerra o Ollama local', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, {
+      stepCondition: conditions({ 'container-missing': true, 'native-running': true }),
+    })
+
+    const j = queue.enqueue(
+      resolveJob({ kind: 'ollama-use-docker' }, nativeCtx({ container: { exists: false, running: false } })),
+    )
+    await flush()
+    children[0].exit(1)
+    await flush()
+
+    expect(children.map((c) => c.cmd)).toEqual(['docker'])
+    expect(findView(queue.list(), j.id).state).toBe('failed')
   })
 })
 
@@ -1332,21 +1458,21 @@ describe('resolveSpawnCommand', () => {
     expect(resolveSpawnCommand('ollama', deps)).toBe('C:/o/ollama.exe')
   })
 
-  it('taskkill no Windows vem de %SystemRoot%\\System32', () => {
-    expect(resolveSpawnCommand('taskkill', { ...base, platform: 'win32', env: { SystemRoot: 'C:\\Windows' } })).toBe(
-      path.win32.join('C:\\Windows', 'System32', 'taskkill.exe'),
+  it('powershell no Windows vem de %SystemRoot%\\System32\\WindowsPowerShell\\v1.0', () => {
+    expect(resolveSpawnCommand('powershell', { ...base, platform: 'win32', env: { SystemRoot: 'C:\\Windows' } })).toBe(
+      path.win32.join('C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
     )
   })
 
-  it('taskkill sem SystemRoot, ou fora do Windows, fica com o nome nu', () => {
-    expect(resolveSpawnCommand('taskkill', { ...base, platform: 'win32', env: {} })).toBe('taskkill')
-    expect(resolveSpawnCommand('taskkill', { ...base, platform: 'linux', env: { SystemRoot: 'C:\\Windows' } })).toBe(
-      'taskkill',
-    )
+  it('powershell sem SystemRoot, ou fora do Windows, fica com o nome nu', () => {
+    expect(resolveSpawnCommand('powershell', { ...base, platform: 'win32', env: {} })).toBe('powershell')
+    expect(
+      resolveSpawnCommand('powershell', { ...base, platform: 'linux', env: { SystemRoot: 'C:\\Windows' } }),
+    ).toBe('powershell')
   })
 
-  it('winget, docker e pkill ficam como estão', () => {
-    for (const cmd of ['winget', 'docker', 'pkill']) {
+  it('winget, docker, pkill e taskkill ficam como estão', () => {
+    for (const cmd of ['winget', 'docker', 'pkill', 'taskkill']) {
       expect(resolveSpawnCommand(cmd, { ...base, platform: 'win32', env: { SystemRoot: 'C:\\Windows' } })).toBe(cmd)
     }
   })
@@ -1354,9 +1480,11 @@ describe('resolveSpawnCommand', () => {
 
 describe('defaultSpawn - destacado', () => {
   it('avisa onExit(0) assim que o processo nasce, sem esperar ele terminar', async () => {
-    // O filho vive 4 s e sai sozinho; o aviso precisa chegar bem antes disso.
+    // O filho vive 15 s e sai sozinho; o aviso precisa chegar bem antes disso.
+    // Limite folgado (10 s): uma máquina de CI lenta demora para criar o
+    // processo, mas nunca chega aos 15 s de vida dele.
     const started = Date.now()
-    const child = defaultSpawn()(process.execPath, ['-e', 'setTimeout(() => {}, 4000)'], null, { detached: true })
+    const child = defaultSpawn()(process.execPath, ['-e', 'setTimeout(() => {}, 15000)'], null, { detached: true })
 
     const result = await new Promise<{ code: number | null; spawnError?: string }>((resolve) => {
       child.onExit((code, spawnError) => resolve({ code, spawnError }))
@@ -1364,8 +1492,23 @@ describe('defaultSpawn - destacado', () => {
 
     expect(result.code).toBe(0)
     expect(result.spawnError).toBeUndefined()
-    expect(Date.now() - started).toBeLessThan(3000)
+    expect(Date.now() - started).toBeLessThan(10000)
   })
+
+  it('opts.env chega ao processo destacado', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ragx-spawn-env-'))
+    const out = path.join(dir, 'env.txt')
+    const script = 'require("fs").writeFileSync(process.env.OUT_FILE, String(process.env.OLLAMA_DIR))'
+    const child = defaultSpawn()(process.execPath, ['-e', script], null, {
+      detached: true,
+      env: { OUT_FILE: out, OLLAMA_DIR: 'C:\\x\\Ollama' },
+    })
+    await new Promise<void>((resolve) => child.onExit(() => resolve()))
+    const deadline = Date.now() + 10000
+    while (!fs.existsSync(out) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 50))
+    expect(fs.readFileSync(out, 'utf-8')).toBe('C:\\x\\Ollama')
+    fs.rmSync(dir, { recursive: true, force: true })
+  }, 15000)
 
   it('comando inexistente destacado: onExit(null, "Comando não encontrado: ...")', async () => {
     const child = defaultSpawn()('ragx-comando-que-nao-existe-xyz', [], null, { detached: true })

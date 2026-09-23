@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveJob, JobRejected, type CatalogContext } from '../catalog'
+import { resolveJob, JobRejected, STOP_NATIVE_WINDOWS_SCRIPT, type CatalogContext } from '../catalog'
 import type { JobRequest, OllamaEnvironment } from '../../../src/types/ragx-bridge'
 
 function ctx(over: Partial<CatalogContext> = {}): CatalogContext {
@@ -43,7 +43,6 @@ describe('resolveJob - ollama-use-native', () => {
     expect(job.model).toBeNull()
     expect(job.dedupeKey).toBe('ollama-use-native||')
     expect(job.steps).toEqual([
-      { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running', okExitCodes: [] },
       {
         cmd: 'winget',
         args: [
@@ -58,10 +57,19 @@ describe('resolveJob - ollama-use-native', () => {
         ...P,
         when: 'native-missing',
       },
+      { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running', okExitCodes: [] },
       SERVE,
       WAIT,
       { cmd: 'ollama', args: ['pull', 'nomic-embed-text'], ...P },
     ])
+  })
+
+  it('instala antes de parar o container: uma falha do winget nunca deixa a máquina sem Ollama', () => {
+    const steps = resolveJob({ kind: 'ollama-use-native' }, ctx({ ollamaEnv: () => env() })).steps
+    const winget = steps.findIndex((s) => s.cmd === 'winget')
+    const stop = steps.findIndex((s) => s.cmd === 'docker' && s.args[0] === 'stop')
+    expect(winget).toBeGreaterThanOrEqual(0)
+    expect(winget).toBeLessThan(stop)
   })
 
   it('dois modelos requeridos geram dois pulls', () => {
@@ -100,8 +108,8 @@ describe('resolveJob - ollama-use-native', () => {
     })
     const steps = resolveJob({ kind: 'ollama-use-native' }, ctx({ ollamaEnv: () => e })).steps
     expect(steps).toEqual([
-      { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running', okExitCodes: [] },
       expect.objectContaining({ cmd: 'winget', when: 'native-missing' }),
+      { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running', okExitCodes: [] },
       SERVE,
       WAIT,
     ])
@@ -116,10 +124,18 @@ describe('resolveJob - ollama-use-native', () => {
 })
 
 describe('resolveJob - ollama-use-docker', () => {
-  const TASKKILLS = [
-    { cmd: 'taskkill', args: ['/IM', 'ollama app.exe', '/T', '/F'], ...P, when: 'native-running', okExitCodes: [128] },
-    { cmd: 'taskkill', args: ['/IM', 'ollama.exe', '/T', '/F'], ...P, when: 'native-running', okExitCodes: [128] },
-  ]
+  const NATIVE_EXE = 'C:\\Users\\ana\\AppData\\Local\\Programs\\Ollama\\ollama.exe'
+  const NATIVE_DIR = 'C:\\Users\\ana\\AppData\\Local\\Programs\\Ollama'
+  const withNative = (over: Partial<OllamaEnvironment> = {}): OllamaEnvironment =>
+    env({ native: { installed: true, path: NATIVE_EXE, running: true }, ...over })
+  const STOP_NATIVE_WIN = {
+    cmd: 'powershell',
+    args: ['-NoProfile', '-NonInteractive', '-Command', STOP_NATIVE_WINDOWS_SCRIPT],
+    ...P,
+    when: 'native-running',
+    env: { OLLAMA_DIR: NATIVE_DIR },
+  }
+  const PULL_IMAGE = { cmd: 'docker', args: ['pull', 'ollama/ollama'], ...P, when: 'container-missing' }
   const RUN_BASE = [
     'run',
     '-d',
@@ -133,12 +149,16 @@ describe('resolveJob - ollama-use-docker', () => {
     'unless-stopped',
   ]
 
-  it('Windows sem NVIDIA: dois taskkill, start, run sem --gpus, espera e pull', () => {
-    const job = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => env(), requiredModels: () => ['m1'] }))
+  it('Windows sem NVIDIA: baixa a imagem, para o local, start, run sem --gpus, espera e pull', () => {
+    const job = resolveJob(
+      { kind: 'ollama-use-docker' },
+      ctx({ ollamaEnv: () => withNative(), requiredModels: () => ['m1'] }),
+    )
     expect(job.label).toBe('Usar o Ollama no Docker')
     expect(job.dedupeKey).toBe('ollama-use-docker||')
     expect(job.steps).toEqual([
-      ...TASKKILLS,
+      PULL_IMAGE,
+      STOP_NATIVE_WIN,
       { cmd: 'docker', args: ['start', 'ollama'], ...P, when: 'container-exists' },
       { cmd: 'docker', args: [...RUN_BASE, 'ollama/ollama'], ...P, when: 'container-missing' },
       WAIT,
@@ -146,10 +166,38 @@ describe('resolveJob - ollama-use-docker', () => {
     ])
   })
 
-  it('Linux: pkill -x ollama no lugar dos taskkill', () => {
-    const job = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => env({ platform: 'linux' }) }))
-    expect(job.steps[0]).toEqual({ cmd: 'pkill', args: ['-x', 'ollama'], ...P, when: 'native-running', okExitCodes: [1] })
-    expect(job.steps.some((s) => s.cmd === 'taskkill')).toBe(false)
+  it('a imagem é baixada antes de parar o Ollama local', () => {
+    const steps = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => withNative() })).steps
+    const pull = steps.findIndex((s) => s.cmd === 'docker' && s.args[0] === 'pull')
+    const stop = steps.findIndex((s) => s.when === 'native-running')
+    expect(pull).toBeGreaterThanOrEqual(0)
+    expect(pull).toBeLessThan(stop)
+  })
+
+  it('Windows: o caminho do Ollama local só vai pelo ambiente do processo, nunca dentro do script', () => {
+    const steps = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => withNative() })).steps
+    const stop = steps.find((s) => s.cmd === 'powershell')!
+    expect(stop.env).toEqual({ OLLAMA_DIR: NATIVE_DIR })
+    expect(stop.args.join(' ')).not.toContain(NATIVE_DIR)
+    expect(stop.args.join(' ')).not.toContain('Programs')
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain('$env:OLLAMA_DIR')
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain("'ollama.exe'")
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain("'ollama app.exe'")
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain('Stop-Process')
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).toContain('ExecutablePath')
+    expect(STOP_NATIVE_WINDOWS_SCRIPT).not.toMatch(/taskkill/i)
+    expect(steps.some((s) => (s.cmd as string) === 'taskkill')).toBe(false)
+  })
+
+  it('Windows sem caminho do Ollama local: nenhum passo de encerrar', () => {
+    const steps = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => env() })).steps
+    expect(steps.some((s) => s.cmd === 'powershell' || s.when === 'native-running')).toBe(false)
+  })
+
+  it('Linux: pkill -x ollama no lugar do PowerShell', () => {
+    const job = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => withNative({ platform: 'linux' }) }))
+    expect(job.steps[1]).toEqual({ cmd: 'pkill', args: ['-x', 'ollama'], ...P, when: 'native-running', okExitCodes: [1] })
+    expect(job.steps.some((s) => s.cmd === 'powershell')).toBe(false)
   })
 
   it('NVIDIA: --gpus all presente e antes da imagem', () => {
@@ -157,7 +205,7 @@ describe('resolveJob - ollama-use-docker', () => {
       { kind: 'ollama-use-docker' },
       ctx({ ollamaEnv: () => env({ gpu: { vendor: 'nvidia', name: 'RTX' } }) }),
     )
-    const run = job.steps.find((s) => s.when === 'container-missing')
+    const run = job.steps.find((s) => s.args[0] === 'run')
     expect(run?.args).toEqual([...RUN_BASE, '--gpus', 'all', 'ollama/ollama'])
     expect(run!.args.indexOf('--gpus')).toBeLessThan(run!.args.indexOf('ollama/ollama'))
   })
@@ -167,7 +215,7 @@ describe('resolveJob - ollama-use-docker', () => {
       { kind: 'ollama-use-docker' },
       ctx({ ollamaEnv: () => env({ gpu: { vendor: 'amd', name: 'RX' } }) }),
     )
-    expect(job.steps.find((s) => s.when === 'container-missing')?.args).not.toContain('--gpus')
+    expect(job.steps.find((s) => s.args[0] === 'run')?.args).not.toContain('--gpus')
   })
 
   it('recusa sem Docker instalado', () => {
@@ -176,13 +224,21 @@ describe('resolveJob - ollama-use-docker', () => {
       'O Docker não está instalado nesta máquina.',
     )
   })
+
+  it('recusa com o Docker instalado mas parado, antes de parar o Ollama local', () => {
+    const e = withNative({ docker: { installed: true, running: false }, container: { exists: false, running: false } })
+    expect(() => resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => e }))).toThrow(
+      'Abra o Docker Desktop e aguarde ele iniciar.',
+    )
+  })
 })
 
 describe('resolveJob - conflict e model no pedido', () => {
   it('ollama-use-docker em conflict: mesmos passos', () => {
-    const conflict = env({ mode: 'conflict', native: { installed: true, path: 'x', running: true } })
+    const native = { installed: true, path: 'C:\\o\\ollama.exe', running: true }
+    const conflict = env({ mode: 'conflict', native })
     const a = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => conflict }))
-    const b = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => env() }))
+    const b = resolveJob({ kind: 'ollama-use-docker' }, ctx({ ollamaEnv: () => env({ native }) }))
     expect(a.steps).toEqual(b.steps)
   })
 
@@ -196,14 +252,28 @@ describe('resolveJob - conflict e model no pedido', () => {
 })
 
 describe('resolveJob - ollama-stop', () => {
-  it('Windows', () => {
-    const job = resolveJob({ kind: 'ollama-stop' }, ctx({ ollamaEnv: () => env() }))
+  it('Windows: um só passo de PowerShell, com a pasta do Ollama local pelo ambiente', () => {
+    const e = env({ native: { installed: true, path: 'D:\\Apps\\Ollama\\ollama.exe', running: true } })
+    const job = resolveJob({ kind: 'ollama-stop' }, ctx({ ollamaEnv: () => e }))
     expect(job.label).toBe('Parar o Ollama')
     expect(job.dedupeKey).toBe('ollama-stop||')
     expect(job.steps).toEqual([
       { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running', okExitCodes: [] },
-      { cmd: 'taskkill', args: ['/IM', 'ollama app.exe', '/T', '/F'], ...P, when: 'native-running', okExitCodes: [128] },
-      { cmd: 'taskkill', args: ['/IM', 'ollama.exe', '/T', '/F'], ...P, when: 'native-running', okExitCodes: [128] },
+      {
+        cmd: 'powershell',
+        args: ['-NoProfile', '-NonInteractive', '-Command', STOP_NATIVE_WINDOWS_SCRIPT],
+        ...P,
+        when: 'native-running',
+        env: { OLLAMA_DIR: 'D:\\Apps\\Ollama' },
+      },
+    ])
+    expect(job.steps[1].args.join(' ')).not.toContain('D:\\Apps')
+  })
+
+  it('Windows sem caminho conhecido: só o docker stop', () => {
+    const job = resolveJob({ kind: 'ollama-stop' }, ctx({ ollamaEnv: () => env() }))
+    expect(job.steps).toEqual([
+      { cmd: 'docker', args: ['stop', 'ollama'], ...P, when: 'container-running', okExitCodes: [] },
     ])
   })
 
