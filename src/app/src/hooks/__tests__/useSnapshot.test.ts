@@ -8,7 +8,6 @@ const emptySnapshot: Snapshot = { projects: [], generatedAt: '2026-09-21T10:00:0
 describe('useSnapshot', () => {
   beforeEach(() => {
     const listeners: Array<(s: Snapshot) => void> = []
-    // @ts-expect-error -- bridge de teste, tipagem completa nao importa aqui
     window.ragx = {
       getSnapshot: vi.fn().mockResolvedValue(emptySnapshot),
       onSnapshot: vi.fn((cb: (s: Snapshot) => void) => {
