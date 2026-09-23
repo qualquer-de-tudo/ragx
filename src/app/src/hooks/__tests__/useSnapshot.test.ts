@@ -17,8 +17,18 @@ describe('useSnapshot', () => {
           if (i >= 0) listeners.splice(i, 1)
         }
       }),
+      getProjectStatus: vi.fn(),
       runTrial: vi.fn(),
       runSecurityScan: vi.fn(),
+      getConnections: vi.fn(),
+      listJobs: vi.fn(),
+      onJobs: vi.fn(() => () => {}),
+      enqueueJob: vi.fn(),
+      cancelJob: vi.fn(),
+      pickFolder: vi.fn(),
+      discover: vi.fn(),
+      getSettings: vi.fn(),
+      setOnboardingDone: vi.fn(),
     }
   })
 

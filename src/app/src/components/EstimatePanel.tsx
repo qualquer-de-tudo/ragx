@@ -17,7 +17,7 @@ export function EstimatePanel({ projectId, projectPath }: Props) {
     if (!projectPath) return
     setState('loading')
     try {
-      setState(writeTrial(projectId, await window.ragx.runTrial(projectPath)))
+      setState(writeTrial(projectId, await window.ragx.runTrial(projectId)))
     } catch (err) {
       setState({ error: err instanceof Error ? err.message : String(err) })
     }

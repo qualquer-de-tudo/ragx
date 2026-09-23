@@ -48,12 +48,11 @@ describe.skip('ProjectDetail', () => {
   })
 
   it('mostra a mensagem de erro real quando ragx trial falha (ex.: arquivo de queries ausente)', async () => {
-    window.ragx = {
-      getSnapshot: vi.fn(),
-      onSnapshot: vi.fn(() => () => {}),
-      runTrial: vi.fn().mockRejectedValue(new Error('ragx trial --json saiu com código 2: UsageError: queries.yaml não encontrado')),
-      runSecurityScan: vi.fn(),
-    }
+    bridge({
+      runTrial: vi
+        .fn()
+        .mockRejectedValue(new Error('ragx trial --json saiu com código 2: UsageError: queries.yaml não encontrado')),
+    })
 
     render(<ProjectDetail project={makeProject('C:\\a')} />)
     fireEvent.click(screen.getByRole('button', { name: /ver economia estimada/i }))
@@ -64,12 +63,7 @@ describe.skip('ProjectDetail', () => {
   })
 
   it('mostra a mensagem de erro real quando ragx security scan falha', async () => {
-    window.ragx = {
-      getSnapshot: vi.fn(),
-      onSnapshot: vi.fn(() => () => {}),
-      runTrial: vi.fn(),
-      runSecurityScan: vi.fn().mockRejectedValue(new Error('ragx não encontrado no PATH')),
-    }
+    bridge({ runSecurityScan: vi.fn().mockRejectedValue(new Error('ragx não encontrado no PATH')) })
 
     render(<ProjectDetail project={makeProject('C:\\a')} />)
     fireEvent.click(screen.getByRole('button', { name: /atualizar achados de segurança/i }))
@@ -84,8 +78,18 @@ function bridge(overrides: Partial<typeof window.ragx>) {
   window.ragx = {
     getSnapshot: vi.fn(),
     onSnapshot: vi.fn(() => () => {}),
+    getProjectStatus: vi.fn(),
     runTrial: vi.fn(),
     runSecurityScan: vi.fn(),
+    getConnections: vi.fn(),
+    listJobs: vi.fn(),
+    onJobs: vi.fn(() => () => {}),
+    enqueueJob: vi.fn(),
+    cancelJob: vi.fn(),
+    pickFolder: vi.fn(),
+    discover: vi.fn(),
+    getSettings: vi.fn(),
+    setOnboardingDone: vi.fn(),
     ...overrides,
   }
 }

@@ -38,7 +38,7 @@ export function SecurityPanel({ projectId, projectPath }: Props) {
     if (!projectPath) return
     setState('loading')
     try {
-      setState(writeScan(projectId, await window.ragx.runSecurityScan(projectPath)))
+      setState(writeScan(projectId, await window.ragx.runSecurityScan(projectId)))
     } catch (err) {
       setState({ error: err instanceof Error ? err.message : String(err) })
     }

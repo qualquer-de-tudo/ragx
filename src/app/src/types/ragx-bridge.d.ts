@@ -1,4 +1,7 @@
 import type { TelemetrySummary } from '../../electron/data/types'
+import type { PanelSettings } from '../../electron/settings'
+
+export type { PanelSettings }
 
 export interface IndexInfo {
   finishedAt: string
@@ -34,6 +37,13 @@ export interface ProjectSnapshot {
 export interface Snapshot {
   projects: ProjectSnapshot[]
   generatedAt: string
+  /**
+   * Pior dos três estados de `ConnectionCheck` (`checkAll`), preenchido pelo
+   * processo principal a partir do último resultado em cache (Task 6,
+   * decisão 3). `null`/ausente até a primeira checagem terminar - antes
+   * disso não há dado nenhum, não é um "ok" otimista.
+   */
+  connectionsHealth?: 'ok' | 'warn' | 'error' | null
 }
 
 export interface TrialResult {
@@ -141,11 +151,31 @@ export interface JobView {
   finishedAt: string | null
 }
 
+export interface DiscoverItem {
+  /** Token opaco novo (não o mesmo passado a `discover`) - é isso que `enqueueJob({kind:'add-project', ...})` recebe como `folderToken`. */
+  token: string
+  /** Só para exibir - nunca é o que o renderer manda de volta como argumento. */
+  path: string
+  name: string
+  alreadyRegistered: boolean
+}
+
 export interface RagxBridge {
   getSnapshot: () => Promise<Snapshot>
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void
-  runTrial: (projectPath: string) => Promise<TrialResult>
-  runSecurityScan: (projectPath: string) => Promise<SecurityScanResult>
+  getProjectStatus: (projectId: string) => Promise<unknown>
+  runTrial: (projectId: string) => Promise<TrialResult>
+  runSecurityScan: (projectId: string) => Promise<SecurityScanResult>
+  getConnections: () => Promise<ConnectionCheck[]>
+  listJobs: () => Promise<JobView[]>
+  onJobs: (cb: (jobs: JobView[]) => void) => () => void
+  enqueueJob: (req: JobRequest) => Promise<JobView>
+  cancelJob: (jobId: string) => Promise<boolean>
+  /** `path` é só para exibir - o token é o que qualquer chamada seguinte (`discover`) usa. */
+  pickFolder: () => Promise<{ token: string; path: string } | null>
+  discover: (token: string) => Promise<DiscoverItem[]>
+  getSettings: () => Promise<PanelSettings>
+  setOnboardingDone: (done: boolean) => Promise<void>
 }
 
 declare global {
