@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ragx.core.models import Chunk, ChunkKind, DocKind, Document, SecurityFinding
 from ragx.storage.db import utcnow
+
+if TYPE_CHECKING:
+    from ragx.gitinfo import GitState
 
 
 class DocumentRepo:
@@ -181,11 +184,26 @@ class RunRepo:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def start(self, mode: str) -> int:
+    def start(self, mode: str, source: str = "cli", git: GitState | None = None) -> int:
         cur = self.conn.execute(
-            "INSERT INTO index_runs(started_at, mode) VALUES (?, ?)", (utcnow(), mode)
+            """INSERT INTO index_runs(started_at, mode, source, git_branch, git_commit, git_dirty)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                utcnow(), mode, source,
+                git.branch if git else None,
+                git.commit if git else None,
+                (1 if git.dirty else 0) if git else None,
+            ),
         )
         return int(cur.lastrowid or 0)
+
+    def recent(self, limit: int = 10) -> list[dict[str, Any]]:
+        return [
+            dict(r)
+            for r in self.conn.execute(
+                "SELECT * FROM index_runs ORDER BY id DESC LIMIT ?", (limit,)
+            )
+        ]
 
     def finish(self, run_id: int, stats: dict[str, int], error: str | None = None) -> None:
         self.conn.execute(

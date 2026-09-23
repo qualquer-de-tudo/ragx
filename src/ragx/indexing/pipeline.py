@@ -13,8 +13,10 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ragx import gitinfo
 from ragx.base import source as base_source
 from ragx.config import Config
+from ragx.core.errors import UsageError
 from ragx.core.ids import CHUNKER_VERSION, content_hash, document_id
 from ragx.core.models import Document, IndexStats, Verdict
 from ragx.indexing import parsers
@@ -24,6 +26,11 @@ from ragx.security.gate import SecurityGate
 from ragx.storage.db import open_db, set_meta
 from ragx.storage.repositories import ChunkRepo, DocumentRepo, RunRepo, SecurityEventRepo
 from ragx.walk import WalkedFile, iter_files
+
+VALID_SOURCES = frozenset({
+    "cli", "panel", "watch", "sync", "mcp:refresh", "mcp:index",
+    "hook:post-checkout", "hook:post-commit", "hook:post-merge",
+})
 
 
 class _EmbedOnlyDoneError(Exception):
@@ -49,7 +56,10 @@ def index_project(
     progress: Callable[[int, str], None] | None = None,
     embed: bool = True,
     embed_only: bool = False,
+    source: str = "cli",
 ) -> IndexReport:
+    if source not in VALID_SOURCES:
+        raise UsageError(f"origem desconhecida: {source}")
     gate = SecurityGate(
         cfg.root,
         policy=cfg.security.policy,
@@ -71,7 +81,8 @@ def index_project(
 
         known = docs.fingerprints()
         seen_paths: set[str] = set()
-        run_id = None if dry_run else runs.start("full" if full else "incremental")
+        mode = "embed-only" if embed_only else ("full" if full else "incremental")
+        run_id = None if dry_run else runs.start(mode, source, gitinfo.read_state(cfg.root))
         batch = 0
 
         try:
@@ -213,7 +224,7 @@ def index_project(
                         "blocked": report.stats.blocked,
                         "removed": report.stats.removed,
                         "chunks": chunks.count(),
-                        "embedded": 0,
+                        "embedded": report.stats.embedded,
                         "duration_ms": elapsed,
                     },
                     error="interrupted" if report.interrupted else None,
