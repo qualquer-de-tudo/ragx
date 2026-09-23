@@ -27,7 +27,15 @@ class GitState:
 def git(root: Path, *args: str) -> str | None:
     try:
         out = subprocess.run(
-            ["git", *args],
+            # `--no-optional-locks`: `git status` por padrão refresca e grava
+            # `.git/index`. Rodado em background (hook, watcher) ao mesmo
+            # tempo que um `git rebase`/`checkout`/`commit` do usuário, essa
+            # escrita pode colidir com a dele — exatamente o cenário que
+            # dispara os hooks que chamam esta função. Todos os subcomandos
+            # usados aqui (rev-parse, symbolic-ref, status, rev-list) se
+            # comportam identicamente com a flag; sem ela, nenhum precisa da
+            # trava opcional.
+            ["git", "--no-optional-locks", *args],
             cwd=root,
             capture_output=True,
             text=True,
