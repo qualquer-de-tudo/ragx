@@ -109,6 +109,9 @@ export type JobKind =
   | 'mcp-register'
   | 'ollama-start'
   | 'ollama-pull'
+  | 'ollama-use-native'
+  | 'ollama-use-docker'
+  | 'ollama-stop'
 
 export interface JobRequest {
   kind: JobKind

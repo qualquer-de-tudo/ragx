@@ -7,6 +7,7 @@ import type {
   DiscoverResult,
   JobRequest,
   JobView,
+  OllamaEnvironment,
   ProjectSnapshot,
   SecurityScanResult,
   Snapshot,
@@ -54,6 +55,10 @@ export interface HandlerDeps {
   showOpenDialog: () => Promise<string | null>
   readSettings: () => PanelSettings
   writeSettings: (s: PanelSettings) => void
+  /** Último ambiente Ollama detectado; alimenta os passos condicionais do catálogo. */
+  getOllamaEnv?: () => OllamaEnvironment | null
+  /** Modelos de embedding exigidos pelos projetos com provider ollama. */
+  getRequiredModels?: () => string[]
 }
 
 function rejected(message: string): Error {
@@ -98,6 +103,8 @@ export function createHandlers(deps: HandlerDeps) {
         return p ? { id: p.id, name: p.name, path: p.path } : undefined
       },
       folderByToken: (token) => deps.folderTokens.get(token),
+      ollamaEnv: deps.getOllamaEnv,
+      requiredModels: deps.getRequiredModels,
     }
   }
 

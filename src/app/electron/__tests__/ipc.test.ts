@@ -162,6 +162,17 @@ describe('createHandlers - enqueueJob valida forma, chama resolveJob e enfileira
     expect(queue.enqueued).toHaveLength(0)
   })
 
+  it('aceita os tres kinds novos do Ollama de ponta a ponta e recusa kind inventado', () => {
+    const queue = fakeQueue()
+    const handlers = createHandlers(makeDeps({ queue }))
+
+    for (const kind of ['ollama-use-native', 'ollama-use-docker', 'ollama-stop'] as const) {
+      expect(handlers.enqueueJob({ kind }).kind).toBe(kind)
+    }
+    expect(queue.enqueued).toHaveLength(3)
+    expect(() => handlers.enqueueJob({ kind: 'ollama-nuke' })).toThrow(/pedido recusado/)
+  })
+
   it('recusa ollama-pull com model contendo injecao de shell, antes de qualquer processo', () => {
     const queue = fakeQueue()
     const handlers = createHandlers(makeDeps({ queue }))

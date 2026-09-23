@@ -1,7 +1,15 @@
-import type { JobKind, JobRequest } from '../../src/types/ragx-bridge'
+import type { JobKind, JobRequest, OllamaEnvironment } from '../../src/types/ragx-bridge'
+
+export type StepCondition =
+  | 'container-running'
+  | 'container-exists'
+  | 'container-missing'
+  | 'native-running'
+  | 'native-missing'
+  | 'native-not-running'
 
 export interface Step {
-  cmd: 'ragx' | 'docker'
+  cmd: 'ragx' | 'docker' | 'ollama' | 'winget' | 'taskkill' | 'pkill'
   args: string[]
   cwd: string | null
   progress: boolean
@@ -10,6 +18,16 @@ export interface Step {
    * fila logo antes do passo); fora de git, o passo é pulado com uma nota.
    */
   onlyIfGitRepo?: string
+  /** Só roda se a condição for verdadeira NA HORA (avaliada pela fila). Falsa: passo pulado. */
+  when?: StepCondition
+  /** Processo de longa vida (ex.: `ollama serve`): a fila só confirma que nasceu e segue. */
+  detached?: boolean
+  /** Passo sem processo: espera `GET /api/tags` responder (até `timeoutMs`). */
+  waitForOllamaApi?: { timeoutMs: number }
+  /** Códigos de saída que contam como sucesso além de 0 (ex.: `taskkill` 128 = nada a encerrar). */
+  okExitCodes?: number[]
+  /** Nota registrada no job quando o passo é pulado por `when`. */
+  skipNote?: string
 }
 
 export interface ResolvedJob {
@@ -31,11 +49,17 @@ export interface ResolvedJob {
   model: string | null
   /** Pasta do `add-project` (para a conferência no hub depois do último passo). */
   folder?: string
+  /** Avisos do catálogo (ex.: modelo inválido ignorado); a fila os registra no job (Task 4). */
+  notes?: string[]
 }
 
 export interface CatalogContext {
   projectById: (id: string) => { id: string; name: string; path: string | null } | undefined
   folderByToken: (token: string) => string | undefined
+  /** Último ambiente detectado (o painel atualiza a cada checagem); `null` antes da primeira. */
+  ollamaEnv?: () => OllamaEnvironment | null
+  /** Modelos de embedding em uso pelos projetos com provider ollama, sem repetição. */
+  requiredModels?: () => string[]
 }
 
 /** Recusa de `resolveJob`: pedido fora do catálogo fechado, nunca vira processo. */
@@ -62,6 +86,9 @@ const KNOWN_KINDS: ReadonlySet<string> = new Set<JobKind>([
   'mcp-register',
   'ollama-start',
   'ollama-pull',
+  'ollama-use-native',
+  'ollama-use-docker',
+  'ollama-stop',
 ])
 
 /** Kinds que precisam de um projeto conhecido no hub (`projectById`). */
@@ -100,6 +127,49 @@ function lastFolderName(p: string): string {
 
 function progressStep(path: string, extraArgs: string[] = []): Step {
   return { cmd: 'ragx', args: ['index', path, ...extraArgs, '--progress', '--source', 'panel'], cwd: null, progress: true }
+}
+
+function plainStep(cmd: Step['cmd'], args: string[]): Step {
+  return { cmd, args, cwd: null, progress: false }
+}
+
+function serveStep(): Step {
+  return {
+    ...plainStep('ollama', ['serve']),
+    detached: true,
+    when: 'native-not-running',
+    skipNote: 'O Ollama local já estava rodando.',
+  }
+}
+
+function waitApiStep(): Step {
+  return { ...plainStep('ollama', []), waitForOllamaApi: { timeoutMs: 60000 } }
+}
+
+/** Encerra o Ollama nativo: `taskkill` das duas imagens no Windows, `pkill` nos demais. */
+function stopNativeSteps(env: OllamaEnvironment | null): Step[] {
+  const win = (env?.platform ?? process.platform) === 'win32'
+  if (!win) {
+    return [{ ...plainStep('pkill', ['-x', 'ollama']), when: 'native-running', okExitCodes: [1] }]
+  }
+  return [
+    { ...plainStep('taskkill', ['/IM', 'ollama app.exe', '/T', '/F']), when: 'native-running', okExitCodes: [128] },
+    { ...plainStep('taskkill', ['/IM', 'ollama.exe', '/T', '/F']), when: 'native-running', okExitCodes: [128] },
+  ]
+}
+
+/** Modelos requeridos, cada um passando por `MODEL_PATTERN`; inválido é ignorado com nota, nunca vira argumento. */
+function requiredModelsOf(ctx: CatalogContext): { models: string[]; notes: string[] } {
+  const models: string[] = []
+  const notes: string[] = []
+  for (const m of ctx.requiredModels?.() ?? []) {
+    if (typeof m === 'string' && MODEL_PATTERN.test(m)) {
+      if (!models.includes(m)) models.push(m)
+    } else {
+      notes.push(`Modelo ignorado por nome inválido: ${String(m)}`)
+    }
+  }
+  return { models, notes }
 }
 
 interface ProjectInfo {
@@ -195,24 +265,102 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
   }
 
   if (kind === 'ollama-start') {
-    return {
-      kind,
-      label: 'Iniciar o container ollama',
-      projectId: null,
-      steps: [{ cmd: 'docker', args: ['start', 'ollama'], cwd: null, progress: false }],
-      dedupeKey: dedupeKey(kind, null),
+    const env = ctx.ollamaEnv?.() ?? null
+    let steps: Step[] = [plainStep('docker', ['start', 'ollama'])]
+    if (env !== null && env.container.exists) {
+      steps = [{ ...plainStep('docker', ['start', 'ollama']), when: 'container-exists' }]
+    } else if (env !== null && env.native.installed) {
+      steps = [serveStep(), waitApiStep()]
     }
+    return { kind, label: 'Iniciar o container ollama', projectId: null, steps, dedupeKey: dedupeKey(kind, null) }
+  }
+
+  if (kind === 'ollama-use-native') {
+    const env = ctx.ollamaEnv?.() ?? null
+    if (env !== null && !env.canInstallNative && !env.native.installed) {
+      throw new JobRejected(
+        'A instalação automática do Ollama só existe no Windows. Baixe em https://ollama.com/download e abra o painel de novo.',
+      )
+    }
+    const { models, notes } = requiredModelsOf(ctx)
+    const steps: Step[] = [
+      { ...plainStep('docker', ['stop', 'ollama']), when: 'container-running', okExitCodes: [] },
+      {
+        ...plainStep('winget', [
+          'install',
+          '-e',
+          '--id',
+          'Ollama.Ollama',
+          '--silent',
+          '--accept-package-agreements',
+          '--accept-source-agreements',
+        ]),
+        when: 'native-missing',
+      },
+      serveStep(),
+      waitApiStep(),
+      ...models.map((m) => plainStep('ollama', ['pull', m])),
+    ]
+    return { kind, label: 'Usar o Ollama local', projectId: null, steps, dedupeKey: dedupeKey(kind, null), notes }
+  }
+
+  if (kind === 'ollama-use-docker') {
+    const env = ctx.ollamaEnv?.() ?? null
+    if (env !== null && !env.docker.installed) {
+      throw new JobRejected('O Docker não está instalado nesta máquina.')
+    }
+    const { models, notes } = requiredModelsOf(ctx)
+    // `--gpus all` precisa vir ANTES da imagem: depois dela viraria argumento do container.
+    const gpu = env?.gpu.vendor === 'nvidia' ? ['--gpus', 'all'] : []
+    const steps: Step[] = [
+      ...stopNativeSteps(env),
+      { ...plainStep('docker', ['start', 'ollama']), when: 'container-exists' },
+      {
+        ...plainStep('docker', [
+          'run',
+          '-d',
+          '--name',
+          'ollama',
+          '-p',
+          '11434:11434',
+          '-v',
+          'ollama:/root/.ollama',
+          '--restart',
+          'unless-stopped',
+          ...gpu,
+          'ollama/ollama',
+        ]),
+        when: 'container-missing',
+      },
+      waitApiStep(),
+      ...models.map((m) => plainStep('docker', ['exec', 'ollama', 'ollama', 'pull', m])),
+    ]
+    return { kind, label: 'Usar o Ollama no Docker', projectId: null, steps, dedupeKey: dedupeKey(kind, null), notes }
+  }
+
+  if (kind === 'ollama-stop') {
+    const env = ctx.ollamaEnv?.() ?? null
+    const steps: Step[] = [
+      { ...plainStep('docker', ['stop', 'ollama']), when: 'container-running', okExitCodes: [] },
+      ...stopNativeSteps(env),
+    ]
+    return { kind, label: 'Parar o Ollama', projectId: null, steps, dedupeKey: dedupeKey(kind, null) }
   }
 
   if (kind === 'ollama-pull') {
     if (typeof req.model !== 'string' || !MODEL_PATTERN.test(req.model)) {
       throw new JobRejected(`nome de modelo inválido: ${String(req.model)}`)
     }
+    const native = ctx.ollamaEnv?.()?.mode === 'native'
     return {
       kind,
       label: `Baixar o modelo ${req.model}`,
       projectId: null,
-      steps: [{ cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', req.model], cwd: null, progress: false }],
+      steps: [
+        native
+          ? plainStep('ollama', ['pull', req.model])
+          : plainStep('docker', ['exec', 'ollama', 'ollama', 'pull', req.model]),
+      ],
       dedupeKey: dedupeKey(kind, null, req.model),
     }
   }
