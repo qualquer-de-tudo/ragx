@@ -183,16 +183,42 @@ knowledge/chunks/*.jsonl merge=ragx-derived
 
 ## Hooks
 
-`ragx init --git-hooks` instala, com consentimento explícito:
+`ragx init --git-hooks` (ou `ragx hooks install`) instala, com consentimento
+explícito:
 
-| Hook | Ação | Por quê |
-|------|------|---------|
-| `pre-commit` | `ragx security scan --staged` | barra segredo **antes** do commit — o maior valor isolado do projeto |
-| `post-merge` | `ragx sync --quiet` | conhecimento atualizado após `git pull` |
-| `post-checkout` | `ragx sync --quiet` | troca de branch atualiza o índice |
+| Hook | Faz | Quando |
+|------|-----|--------|
+| `post-checkout` | `ragx index --source hook:post-checkout` destacado | só em troca de branch (flag 1) |
+| `post-commit` | `ragx index --source hook:post-commit` destacado | todo commit |
+| `post-merge` | `ragx index --source hook:post-merge` destacado | todo merge e pull |
 
-O `pre-commit` é o único que bloqueia. Os demais degradam para aviso se falharem —
-nunca impedir o dev de trocar de branch por causa de indexação.
+Os hooks nunca rodam `ragx sync`, que regrava os arquivos versionados em
+`knowledge/`; eles só disparam `ragx index` destacado, em segundo plano, para
+o `.ragx/knowledge.db` local acompanhar a branch em que você está. Nenhum
+hook bloqueia o git: a indexação roda destacada e o log fica em
+`.ragx/logs/hooks.log`. Um `pre-commit` com
+`ragx security scan --staged` ainda não existe como hook instalado por
+`ragx init --git-hooks`: o comando já existe e pode ser ligado à mão no
+`pre-commit` do projeto.
+
+### O índice segue a branch atual
+
+Cada indexação registra em `index_runs` a branch, o commit e quem disparou
+(ver [03-modelo-de-dados.md](03-modelo-de-dados.md)). A decisão deste projeto é
+que `.ragx/knowledge.db` reflete sempre a branch **atual** do working tree, não
+um histórico por branch: trocar de branch e rodar `ragx index` (a mão ou via
+hook `post-checkout`) reindexa o que mudou para a branch nova. Isso mantém o
+índice simples (um banco, uma árvore de trabalho) ao custo de reindexar de
+novo a cada troca, o que é aceitável porque a indexação incremental só
+reprocessa o que o `content_hash` diz que mudou.
+
+`ragx status --json` expõe `freshness.state` (`fresh` | `stale` | `unknown`) e
+`freshness.reasons`, com até quatro motivos de defasagem:
+
+- `branch_changed`: a branch atual é diferente da branch do último run.
+- `commits_since_index`: o commit atual está à frente do commit do último run.
+- `uncommitted_changes`: arquivos do working tree mudaram depois do último run.
+- `pending_embeddings`: há chunks sem vetor.
 
 ## Reidratação em detalhe
 

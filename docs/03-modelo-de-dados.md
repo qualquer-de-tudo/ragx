@@ -57,7 +57,7 @@ CREATE TABLE index_runs (
   id           INTEGER PRIMARY KEY,
   started_at   TEXT NOT NULL,
   finished_at  TEXT,
-  mode         TEXT NOT NULL,          -- full | incremental | sync
+  mode         TEXT NOT NULL,          -- full | incremental | sync | embed-only
   files_seen   INTEGER NOT NULL DEFAULT 0,
   indexed      INTEGER NOT NULL DEFAULT 0,
   skipped      INTEGER NOT NULL DEFAULT 0,
@@ -66,9 +66,53 @@ CREATE TABLE index_runs (
   chunks       INTEGER NOT NULL DEFAULT 0,
   embedded     INTEGER NOT NULL DEFAULT 0,
   duration_ms  INTEGER,
-  error        TEXT
+  error        TEXT,
+  git_branch   TEXT,                  -- null sem git ou com HEAD destacado
+  git_commit   TEXT,                  -- null sem git
+  git_dirty    INTEGER,               -- 0/1, null sem git
+  source       TEXT NOT NULL DEFAULT 'cli'  -- cli | panel | watch | sync | mcp:* | hook:*
 );
 ```
+
+`git_branch`, `git_commit`, `git_dirty` e `source` vieram da migração
+`0006_run_provenance.sql`, que faz só `ALTER TABLE ADD COLUMN` (sem `NOT NULL`
+nas três de git, porque um projeto sem repositório Git nunca as preenche).
+`mode` ganhou o valor `embed-only`, de `ragx index --embed-only` (só gera
+vetores faltantes, sem varrer o projeto de novo).
+
+### `.ragx/status.json`
+
+Não é tabela: é um arquivo JSON derivado de `index_runs`, `embeddings` e da
+trava (`index.lock`/`index.pending`), pensado para quem quer o estado do
+índice sem abrir o SQLite (o painel, por exemplo).
+
+```json
+{
+  "schema_version": 1,
+  "written_at": "2026-09-23T12:00:00Z",
+  "project": {"id": "t", "name": "t", "root": "C:/x/t"},
+  "index": {"finished_at": "...", "mode": "incremental", "source": "cli",
+            "branch": "main", "commit": "abc...", "dirty": false},
+  "counts": {"documents": 4, "chunks": 10, "embeddings": 10, "pending_embeddings": 0},
+  "embedding": {"provider": "ollama", "model": "nomic-embed-text"},
+  "hooks": {"installed": null},
+  "running": null,
+  "pending": false,
+  "last_error": null
+}
+```
+
+Regras:
+
+- Escrita atômica: grava num temporário e faz `os.replace` no lugar do arquivo
+  final, para ninguém ler JSON pela metade.
+- Só contagens e metadados, nenhum caminho de arquivo do projeto.
+- Reescrito no início e no fim de cada indexação (e também quando a trava fica
+  ocupada, para `pending` aparecer na hora) e ao instalar ou remover hooks.
+- `index` é o último run com `finished_at` (`null` se não houver nenhum).
+  `running` é o dono da trava quando o processo está vivo, senão `null`.
+  `hooks.installed` é `null` quando o projeto não está dentro de um
+  repositório Git.
 
 ### `security_events` — sem segredo, só prova
 

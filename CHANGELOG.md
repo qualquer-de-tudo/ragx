@@ -37,6 +37,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   os arquivos bloqueados com severidade e regra, sem exibir o trecho do
   segredo. Tema claro e escuro seguem o Windows.
 
+- **O índice acompanha a branch.** Cada indexação registra branch, commit e quem
+  disparou (`cli`, `panel`, `watch`, `sync`, `mcp:*`, `hook:*`). `ragx status --json`
+  diz se o índice está defasado e por quê (troca de branch, commits novos,
+  arquivos alterados depois da indexação, embeddings pendentes) e traz as
+  últimas 10 indexações. `ragx hooks install` (ou `ragx init --git-hooks`) liga
+  hooks de `post-checkout`, `post-commit` e `post-merge` que reindexam em
+  segundo plano. Só uma indexação roda por vez (`.ragx/index.lock`); pedidos
+  que chegam no meio ficam agendados. O estado de cada projeto fica em
+  `.ragx/status.json`, e `ragx index --progress` emite progresso em JSON.
+
 ## [1.0.0-beta.3] — 2026-09-17
 
 ### Corrigido

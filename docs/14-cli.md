@@ -92,6 +92,7 @@ desistir com exit 4; nas outras origens sai na hora com 0.
 
 ragx status
     --json
+    # --json inclui freshness {state, current, reasons} e recent_runs (últimas 10)
 
 ragx documents
     --lang LANG  --kind KIND  --path GLOB  --limit N
