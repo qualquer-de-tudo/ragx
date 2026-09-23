@@ -5,7 +5,14 @@ import { execFileText } from '../system/exec'
 import type { ExecFn } from '../system/exec'
 import { httpGetJson } from '../system/http'
 import { resolveRagx } from '../system/ragx-exe'
-import type { ConnectionAction, ConnectionCheck, ConnectionState, Snapshot } from '../../src/types/ragx-bridge'
+import type {
+  ConnectionAction,
+  ConnectionCheck,
+  ConnectionState,
+  OllamaBenchmark,
+  OllamaEnvironment,
+  Snapshot,
+} from '../../src/types/ragx-bridge'
 
 export interface CheckDeps {
   exec: ExecFn
@@ -309,7 +316,164 @@ function formatDependents(names: string[]): string {
   return `${names.length} projeto(s): ${shown}`
 }
 
-export async function checkOllama(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck> {
+/** Título do card: acompanha o modo detectado; sem ambiente mantém o de sempre. */
+function ollamaTitleFor(env: OllamaEnvironment | null | undefined): string {
+  if (!env) return 'Ollama (Docker)'
+  if (env.mode === 'docker') return 'Ollama (Docker)'
+  if (env.mode === 'native') return 'Ollama (local)'
+  return 'Ollama'
+}
+
+function decimalPtBr(n: number): string {
+  return n.toFixed(1).replace('.', ',')
+}
+
+function processorFact(bench: OllamaBenchmark | null | undefined): string {
+  if (!bench || bench.processor === 'unknown') return 'ainda não medido'
+  if (bench.processor === 'cpu') return 'CPU'
+  return bench.vramMB !== null ? `GPU (${decimalPtBr(bench.vramMB / 1024)} GB de VRAM)` : 'GPU'
+}
+
+function recommendedSwitch(env: OllamaEnvironment, label: { native: string; docker: string }): ConnectionAction {
+  return env.recommendation.mode === 'native'
+    ? { kind: 'ollama-use-native', label: label.native }
+    : { kind: 'ollama-use-docker', label: label.docker }
+}
+
+function ollamaCheckFromEnv(
+  env: OllamaEnvironment,
+  snapshot: Snapshot | null,
+  bench: OllamaBenchmark | null | undefined,
+): ConnectionCheck {
+  const id = 'ollama' as const
+  const title = ollamaTitleFor(env)
+  const { models: needed, projectNames } = neededModelsFor(snapshot)
+  const dependFact = { label: 'Projetos que dependem', value: formatDependents(projectNames) }
+  const semDadosFact = { label: 'Modelos instalados', value: 'sem dados' }
+  const base = { id, title, lastMcpCallAt: null }
+
+  if (env.mode === 'conflict') {
+    return {
+      ...base,
+      state: 'warn',
+      stateLabel: stateLabelFor('warn'),
+      summary: 'O Ollama está rodando no Docker e no computador ao mesmo tempo. Os dois disputam a mesma porta.',
+      facts: [semDadosFact, dependFact],
+      actions: [recommendedSwitch(env, { native: 'Usar o Ollama local', docker: 'Usar o Ollama no Docker' })],
+      help: env.recommendation.reason,
+    }
+  }
+
+  if (!env.apiUp) {
+    const actions: ConnectionAction[] = []
+    if (env.container.exists) {
+      actions.push({ kind: 'ollama-start', label: 'Iniciar container' })
+    } else if (env.native.installed) {
+      actions.push({ kind: 'ollama-start', label: 'Iniciar o Ollama local' })
+    } else if (env.recommendation.mode === 'native' && env.canInstallNative) {
+      actions.push({ kind: 'ollama-use-native', label: 'Instalar e usar o Ollama local' })
+    } else if (env.recommendation.mode === 'docker' && env.docker.installed) {
+      actions.push({ kind: 'ollama-use-docker', label: 'Usar o Ollama no Docker' })
+    }
+    let help: string | null = null
+    if (env.docker.installed && !env.docker.running && !env.native.installed) {
+      help = 'Abra o Docker Desktop e aguarde ele iniciar.'
+    } else if (actions.length === 0) {
+      help = 'Baixe e instale o Ollama em https://ollama.com/download e reabra o painel.'
+    }
+    return {
+      ...base,
+      state: 'error',
+      stateLabel: stateLabelFor('error'),
+      summary: 'O Ollama não está respondendo em localhost:11434.',
+      facts: [semDadosFact, dependFact],
+      actions,
+      help,
+    }
+  }
+
+  const installed = env.models
+  const missing = needed.filter((m) => !installed.some((inst) => inst === m || inst === `${m}:latest`))
+  const inDocker = env.mode === 'docker'
+
+  const facts: Array<{ label: string; value: string }> = [
+    { label: 'Modo', value: inDocker ? 'Docker' : 'Local' },
+    { label: 'Processador', value: processorFact(bench) },
+  ]
+  if (bench && bench.ok && bench.chunksPerSecond !== null) {
+    facts.push({ label: 'Velocidade', value: `${decimalPtBr(bench.chunksPerSecond)} chunks/s` })
+  }
+  if (env.gpu.name !== null) facts.push({ label: 'Placa de vídeo', value: env.gpu.name })
+  facts.push({ label: 'Modelos instalados', value: installed.length > 0 ? installed.join(', ') : 'nenhum' }, dependFact)
+
+  const actions: ConnectionAction[] = missing.map((m) => ({
+    kind: 'ollama-pull' as const,
+    label: `Baixar ${m}`,
+    model: m,
+  }))
+  const processor = bench?.processor ?? 'unknown'
+  const suggestSwitch = env.mode !== env.recommendation.mode && processor !== 'gpu'
+  if (suggestSwitch) {
+    actions.push(
+      recommendedSwitch(env, {
+        native: 'Trocar para o Ollama local (usa sua GPU)',
+        docker: 'Trocar para o Ollama no Docker',
+      }),
+    )
+  }
+  actions.push(
+    { kind: 'ollama-benchmark', label: 'Medir velocidade', secondary: true },
+    { kind: 'ollama-stop', label: 'Parar o Ollama', secondary: true },
+  )
+  const help = suggestSwitch ? env.recommendation.reason : null
+
+  if (missing.length > 0) {
+    return {
+      ...base,
+      state: 'warn',
+      stateLabel: stateLabelFor('warn'),
+      summary: `Falta baixar ${missing.length} modelo(s).`,
+      facts,
+      actions,
+      help,
+    }
+  }
+  return {
+    ...base,
+    state: 'ok',
+    stateLabel: stateLabelFor('ok'),
+    summary: inDocker
+      ? 'Rodando no Docker, com os modelos que os projetos usam.'
+      : 'Rodando no computador (local), com os modelos que os projetos usam.',
+    facts,
+    actions,
+    help,
+  }
+}
+
+export async function checkOllama(
+  d: CheckDeps,
+  snapshot: Snapshot | null,
+  env?: OllamaEnvironment | null,
+  lastBenchmark?: OllamaBenchmark | null,
+): Promise<ConnectionCheck> {
+  if (env) {
+    try {
+      return ollamaCheckFromEnv(env, snapshot, lastBenchmark)
+    } catch (err) {
+      return {
+        id: 'ollama',
+        title: ollamaTitleFor(env),
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: `Falha inesperada ao checar o Ollama: ${errMessage(err)}`,
+        facts: [],
+        actions: [],
+        help: null,
+        lastMcpCallAt: null,
+      }
+    }
+  }
   const id = 'ollama' as const
   const title = 'Ollama (Docker)'
   // Default seguro pro catch-all: se o próprio cálculo de dependências
@@ -469,11 +633,16 @@ function guardCheck(id: ConnectionCheck['id'], title: string, run: () => Promise
   )
 }
 
-export async function checkAll(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck[]> {
+export async function checkAll(
+  d: CheckDeps,
+  snapshot: Snapshot | null,
+  env?: OllamaEnvironment | null,
+  lastBenchmark?: OllamaBenchmark | null,
+): Promise<ConnectionCheck[]> {
   return Promise.all([
     guardCheck('ragx', 'RAGX CLI', () => checkRagx(d)),
     guardCheck('claude', 'Claude Code', () => checkClaude(d, snapshot)),
-    guardCheck('ollama', 'Ollama (Docker)', () => checkOllama(d, snapshot)),
+    guardCheck('ollama', ollamaTitleFor(env), () => checkOllama(d, snapshot, env, lastBenchmark)),
   ])
 }
 

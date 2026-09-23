@@ -194,12 +194,14 @@ const handlers = createHandlers({
   getCachedSnapshot: () => (latestSnapshot ? withConnectionsHealth(latestSnapshot) : null),
   runRagxCommand,
   checkAll: async (snapshot) => {
-    // Uma detecção do ambiente do Ollama por ciclo de checagem, em paralelo
-    // (`getConnections` já garante um ciclo por vez).
-    const [checks] = await Promise.all([
-      checkAll(defaultCheckDeps(), snapshot),
-      ollamaEnv.fresh().catch((err: unknown) => console.error('detectOllama() falhou:', err)),
-    ])
+    // Uma detecção do ambiente do Ollama por ciclo (`getConnections` já
+    // garante um ciclo por vez); o card usa esse mesmo ambiente, sem um
+    // segundo `docker ps`. `handlers` só é lido aqui, depois de criado.
+    const env = await ollamaEnv.fresh().catch((err: unknown) => {
+      console.error('detectOllama() falhou:', err)
+      return null
+    })
+    const checks = await checkAll(defaultCheckDeps(), snapshot, env, handlers.getLastBenchmark())
     latestConnections = checks
     return checks
   },

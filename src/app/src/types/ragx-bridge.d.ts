@@ -70,9 +70,18 @@ export type ConnectionId = 'ragx' | 'claude' | 'ollama'
 export type ConnectionState = 'ok' | 'warn' | 'error'
 
 export interface ConnectionAction {
-  kind: 'mcp-register' | 'ollama-start' | 'ollama-pull'
+  kind:
+    | 'mcp-register'
+    | 'ollama-start'
+    | 'ollama-pull'
+    | 'ollama-use-native'
+    | 'ollama-use-docker'
+    | 'ollama-stop'
+    | 'ollama-benchmark'
   label: string
   model?: string
+  /** Ação de apoio (ex.: medir velocidade): a tela a mostra menos destacada. */
+  secondary?: boolean
 }
 
 export interface ConnectionCheck {
