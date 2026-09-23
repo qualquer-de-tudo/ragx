@@ -77,7 +77,12 @@ export class JobQueue {
   }
 
   enqueue(job: ResolvedJob): JobView {
-    const existing = this.jobs.find((j) => j.resolved.kind === job.kind && j.resolved.projectId === job.projectId)
+    // Não é só `kind`+`projectId`: kinds sem projeto (`ollama-pull`,
+    // `add-project`) teriam `projectId` sempre `null`, o que faria dois
+    // pedidos genuinamente diferentes (modelos ou pastas distintas)
+    // colidir num só. `dedupeKey` (Task 5, fix round 1) já carrega o que
+    // distingue cada pedido - ver `catalog.ts`.
+    const existing = this.jobs.find((j) => j.resolved.dedupeKey === job.dedupeKey)
     if (existing) return existing.view
 
     const nowIso = new Date(this.deps.now()).toISOString()
@@ -322,10 +327,14 @@ function lineBuffer(emit: (line: string) => void) {
 }
 
 /**
- * `spawn` real, sem shell (obrigatório - ver global-constraints.md), com
- * timeout deixado para quem chama (a fila não impõe um: tarefas de indexação
- * legitimamente demoram). `'ragx'` resolve para o caminho absoluto achado
- * por `ragxCommand()` (fora do PATH do app aberto pelo menu Iniciar).
+ * `spawn` real, sem shell (obrigatório - ver global-constraints.md).
+ * `'ragx'` resolve para o caminho absoluto achado por `ragxCommand()` (fora
+ * do PATH do app aberto pelo menu Iniciar).
+ *
+ * Sem timeout, de propósito: indexação de projeto grande roda por muito
+ * tempo de forma legítima, e toda tarefa da fila já é cancelável por
+ * `JobQueue.cancel()` - um timeout aqui só mataria indexações lentas e
+ * legítimas sem dar nenhuma proteção que `cancel()` já não dê.
  */
 export function defaultSpawn(): SpawnFn {
   return (cmd, args, cwd) => {

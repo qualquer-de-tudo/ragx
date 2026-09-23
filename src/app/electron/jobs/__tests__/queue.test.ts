@@ -47,13 +47,18 @@ function fakeSpawn() {
 }
 
 function job(over: Partial<ResolvedJob> = {}): ResolvedJob {
-  return {
-    kind: 'update',
+  const base = {
+    kind: 'update' as const,
     label: 'Atualizar Projeto',
-    projectId: 'p1',
-    steps: [{ cmd: 'ragx', args: ['index', 'C:/p1', '--progress', '--source', 'panel'], cwd: null, progress: true }],
-    ...over,
+    projectId: 'p1' as string | null,
+    steps: [{ cmd: 'ragx' as const, args: ['index', 'C:/p1', '--progress', '--source', 'panel'], cwd: null, progress: true }],
   }
+  const merged = { ...base, ...over }
+  // Segue o mesmo formato geral do `catalog.ts` (`${kind}|${projectId ?? ''}|`)
+  // a menos que o teste passe um `dedupeKey` explícito - assim, sobrescrever
+  // `projectId`/`kind` no helper não deixa o dedupe comparando uma chave
+  // desatualizada.
+  return { ...merged, dedupeKey: over.dedupeKey ?? `${merged.kind}|${merged.projectId ?? ''}|` }
 }
 
 function makeQueue(spawn: SpawnFn, over: Partial<Omit<QueueDeps, 'spawn'>> = {}) {
@@ -164,6 +169,81 @@ describe('JobQueue - dedupe', () => {
 
     expect(j2.id).not.toBe(j1.id)
     expect(children).toHaveLength(2)
+  })
+
+  // Fix round 1: dedupeKey (kind+projectId sozinho colidia `ollama-pull` de
+  // modelos diferentes e `add-project` de pastas diferentes, porque os dois
+  // têm `projectId: null` sempre).
+  it('ollama-pull com modelos diferentes: os dois entram na fila', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j1 = queue.enqueue(
+      job({
+        kind: 'ollama-pull',
+        projectId: null,
+        dedupeKey: 'ollama-pull||nomic-embed-text',
+        steps: [{ cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', 'nomic-embed-text'], cwd: null, progress: false }],
+      }),
+    )
+    const j2 = queue.enqueue(
+      job({
+        kind: 'ollama-pull',
+        projectId: null,
+        dedupeKey: 'ollama-pull||mxbai-embed-large',
+        steps: [{ cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', 'mxbai-embed-large'], cwd: null, progress: false }],
+      }),
+    )
+
+    expect(j2.id).not.toBe(j1.id)
+    expect(queue.list().filter((v) => v.kind === 'ollama-pull')).toHaveLength(2)
+    // Fila serial: só o primeiro pedido spawna imediatamente, o segundo
+    // fica `queued` até o primeiro sair.
+    expect(children).toHaveLength(1)
+  })
+
+  it('ollama-pull com o mesmo modelo duas vezes: dedupe normalmente', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const ollamaPull = () =>
+      job({
+        kind: 'ollama-pull',
+        projectId: null,
+        dedupeKey: 'ollama-pull||nomic-embed-text',
+        steps: [{ cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', 'nomic-embed-text'], cwd: null, progress: false }],
+      })
+
+    const j1 = queue.enqueue(ollamaPull())
+    const j2 = queue.enqueue(ollamaPull())
+
+    expect(j2.id).toBe(j1.id)
+    expect(children).toHaveLength(1)
+  })
+
+  it('add-project com tokens de pasta diferentes: os dois entram na fila', () => {
+    const { spawn } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j1 = queue.enqueue(
+      job({
+        kind: 'add-project',
+        projectId: null,
+        dedupeKey: 'add-project|C:/pastas/A',
+        steps: [{ cmd: 'ragx', args: ['init', 'C:/pastas/A'], cwd: null, progress: false }],
+      }),
+    )
+    const j2 = queue.enqueue(
+      job({
+        kind: 'add-project',
+        projectId: null,
+        dedupeKey: 'add-project|C:/pastas/B',
+        steps: [{ cmd: 'ragx', args: ['init', 'C:/pastas/B'], cwd: null, progress: false }],
+      }),
+    )
+
+    expect(j2.id).not.toBe(j1.id)
+    expect(queue.list().filter((v) => v.kind === 'add-project')).toHaveLength(2)
   })
 })
 

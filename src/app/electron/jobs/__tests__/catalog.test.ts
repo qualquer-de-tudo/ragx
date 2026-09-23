@@ -5,10 +5,12 @@ import type { JobRequest } from '../../../src/types/ragx-bridge'
 const PROJECT = { id: 'p1', name: 'Juriflux', path: 'C:/proj/juriflux' }
 const FEDERATED = { id: 'so-federacao', name: 'Federado', path: null }
 
+const FOLDERS: Record<string, string> = { 'tok-1': 'C:/pastas/NovoProjeto', 'tok-2': 'C:/pastas/OutroProjeto' }
+
 function ctx(over: Partial<CatalogContext> = {}): CatalogContext {
   return {
     projectById: (id) => [PROJECT, FEDERATED].find((p) => p.id === id),
-    folderByToken: (token) => (token === 'tok-1' ? 'C:/pastas/NovoProjeto' : undefined),
+    folderByToken: (token) => FOLDERS[token],
     ...over,
   }
 }
@@ -189,5 +191,35 @@ describe('MODEL_PATTERN', () => {
   it('rejeita injecao de shell e flags', () => {
     expect(MODEL_PATTERN.test('x; rm -rf /')).toBe(false)
     expect(MODEL_PATTERN.test('--help')).toBe(false)
+  })
+})
+
+// Fix round 1: `dedupeKey` precisa distinguir pedidos que `kind`+`projectId`
+// sozinhos não distinguem - `ollama-pull` e `add-project` sempre têm
+// `projectId: null`, então sem isso dois modelos ou duas pastas diferentes
+// colidiriam no dedupe de `JobQueue.enqueue`.
+describe('resolveJob - dedupeKey', () => {
+  it('ollama-pull: modelos diferentes geram dedupeKey diferente', () => {
+    const a = resolveJob({ kind: 'ollama-pull', model: 'nomic-embed-text' }, ctx())
+    const b = resolveJob({ kind: 'ollama-pull', model: 'mxbai-embed-large' }, ctx())
+    expect(a.dedupeKey).not.toBe(b.dedupeKey)
+  })
+
+  it('ollama-pull: o mesmo modelo gera a mesma dedupeKey', () => {
+    const a = resolveJob({ kind: 'ollama-pull', model: 'nomic-embed-text' }, ctx())
+    const b = resolveJob({ kind: 'ollama-pull', model: 'nomic-embed-text' }, ctx())
+    expect(a.dedupeKey).toBe(b.dedupeKey)
+  })
+
+  it('add-project: tokens de pasta diferentes geram dedupeKey diferente', () => {
+    const a = resolveJob({ kind: 'add-project', folderToken: 'tok-1' }, ctx())
+    const b = resolveJob({ kind: 'add-project', folderToken: 'tok-2' }, ctx())
+    expect(a.dedupeKey).not.toBe(b.dedupeKey)
+  })
+
+  it('mesmo kind+projeto ainda gera a mesma dedupeKey (regressão)', () => {
+    const a = resolveJob({ kind: 'update', projectId: 'p1' }, ctx())
+    const b = resolveJob({ kind: 'update', projectId: 'p1' }, ctx())
+    expect(a.dedupeKey).toBe(b.dedupeKey)
   })
 })

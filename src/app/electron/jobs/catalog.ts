@@ -12,6 +12,16 @@ export interface ResolvedJob {
   label: string
   projectId: string | null
   steps: Step[]
+  /**
+   * Chave de dedupe usada por `JobQueue.enqueue` entre tarefas `queued`/
+   * `running`. Não é só `kind`+`projectId`: para kinds sem projeto
+   * (`ollama-pull`, `add-project`) isso colidiria pedidos diferentes (dois
+   * modelos distintos, ou duas pastas distintas) num só. Formato geral:
+   * `${kind}|${projectId ?? ''}|${model ?? ''}`; `add-project` usa o
+   * caminho da pasta resolvida no lugar do modelo, já que é isso que
+   * distingue um pedido do outro nesse kind.
+   */
+  dedupeKey: string
 }
 
 export interface CatalogContext {
@@ -69,6 +79,10 @@ const NEEDS_PATH_KINDS: ReadonlySet<string> = new Set<JobKind>([
   'hooks-install',
   'hooks-uninstall',
 ])
+
+function dedupeKey(kind: JobKind, projectId: string | null, model?: string): string {
+  return `${kind}|${projectId ?? ''}|${model ?? ''}`
+}
 
 function lastFolderName(p: string): string {
   const parts = p.split(/[\\/]/).filter((part) => part.length > 0)
@@ -143,7 +157,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
     if (req.installHooks === true) {
       steps.push({ cmd: 'ragx', args: ['hooks', 'install', folder], cwd: null, progress: false })
     }
-    return { kind, label: `Adicionar ${lastFolderName(folder)}`, projectId: null, steps }
+    return { kind, label: `Adicionar ${lastFolderName(folder)}`, projectId: null, steps, dedupeKey: `add-project|${folder}` }
   }
 
   if (kind === 'mcp-register') {
@@ -152,6 +166,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
       label: 'Registrar o RAGX no Claude Code',
       projectId: null,
       steps: [{ cmd: 'ragx', args: ['mcp', 'install', '--client', 'claude-code'], cwd: null, progress: false }],
+      dedupeKey: dedupeKey(kind, null),
     }
   }
 
@@ -161,6 +176,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
       label: 'Iniciar o container ollama',
       projectId: null,
       steps: [{ cmd: 'docker', args: ['start', 'ollama'], cwd: null, progress: false }],
+      dedupeKey: dedupeKey(kind, null),
     }
   }
 
@@ -173,6 +189,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
       label: `Baixar o modelo ${req.model}`,
       projectId: null,
       steps: [{ cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', req.model], cwd: null, progress: false }],
+      dedupeKey: dedupeKey(kind, null, req.model),
     }
   }
 
@@ -183,6 +200,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
       label: `Remover ${project.name} do hub`,
       projectId: project.id,
       steps: [{ cmd: 'ragx', args: ['project', 'unregister', project.name], cwd: null, progress: false }],
+      dedupeKey: dedupeKey(kind, project.id),
     }
   }
 
@@ -197,13 +215,20 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
 
   switch (kind) {
     case 'update':
-      return { kind, label: `Atualizar ${project.name}`, projectId: project.id, steps: [progressStep(path)] }
+      return {
+        kind,
+        label: `Atualizar ${project.name}`,
+        projectId: project.id,
+        steps: [progressStep(path)],
+        dedupeKey: dedupeKey(kind, project.id),
+      }
     case 'embed':
       return {
         kind,
         label: `Gerar embeddings em ${project.name}`,
         projectId: project.id,
         steps: [progressStep(path, ['--embed-only'])],
+        dedupeKey: dedupeKey(kind, project.id),
       }
     case 'reindex-full':
       return {
@@ -211,6 +236,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
         label: `Reindexar ${project.name} do zero`,
         projectId: project.id,
         steps: [progressStep(path, ['--full'])],
+        dedupeKey: dedupeKey(kind, project.id),
       }
     case 'sync':
       return {
@@ -218,6 +244,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
         label: `Sincronizar knowledge de ${project.name}`,
         projectId: project.id,
         steps: [{ cmd: 'ragx', args: ['sync'], cwd: path, progress: false }],
+        dedupeKey: dedupeKey(kind, project.id),
       }
     case 'graph':
       return {
@@ -225,6 +252,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
         label: `Reconstruir grafo de ${project.name}`,
         projectId: project.id,
         steps: [{ cmd: 'ragx', args: ['graph', 'rebuild'], cwd: path, progress: false }],
+        dedupeKey: dedupeKey(kind, project.id),
       }
     case 'dictionary':
       return {
@@ -232,6 +260,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
         label: `Gerar dicionário de ${project.name}`,
         projectId: project.id,
         steps: [{ cmd: 'ragx', args: ['dictionary', 'generate'], cwd: path, progress: false }],
+        dedupeKey: dedupeKey(kind, project.id),
       }
     case 'hooks-install':
       return {
@@ -239,6 +268,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
         label: `Instalar hooks em ${project.name}`,
         projectId: project.id,
         steps: [{ cmd: 'ragx', args: ['hooks', 'install', path], cwd: null, progress: false }],
+        dedupeKey: dedupeKey(kind, project.id),
       }
     case 'hooks-uninstall':
       return {
@@ -246,6 +276,7 @@ export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
         label: `Remover hooks de ${project.name}`,
         projectId: project.id,
         steps: [{ cmd: 'ragx', args: ['hooks', 'uninstall', path], cwd: null, progress: false }],
+        dedupeKey: dedupeKey(kind, project.id),
       }
     default:
       throw new JobRejected(`tarefa "${String(kind)}" sem implementação no catálogo`)
