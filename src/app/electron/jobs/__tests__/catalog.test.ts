@@ -132,12 +132,18 @@ describe('resolveJob - tabela do catálogo', () => {
   it('ollama-start', () => {
     const job = resolveJob({ kind: 'ollama-start' }, ctx())
     expect(job.label).toBe('Iniciar o container ollama')
+    expect(job.model).toBeNull()
     expect(job.steps).toEqual([{ cmd: 'docker', args: ['start', 'ollama'], cwd: null, progress: false }])
+  })
+
+  it('model só vale para ollama-pull: em outro tipo vira null', () => {
+    expect(resolveJob({ kind: 'update', projectId: 'p1', model: 'nomic-embed-text' }, ctx()).model).toBeNull()
   })
 
   it('ollama-pull', () => {
     const job = resolveJob({ kind: 'ollama-pull', model: 'nomic-embed-text' }, ctx())
     expect(job.label).toBe('Baixar o modelo nomic-embed-text')
+    expect(job.model).toBe('nomic-embed-text')
     expect(job.steps).toEqual([
       { cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', 'nomic-embed-text'], cwd: null, progress: false },
     ])

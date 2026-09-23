@@ -12,6 +12,7 @@ function job(over: Partial<JobView> = {}): JobView {
     kind: 'embed',
     label: 'Gerar embeddings em Juriflux',
     projectId: 'juriflux',
+    model: null,
     state: 'running',
     step: 1,
     steps: 1,

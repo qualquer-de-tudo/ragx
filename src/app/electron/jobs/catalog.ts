@@ -22,6 +22,8 @@ export interface ResolvedJob {
    * distingue um pedido do outro nesse kind.
    */
   dedupeKey: string
+  /** Modelo pedido: só em `ollama-pull`; `null` nos outros tipos. Vai para o `JobView`. */
+  model: string | null
 }
 
 export interface CatalogContext {
@@ -135,6 +137,12 @@ function validateFieldTypes(req: JobRequest): void {
 }
 
 export function resolveJob(req: JobRequest, ctx: CatalogContext): ResolvedJob {
+  const job = resolveSteps(req, ctx)
+  // Só chega aqui um `ollama-pull` com modelo já validado por `MODEL_PATTERN`.
+  return { ...job, model: job.kind === 'ollama-pull' ? (req.model as string) : null }
+}
+
+function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, 'model'> {
   if (req === null || typeof req !== 'object' || typeof req.kind !== 'string' || !KNOWN_KINDS.has(req.kind)) {
     throw new JobRejected(`tarefa fora do catálogo: ${String((req as { kind?: unknown } | null)?.kind)}`)
   }

@@ -92,6 +92,7 @@ export class JobQueue {
         kind: job.kind,
         label: job.label,
         projectId: job.projectId,
+        model: job.model,
         state: 'queued',
         step: 1,
         steps: job.steps.length,

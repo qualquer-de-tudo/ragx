@@ -19,7 +19,7 @@ export function snap(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
 /** Tarefa rodando por padrão. */
 export function job(over: Partial<JobView> = {}): JobView {
   return {
-    id: 'j1', kind: 'embed', label: 'Gerar embeddings em p1', projectId: 'p1', state: 'running',
+    id: 'j1', kind: 'embed', label: 'Gerar embeddings em p1', projectId: 'p1', model: null, state: 'running',
     step: 1, steps: 1, phase: 'embed', done: 40, total: 100, etaSeconds: 120, ratePerSecond: 2,
     note: null, error: null, logTail: [],
     queuedAt: '2026-09-23T10:00:00Z', startedAt: '2026-09-23T10:00:01Z', finishedAt: null,

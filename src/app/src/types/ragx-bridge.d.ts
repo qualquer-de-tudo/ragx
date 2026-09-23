@@ -130,6 +130,8 @@ export interface JobView {
   /** Ex.: "Gerar embeddings em Juriflux" (tabela do catálogo). */
   label: string
   projectId: string | null
+  /** Modelo do `ollama-pull` (é o que diz qual botão "Baixar X" está ocupado); `null` nos outros tipos. */
+  model: string | null
   state: JobState
   /** Passo atual (1-based). */
   step: number

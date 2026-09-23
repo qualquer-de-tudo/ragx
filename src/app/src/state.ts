@@ -100,16 +100,15 @@ export function missingEmbeddings(counts: ProjectSnapshot['counts']): number {
 }
 
 /**
- * Tarefa na fila ou rodando para uma ação de conexão. `ollama-pull` só conta
- * se for do mesmo modelo; como `JobView` não traz o modelo, compara pelo
- * rótulo que o catálogo dá (`electron/jobs/catalog.ts`: "Baixar o modelo X").
+ * Tarefa na fila ou rodando para uma ação de conexão (a rodando tem
+ * prioridade). `ollama-pull` só conta se for do mesmo modelo.
  */
 export function activeConnectionJob(jobs: readonly JobView[], action: ConnectionAction): JobView | null {
   const mine = jobs.filter(
     (j) =>
       j.kind === action.kind &&
       (j.state === 'queued' || j.state === 'running') &&
-      (action.kind !== 'ollama-pull' || j.label === `Baixar o modelo ${action.model ?? ''}`),
+      (action.kind !== 'ollama-pull' || j.model === (action.model ?? null)),
   )
   return mine.find((j) => j.state === 'running') ?? mine[0] ?? null
 }

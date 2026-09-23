@@ -51,6 +51,7 @@ function job(over: Partial<ResolvedJob> = {}): ResolvedJob {
     kind: 'update' as const,
     label: 'Atualizar Projeto',
     projectId: 'p1' as string | null,
+    model: null as string | null,
     steps: [{ cmd: 'ragx' as const, args: ['index', 'C:/p1', '--progress', '--source', 'panel'], cwd: null, progress: true }],
   }
   const merged = { ...base, ...over }
@@ -183,6 +184,7 @@ describe('JobQueue - dedupe', () => {
         kind: 'ollama-pull',
         projectId: null,
         dedupeKey: 'ollama-pull||nomic-embed-text',
+        model: 'nomic-embed-text',
         steps: [{ cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', 'nomic-embed-text'], cwd: null, progress: false }],
       }),
     )
@@ -191,6 +193,7 @@ describe('JobQueue - dedupe', () => {
         kind: 'ollama-pull',
         projectId: null,
         dedupeKey: 'ollama-pull||mxbai-embed-large',
+        model: 'mxbai-embed-large',
         steps: [{ cmd: 'docker', args: ['exec', 'ollama', 'ollama', 'pull', 'mxbai-embed-large'], cwd: null, progress: false }],
       }),
     )
@@ -200,6 +203,10 @@ describe('JobQueue - dedupe', () => {
     // Fila serial: só o primeiro pedido spawna imediatamente, o segundo
     // fica `queued` até o primeiro sair.
     expect(children).toHaveLength(1)
+    // O modelo chega ao `JobView` (a tela Conexões usa para saber qual botão está ocupado).
+    expect(j1.model).toBe('nomic-embed-text')
+    expect(j2.model).toBe('mxbai-embed-large')
+    expect(queue.list().find((v) => v.kind === 'update')?.model ?? null).toBeNull()
   })
 
   it('ollama-pull com o mesmo modelo duas vezes: dedupe normalmente', () => {

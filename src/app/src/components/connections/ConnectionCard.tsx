@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ConnectionAction, ConnectionCheck, JobView } from '../../types/ragx-bridge'
 import { Badge, type Tone } from '../shell/Badge'
-import { activeConnectionJob } from '../../state'
+import { activeConnectionJob, jobStateLabel } from '../../state'
 import { enqueueConnectionAction } from '../../jobs'
 import { formatRelative } from '../../format'
 
@@ -59,13 +59,13 @@ function ActionButton({
   onAction: (action: ConnectionAction) => void
 }) {
   const active = activeConnectionJob(jobs, action)
-  const busy = active === null ? null : active.state === 'running' ? 'Rodando…' : 'Na fila'
+  const busy = active === null ? null : jobStateLabel(active)
   return (
     <button
       type="button"
       className="btn btn-primary btn-block"
       disabled={busy !== null}
-      aria-label={busy ? `${action.label}: ${busy.replace('…', '').toLowerCase()}` : undefined}
+      aria-label={busy ? `${action.label}: ${busy.toLowerCase()}` : undefined}
       onClick={() => onAction(action)}
     >
       {busy ?? action.label}

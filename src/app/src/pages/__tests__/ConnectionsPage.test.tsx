@@ -89,13 +89,14 @@ describe('ConnectionsPage', () => {
     expect(within(card('RAGX CLI')).queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('ação com tarefa do mesmo tipo rodando fica "Rodando…" e desabilitada', () => {
+  it('ação com tarefa do mesmo tipo rodando fica "Rodando" e desabilitada', () => {
     installBridge()
     renderPage({
       jobs: [job({ id: 'm', kind: 'mcp-register', label: 'Registrar o RAGX no Claude Code', projectId: null })],
     })
     const busy = within(card('Claude Code')).getByRole('button', { name: /Registrar para todos os projetos/ })
-    expect(busy).toHaveTextContent('Rodando…')
+    expect(busy).toHaveTextContent('Rodando')
+    expect(busy).toHaveAccessibleName('Registrar para todos os projetos: rodando')
     expect(busy).toBeDisabled()
   })
 
@@ -103,7 +104,7 @@ describe('ConnectionsPage', () => {
     installBridge()
     const { unmount } = renderPage({
       jobs: [
-        job({ id: 'q', kind: 'ollama-pull', label: 'Baixar o modelo nomic-embed-text', projectId: null, state: 'queued' }),
+        job({ id: 'q', kind: 'ollama-pull', model: 'nomic-embed-text', projectId: null, state: 'queued' }),
       ],
     })
     const queued = within(card('Ollama (Docker)')).getByRole('button', { name: /Baixar nomic-embed-text/ })
@@ -112,7 +113,7 @@ describe('ConnectionsPage', () => {
     unmount()
 
     renderPage({
-      jobs: [job({ id: 'o', kind: 'ollama-pull', label: 'Baixar o modelo bge-m3', projectId: null })],
+      jobs: [job({ id: 'o', kind: 'ollama-pull', model: 'bge-m3', projectId: null })],
     })
     const free = within(card('Ollama (Docker)')).getByRole('button', { name: 'Baixar nomic-embed-text' })
     expect(free).toBeEnabled()
