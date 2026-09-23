@@ -52,7 +52,8 @@ instalação, execução destacada com log, opt-out por variável de ambiente.
 - Hook `pre-commit` com `ragx security scan --staged`. A doc promete, mas ele
   bloqueia commits e não foi pedido. A doc passa a dizer que não existe ainda.
 - Tema claro no painel. O v2 é só escuro, como a referência.
-- Remoção dos travessões do repositório (Parte C, spec separada).
+- Remoção dos travessões de código, comentários, docs, CLI e histórico. Só o
+  texto que aparece na tela do painel muda (ver B1).
 
 ---
 
@@ -244,7 +245,11 @@ o relatório. É o que o painel usa para barra de progresso e previsão.
   ("2 tarefas", abre a lista com progresso) e um ponto de saúde das conexões
   que leva à tela Conexões.
 - Menu lateral com ícones: Projetos, Conexões, Como funciona.
-- Título da janela: "RAGX Painel".
+- Título da janela e do `index.html`: "RAGX Painel".
+- Nenhum travessão (—) em texto visível do painel: títulos, rótulos, botões,
+  selos, mensagens, placeholders. Valor ausente aparece como "sem dados", não
+  como "—". Um teste percorre `src/app/src` (sem `__tests__`) e
+  `src/app/index.html` e falha se encontrar "—" fora de comentários.
 
 ### B2. Tela Projetos
 
@@ -335,6 +340,7 @@ configuração".
   renderer.
 - Descoberta de projetos: profundidade, pastas puladas.
 - Telas: card por estado, filtro, detalhe, onboarding.
+- Sem travessão em texto visível (teste da B1).
 - Verificação visual com screenshots do app real via Playwright/Electron,
   como na revisão do v1.
 
@@ -342,4 +348,3 @@ configuração".
 
 1. Parte A, com plano próprio.
 2. Parte B, com plano próprio, depois da A em `main`.
-3. Parte C (travessões), spec separada depois de decidir o escopo.
