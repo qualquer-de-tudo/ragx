@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import errno
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 from ragx.indexing import lock
 
@@ -97,3 +100,50 @@ def test_release_nao_mexe_em_trava_alheia(tmp_path: Path) -> None:
     (tmp_path / lock.LOCK_NAME).write_text(json.dumps(foreign), encoding="utf-8")
     lock.release(tmp_path)
     assert lock.holder(tmp_path) == foreign
+
+
+def test_publica_com_fallback_quando_link_fisico_nao_e_suportado(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FAT32/exFAT/alguns compartilhamentos SMB não suportam link físico.
+
+    `os.link` levanta `OSError` genérico (não `FileExistsError`) nesses
+    sistemas de arquivos; `_publish` precisa cair para `O_EXCL` direto, sem
+    deixar a trava impossível de adquirir.
+    """
+
+    def sem_link(src: object, dst: object) -> None:
+        raise OSError(errno.EPERM, "operação não suportada")
+
+    monkeypatch.setattr(os, "link", sem_link)
+    assert lock.try_acquire(tmp_path, "index", "cli") is True
+    h = lock.holder(tmp_path)
+    assert h is not None and h["pid"] == os.getpid() and h["source"] == "cli"
+    lock.release(tmp_path)
+
+
+def test_takeover_trata_erro_de_so_no_rename_como_ocupado(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """WinError 32: outro processo tem a trava aberta para leitura.
+
+    Confirmado neste host Windows — `os.rename` levanta `PermissionError`
+    (uma `OSError`) em vez de completar ou de dar `FileNotFoundError`.
+    `_take_over` não pode deixar isso escapar para `try_acquire`; precisa
+    tratar como "ocupado" e devolver `False`, mantendo a trava original
+    intacta.
+    """
+    p = subprocess.Popen([sys.executable, "-c", "pass"])
+    p.wait()
+    dead_pid = p.pid
+    original = json.dumps(
+        {"pid": dead_pid, "op": "index", "source": "cli", "started_at": "x"}
+    )
+    (tmp_path / lock.LOCK_NAME).write_text(original, encoding="utf-8")
+
+    def deny(src: object, dst: object) -> None:
+        raise PermissionError(13, "acesso negado")
+
+    monkeypatch.setattr(os, "rename", deny)
+    assert lock.try_acquire(tmp_path, "index", "outro") is False
+    assert (tmp_path / lock.LOCK_NAME).read_text(encoding="utf-8") == original

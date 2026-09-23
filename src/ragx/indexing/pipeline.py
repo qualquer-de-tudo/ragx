@@ -85,18 +85,27 @@ def index_project(
     try:
         report = _index_once(cfg, full, dry_run, progress, embed, embed_only, source)
         budget = _drain_pending(cfg, state_dir, budget)
-        return report
     finally:
         lock.release(state_dir)
-        # Um pedido pode ter chegado entre o último take_pending acima e o
-        # release: reobtém a trava uma vez e drena de novo antes de devolver
-        # o controle. O orçamento de reexecuções é o mesmo da primeira
-        # drenagem — não reinicia.
-        if lock.is_pending(state_dir) and lock.try_acquire(state_dir, "index", source):
-            try:
-                _drain_pending(cfg, state_dir, budget)
-            finally:
-                lock.release(state_dir)
+
+    # Só chega aqui em caminho de sucesso: Ctrl+C ou erro dentro do `try`
+    # acima já teria propagado no `finally`, sem passar por esta linha. Sem
+    # essa separação, reexecutar a indexação ao desenrolar uma exceção de
+    # verdade engoliria KeyboardInterrupt e trocaria o erro original por uma
+    # falha da rodada extra.
+    #
+    # Um pedido pode ter chegado entre o último take_pending acima e o
+    # release: reobtém a trava e drena de novo enquanto houver pedido
+    # pendente e orçamento — não só uma vez, senão a mesma corrida reaparece
+    # uma rodada depois. O orçamento é o mesmo da primeira drenagem, nunca
+    # reinicia.
+    while budget > 0 and lock.is_pending(state_dir) and lock.try_acquire(state_dir, "index", source):
+        try:
+            budget = _drain_pending(cfg, state_dir, budget)
+        finally:
+            lock.release(state_dir)
+
+    return report
 
 
 def _drain_pending(cfg: Config, state_dir: Path, budget: int) -> int:

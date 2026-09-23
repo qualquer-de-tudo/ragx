@@ -90,6 +90,24 @@ def holder(state_dir: Path) -> dict[str, Any] | None:
     return _read(state_dir / LOCK_NAME)
 
 
+def _publish_fallback(path: Path, payload: str) -> bool:
+    """Cria a trava direto no caminho final, sem passar por link físico.
+
+    Só entra em ação quando `os.link` falhou por falta de suporte do sistema
+    de arquivos (FAT32, exFAT, alguns compartilhamentos SMB), não por a
+    trava já existir. Mais fraco que `_publish`: existe uma janela mínima em
+    que o arquivo pode aparecer vazio, mas ainda garante exclusão mútua via
+    `O_EXCL`.
+    """
+    try:
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return False
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(payload)
+    return True
+
+
 def _publish(path: Path, payload: str) -> bool:
     """Cria a trava sem nunca deixá-la observável vazia (ver módulo)."""
     tmp = path.parent / f"{path.name}.tmp.{os.getpid()}.{uuid4().hex}"
@@ -99,6 +117,10 @@ def _publish(path: Path, payload: str) -> bool:
         return True
     except FileExistsError:
         return False
+    except OSError:
+        # Sistema de arquivos sem link físico: cai para O_EXCL direto no
+        # caminho final (garantia mais fraca, mas funciona em qualquer SO).
+        return _publish_fallback(path, payload)
     finally:
         with contextlib.suppress(FileNotFoundError):
             tmp.unlink()
@@ -118,6 +140,12 @@ def _take_over(state_dir: Path, dead_pid: int | None, payload: str) -> bool:
         # A trava sumiu entre a leitura e agora: outro processo já mexeu
         # nela. Tenta a criação normal, sem presumir quem é o dono.
         return _publish(path, payload)
+    except OSError:
+        # Outro processo ainda tem o arquivo aberto (ex.: WinError 32, leitura
+        # concorrente no Windows) ou outro erro de SO ao mover. Não dá para
+        # saber se o dono morreu de fato agora: trata como ocupado, sem
+        # deixar a exceção escapar para quem chamou try_acquire.
+        return False
 
     renamed = _read(stale)
     renamed_pid = renamed.get("pid") if renamed else None
@@ -126,13 +154,13 @@ def _take_over(state_dir: Path, dead_pid: int | None, payload: str) -> bool:
         # não era a trava morta que motivou esta tentativa. Devolve e desiste.
         with contextlib.suppress(FileExistsError):
             os.link(stale, path)
-        with contextlib.suppress(FileNotFoundError):
+        with contextlib.suppress(OSError):
             stale.unlink()
         return False
 
     # Era mesmo a trava morta (ou ilegível) que motivou a tentativa: descarta
     # e publica a nossa.
-    with contextlib.suppress(FileNotFoundError):
+    with contextlib.suppress(OSError):
         stale.unlink()
     return _publish(path, payload)
 

@@ -114,20 +114,57 @@ def test_pendencia_entre_ultimo_take_pending_e_release_ainda_roda(
 ) -> None:
     """Simula um pedido chegando entre o último `take_pending` e o `release`.
 
-    Monkeypatcha `lock.release` para marcar uma pendência exatamente antes de
-    liberar de verdade, reproduzindo a corrida sem depender de threads: o
-    dono precisa reobter a trava e drenar de novo depois de liberar.
+    Só a PRIMEIRA chamada a `lock.release` marca uma pendência extra antes de
+    liberar de verdade; as chamadas seguintes são o `release` real puro. Isso
+    reproduz a corrida uma única vez, sem depender de threads, e confirma que
+    o laço de redrenagem esvazia a pendência por completo quando há
+    orçamento de sobra (não fica nada para trás).
     """
     cfg = load_config(proj)
     real_release = lock.release
+    injected = {"done": False}
 
-    def release_and_sneak_in(state_dir: Path) -> None:
-        lock.mark_pending(state_dir, "watch")
+    def release_once_with_sneak_in(state_dir: Path) -> None:
+        if not injected["done"]:
+            injected["done"] = True
+            lock.mark_pending(state_dir, "watch")
         real_release(state_dir)
 
-    monkeypatch.setattr(lock, "release", release_and_sneak_in)
+    monkeypatch.setattr(lock, "release", release_once_with_sneak_in)
     index_project(cfg, source="cli")
     assert _sources(proj) == ["cli", "watch"]
+    assert not lock.is_pending(cfg.state_dir)
+
+
+def test_keyboardinterrupt_nao_e_engolida_pela_redrenagem(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ctrl+C durante a indexação não pode virar uma rodada extra escondida.
+
+    A redrenagem por pendência só roda em caminho de sucesso — nunca ao
+    desenrolar uma exceção real (senão Ctrl+C não seria respeitado, e uma
+    falha na rodada extra substituiria o erro original). Com uma pendência
+    já marcada e `_index_once` levantando `KeyboardInterrupt` na primeira
+    (e única) chamada, a exceção deve propagar intacta, sem nova tentativa
+    de indexação, e o pedido pendente deve sobrar para a próxima rodada.
+    """
+    import ragx.indexing.pipeline as pipeline
+
+    cfg = load_config(proj)
+    cfg.state_dir.mkdir(parents=True, exist_ok=True)
+    lock.mark_pending(cfg.state_dir, "watch")
+    calls = {"n": 0}
+
+    def boom(*a: object, **k: object) -> None:
+        calls["n"] += 1
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(pipeline, "_index_once", boom)
+    with pytest.raises(KeyboardInterrupt):
+        index_project(cfg, source="cli")
+    assert calls["n"] == 1
+    assert lock.holder(cfg.state_dir) is None
+    assert lock.is_pending(cfg.state_dir)
 
 
 def test_espera_com_wait_s_ate_a_trava_ser_liberada(proj: Path) -> None:
