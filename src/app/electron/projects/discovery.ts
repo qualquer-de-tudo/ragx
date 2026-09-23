@@ -5,6 +5,8 @@ export interface Found {
   path: string
   name: string
   alreadyRegistered: boolean
+  /** Repositório git sem `ragx.toml`: candidato a projeto novo. */
+  isNew: boolean
 }
 
 export interface DiscoverResult {
@@ -79,9 +81,13 @@ function normalizeForCompare(p: string): string {
  * Procura `ragx.toml` a partir de `root`, até `maxDepth` níveis abaixo (a
  * própria raiz conta como nível 0), sem visitar mais que `maxDirs` pastas
  * no total - a busca para e `truncated` vira `true` (a lista pode estar
- * incompleta, mas a chamada sempre devolve rápido). Não desce dentro de uma
- * pasta onde já achou um projeto (um `ragx.toml` aninhado dentro de outro
- * projeto - ex.: um vendored/submodule - nunca aparece). Pastas de
+ * incompleta, mas a chamada sempre devolve rápido). Uma pasta com `.git`
+ * (diretório, ou arquivo no caso de worktree/submódulo) e sem `ragx.toml`
+ * também entra, como candidato novo (`isNew`): numa máquina nova, é isso que
+ * deixa escolher os repositórios um a um em vez de um projeto gigante com a
+ * pasta inteira. Não desce dentro de uma pasta onde já achou um projeto ou
+ * repositório (um `ragx.toml` aninhado dentro de outro projeto - ex.: um
+ * vendored/submodule - nunca aparece). Pastas de
  * dependência/build/ruído do Windows (`SKIP_DIRS_LOWER`) nunca são
  * visitadas. Erros de leitura (permissão, pasta removida) são ignorados por
  * pasta, não interrompem a busca.
@@ -119,13 +125,15 @@ export function discoverProjects(root: string, registeredPaths: Set<string>, opt
     }
 
     const hasRagxToml = entries.some((e) => !e.isDirectory && e.name === 'ragx.toml')
-    if (hasRagxToml) {
+    const isGitRepo = entries.some((e) => e.name === '.git')
+    if (hasRagxToml || isGitRepo) {
       results.push({
         path: dir,
         name: path.basename(dir),
         alreadyRegistered: registeredNormalized.has(normalizeForCompare(dir)),
+        isNew: !hasRagxToml,
       })
-      return // não desce dentro de um projeto já encontrado
+      return // não desce dentro de um projeto (ou repositório) já encontrado
     }
 
     if (depth >= maxDepth) return

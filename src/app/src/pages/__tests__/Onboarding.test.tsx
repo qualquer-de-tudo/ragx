@@ -8,9 +8,9 @@ const FOLDER = { token: 'tok-root', path: 'C:/projects' }
 
 const FOUND: DiscoverResult = {
   items: [
-    { token: 'tok-a', path: 'C:/projects/juriflux', name: 'juriflux', alreadyRegistered: false },
-    { token: 'tok-b', path: 'C:/projects/site', name: 'site', alreadyRegistered: false },
-    { token: 'tok-c', path: 'C:/projects/ragx', name: 'ragx', alreadyRegistered: true },
+    { token: 'tok-a', path: 'C:/projects/juriflux', name: 'juriflux', alreadyRegistered: false, isNew: false },
+    { token: 'tok-b', path: 'C:/projects/site', name: 'site', alreadyRegistered: false, isNew: false },
+    { token: 'tok-c', path: 'C:/projects/ragx', name: 'ragx', alreadyRegistered: true, isNew: false },
   ],
   truncated: false,
 }

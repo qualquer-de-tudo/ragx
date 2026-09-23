@@ -12,6 +12,7 @@ function bridge(over: Partial<RagxBridge> = {}): RagxBridge {
     runTrial: vi.fn(),
     runSecurityScan: vi.fn(),
     getConnections: vi.fn().mockResolvedValue([]),
+    onConnections: vi.fn(() => () => {}),
     listJobs: vi.fn().mockResolvedValue([]),
     onJobs: vi.fn(() => () => {}),
     enqueueJob: vi.fn(),
@@ -70,20 +71,58 @@ describe('useConnections', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())
 
-  it('checa ao montar e a cada 30 s, e para ao desmontar', async () => {
+  function pushable() {
+    const listeners: Array<(c: ConnectionCheck[]) => void> = []
+    const onConnections = vi.fn((cb: (c: ConnectionCheck[]) => void) => {
+      listeners.push(cb)
+      return () => {
+        const i = listeners.indexOf(cb)
+        if (i >= 0) listeners.splice(i, 1)
+      }
+    })
+    return { onConnections, push: (c: ConnectionCheck[]) => listeners.forEach((l) => l(c)), listeners }
+  }
+
+  it('checa uma vez ao montar e não tem polling próprio (o processo principal é o único poller)', async () => {
     const getConnections = vi.fn().mockResolvedValue([check])
-    window.ragx = bridge({ getConnections })
-    const { result, unmount } = renderHook(() => useConnections())
+    const { onConnections } = pushable()
+    window.ragx = bridge({ getConnections, onConnections })
+    const { result } = renderHook(() => useConnections())
     await act(async () => {})
     expect(getConnections).toHaveBeenCalledTimes(1)
     expect(result.current.connections).toEqual([check])
 
-    await act(async () => vi.advanceTimersByTime(30_000))
-    expect(getConnections).toHaveBeenCalledTimes(2)
+    await act(async () => vi.advanceTimersByTime(120_000))
+    expect(getConnections).toHaveBeenCalledTimes(1)
+  })
+
+  it('segue os resultados empurrados em ragx:connections e desinscreve ao desmontar', async () => {
+    const { onConnections, push, listeners } = pushable()
+    window.ragx = bridge({ onConnections })
+    const { result, unmount } = renderHook(() => useConnections())
+    await act(async () => {})
+
+    const later = { id: 'ollama', state: 'warn' } as ConnectionCheck
+    act(() => push([later]))
+    expect(result.current.connections).toEqual([later])
+    expect(result.current.checking).toBe(false)
 
     unmount()
-    await act(async () => vi.advanceTimersByTime(60_000))
-    expect(getConnections).toHaveBeenCalledTimes(2)
+    expect(listeners).toHaveLength(0)
+  })
+
+  it('a resposta do getConnections() inicial não apaga um resultado empurrado depois dela', async () => {
+    let answer: (c: ConnectionCheck[]) => void = () => {}
+    const getConnections = vi.fn(() => new Promise<ConnectionCheck[]>((r) => (answer = r)))
+    const { onConnections, push } = pushable()
+    window.ragx = bridge({ getConnections, onConnections })
+    const { result } = renderHook(() => useConnections())
+
+    const pushed = { id: 'claude', state: 'ok' } as ConnectionCheck
+    act(() => push([pushed]))
+    await act(async () => answer([check]))
+    // As duas vêm da mesma checagem no processo principal; o que vale é o empurrado.
+    expect(result.current.connections).toEqual([pushed])
   })
 
   it('refresh() checa na hora', async () => {
@@ -101,7 +140,7 @@ describe('useConnections', () => {
     window.ragx = bridge({ getConnections })
     const { result } = renderHook(() => useConnections())
     await act(async () => {})
-    await act(async () => vi.advanceTimersByTime(30_000))
+    await act(async () => result.current.refresh())
     expect(result.current.connections).toEqual([check])
     expect(error).toHaveBeenCalled()
     error.mockRestore()

@@ -36,6 +36,7 @@ export function installBridge(over: Partial<RagxBridge> = {}): RagxBridge {
     runTrial: vi.fn(),
     runSecurityScan: vi.fn(),
     getConnections: vi.fn().mockResolvedValue([]),
+    onConnections: vi.fn(() => () => {}),
     listJobs: vi.fn().mockResolvedValue([]),
     onJobs: vi.fn(() => () => {}),
     enqueueJob: vi.fn().mockImplementation((req) => Promise.resolve(job({ kind: req.kind, state: 'queued' }))),

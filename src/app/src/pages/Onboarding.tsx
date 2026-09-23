@@ -165,7 +165,8 @@ export function Onboarding({
           {/* Montado desde o início e só escondido: voltar do passo 4 mantém a pasta e as marcações. */}
           <div className="onboarding-body" hidden={step !== 2}>
             <p className="dim onboarding-intro">
-              Escolha uma pasta; o RAGX encontra os projetos dentro dela. Marque os que quer indexar.
+              Escolha uma ou mais pastas; o RAGX encontra os projetos e os repositórios git dentro delas. Marque os
+              que quer indexar.
             </p>
             <AddProjectFlow
               onSelectionChange={setPicked}

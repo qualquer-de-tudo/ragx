@@ -39,9 +39,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   `.ragx/status.json` e da branch/commit atuais do git, não só de
   "ok"/"degradado". Um filtro segmentado separa "Todos", "Defasados" e
   "Com problema"; a busca ignora maiúsculas e acentos. "Adicionar
-  projeto" pede uma pasta, lista os projetos do RAGX encontrados dentro
-  dela (os já registrados aparecem desmarcados) e instala os hooks de git
-  por padrão.
+  projeto" pede uma pasta e lista os projetos do RAGX encontrados dentro
+  dela (marcados; os já registrados aparecem desmarcados) e também os
+  repositórios git sem `ragx.toml`, com a marca "novo" e desmarcados. Cada
+  nova pasta escolhida soma à lista em vez de trocá-la, e cada item pode
+  sair dela; a própria pasta como projeto novo só é oferecida quando a busca
+  nela não acha nada. Os hooks de git são instalados por padrão, e pulados
+  com um aviso quando a pasta não é um repositório git. Um projeto que foi
+  indexado mas não entrou no hub (nome já usado por outro projeto, ou
+  `visibility = "private"`) termina como falha que explica o motivo, em vez
+  de "Concluída" sem card.
 
   O detalhe do projeto responde "o índice está em dia?" com os motivos
   exatos de `ragx status --json` (troca de branch, commits novos depois da
@@ -67,6 +74,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   selo "Indexando…" só aparece para tarefas que indexam (adicionar,
   atualizar, gerar embeddings, reindexar); sincronizar knowledge,
   reconstruir grafo, gerar dicionário e mexer nos hooks não contam.
+  "Indexando…" também some quando o processo que segurava a indexação
+  morreu (um índice cancelado ou um hook que caiu). Quando outra indexação
+  já está rodando, a tarefa diz o que acontece com o pedido de cada tipo
+  (atualizar fica agendado; embeddings faltantes saem quando a outra
+  terminar; "Reindexar do zero" precisa ser pedido de novo), inclusive nos
+  comandos que saem com o código 4. "Gerar embeddings" que não gerou nada
+  (Ollama fora do ar, por exemplo) termina como falha com o motivo, não
+  como "Concluída". O erro mostrado é a mensagem inteira do CLI, não a
+  última linha quebrada em 80 colunas, e um comando que não existe aparece
+  como "Comando não encontrado".
 
   A tela Conexões mostra três cards (RAGX CLI, Claude Code e Ollama no
   Docker), cada um com o selo "Conectado", "Atenção" ou "Não conectado",
@@ -76,7 +93,9 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   correções de um clique ("Registrar para todos os projetos", "Iniciar
   container", "Baixar nomic-embed-text"). O painel confere tudo a cada 30
   segundos, na hora com "Verificar agora" e logo depois que uma dessas
-  correções termina; antes da primeira resposta os cards ficam em
+  correções termina, sempre por uma checagem só no processo principal.
+  Docker ausente aparece como "O Docker não está instalado nesta máquina.",
+  não como "não está rodando". Antes da primeira resposta os cards ficam em
   "Verificando…", nunca verdes. RAGX registrado no Claude Code só no
   escopo de um projeto aparece como "Atenção", não como conectado.
 

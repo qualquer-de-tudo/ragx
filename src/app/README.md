@@ -82,7 +82,14 @@ arquivo não existir, cai para contagens lidas direto de
 commit atuais vêm de `git --no-optional-locks`, para nunca disputar o
 `.git/index` com um `git` do usuário rodando ao mesmo tempo. O painel monta
 esse retrato (o "snapshot") por polling a cada 5 segundos e também logo
-depois que uma tarefa termina, sem esperar o próximo tick.
+depois que uma tarefa termina, sem esperar o próximo tick. Um `running` em
+`status.json` só conta enquanto o processo dono (`pid`) existe: um índice
+cancelado ou um hook que morreu não deixam o card preso em "Indexando…".
+
+As conexões (RAGX CLI, Claude Code, Ollama) também são checadas só pelo
+processo principal: a cada 30 segundos, no startup, logo depois de uma
+correção de conexão e no "Verificar agora". Cada resultado vai ao renderer
+pelo evento `ragx:connections`; checagens pedidas ao mesmo tempo viram uma só.
 
 A resposta completa de `ragx status --json` (com os motivos de defasagem e o
 histórico de indexações) só é pedida para o projeto aberto no momento na
@@ -90,7 +97,11 @@ tela de Detalhe, nunca para todos de uma vez.
 
 Leitura de arquivo do projeto do usuário fica restrita a
 `.ragx/status.json`, `.ragx/knowledge.db`, `.ragx/logs/mcp.jsonl` e à
-existência de `ragx.toml`; nenhum conteúdo de código-fonte é lido.
+existência de `ragx.toml` e `.git` (a busca de "Adicionar projeto" também
+oferece repositórios git sem `ragx.toml`, marcados "novo"); nenhum conteúdo
+de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
+da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
+projeto não entrou no hub (colisão de nome ou projeto privado).
 
 ## A regra de IPC
 
@@ -109,15 +120,23 @@ Uma fila serial: no máximo uma tarefa `running` por vez, porque o Ollama é
 compartilhado entre projetos. Pedidos duplicados (mesmo tipo, projeto e,
 quando faz sentido, mesmo modelo ou pasta) são deduplicados: o segundo
 pedido devolve a tarefa já enfileirada em vez de empilhar outra. Uma linha
-`{"phase":"busy"}` emitida por `ragx index --progress` vira uma nota
-"agendado" na tarefa, não um erro.
+`{"phase":"busy"}` emitida por `ragx index --progress` vira uma nota na
+tarefa, não um erro, e a nota diz o que de fato acontece com cada tipo (o
+pedido agendado roda como indexação incremental, então "Reindexar do zero"
+pede para ser repetido). O código de saída 4 (índice ocupado) também vira
+nota. A linha `{"phase":"done"}` com `embed_error` marca a tarefa como
+falha ("Os embeddings não foram gerados: ..."), porque `ragx index` sai com 0
+mesmo quando o embedder falha. Um `add-project` que termina sem a pasta no
+registro do hub também falha, com o motivo. O texto de erro vem do bloco
+`erro:` do stderr (os processos rodam com `COLUMNS=500` para o Rich não
+quebrar a mensagem), e comandos globais rodam na pasta do usuário.
 
 O catálogo é fechado: só estes 13 tipos existem, e cada um sabe qual
 comando roda.
 
 | `kind`            | Comando                                                                                                                |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `add-project`     | `ragx init <pasta>`, depois `ragx index <pasta> --progress --source panel` (e `ragx hooks install <pasta>` se marcado) |
+| `add-project`     | `ragx init <pasta>`, depois `ragx index <pasta> --progress --source panel` (e `ragx hooks install <pasta>` se marcado e a pasta for um repositório git) |
 | `update`          | `ragx index <pasta> --progress --source panel`                                                                         |
 | `embed`           | `ragx index <pasta> --embed-only --progress --source panel`                                                            |
 | `reindex-full`    | `ragx index <pasta> --full --progress --source panel`                                                                  |
@@ -126,7 +145,7 @@ comando roda.
 | `dictionary`      | `ragx dictionary generate` (cwd = pasta do projeto)                                                                     |
 | `hooks-install`   | `ragx hooks install <pasta>`                                                                                            |
 | `hooks-uninstall` | `ragx hooks uninstall <pasta>`                                                                                          |
-| `remove-from-hub` | `ragx project unregister <nome>`                                                                                       |
+| `remove-from-hub` | `ragx project unregister -- <nome>`                                                                                    |
 | `mcp-register`    | `ragx mcp install --client claude-code`                                                                                |
 | `ollama-start`    | `docker start ollama`                                                                                                  |
 | `ollama-pull`     | `docker exec ollama ollama pull <modelo>`                                                                              |

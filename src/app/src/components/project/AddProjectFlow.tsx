@@ -4,19 +4,31 @@ import type { DiscoverItem } from '../../types/ragx-bridge'
 const TRUNCATED_NOTE =
   'Busca parcial: a pasta é grande demais para varrer inteira. Escolha uma pasta mais específica se faltar algum projeto.'
 
-type Found =
-  | { status: 'idle' }
-  | { status: 'searching' }
-  | { status: 'failed' }
-  | { status: 'done'; items: DiscoverItem[]; truncated: boolean }
+type Search = 'idle' | 'searching' | 'failed' | 'done'
+
+/** Item da lista: o que `discover` achou, ou a própria pasta escolhida quando ela não tinha nada dentro. */
+interface Candidate extends DiscoverItem {
+  /** A própria pasta escolhida, oferecida porque a busca nela não achou nada. */
+  ownFolder: boolean
+}
 
 function lastSegment(path: string): string {
   const parts = path.split(/[\\/]+/).filter(Boolean)
   return parts[parts.length - 1] ?? path
 }
 
+/** Chave para não repetir a mesma pasta vinda de duas escolhas (cada `discover` emite tokens novos). */
+function pathKey(path: string): string {
+  return path.replace(/\\/g, '/').replace(/\/+$/, '')
+}
+
 function addLabel(n: number): string {
   return n === 1 ? 'Adicionar 1 projeto' : `Adicionar ${n} projetos`
+}
+
+/** Projeto do RAGX já existente começa marcado; repositório novo e a própria pasta, não. */
+function startsChecked(c: Candidate): boolean {
+  return !c.ownFolder && !c.isNew && !c.alreadyRegistered
 }
 
 /** Projeto marcado: o token vai para o `add-project`; o nome é só para a tela. */
@@ -26,8 +38,10 @@ export interface PickedProject {
 }
 
 /**
- * Corpo do "Adicionar projeto": escolher pasta, ver os projetos do RAGX
- * dentro dela, marcar quais entram e enfileirar um `add-project` por item.
+ * Corpo do "Adicionar projeto": escolher pastas, ver os projetos do RAGX e
+ * os repositórios git (sem `ragx.toml`, marcados "novo") dentro delas, marcar
+ * quais entram e enfileirar um `add-project` por item. Cada "Escolher pasta"
+ * soma à lista (sem repetir a mesma pasta), e cada item pode sair dela.
  * Fica separado do diálogo para o onboarding reaproveitar.
  *
  * Dois modos:
@@ -51,8 +65,13 @@ export function AddProjectFlow({
   installHooks?: boolean
   onInstallHooksChange?: (value: boolean) => void
 }) {
-  const [folder, setFolder] = useState<{ token: string; path: string } | null>(null)
-  const [found, setFound] = useState<Found>({ status: 'idle' })
+  const [lastFolder, setLastFolder] = useState<{ token: string; path: string } | null>(null)
+  const [search, setSearch] = useState<Search>('idle')
+  const [lastFoundNothing, setLastFoundNothing] = useState(false)
+  const [truncated, setTruncated] = useState(false)
+  const [candidates, setCandidates] = useState<Candidate[]>([])
+  // Espelho de `candidates` para somar a lista sem depender de um fechamento velho.
+  const candidatesRef = useRef<Candidate[]>([])
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [ownHooks, setOwnHooks] = useState(true)
   const installHooks = hooksProp ?? ownHooks
@@ -71,6 +90,11 @@ export function AddProjectFlow({
     }
   }, [])
 
+  function commitCandidates(next: Candidate[]) {
+    candidatesRef.current = next
+    setCandidates(next)
+  }
+
   async function choose() {
     let picked: { token: string; path: string } | null
     try {
@@ -82,19 +106,39 @@ export function AddProjectFlow({
     if (picked === null || !alive.current) return
 
     const mine = ++request.current
-    setFolder(picked)
-    setFound({ status: 'searching' })
-    setSelected(new Set())
+    setLastFolder(picked)
+    setSearch('searching')
+    setLastFoundNothing(false)
+    setTruncated(false)
     setFailed([])
     try {
       const result = await window.ragx.discover(picked.token)
       if (!alive.current || request.current !== mine) return
-      setFound({ status: 'done', items: result.items, truncated: result.truncated })
-      setSelected(new Set(result.items.filter((i) => !i.alreadyRegistered).map((i) => i.token)))
+      const found: Candidate[] =
+        result.items.length > 0
+          ? result.items.map((i) => ({ ...i, ownFolder: false }))
+          : [
+              {
+                token: picked.token,
+                path: picked.path,
+                name: lastSegment(picked.path),
+                alreadyRegistered: false,
+                isNew: true,
+                ownFolder: true,
+              },
+            ]
+      const current = candidatesRef.current
+      const known = new Set(current.map((c) => pathKey(c.path)))
+      const added = found.filter((c) => !known.has(pathKey(c.path)))
+      commitCandidates([...current, ...added])
+      setSelected((prev) => new Set([...prev, ...added.filter(startsChecked).map((c) => c.token)]))
+      setSearch('done')
+      setLastFoundNothing(result.items.length === 0)
+      setTruncated(result.truncated)
     } catch (err) {
       if (!alive.current || request.current !== mine) return
       console.error('discover() falhou:', err)
-      setFound({ status: 'failed' })
+      setSearch('failed')
     }
   }
 
@@ -107,22 +151,39 @@ export function AddProjectFlow({
     })
   }
 
-  // Nome para a mensagem de erro de cada token marcável.
-  const names = new Map<string, string>()
-  if (folder) names.set(folder.token, lastSegment(folder.path))
-  if (found.status === 'done') for (const i of found.items) names.set(i.token, i.name)
+  function remove(token: string) {
+    commitCandidates(candidatesRef.current.filter((c) => c.token !== token))
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.delete(token)
+      return next
+    })
+  }
+
+  // Seleção na ordem da lista (a mesma em que o diálogo enfileira).
+  const picked = useMemo<PickedProject[]>(
+    () =>
+      candidates
+        .filter((c) => !c.alreadyRegistered && selected.has(c.token))
+        .map((c) => ({ token: c.token, name: c.name })),
+    [candidates, selected],
+  )
+
+  useEffect(() => {
+    onSelectionChange?.(picked)
+  }, [picked, onSelectionChange])
 
   async function submit() {
     setSubmitting(true)
     setFailed([])
-    const notAdded: string[] = []
+    const notAdded: PickedProject[] = []
     // Um por vez, na ordem da lista: a fila é serial de qualquer jeito.
-    for (const token of selected) {
+    for (const p of picked) {
       try {
-        await window.ragx.enqueueJob({ kind: 'add-project', folderToken: token, installHooks })
+        await window.ragx.enqueueJob({ kind: 'add-project', folderToken: p.token, installHooks })
       } catch (err) {
         console.error('enqueueJob(add-project) falhou:', err)
-        notAdded.push(token)
+        notAdded.push(p)
       }
     }
     if (!alive.current) return
@@ -132,25 +193,11 @@ export function AddProjectFlow({
       return
     }
     // O que entrou na fila sai da seleção; o que falhou fica para tentar de novo.
-    setSelected(new Set(notAdded))
-    setFailed(notAdded.map((t) => names.get(t) ?? t))
+    setSelected(new Set(notAdded.map((p) => p.token)))
+    setFailed(notAdded.map((p) => p.name))
   }
 
-  const count = selected.size
-
-  // Seleção na ordem da lista (a mesma em que o diálogo enfileira).
-  const picked = useMemo<PickedProject[]>(() => {
-    if (found.status !== 'done' || !folder) return []
-    const candidates =
-      found.items.length === 0
-        ? [{ token: folder.token, name: lastSegment(folder.path) }]
-        : found.items.filter((i) => !i.alreadyRegistered).map((i) => ({ token: i.token, name: i.name }))
-    return candidates.filter((c) => selected.has(c.token))
-  }, [found, folder, selected])
-
-  useEffect(() => {
-    onSelectionChange?.(picked)
-  }, [picked, onSelectionChange])
+  const count = picked.length
 
   return (
     <div className="add-flow">
@@ -158,63 +205,65 @@ export function AddProjectFlow({
         <button type="button" className="btn" data-autofocus onClick={() => void choose()} disabled={submitting}>
           Escolher pasta
         </button>
-        {folder && <p className="mono add-flow-path">{folder.path}</p>}
+        {lastFolder && <p className="mono add-flow-path">{lastFolder.path}</p>}
       </div>
 
-      {found.status === 'searching' && (
+      {search === 'searching' && (
         <p className="dim" role="status">
           Procurando projetos…
         </p>
       )}
 
-      {found.status === 'failed' && (
+      {search === 'failed' && (
         <p className="callout callout-error" role="alert">
           Não foi possível procurar projetos nesta pasta.
         </p>
       )}
 
-      {found.status === 'done' && folder && (
+      {search === 'done' && lastFoundNothing && (
+        <p className="hint">Nenhum projeto do RAGX nem repositório git nesta pasta.</p>
+      )}
+
+      {candidates.length > 0 && (
         <fieldset className="add-flow-found">
-          <legend className="add-flow-legend">
-            {found.items.length === 0 ? 'Nenhum projeto do RAGX nesta pasta' : 'Projetos encontrados'}
-          </legend>
+          <legend className="add-flow-legend">Projetos encontrados</legend>
           <ul className="add-flow-list">
-            {found.items.length === 0 ? (
-              <li>
-                <label className="check">
+            {candidates.map((c) => (
+              <li key={c.token} className="add-flow-item">
+                <label className={`check${c.alreadyRegistered ? ' is-disabled' : ''}`}>
                   <input
                     type="checkbox"
-                    checked={selected.has(folder.token)}
-                    onChange={() => toggle(folder.token)}
+                    checked={!c.alreadyRegistered && selected.has(c.token)}
+                    disabled={c.alreadyRegistered}
+                    onChange={() => toggle(c.token)}
                   />
-                  <span>Usar esta pasta como um projeto novo</span>
+                  <span className="check-body">
+                    <span className="check-name">{c.ownFolder ? 'Usar esta pasta como um projeto novo' : c.name}</span>{' '}
+                    <span className="mono dim">{c.path}</span>{' '}
+                    {c.isNew && <span className="badge badge-accent">novo</span>}
+                    {c.alreadyRegistered && <span className="hint">já está no painel</span>}
+                  </span>
                 </label>
+                <button
+                  type="button"
+                  className="btn btn-quiet btn-sm add-flow-remove"
+                  aria-label={`Remover ${c.name} da lista`}
+                  onClick={() => remove(c.token)}
+                  disabled={submitting}
+                >
+                  Remover
+                </button>
               </li>
-            ) : (
-              found.items.map((item) => (
-                <li key={item.token}>
-                  <label className={`check${item.alreadyRegistered ? ' is-disabled' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={!item.alreadyRegistered && selected.has(item.token)}
-                      disabled={item.alreadyRegistered}
-                      onChange={() => toggle(item.token)}
-                    />
-                    <span className="check-body">
-                      <span className="check-name">{item.name}</span>{' '}
-                      <span className="mono dim">{item.path}</span>{' '}
-                      {item.alreadyRegistered && <span className="hint">já está no painel</span>}
-                    </span>
-                  </label>
-                </li>
-              ))
-            )}
+            ))}
           </ul>
-          {found.truncated && <p className="hint add-flow-note">{TRUNCATED_NOTE}</p>}
+          <p className="hint add-flow-note">
+            Escolha outra pasta para somar mais projetos. Os marcados como novo ganham um ragx.toml ao serem adicionados.
+          </p>
+          {truncated && <p className="hint add-flow-note">{TRUNCATED_NOTE}</p>}
         </fieldset>
       )}
 
-      {folder && (
+      {lastFolder && (
         <label className="check">
           <input type="checkbox" checked={installHooks} onChange={(e) => setInstallHooks(e.target.checked)} />
           <span>Instalar hooks de git (mantém o índice na branch em que você está)</span>

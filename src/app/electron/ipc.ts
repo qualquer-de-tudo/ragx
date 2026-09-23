@@ -40,6 +40,12 @@ export interface HandlerDeps {
   getCachedSnapshot: () => Snapshot | null
   runRagxCommand: (cwd: string, args: string[]) => Promise<unknown>
   checkAll: (snapshot: Snapshot) => Promise<ConnectionCheck[]>
+  /**
+   * Avisa o renderer (`ragx:connections`) a cada checagem terminada, venha
+   * ela do polling de 30 s, do startup, de uma tarefa de conexão que terminou
+   * ou de um "Verificar agora". É o único poller de conexões.
+   */
+  publishConnections?: (checks: ConnectionCheck[]) => void
   resetRagxCache: () => void
   queue: QueueLike
   folderTokens: FolderTokensLike
@@ -70,6 +76,17 @@ function validateJobRequestShape(input: unknown): JobRequest {
 }
 
 export function createHandlers(deps: HandlerDeps) {
+  let inFlightConnections: Promise<ConnectionCheck[]> | null = null
+
+  async function runConnectionChecks(): Promise<ConnectionCheck[]> {
+    deps.resetRagxCache()
+    let snapshot = deps.getCachedSnapshot()
+    if (snapshot === null) snapshot = await deps.buildSnapshot()
+    const checks = await deps.checkAll(snapshot)
+    deps.publishConnections?.(checks)
+    return checks
+  }
+
   function cachedProjects(): ProjectSnapshot[] {
     return deps.getCachedSnapshot()?.projects ?? []
   }
@@ -131,12 +148,18 @@ export function createHandlers(deps: HandlerDeps) {
      * último snapshot - constrói um primeiro se o polling ainda não rodou,
      * senão a checagem do Ollama reportaria "ok" achando que nenhum modelo
      * é necessário (decisão 2 do plano).
+     *
+     * Uma checagem por vez: quem chama no meio de uma em andamento (o
+     * polling, o startup e o "Verificar agora" do renderer podem coincidir)
+     * recebe o mesmo resultado em vez de disparar outra.
      */
-    async getConnections(): Promise<ConnectionCheck[]> {
-      deps.resetRagxCache()
-      let snapshot = deps.getCachedSnapshot()
-      if (snapshot === null) snapshot = await deps.buildSnapshot()
-      return deps.checkAll(snapshot)
+    getConnections(): Promise<ConnectionCheck[]> {
+      if (inFlightConnections) return inFlightConnections
+      const run: Promise<ConnectionCheck[]> = runConnectionChecks().finally(() => {
+        if (inFlightConnections === run) inFlightConnections = null
+      })
+      inFlightConnections = run
+      return run
     },
 
     listJobs(): JobView[] {
@@ -193,6 +216,7 @@ export function createHandlers(deps: HandlerDeps) {
         path: f.path,
         name: f.name,
         alreadyRegistered: f.alreadyRegistered,
+        isNew: f.isNew,
       }))
       return { items: mapped, truncated }
     },

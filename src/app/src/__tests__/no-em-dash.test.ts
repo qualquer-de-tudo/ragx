@@ -4,13 +4,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const ROOT = path.resolve(__dirname, '..') // src/app/src
+const ELECTRON = path.resolve(__dirname, '..', '..', 'electron') // src/app/electron
 const HTML = path.resolve(__dirname, '..', '..', 'index.html')
 
-function files(dir: string): string[] {
+function files(dir: string, pattern: RegExp): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const full = path.join(dir, e.name)
-    if (e.isDirectory()) return e.name === '__tests__' || e.name === 'test' ? [] : files(full)
-    return /\.(tsx?|css|html)$/.test(e.name) ? [full] : []
+    if (e.isDirectory()) return e.name === '__tests__' || e.name === 'test' ? [] : files(full, pattern)
+    return pattern.test(e.name) ? [full] : []
   })
 }
 
@@ -24,11 +25,22 @@ function stripComments(src: string): string {
     .replace(/(^|[^:\\])\/\/.*$/gm, '$1')
 }
 
+function offendingLines(file: string): string[] {
+  return stripComments(fs.readFileSync(file, 'utf-8'))
+    .split('\n')
+    .filter((line) => line.includes('—'))
+}
+
 describe('texto visível sem travessão', () => {
-  it.each([...files(ROOT), HTML])('%s', (file) => {
-    const offending = stripComments(fs.readFileSync(file, 'utf-8'))
-      .split('\n')
-      .filter((line) => line.includes('—'))
-    expect(offending).toEqual([])
+  it.each([...files(ROOT, /\.(tsx?|css|html)$/), HTML])('%s', (file) => {
+    expect(offendingLines(file)).toEqual([])
+  })
+})
+
+// O processo principal também produz texto que chega à tela: erros de
+// tarefa, notas, resumos das checagens de conexão, mensagens de recusa.
+describe('texto do processo principal sem travessão', () => {
+  it.each(files(ELECTRON, /\.ts$/))('%s', (file) => {
+    expect(offendingLines(file)).toEqual([])
   })
 })

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from './hooks/useSnapshot'
 import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
-import { useRecheckAfterConnectionJobs } from './hooks/useRecheckAfterConnectionJobs'
 import { Sidebar } from './components/shell/Sidebar'
 import { TopBar, type Health } from './components/shell/TopBar'
 import type { Route } from './route'
@@ -29,8 +28,9 @@ function worstOf(checks: ConnectionCheck[] | null): Health {
 function App() {
   const { snapshot } = useSnapshot()
   const jobs = useJobs()
+  // Depois de uma correção de conexão, quem confere de novo é o processo
+  // principal (o resultado chega por `ragx:connections`).
   const { connections, checking, refresh } = useConnections()
-  useRecheckAfterConnectionJobs(jobs, refresh)
 
   // `null` enquanto não se sabe. Uma falha ao ler as preferências não prende
   // ninguém no onboarding.

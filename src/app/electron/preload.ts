@@ -23,6 +23,11 @@ const ragx: RagxBridge = {
   runSecurityScan: (projectId: string): Promise<SecurityScanResult> =>
     ipcRenderer.invoke('ragx:runSecurityScan', projectId),
   getConnections: (): Promise<ConnectionCheck[]> => ipcRenderer.invoke('ragx:getConnections'),
+  onConnections: (cb: (checks: ConnectionCheck[]) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, checks: ConnectionCheck[]) => cb(checks)
+    ipcRenderer.on('ragx:connections', listener)
+    return () => ipcRenderer.removeListener('ragx:connections', listener)
+  },
   listJobs: (): Promise<JobView[]> => ipcRenderer.invoke('ragx:listJobs'),
   onJobs: (cb: (jobs: JobView[]) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, jobs: JobView[]) => cb(jobs)

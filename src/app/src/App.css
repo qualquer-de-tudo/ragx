@@ -1124,6 +1124,22 @@
   padding: 10px 12px;
 }
 
+.add-flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+}
+
+.add-flow-item > .check {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-flow-remove {
+  flex: none;
+}
+
 .check {
   display: flex;
   align-items: flex-start;

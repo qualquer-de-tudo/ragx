@@ -181,3 +181,73 @@ describe('discoverProjects - orcamento de pastas (maxDirs, fix round 1)', () => 
     expect(result.truncated).toBe(false)
   })
 })
+
+describe('discoverProjects - repositórios git sem ragx.toml (candidatos novos)', () => {
+  function mkGitRepo(dir: string): void {
+    fs.mkdirSync(path.join(dir, '.git'), { recursive: true })
+  }
+
+  it('pasta com .git e sem ragx.toml vira candidato isNew; com ragx.toml fica isNew false', () => {
+    const root = mkTmp()
+    mkGitRepo(path.join(root, 'repo-novo'))
+    writeToml(path.join(root, 'ja-ragx'))
+    mkGitRepo(path.join(root, 'ja-ragx'))
+    fs.mkdirSync(path.join(root, 'pasta-comum', 'sub'), { recursive: true })
+
+    const { items } = discoverProjects(root, new Set())
+
+    expect(items.map((f) => [f.name, f.isNew])).toEqual([
+      ['ja-ragx', false],
+      ['repo-novo', true],
+    ])
+  })
+
+  it('não desce dentro de um repositório novo (um ragx.toml aninhado não aparece)', () => {
+    const root = mkTmp()
+    const repo = path.join(root, 'monorepo')
+    mkGitRepo(repo)
+    writeToml(path.join(repo, 'packages', 'a'))
+
+    const { items } = discoverProjects(root, new Set())
+
+    expect(items.map((f) => f.path)).toEqual([repo])
+    expect(items[0].isNew).toBe(true)
+  })
+
+  it('a própria raiz sendo um repositório sem ragx.toml aparece como candidato novo', () => {
+    const root = mkTmp()
+    mkGitRepo(root)
+
+    const { items } = discoverProjects(root, new Set())
+
+    expect(items).toEqual([{ path: root, name: path.basename(root), alreadyRegistered: false, isNew: true }])
+  })
+
+  it('respeita a profundidade 4 também para repositórios novos', () => {
+    const root = mkTmp()
+    mkGitRepo(path.join(root, 'a', 'b', 'c', 'd'))
+    mkGitRepo(path.join(root, 'x', 'b', 'c', 'd', 'e'))
+
+    const { items } = discoverProjects(root, new Set())
+
+    expect(items.map((f) => f.path)).toEqual([path.join(root, 'a', 'b', 'c', 'd')])
+  })
+
+  it('.git como arquivo (worktree ou submódulo) também conta como repositório', () => {
+    const root = mkTmp()
+    const wt = path.join(root, 'worktree')
+    fs.mkdirSync(wt, { recursive: true })
+    fs.writeFileSync(path.join(wt, '.git'), 'gitdir: C:/outro/.git/worktrees/x')
+
+    const { items } = discoverProjects(root, new Set())
+
+    expect(items.map((f) => [f.name, f.isNew])).toEqual([['worktree', true]])
+  })
+
+  it('repositório novo dentro de node_modules continua pulado', () => {
+    const root = mkTmp()
+    mkGitRepo(path.join(root, 'node_modules', 'dep'))
+
+    expect(discoverProjects(root, new Set()).items).toEqual([])
+  })
+})

@@ -7,6 +7,10 @@ import { runRagxCommand } from './data/run-ragx-command'
 import { checkAll, defaultCheckDeps } from './connections/checks'
 import { resetRagxCache } from './system/ragx-exe'
 import { JobQueue, defaultSpawn } from './jobs/queue'
+import { defaultVerifyDeps, verifyJob } from './jobs/verify'
+import { CONNECTION_JOB_KINDS, justFinishedJobs } from './jobs/transitions'
+import { isInsideGitWorkTree } from './data/git'
+import { DEV_SERVER_URL, isDevServerUrl } from './navigation'
 import { FolderTokens } from './projects/tokens'
 import { discoverProjects } from './projects/discovery'
 import { readSettings, writeSettings } from './settings'
@@ -22,7 +26,6 @@ const JOBS_THROTTLE_MS = 250
 let mainWindow: BrowserWindow | null = null
 let snapshotTimer: ReturnType<typeof setInterval> | null = null
 let connectionsTimer: ReturnType<typeof setInterval> | null = null
-let connectionsInFlight = false
 
 // Último snapshot/checagens conhecidos - fonte de verdade para validar
 // `projectId`/caminhos nos handlers de IPC (nunca o pedido do renderer) e
@@ -66,8 +69,15 @@ function refreshSnapshot(): Promise<Snapshot> {
 
 // -- fila de tarefas ---------------------------------------------------
 
-const queue = new JobQueue({ spawn: defaultSpawn(), now: () => Date.now(), newId: () => randomUUID() }, (jobs) =>
-  onJobsChange(jobs),
+const queue = new JobQueue(
+  {
+    spawn: defaultSpawn(),
+    now: () => Date.now(),
+    newId: () => randomUUID(),
+    isGitRepo: (folder) => isInsideGitWorkTree(folder),
+    verify: (job) => verifyJob(job, defaultVerifyDeps()),
+  },
+  (jobs) => onJobsChange(jobs),
 )
 
 let jobsThrottleTimer: ReturnType<typeof setTimeout> | null = null
@@ -92,12 +102,16 @@ function sendJobsThrottled(jobs: JobView[]): void {
 }
 
 function onJobsChange(jobs: JobView[]): void {
-  const TERMINAL: ReadonlySet<JobView['state']> = new Set(['done', 'failed', 'cancelled'])
-  const justFinished = jobs.some((j) => {
-    const prev = previousJobStates.get(j.id)
-    return prev !== undefined && prev !== j.state && TERMINAL.has(j.state)
-  })
+  const finished = justFinishedJobs(previousJobStates, jobs)
+  const justFinished = finished.length > 0
   previousJobStates = new Map(jobs.map((j) => [j.id, j.state]))
+
+  // Terminou uma correção de conexão ("Registrar", "Iniciar container",
+  // "Baixar modelo"): confere de novo na hora; o resultado chega ao
+  // renderer por `ragx:connections`, como o do polling.
+  if (finished.some((j) => CONNECTION_JOB_KINDS.has(j.kind))) {
+    handlers.getConnections().catch((err) => console.error('getConnections() falhou apos tarefa de conexao:', err))
+  }
 
   sendJobsThrottled(jobs)
 
@@ -137,6 +151,9 @@ const handlers = createHandlers({
     const checks = await checkAll(defaultCheckDeps(), snapshot)
     latestConnections = checks
     return checks
+  },
+  publishConnections: (checks) => {
+    mainWindow?.webContents.send('ragx:connections', checks)
   },
   resetRagxCache,
   queue: {
@@ -201,15 +218,11 @@ function startSnapshotPolling(): void {
 
 function startConnectionsPolling(): void {
   if (connectionsTimer) return
+  // Único poller de conexões: `getConnections` já junta chamadas que chegam
+  // no meio de uma checagem, e cada resultado vai para o renderer por
+  // `ragx:connections` (`publishConnections`).
   connectionsTimer = setInterval(() => {
-    if (connectionsInFlight) return
-    connectionsInFlight = true
-    handlers
-      .getConnections()
-      .catch((err) => console.error('getConnections() falhou no polling:', err))
-      .finally(() => {
-        connectionsInFlight = false
-      })
+    handlers.getConnections().catch((err) => console.error('getConnections() falhou no polling:', err))
   }, CONNECTIONS_POLL_MS)
 }
 
@@ -236,13 +249,13 @@ function createWindow(): void {
   // um link externo ou uma navegação injetada não troca o conteúdo carregado
   // por uma página arbitrária (fora da URL do servidor de dev, em `isDev`).
   win.webContents.on('will-navigate', (event, url) => {
-    if (isDev && url.startsWith('http://localhost:5173')) return
+    if (isDev && isDevServerUrl(url)) return
     event.preventDefault()
   })
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   if (isDev) {
-    win.loadURL('http://localhost:5173')
+    win.loadURL(DEV_SERVER_URL)
     win.webContents.openDevTools({ mode: 'detach' })
   } else {
     win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
@@ -289,7 +302,7 @@ app.whenReady().then(async () => {
   // acontece a partir do polling ou do handler ragx:getSnapshot — ambos
   // disparados so depois que a janela carrega (ver Ruling D, Task 2).
   await initSqlWasm().catch((err) => {
-    console.error('initSqlWasm falhou — stats de projetos ficarão indisponíveis:', err)
+    console.error('initSqlWasm falhou; stats de projetos ficarão indisponíveis:', err)
   })
 
   createWindow()

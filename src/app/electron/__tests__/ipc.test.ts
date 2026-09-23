@@ -348,3 +348,85 @@ describe('createHandlers - getSnapshot', () => {
     expect(buildSnapshot).toHaveBeenCalledOnce()
   })
 })
+
+describe('createHandlers - getConnections publica e não roda duas checagens ao mesmo tempo', () => {
+  const CHECKS = [
+    {
+      id: 'ragx' as const,
+      title: 'RAGX CLI',
+      state: 'ok' as const,
+      stateLabel: 'Conectado',
+      summary: 'ok',
+      facts: [],
+      actions: [],
+      help: null,
+      lastMcpCallAt: null,
+    },
+  ]
+
+  it('publica o resultado de toda checagem (o renderer escuta ragx:connections)', async () => {
+    const publishConnections = vi.fn()
+    const handlers = createHandlers(makeDeps({ checkAll: vi.fn(async () => CHECKS), publishConnections }))
+
+    const result = await handlers.getConnections()
+
+    expect(result).toBe(CHECKS)
+    expect(publishConnections).toHaveBeenCalledWith(CHECKS)
+  })
+
+  it('duas chamadas durante a mesma checagem recebem o mesmo resultado, com uma checagem só', async () => {
+    let release: () => void = () => {}
+    const checkAll = vi.fn(
+      () =>
+        new Promise<typeof CHECKS>((resolve) => {
+          release = () => resolve(CHECKS)
+        }),
+    )
+    const handlers = createHandlers(makeDeps({ checkAll }))
+
+    const a = handlers.getConnections()
+    const b = handlers.getConnections()
+    await Promise.resolve()
+    release()
+
+    expect(await a).toBe(CHECKS)
+    expect(await b).toBe(CHECKS)
+    expect(checkAll).toHaveBeenCalledTimes(1)
+
+    // Terminada a checagem, a próxima chamada checa de novo.
+    const c = handlers.getConnections()
+    await Promise.resolve()
+    release()
+    await c
+    expect(checkAll).toHaveBeenCalledTimes(2)
+  })
+
+  it('uma checagem que falha não trava as seguintes', async () => {
+    const checkAll = vi.fn().mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(CHECKS)
+    const handlers = createHandlers(makeDeps({ checkAll }))
+
+    await expect(handlers.getConnections()).rejects.toThrow('boom')
+    expect(await handlers.getConnections()).toBe(CHECKS)
+  })
+})
+
+describe('createHandlers - discover repassa isNew', () => {
+  it('repo git sem ragx.toml chega ao renderer como isNew', () => {
+    const discoverProjects = vi.fn(() => ({
+      items: [
+        { path: 'C:/pastas/Antigo', name: 'Antigo', alreadyRegistered: false, isNew: false },
+        { path: 'C:/pastas/Repo', name: 'Repo', alreadyRegistered: false, isNew: true },
+      ],
+      truncated: false,
+    }))
+    const deps = makeDeps({ discoverProjects })
+    const handlers = createHandlers(deps)
+
+    const result = handlers.discover(deps.folderTokens.issue('C:/pastas'))
+
+    expect(result.items.map((i) => [i.name, i.isNew])).toEqual([
+      ['Antigo', false],
+      ['Repo', true],
+    ])
+  })
+})

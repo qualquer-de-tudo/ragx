@@ -160,6 +160,8 @@ export interface DiscoverItem {
   path: string
   name: string
   alreadyRegistered: boolean
+  /** Repositório git sem `ragx.toml`: vira projeto novo (`ragx init`) se for marcado. */
+  isNew: boolean
 }
 
 export interface DiscoverResult {
@@ -175,6 +177,8 @@ export interface RagxBridge {
   runTrial: (projectId: string) => Promise<TrialResult>
   runSecurityScan: (projectId: string) => Promise<SecurityScanResult>
   getConnections: () => Promise<ConnectionCheck[]>
+  /** Resultado de cada checagem de conexões feita pelo processo principal (polling de 30 s incluso). */
+  onConnections: (cb: (checks: ConnectionCheck[]) => void) => () => void
   listJobs: () => Promise<JobView[]>
   onJobs: (cb: (jobs: JobView[]) => void) => () => void
   enqueueJob: (req: JobRequest) => Promise<JobView>

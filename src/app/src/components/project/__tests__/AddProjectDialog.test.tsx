@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { AddProjectDialog } from '../AddProjectDialog'
 import { installBridge } from '../../../test/snap'
-import type { DiscoverResult } from '../../../types/ragx-bridge'
+import type { DiscoverItem, DiscoverResult } from '../../../types/ragx-bridge'
 
 const FOLDER = { token: 'tok-root', path: 'C:/projects' }
 
 const TWO_FOUND: DiscoverResult = {
   items: [
-    { token: 'tok-a', path: 'C:/projects/juriflux', name: 'juriflux', alreadyRegistered: false },
-    { token: 'tok-b', path: 'C:/projects/ragx', name: 'ragx', alreadyRegistered: true },
+    { token: 'tok-a', path: 'C:/projects/juriflux', name: 'juriflux', alreadyRegistered: false, isNew: false },
+    { token: 'tok-b', path: 'C:/projects/ragx', name: 'ragx', alreadyRegistered: true, isNew: false },
   ],
   truncated: false,
 }
@@ -26,7 +26,7 @@ function setup(discover: DiscoverResult = TWO_FOUND) {
 
 async function chooseFolder() {
   fireEvent.click(screen.getByRole('button', { name: 'Escolher pasta' }))
-  await screen.findByText(FOLDER.path)
+  await screen.findByText(FOLDER.path, { selector: '.add-flow-path' })
 }
 
 describe('AddProjectDialog', () => {
@@ -67,9 +67,9 @@ describe('AddProjectDialog', () => {
   it('um add-project por item marcado, respeitando o checkbox de hooks', async () => {
     const { b, onClose } = setup({
       items: [
-        { token: 'tok-a', path: 'C:/projects/a', name: 'a', alreadyRegistered: false },
-        { token: 'tok-b', path: 'C:/projects/b', name: 'b', alreadyRegistered: false },
-        { token: 'tok-c', path: 'C:/projects/c', name: 'c', alreadyRegistered: false },
+        { token: 'tok-a', path: 'C:/projects/a', name: 'a', alreadyRegistered: false, isNew: false },
+        { token: 'tok-b', path: 'C:/projects/b', name: 'b', alreadyRegistered: false, isNew: false },
+        { token: 'tok-c', path: 'C:/projects/c', name: 'c', alreadyRegistered: false, isNew: false },
       ],
       truncated: false,
     })
@@ -86,7 +86,8 @@ describe('AddProjectDialog', () => {
   it('nada encontrado: oferece usar a própria pasta como projeto novo', async () => {
     const { b, onClose } = setup({ items: [], truncated: false })
     await chooseFolder()
-    const own = await screen.findByRole('checkbox', { name: 'Usar esta pasta como um projeto novo' })
+    const own = await screen.findByRole('checkbox', { name: /Usar esta pasta como um projeto novo/ })
+    expect(own).not.toBeChecked()
     const add = screen.getByRole('button', { name: 'Adicionar 0 projetos' })
     expect(add).toBeDisabled()
 
@@ -180,5 +181,90 @@ describe('AddProjectDialog', () => {
     rerender(<AddProjectDialog open={false} onClose={vi.fn()} />)
     expect(opener).toHaveFocus()
     opener.remove()
+  })
+})
+
+describe('AddProjectDialog - repositórios novos e várias pastas', () => {
+  function item(token: string, name: string, over: Partial<DiscoverItem> = {}): DiscoverItem {
+    return { token, path: `C:/${name}`, name, alreadyRegistered: false, isNew: false, ...over }
+  }
+
+  it('repositório git sem ragx.toml aparece com a marca "novo" e começa desmarcado; projeto do RAGX começa marcado', async () => {
+    setup({
+      items: [item('tok-a', 'antigo'), item('tok-n', 'repo-novo', { isNew: true })],
+      truncated: false,
+    })
+    await chooseFolder()
+
+    const fresh = await screen.findByRole('checkbox', { name: /repo-novo/ })
+    expect(fresh).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /antigo/ })).toBeChecked()
+    const li = fresh.closest('li') as HTMLElement
+    expect(within(li).getByText('novo')).toBeInTheDocument()
+    expect(within(screen.getByRole('checkbox', { name: /antigo/ }).closest('li') as HTMLElement).queryByText('novo')).toBeNull()
+  })
+
+  it('cada "Escolher pasta" soma à lista, sem repetir o que já estava nela, e todos entram no add-project', async () => {
+    const b = installBridge({
+      pickFolder: vi
+        .fn()
+        .mockResolvedValueOnce({ token: 'root-1', path: 'C:/um' })
+        .mockResolvedValueOnce({ token: 'root-2', path: 'C:/dois' }),
+      discover: vi
+        .fn()
+        .mockResolvedValueOnce({ items: [item('t1', 'alfa'), item('t2', 'beta', { isNew: true })], truncated: false })
+        // A segunda pasta devolve "alfa" de novo (token novo, mesmo caminho) e um projeto novo.
+        .mockResolvedValueOnce({ items: [item('t3', 'alfa'), item('t4', 'gama')], truncated: false }),
+    })
+    const onClose = vi.fn()
+    render(<AddProjectDialog open onClose={onClose} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Escolher pasta' }))
+    await screen.findByRole('checkbox', { name: /beta/ })
+    fireEvent.click(screen.getByRole('checkbox', { name: /beta/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Escolher pasta' }))
+    await screen.findByRole('checkbox', { name: /gama/ })
+
+    expect(screen.getAllByRole('checkbox', { name: /alfa/ })).toHaveLength(1)
+    expect(screen.getByRole('checkbox', { name: /beta/ })).toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar 3 projetos' }))
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(vi.mocked(b.enqueueJob).mock.calls.map((c) => c[0].folderToken)).toEqual(['t1', 't2', 't4'])
+  })
+
+  it('cada item pode sair da lista', async () => {
+    setup({ items: [item('tok-a', 'a'), item('tok-b', 'b')], truncated: false })
+    await chooseFolder()
+    await screen.findByRole('checkbox', { name: /^a/ })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remover a da lista' }))
+
+    expect(screen.queryByRole('checkbox', { name: /^a/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Adicionar 1 projeto' })).toBeEnabled()
+  })
+
+  it('a própria pasta como projeto novo só aparece quando a escolha não achou nada', async () => {
+    installBridge({
+      pickFolder: vi
+        .fn()
+        .mockResolvedValueOnce({ token: 'root-1', path: 'C:/com-projetos' })
+        .mockResolvedValueOnce({ token: 'root-2', path: 'C:/vazia' }),
+      discover: vi
+        .fn()
+        .mockResolvedValueOnce({ items: [item('t1', 'alfa')], truncated: false })
+        .mockResolvedValueOnce({ items: [], truncated: false }),
+    })
+    render(<AddProjectDialog open onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Escolher pasta' }))
+    await screen.findByRole('checkbox', { name: /alfa/ })
+    expect(screen.queryByRole('checkbox', { name: /Usar esta pasta como um projeto novo/ })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Escolher pasta' }))
+    const own = await screen.findByRole('checkbox', { name: /Usar esta pasta como um projeto novo/ })
+    expect(own).not.toBeChecked()
+    // A lista anterior continua lá.
+    expect(screen.getByRole('checkbox', { name: /alfa/ })).toBeChecked()
   })
 })
