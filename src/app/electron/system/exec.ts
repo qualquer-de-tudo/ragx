@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 
-export type ExecResult = { code: number; stdout: string; stderr: string }
+/** `notFound`: o executável nem existe (ENOENT) - diferente de um que existe e falha. */
+export type ExecResult = { code: number; stdout: string; stderr: string; notFound?: boolean }
 export type ExecFn = (
   file: string,
   args: string[],
@@ -19,6 +20,7 @@ export const execFileText: ExecFn = (file, args, opts = {}) =>
           if (!err) return resolve({ code: 0, stdout, stderr })
           const e = err as NodeJS.ErrnoException & { code?: number | string; killed?: boolean }
           if (e.killed) return resolve({ code: -1, stdout, stderr: 'tempo esgotado' })
+          if (e.code === 'ENOENT') return resolve({ code: -1, stdout, stderr: stderr || e.message, notFound: true })
           resolve({ code: typeof e.code === 'number' ? e.code : -1, stdout, stderr: stderr || e.message })
         },
       )

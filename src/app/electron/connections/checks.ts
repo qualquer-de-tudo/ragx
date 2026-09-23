@@ -326,6 +326,19 @@ export async function checkOllama(d: CheckDeps, snapshot: Snapshot | null): Prom
     dependFact = { label: 'Projetos que dependem', value: formatDependents(projectNames) }
 
     const ps = await d.exec('docker', ['ps', '-a', '--filter', 'name=^ollama$', '--format', '{{.State}}'])
+    if (ps.code !== 0 && (ps.notFound === true || /ENOENT/.test(ps.stderr))) {
+      return {
+        id,
+        title,
+        state: 'error',
+        stateLabel: stateLabelFor('error'),
+        summary: 'O Docker não está instalado nesta máquina.',
+        facts: [semDadosFact, dependFact],
+        actions: [],
+        help: 'Instale o Docker Desktop e reabra o painel.',
+        lastMcpCallAt: null,
+      }
+    }
     if (ps.code !== 0) {
       return {
         id,

@@ -14,3 +14,9 @@ export async function readGitHead(projectPath: string, exec: ExecFn = execFileTe
   })
   return { branch: ref.code === 0 && ref.stdout.trim() ? ref.stdout.trim() : null, commit: head.stdout.trim() }
 }
+
+/** A pasta está dentro de uma árvore de trabalho git? Fora de repo (ou git ausente), `false`. */
+export async function isInsideGitWorkTree(folder: string, exec: ExecFn = execFileText): Promise<boolean> {
+  const r = await exec('git', ['--no-optional-locks', 'rev-parse', '--is-inside-work-tree'], { cwd: folder })
+  return r.code === 0 && r.stdout.trim() === 'true'
+}

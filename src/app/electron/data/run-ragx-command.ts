@@ -1,11 +1,26 @@
 import { spawn } from 'node:child_process'
+import fs from 'node:fs'
+import { StringDecoder } from 'node:string_decoder'
 import { ragxCommand } from '../system/ragx-exe'
 
 const TIMEOUT_MS = 60_000
 
+function spawnError(err: NodeJS.ErrnoException, cmd: string, cwd: string): Error {
+  if (err.code === 'ENOENT') {
+    // Node também dá ENOENT quando é a pasta de trabalho que sumiu.
+    return new Error(fs.existsSync(cwd) ? `Comando não encontrado: ${cmd}` : `Pasta não encontrada: ${cwd}`)
+  }
+  return err
+}
+
 export function runRagxCommand(cwd: string, args: string[]): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const child = spawn(ragxCommand(), args, { cwd, windowsHide: true })
+    const cmd = ragxCommand()
+    const child = spawn(cmd, args, { cwd, windowsHide: true })
+    // `StringDecoder`: um caractere multibyte partido entre dois pedaços do
+    // stream não vira lixo (o que `chunk.toString()` por pedaço fazia).
+    const outDecoder = new StringDecoder('utf8')
+    const errDecoder = new StringDecoder('utf8')
     let stdout = ''
     let stderr = ''
     let settled = false
@@ -18,21 +33,23 @@ export function runRagxCommand(cwd: string, args: string[]): Promise<unknown> {
     }, TIMEOUT_MS)
 
     child.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString('utf-8')
+      stdout += outDecoder.write(chunk)
     })
     child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString('utf-8')
+      stderr += errDecoder.write(chunk)
     })
-    child.on('error', (err) => {
+    child.on('error', (err: NodeJS.ErrnoException) => {
       if (settled) return
       settled = true
       clearTimeout(timer)
-      reject(err)
+      reject(spawnError(err, cmd, cwd))
     })
     child.on('close', (code: number) => {
       if (settled) return
       settled = true
       clearTimeout(timer)
+      stdout += outDecoder.end()
+      stderr += errDecoder.end()
       // `ragx security scan`/`ragx trial` podem sair com codigo != 0 mesmo
       // quando ha JSON valido no stdout (ex.: --fail-on high sai 1 quando ha
       // achados bloqueados). Isso e DADO, nao falha - so rejeita quando o

@@ -5,6 +5,11 @@ export interface Step {
   args: string[]
   cwd: string | null
   progress: boolean
+  /**
+   * Só roda se esta pasta estiver dentro de um repositório git (checado pela
+   * fila logo antes do passo); fora de git, o passo é pulado com uma nota.
+   */
+  onlyIfGitRepo?: string
 }
 
 export interface ResolvedJob {
@@ -24,6 +29,8 @@ export interface ResolvedJob {
   dedupeKey: string
   /** Modelo pedido: só em `ollama-pull`; `null` nos outros tipos. Vai para o `JobView`. */
   model: string | null
+  /** Pasta do `add-project` (para a conferência no hub depois do último passo). */
+  folder?: string
 }
 
 export interface CatalogContext {
@@ -163,9 +170,18 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
       progressStep(folder),
     ]
     if (req.installHooks === true) {
-      steps.push({ cmd: 'ragx', args: ['hooks', 'install', folder], cwd: null, progress: false })
+      // Pasta fora de git: a fila pula este passo com uma nota em vez de
+      // derrubar a tarefa inteira no último passo.
+      steps.push({ cmd: 'ragx', args: ['hooks', 'install', folder], cwd: null, progress: false, onlyIfGitRepo: folder })
     }
-    return { kind, label: `Adicionar ${lastFolderName(folder)}`, projectId: null, steps, dedupeKey: `add-project|${folder}` }
+    return {
+      kind,
+      label: `Adicionar ${lastFolderName(folder)}`,
+      projectId: null,
+      steps,
+      dedupeKey: `add-project|${folder}`,
+      folder,
+    }
   }
 
   if (kind === 'mcp-register') {
@@ -207,7 +223,8 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
       kind,
       label: `Remover ${project.name} do hub`,
       projectId: project.id,
-      steps: [{ cmd: 'ragx', args: ['project', 'unregister', project.name], cwd: null, progress: false }],
+      // `--`: um nome de projeto começando com `-` nunca vira opção do CLI.
+      steps: [{ cmd: 'ragx', args: ['project', 'unregister', '--', project.name], cwd: null, progress: false }],
       dedupeKey: dedupeKey(kind, project.id),
     }
   }

@@ -317,6 +317,25 @@ describe('checkOllama', () => {
     assertNoEmDash(check)
   })
 
+  it('docker que nem existe (notFound) vira "O Docker não está instalado nesta máquina."', async () => {
+    const check = await checkOllama(
+      baseDeps({ exec: async () => ({ code: -1, stdout: '', stderr: 'spawn docker ENOENT', notFound: true }) }),
+      null,
+    )
+    expect(check.state).toBe('error')
+    expect(check.summary).toBe('O Docker não está instalado nesta máquina.')
+    expect(check.help).toBe('Instale o Docker Desktop e reabra o painel.')
+    assertNoEmDash(check)
+  })
+
+  it('ENOENT só no stderr (exec sem notFound) também conta como Docker não instalado', async () => {
+    const check = await checkOllama(
+      baseDeps({ exec: async () => ({ code: -1, stdout: '', stderr: 'spawn docker ENOENT' }) }),
+      null,
+    )
+    expect(check.summary).toBe('O Docker não está instalado nesta máquina.')
+  })
+
   it('saída vazia do docker ps vira error "Não existe um container chamado ollama"', async () => {
     const check = await checkOllama(baseDeps({ exec: async () => ({ code: 0, stdout: '', stderr: '' }) }), null)
     expect(check.state).toBe('error')

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { JobQueue, defaultSpawn, type SpawnFn, type QueueDeps } from '../queue'
+import os from 'node:os'
+import { describe, expect, it, vi } from 'vitest'
+import { JobQueue, createLineBuffer, defaultSpawn, type SpawnFn, type QueueDeps } from '../queue'
 import type { ResolvedJob } from '../catalog'
 import type { JobView } from '../../../src/types/ragx-bridge'
 
@@ -10,20 +11,20 @@ function fakeSpawn() {
     cwd: string | null
     out: (l: string) => void
     err: (l: string) => void
-    exit: (c: number | null) => void
+    exit: (c: number | null, spawnError?: string) => void
     killed: boolean
   }> = []
   const spawn: SpawnFn = (cmd, args, cwd) => {
     let out: (l: string) => void = () => {}
     let err: (l: string) => void = () => {}
-    let exit: (c: number | null) => void = () => {}
+    let exit: (c: number | null, spawnError?: string) => void = () => {}
     const child = {
       cmd,
       args,
       cwd,
       out: (l: string) => out(l),
       err: (l: string) => err(l),
-      exit: (c: number | null) => exit(c),
+      exit: (c: number | null, spawnError?: string) => exit(c, spawnError),
       killed: false,
     }
     children.push(child)
@@ -34,7 +35,7 @@ function fakeSpawn() {
       onStderrLine: (cb: (l: string) => void) => {
         err = cb
       },
-      onExit: (cb: (c: number | null) => void) => {
+      onExit: (cb: (c: number | null, spawnError?: string) => void) => {
         exit = cb
       },
       kill: () => {
@@ -482,5 +483,323 @@ describe('defaultSpawn', () => {
 
     expect(exited).toBe(true)
     expect(lines).toEqual(['foobar', 'baz'])
+  })
+})
+
+// -- final review fixes --------------------------------------------------
+
+const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+describe('JobQueue - embed_error na linha done', () => {
+  it('embed sai 0 mas a linha done traz embed_error: tarefa failed com a primeira linha do erro', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(job({ kind: 'embed' }))
+    children[0].out(JSON.stringify({ phase: 'embed', done: 0, total: 10 }))
+    children[0].out(
+      JSON.stringify({ phase: 'done', indexed: 0, embedded: 0, embed_error: 'Ollama não respondeu em localhost:11434\ndetalhe' }),
+    )
+    children[0].exit(0)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('Os embeddings não foram gerados: Ollama não respondeu em localhost:11434')
+  })
+
+  it('linha done com embed_error null: tarefa done normalmente', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(job({ kind: 'embed' }))
+    children[0].out(JSON.stringify({ phase: 'done', indexed: 0, embedded: 10, embed_error: null }))
+    children[0].exit(0)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('done')
+    expect(view.error).toBeNull()
+  })
+
+  it('add-project: embed_error no passo de index não impede os hooks, mas a tarefa termina failed', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(
+      job({
+        kind: 'add-project',
+        projectId: null,
+        steps: [
+          { cmd: 'ragx', args: ['init', 'F'], cwd: null, progress: false },
+          { cmd: 'ragx', args: ['index', 'F', '--progress', '--source', 'panel'], cwd: null, progress: true },
+          { cmd: 'ragx', args: ['hooks', 'install', 'F'], cwd: null, progress: false },
+        ],
+      }),
+    )
+    children[0].exit(0)
+    children[1].out(JSON.stringify({ phase: 'done', embed_error: 'sem embedder' }))
+    children[1].exit(0)
+    expect(children).toHaveLength(3)
+    children[2].exit(0)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('Os embeddings não foram gerados: sem embedder')
+  })
+})
+
+describe('JobQueue - nota de busy por tipo de tarefa', () => {
+  function busyNoteFor(kind: 'update' | 'add-project' | 'embed' | 'reindex-full') {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+    const j = queue.enqueue(job({ kind }))
+    children[0].out(JSON.stringify({ phase: 'busy', pending: true, holder: {} }))
+    children[0].exit(0)
+    return findView(queue.list(), j.id)
+  }
+
+  it('update e add-project: o pedido ficou agendado', () => {
+    expect(busyNoteFor('update').note).toBe('Outra indexação estava rodando; este pedido ficou agendado.')
+    expect(busyNoteFor('add-project').note).toBe('Outra indexação estava rodando; este pedido ficou agendado.')
+  })
+
+  it('embed: os embeddings faltantes saem quando a outra terminar', () => {
+    expect(busyNoteFor('embed').note).toBe(
+      'Outra indexação estava rodando; os embeddings faltantes serão gerados quando ela terminar.',
+    )
+  })
+
+  it('reindex-full: o agendado é incremental, então pede para repetir (done, não failed)', () => {
+    const view = busyNoteFor('reindex-full')
+    expect(view.state).toBe('done')
+    expect(view.error).toBeNull()
+    expect(view.note).toBe('Outra indexação estava rodando. Peça Reindexar do zero de novo quando ela terminar.')
+  })
+})
+
+describe('JobQueue - código de saída 4 (ocupado)', () => {
+  it('vira nota de ocupado, não falha genérica', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(job({ kind: 'sync', steps: [{ cmd: 'ragx', args: ['sync'], cwd: 'C:/p1', progress: false }] }))
+    children[0].err('erro: outra indexação está rodando (origem hook, pid 7).')
+    children[0].exit(4)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('done')
+    expect(view.error).toBeNull()
+    expect(view.note).toBe('Outra indexação estava rodando. Tente de novo quando ela terminar.')
+  })
+
+  it('para os passos seguintes', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    queue.enqueue(
+      job({
+        steps: [
+          { cmd: 'ragx', args: ['sync'], cwd: 'C:/p1', progress: false },
+          { cmd: 'ragx', args: ['graph', 'rebuild'], cwd: 'C:/p1', progress: false },
+        ],
+      }),
+    )
+    children[0].exit(4)
+    expect(children).toHaveLength(1)
+  })
+})
+
+describe('JobQueue - texto do erro', () => {
+  it('usa o bloco que começa em "erro:" (a mensagem quebrada pelo Rich em várias linhas)', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(job())
+    children[0].err('Aviso: algo antes')
+    children[0].err('erro: C:\\projetos\\x não é um projeto RAGX (falta')
+    children[0].err('ragx.toml). Rode ragx init antes.')
+    children[0].err('')
+    children[0].exit(2)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('erro: C:\\projetos\\x não é um projeto RAGX (falta ragx.toml). Rode ragx init antes.')
+  })
+
+  it('o bloco "erro:" também é cortado em 300 caracteres', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(job())
+    children[0].err('erro: ' + 'a'.repeat(200))
+    children[0].err('b'.repeat(200))
+    children[0].exit(1)
+
+    expect(findView(queue.list(), j.id).error).toHaveLength(300)
+  })
+
+  it('processo que nem nasce (ENOENT) mostra o comando não encontrado, não "código de saída null"', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(job())
+    children[0].exit(null, 'Comando não encontrado: ragx')
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('Comando não encontrado: ragx')
+  })
+})
+
+describe('JobQueue - passo só em repositório git', () => {
+  const addSteps = [
+    { cmd: 'ragx' as const, args: ['init', 'F'], cwd: null, progress: false },
+    { cmd: 'ragx' as const, args: ['hooks', 'install', 'F'], cwd: null, progress: false, onlyIfGitRepo: 'F' },
+  ]
+
+  it('pasta fora de git: pula o passo de hooks, com nota, e a tarefa termina done', async () => {
+    const { spawn, children } = fakeSpawn()
+    const isGitRepo = vi.fn(async () => false)
+    const { queue } = makeQueue(spawn, { isGitRepo })
+
+    const j = queue.enqueue(job({ kind: 'add-project', projectId: null, steps: addSteps }))
+    children[0].exit(0)
+    await flush()
+
+    expect(isGitRepo).toHaveBeenCalledWith('F')
+    expect(children).toHaveLength(1)
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('done')
+    expect(view.note).toBe('Sem hooks: a pasta não é um repositório git.')
+  })
+
+  it('pasta em git: roda o passo normalmente', async () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { isGitRepo: async () => true })
+
+    const j = queue.enqueue(job({ kind: 'add-project', projectId: null, steps: addSteps }))
+    children[0].exit(0)
+    await flush()
+
+    expect(children).toHaveLength(2)
+    expect(children[1].args).toEqual(['hooks', 'install', 'F'])
+    children[1].exit(0)
+    expect(findView(queue.list(), j.id).state).toBe('done')
+    expect(findView(queue.list(), j.id).note).toBeNull()
+  })
+
+  it('cancelar durante a checagem não roda o passo', async () => {
+    const { spawn, children } = fakeSpawn()
+    let answer: (v: boolean) => void = () => {}
+    const { queue } = makeQueue(spawn, { isGitRepo: () => new Promise<boolean>((r) => (answer = r)) })
+
+    const j = queue.enqueue(job({ kind: 'add-project', projectId: null, steps: addSteps }))
+    children[0].exit(0)
+    expect(queue.cancel(j.id)).toBe(true)
+    answer(true)
+    await flush()
+
+    expect(children).toHaveLength(1)
+    expect(findView(queue.list(), j.id).state).toBe('cancelled')
+  })
+})
+
+describe('JobQueue - verificação depois do último passo', () => {
+  it('verify devolve erro: a tarefa termina failed com ele', () => {
+    const { spawn, children } = fakeSpawn()
+    const verify = vi.fn(() => 'O projeto foi indexado, mas não entrou no painel: motivo.')
+    const { queue } = makeQueue(spawn, { verify })
+
+    const j = queue.enqueue(job({ kind: 'add-project', projectId: null, folder: 'F' }))
+    children[0].exit(0)
+
+    expect(verify).toHaveBeenCalledTimes(1)
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toBe('O projeto foi indexado, mas não entrou no painel: motivo.')
+  })
+
+  it('verify devolve null: done', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn, { verify: () => null })
+
+    const j = queue.enqueue(job())
+    children[0].exit(0)
+    expect(findView(queue.list(), j.id).state).toBe('done')
+  })
+
+  it('tarefa que falhou não chega a ser verificada', () => {
+    const { spawn, children } = fakeSpawn()
+    const verify = vi.fn(() => null)
+    const { queue } = makeQueue(spawn, { verify })
+
+    queue.enqueue(job())
+    children[0].exit(1)
+    expect(verify).not.toHaveBeenCalled()
+  })
+})
+
+describe('createLineBuffer', () => {
+  it('não corrompe um caractere multibyte partido entre dois pedaços', () => {
+    const lines: string[] = []
+    const buf = createLineBuffer((l) => lines.push(l))
+    const bytes = Buffer.from('ação\n', 'utf-8')
+    // 'ç' (0xC3 0xA7) fica partido entre os dois pedaços.
+    const cut = bytes.indexOf(0xa7)
+    buf.push(bytes.subarray(0, cut))
+    buf.push(bytes.subarray(cut))
+    buf.flush()
+    expect(lines).toEqual(['ação'])
+  })
+
+  it('quebra em \\r\\n, \\n e \\r sozinho, inclusive com \\r\\n partido entre pedaços', () => {
+    const lines: string[] = []
+    const buf = createLineBuffer((l) => lines.push(l))
+    buf.push(Buffer.from('a\r\nb\nc\rd\r'))
+    buf.push(Buffer.from('\ne'))
+    buf.flush()
+    expect(lines).toEqual(['a', 'b', 'c', 'd', 'e'])
+  })
+
+  it('um \\r no fim do último pedaço não vira linha vazia extra', () => {
+    const lines: string[] = []
+    const buf = createLineBuffer((l) => lines.push(l))
+    buf.push(Buffer.from('fim\r'))
+    buf.flush()
+    expect(lines).toEqual(['fim'])
+  })
+})
+
+describe('defaultSpawn - ambiente, cwd e erros', () => {
+  function run(cmd: string, args: string[], cwd: string | null) {
+    const child = defaultSpawn()(cmd, args, cwd)
+    const lines: string[] = []
+    return new Promise<{ lines: string[]; code: number | null; spawnError?: string }>((resolve) => {
+      child.onStdoutLine((l) => lines.push(l))
+      child.onExit((code, spawnError) => resolve({ lines, code, spawnError }))
+    })
+  }
+
+  it('COLUMNS=500 para o Rich não quebrar a mensagem de erro em 80 colunas, mantendo o resto do ambiente', async () => {
+    const script = 'console.log(process.env.COLUMNS); console.log(process.env.PATH || process.env.Path ? "path" : "sem")'
+    const { lines } = await run(process.execPath, ['-e', script], null)
+    expect(lines).toEqual(['500', 'path'])
+  })
+
+  it('cwd null roda na pasta do usuário, não no cwd do Electron', async () => {
+    const { lines } = await run(process.execPath, ['-e', 'console.log(process.cwd())'], null)
+    expect(lines[0].toLowerCase()).toBe(os.homedir().toLowerCase())
+  })
+
+  it('stdout multibyte partido entre escritas chega inteiro', async () => {
+    const script =
+      'process.stdout.write(Buffer.from([0x61, 0xc3])); setTimeout(() => { process.stdout.write(Buffer.from([0xa7, 0x0a])) }, 30)'
+    const { lines } = await run(process.execPath, ['-e', script], null)
+    expect(lines).toEqual(['aç'])
+  })
+
+  it('comando inexistente: onExit(null, "Comando não encontrado: ...")', async () => {
+    const { code, spawnError } = await run('ragx-comando-que-nao-existe-xyz', [], null)
+    expect(code).toBeNull()
+    expect(spawnError).toBe('Comando não encontrado: ragx-comando-que-nao-existe-xyz')
   })
 })

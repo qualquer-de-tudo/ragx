@@ -89,3 +89,38 @@ describe('runRagxCommand', () => {
     }
   })
 })
+
+describe('runRagxCommand - decodificação e erros de spawn', () => {
+  beforeEach(() => {
+    vi.mocked(spawn).mockReset()
+  })
+
+  function childEmitting(chunks: Buffer[], exitCode: number) {
+    const child = new EventEmitter() as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter }
+    child.stdout = new EventEmitter()
+    child.stderr = new EventEmitter()
+    queueMicrotask(() => {
+      for (const c of chunks) child.stdout.emit('data', c)
+      child.emit('close', exitCode)
+    })
+    return child
+  }
+
+  it('um caractere multibyte partido entre dois pedaços do stdout chega inteiro', async () => {
+    const bytes = Buffer.from('{"nome": "ação"}', 'utf-8')
+    const cut = bytes.indexOf(0xa7) // no meio do "ç" (0xC3 0xA7)
+    vi.mocked(spawn).mockReturnValue(childEmitting([bytes.subarray(0, cut), bytes.subarray(cut)], 0) as never)
+
+    await expect(runRagxCommand('C:\\projeto', ['status', '--json'])).resolves.toEqual({ nome: 'ação' })
+  })
+
+  it('ENOENT vira "Comando não encontrado", não o erro cru do Node', async () => {
+    const child = new EventEmitter() as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter }
+    child.stdout = new EventEmitter()
+    child.stderr = new EventEmitter()
+    queueMicrotask(() => child.emit('error', Object.assign(new Error('spawn ragx ENOENT'), { code: 'ENOENT' })))
+    vi.mocked(spawn).mockReturnValue(child as never)
+
+    await expect(runRagxCommand(process.cwd(), ['status', '--json'])).rejects.toThrow(/^Comando não encontrado: /)
+  })
+})

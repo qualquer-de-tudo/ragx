@@ -11,3 +11,17 @@ describe('execFileText', () => {
     )
   })
 })
+
+describe('execFileText - comando inexistente', () => {
+  it('marca notFound quando o executável não existe (ENOENT)', async () => {
+    const r = await execFileText('comando-que-nao-existe-ragx-xyz', ['--version'])
+    expect(r.code).toBe(-1)
+    expect(r.notFound).toBe(true)
+  })
+
+  it('comando que existe e falha não é notFound', async () => {
+    const r = await execFileText(process.execPath, ['-e', 'process.exit(3)'])
+    expect(r.code).toBe(3)
+    expect(r.notFound).toBeFalsy()
+  })
+})

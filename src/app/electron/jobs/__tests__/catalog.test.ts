@@ -40,7 +40,17 @@ describe('resolveJob - tabela do catálogo', () => {
       args: ['hooks', 'install', 'C:/pastas/NovoProjeto'],
       cwd: null,
       progress: false,
+      onlyIfGitRepo: 'C:/pastas/NovoProjeto',
     })
+  })
+
+  it('add-project: leva a pasta no job, para a conferência no hub depois do último passo', () => {
+    const job = resolveJob({ kind: 'add-project', folderToken: 'tok-1' }, ctx())
+    expect(job.folder).toBe('C:/pastas/NovoProjeto')
+  })
+
+  it('só add-project leva folder', () => {
+    expect(resolveJob({ kind: 'update', projectId: 'p1' }, ctx()).folder).toBeUndefined()
   })
 
   it('update', () => {
@@ -117,7 +127,17 @@ describe('resolveJob - tabela do catálogo', () => {
   it('remove-from-hub: usa o nome, nao o caminho, e funciona sem path (so federacao)', () => {
     const job = resolveJob({ kind: 'remove-from-hub', projectId: 'so-federacao' }, ctx())
     expect(job.label).toBe('Remover Federado do hub')
-    expect(job.steps).toEqual([{ cmd: 'ragx', args: ['project', 'unregister', 'Federado'], cwd: null, progress: false }])
+    expect(job.steps).toEqual([
+      { cmd: 'ragx', args: ['project', 'unregister', '--', 'Federado'], cwd: null, progress: false },
+    ])
+  })
+
+  it('remove-from-hub: nome que parece flag vai depois de "--" (nunca vira opção do CLI)', () => {
+    const job = resolveJob(
+      { kind: 'remove-from-hub', projectId: 'flag' },
+      ctx({ projectById: (id) => (id === 'flag' ? { id: 'flag', name: '--help', path: null } : undefined) }),
+    )
+    expect(job.steps[0].args).toEqual(['project', 'unregister', '--', '--help'])
   })
 
   it('mcp-register: sem projeto', () => {
