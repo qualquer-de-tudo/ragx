@@ -85,6 +85,62 @@ export interface ConnectionCheck {
   lastMcpCallAt: string | null
 }
 
+export type JobKind =
+  | 'add-project'
+  | 'update'
+  | 'embed'
+  | 'reindex-full'
+  | 'sync'
+  | 'graph'
+  | 'dictionary'
+  | 'hooks-install'
+  | 'hooks-uninstall'
+  | 'remove-from-hub'
+  | 'mcp-register'
+  | 'ollama-start'
+  | 'ollama-pull'
+
+export interface JobRequest {
+  kind: JobKind
+  /** Tarefas de projeto existente. */
+  projectId?: string
+  /** `add-project`: token da pasta escolhida pelo usuário (Task 6). */
+  folderToken?: string
+  /** `ollama-pull`. */
+  model?: string
+  /** `add-project`. */
+  installHooks?: boolean
+}
+
+export type JobState = 'queued' | 'running' | 'done' | 'failed' | 'cancelled'
+
+export interface JobView {
+  id: string
+  kind: JobKind
+  /** Ex.: "Gerar embeddings em Juriflux" (tabela do catálogo). */
+  label: string
+  projectId: string | null
+  state: JobState
+  /** Passo atual (1-based). */
+  step: number
+  steps: number
+  /** scan | chunk | embed */
+  phase: string | null
+  done: number | null
+  total: number | null
+  etaSeconds: number | null
+  /** Só na fase embed. */
+  ratePerSecond: number | null
+  /** Ex.: "Outra indexação estava rodando; este pedido ficou agendado." */
+  note: string | null
+  error: string | null
+  /** Últimas 20 linhas. */
+  logTail: string[]
+  queuedAt: string
+  startedAt: string | null
+  finishedAt: string | null
+}
+
 export interface RagxBridge {
   getSnapshot: () => Promise<Snapshot>
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void
