@@ -170,6 +170,31 @@ export interface DiscoverResult {
   truncated: boolean
 }
 
+export type OllamaMode = 'docker' | 'native' | 'none' | 'conflict'
+export type GpuVendor = 'nvidia' | 'amd' | 'intel' | 'apple' | 'none' | 'unknown'
+export interface OllamaEnvironment {
+  platform: 'win32' | 'darwin' | 'linux'
+  gpu: { vendor: GpuVendor; name: string | null }
+  docker: { installed: boolean; running: boolean }
+  container: { exists: boolean; running: boolean }
+  native: { installed: boolean; path: string | null; running: boolean }
+  canInstallNative: boolean
+  apiUp: boolean
+  /** Nomes de /api/tags, como vêm. */
+  models: string[]
+  mode: OllamaMode
+  recommendation: { mode: 'docker' | 'native'; reason: string }
+}
+export interface OllamaBenchmark {
+  ok: boolean
+  chunksPerSecond: number | null
+  processor: 'gpu' | 'cpu' | 'unknown'
+  vramMB: number | null
+  model: string | null
+  measuredAt: string
+  error: string | null
+}
+
 export interface RagxBridge {
   getSnapshot: () => Promise<Snapshot>
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void

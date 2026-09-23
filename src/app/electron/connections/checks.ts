@@ -1,9 +1,9 @@
 import fs from 'node:fs'
-import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { execFileText } from '../system/exec'
 import type { ExecFn } from '../system/exec'
+import { httpGetJson } from '../system/http'
 import { resolveRagx } from '../system/ragx-exe'
 import type { ConnectionAction, ConnectionCheck, ConnectionState, Snapshot } from '../../src/types/ragx-bridge'
 
@@ -489,38 +489,7 @@ export function defaultCheckDeps(): CheckDeps {
       }
     },
     exists: (p) => fs.existsSync(p),
-    httpGetJson: (url, timeoutMs) =>
-      new Promise((resolve) => {
-        try {
-          const req = http.get(url, { timeout: timeoutMs }, (res) => {
-            if (res.statusCode !== 200) {
-              res.resume()
-              resolve(null)
-              return
-            }
-            res.setEncoding('utf-8')
-            let body = ''
-            res.on('data', (chunk: string) => {
-              body += chunk
-            })
-            res.on('end', () => {
-              try {
-                resolve(JSON.parse(body) as unknown)
-              } catch {
-                resolve(null)
-              }
-            })
-            res.on('error', () => resolve(null))
-          })
-          req.on('timeout', () => {
-            req.destroy()
-            resolve(null)
-          })
-          req.on('error', () => resolve(null))
-        } catch {
-          resolve(null)
-        }
-      }),
+    httpGetJson,
     homeDir: os.homedir(),
   }
 }
