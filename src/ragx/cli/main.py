@@ -10,6 +10,7 @@ from rich.console import Console
 from ragx.cli.commands import (
     agent_cmd,
     base_cmd,
+    claude_cmd,
     config_cmd,
     context_cmd,
     dictionary_cmd,
@@ -22,6 +23,7 @@ from ragx.cli.commands import (
     init,
     maintenance_cmd,
     mcp_cmd,
+    perf_cmd,
     portability_cmd,
     search_cmd,
     security,
@@ -48,6 +50,7 @@ app.command("status")(index_cmd.status)
 app.command("search")(search_cmd.search)
 app.command("context")(context_cmd.context)
 app.command("trial")(trial_cmd.trial_cmd)
+app.command("perf")(perf_cmd.perf)
 app.command("eval")(eval_cmd.eval_cmd)
 app.command("trial")(trial_cmd.trial_cmd)
 app.command("entities")(graph_cmd.entities)
@@ -80,6 +83,7 @@ app.add_typer(federation_cmd.federation_app, name="federation", help="Superfíci
 app.add_typer(federation_cmd.project_app, name="project", help="Projetos registrados no hub.")
 app.add_typer(federation_cmd.hub_app, name="hub", help="Hub multiprojeto local.")
 app.add_typer(mcp_cmd.app, name="mcp", help="Servidor MCP.")
+app.add_typer(claude_cmd.app, name="claude", help="Liga e desliga o RAGX no Claude Code (global).")
 app.add_typer(hooks_cmd.app, name="hooks", help="Hooks de git que mantêm o índice na branch atual.")
 app.add_typer(security.app, name="security", help="Varredura e regras de segurança.")
 app.add_typer(config_cmd.app, name="config", help="Inspeção e ajuste de configuração.")

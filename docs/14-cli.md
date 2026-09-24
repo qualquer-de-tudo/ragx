@@ -325,6 +325,34 @@ ragx doctor --json               as mesmas checagens em JSON, saindo com 0
 > a saída e ficar sem diagnóstico nenhum. O modo humano mantém os códigos 1 e 3,
 > que o instalador usa.
 
+## Medir e desligar o RAGX no Claude Code
+
+```bash
+ragx perf [--days 7] [--project NOME] [--top 5] [--json]
+ragx claude status [--json]      o RAGX está ligado no Claude Code agora?
+ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projetos
+ragx claude on [--dry-run]       põe de volta
+```
+
+`ragx perf` lê os transcripts do Claude Code (`~/.claude/projects`), que carimbam
+cada mensagem, e separa o tempo das voltas do modelo e das ferramentas que foram
+do RAGX do tempo total ativo da sessão (o seu tempo lendo e digitando não conta).
+Mostra, por ferramenta, a espera vista pelo Claude e o tempo que o servidor diz
+ter gasto (`.ragx/logs/mcp.jsonl`, do projeto atual), e o custo fixo em tokens
+do schema das ferramentas. É estimativa e erra para menos: chamadas em paralelo
+com ferramenta de fora não são atribuídas ao RAGX, e pausas de mais de 15 minutos
+contam como ociosidade. Lê só números de tempo; o conteúdo das mensagens não é
+guardado nem impresso.
+
+`ragx claude off|on` é o interruptor global: usa o mesmo registro do
+`ragx mcp install/uninstall --client claude-code` (só a entrada `ragx` muda,
+com backup datado e recusa de configuração ilegível). Vale a partir da próxima
+sessão do Claude Code; uma sessão já aberta continua com as ferramentas que
+carregou. `on` regrava a entrada padrão (`ragx mcp serve`).
+
+`on` e `off` aceitam `--json` (`{enabled, changed, detail}`, e `error` quando falha, saindo
+com 1): é o que o interruptor do header do painel usa.
+
 ## Orçamento de tamanho (Fases 1 e 9)
 
 ```bash

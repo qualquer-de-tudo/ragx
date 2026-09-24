@@ -107,7 +107,12 @@ def test_apenas_modulos_autorizados_leem_o_filesystem() -> None:
                       "ragx.dictionary", "ragx.portability", "ragx.embeddings",
                       "ragx.context", "ragx.graph", "ragx.sizing", "ragx.indexing",
                       "ragx.federation", "ragx.sync", "ragx.tokens", "ragx.search",
-                      "ragx.agents", "ragx.base", "ragx.tasks", "ragx.githooks")
+                      "ragx.agents", "ragx.base", "ragx.tasks", "ragx.githooks",
+                      "ragx.perf")
+            # `ragx.perf` lê só os transcripts do próprio Claude Code
+            # (`~/.claude/projects/`) e o `.ragx/logs/mcp.jsonl`: nunca o
+            # código do projeto-alvo. De cada transcript sai um número (tempo);
+            # o conteúdo das mensagens não é retido nem impresso.
             # `ragx.githooks` só lê e escreve os arquivos de hook dentro de
             # `gitinfo.hooks_dir(root)` (`.git/hooks/` ou o que `core.hooksPath`
             # apontar) -- nunca um caminho arbitrário do projeto. Mesmo esses

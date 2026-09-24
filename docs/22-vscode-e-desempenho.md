@@ -230,3 +230,14 @@ absoluto além da raiz do projeto.
 - **Pré-aquecer o RAGX na ativação de todo workspace.** Subir Python em
   projeto que talvez não seja consultado troca latência por memória, em todas
   as janelas abertas.
+
+---
+
+## Medir o peso do RAGX no Claude Code
+
+Tudo acima mede a extensão do VS Code. Para o Claude Code, use `ragx perf`
+([14 — CLI](14-cli.md#medir-e-desligar-o-ragx-no-claude-code)): o servidor MCP
+responde em milissegundos, então o custo que importa é o das voltas extras do
+modelo e o schema das ferramentas em cada requisição — nenhum dos dois aparece
+no log do servidor. `ragx claude off` desliga o RAGX para todos os projetos, e
+`ragx claude on` o devolve.

@@ -359,6 +359,24 @@ def register_all(
     return [register(c, command, args, dry_run) for c in alvos]
 
 
+def is_registered(client: Client) -> bool:
+    """O RAGX está na configuração deste cliente agora? Só lê, nunca escreve."""
+    if not client.config.is_file():
+        return False
+    try:
+        bruto = client.config.read_text(encoding="utf-8")
+        if client.fmt == "toml":
+            import tomllib
+
+            servidores = tomllib.loads(bruto).get(client.key)
+        else:
+            dados = json.loads(bruto) if bruto.strip() else {}
+            servidores = dados.get(client.key) if isinstance(dados, dict) else None
+    except (OSError, ValueError):
+        return False
+    return isinstance(servidores, dict) and SERVER_NAME in servidores
+
+
 # ── remoção ─────────────────────────────────────────────────────────────
 def _remover_json(client: Client, dry_run: bool) -> Result:
     if not client.config.is_file():
