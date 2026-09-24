@@ -53,7 +53,7 @@ export function uvCommand(): string   // caminho do uv.exe do bundle ou 'uv'
 **Files:** Create `bootstrap/path-user.ts`, `bootstrap/state.ts`, `bootstrap/uninstall.ts` (+ `__tests__/`)
 **Produces:**
 ```ts
-// state.ts: %APPDATA%/RAGX Painel/bootstrap-state.json → { pathAdded: boolean, binDir: string|null }
+// state.ts: %APPDATA%/app/bootstrap-state.json → { pathAdded: boolean, binDir: string|null }
 export function readState(deps?): BootstrapState;  export function writeState(s, deps?): void
 // path-user.ts
 export interface PathDeps { getUserPath(): Promise<string>; setUserPath(v: string): Promise<void> }

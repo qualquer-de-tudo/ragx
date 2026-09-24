@@ -33,7 +33,7 @@ verde" e "Claude Code registrável em um clique"; o Ollama fica a um clique
 | `electron/bootstrap/path-user.ts` | Garante `~\.local\bin` no PATH do usuário; grava `bootstrap-state.json` (`pathAdded`). |
 | `electron/bootstrap/uninstall.ts` | Remove CLI, MCP, PATH (se `pathAdded`) e opcionalmente `~\.ragx`. |
 | Job `ragx-install` + `Step.cmd: 'uv'` | `uv tool install --force --no-config --python 3.12 wheel[all]` (fallback sem extra), PATH, `ragx mcp install --client claude-code` se houver Claude Code. |
-| `main.ts` | `--bootstrap` (headless, log em `%APPDATA%\RAGX Painel\bootstrap.log`, exit 0/1), `--uninstall-cli`, autoenfileira se `resolveRagx()` é `null`; depois `resetRagxCache()` + nova checagem. |
+| `main.ts` | `--bootstrap` (headless, log em `%APPDATA%\app\bootstrap.log`, exit 0/1), `--uninstall-cli`, autoenfileira se `resolveRagx()` é `null`; depois `resetRagxCache()` + nova checagem. |
 | `build/installer.nsh` | `customInstall` chama `--bootstrap`; `customUnInstall` mostra as duas caixas e chama `--uninstall-cli`. Sem lógica própria. |
 | CLI Python | `ragx mcp uninstall --client <nome>`: remove só a chave `ragx`, preserva o resto, não mexe em config ilegível. |
 | Card RAGX CLI | Ação "Instalar / Tentar de novo" (`ragx-install`). |

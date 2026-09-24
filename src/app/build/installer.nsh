@@ -11,7 +11,7 @@
   ExecWait '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" --bootstrap' $0
   ${If} $0 != 0
   ${AndIfNot} ${Silent}
-    MessageBox MB_OK|MB_ICONINFORMATION "A instalação da CLI ragx não terminou (código $0).$\r$\n$\r$\nO RAGX Painel tenta de novo na primeira abertura, em 'RAGX CLI > Instalar / Tentar de novo'. O log está em %APPDATA%\RAGX Painel\bootstrap.log."
+    MessageBox MB_OK|MB_ICONINFORMATION "A instalação da CLI ragx não terminou (código $0).$\r$\n$\r$\nO RAGX Painel tenta de novo na primeira abertura, em 'RAGX CLI > Instalar / Tentar de novo'. O log está em %APPDATA%\app\bootstrap.log."
   ${EndIf}
 !macroend
 

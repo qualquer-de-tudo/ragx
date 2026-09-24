@@ -93,7 +93,7 @@ executa `RAGX Painel.exe --bootstrap`. É a mesma rotina do botão "Instalar /
 Tentar de novo" do card RAGX CLI: valida os hashes do bundle e roda
 `uv tool install --force --python 3.12 <wheel>[all]` (com fallback sem o extra),
 garante `~\.local\bin` no PATH do usuário e registra o MCP no Claude Code se ele
-estiver instalado. O log fica em `%APPDATA%\RAGX Painel\bootstrap.log`. Falha do
+estiver instalado. O log fica em `%APPDATA%\app\bootstrap.log`. Falha do
 bootstrap nunca falha a instalação (só avisa, e nada é exibido em `/S`): o
 painel refaz na primeira abertura se `ragx` não for encontrado.
 

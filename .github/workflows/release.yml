@@ -249,7 +249,7 @@ jobs:
           $ragx = Join-Path $env:USERPROFILE '.local\bin\ragx.exe'
           for ($i = 0; $i -lt 60 -and -not (Test-Path $ragx); $i++) { Start-Sleep -Seconds 5 }
           if (-not (Test-Path $ragx)) {
-            $log = Join-Path $env:APPDATA 'RAGX Painel\bootstrap.log'
+            $log = Join-Path $env:APPDATA 'app\bootstrap.log'
             if (Test-Path $log) { Get-Content $log }
             throw "ragx.exe não apareceu em $ragx"
           }
