@@ -71,6 +71,14 @@ describe('checkRagx', () => {
     assertNoEmDash(check)
   })
 
+  it('resolveRagx() null com pacote no .exe oferece "Instalar o RAGX"', async () => {
+    const check = await checkRagx(baseDeps({ resolveRagx: () => null, canInstallRagx: () => true }))
+    expect(check.state).toBe('error')
+    expect(check.actions).toEqual([{ kind: 'ragx-install', label: 'Instalar o RAGX' }])
+    expect(check.help).toContain('Instalar o RAGX')
+    assertNoEmDash(check)
+  })
+
   it('exec --version com code 0 vira ok com versão e local', async () => {
     const check = await checkRagx(
       baseDeps({

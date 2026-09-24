@@ -5,6 +5,7 @@ import { execFileText } from '../system/exec'
 import type { ExecFn } from '../system/exec'
 import { httpGetJson } from '../system/http'
 import { resolveRagx } from '../system/ragx-exe'
+import { findBundleDir } from '../bootstrap/bundle'
 import { chooseStartMode } from '../ollama/choose-start'
 import type {
   ConnectionAction,
@@ -22,6 +23,8 @@ export interface CheckDeps {
   exists: (p: string) => boolean
   httpGetJson: (url: string, timeoutMs: number) => Promise<unknown | null>
   homeDir: string
+  /** O `.exe` traz o pacote de instalação da CLI? Sem ele, o card só orienta. */
+  canInstallRagx?: () => boolean
 }
 
 interface ClaudeMcpEntry {
@@ -95,6 +98,7 @@ export async function checkRagx(d: CheckDeps): Promise<ConnectionCheck> {
   try {
     const ragxPath = d.resolveRagx()
     if (ragxPath === null) {
+      const canInstall = d.canInstallRagx?.() === true
       return {
         id,
         title,
@@ -102,8 +106,10 @@ export async function checkRagx(d: CheckDeps): Promise<ConnectionCheck> {
         stateLabel: stateLabelFor('error'),
         summary: 'O comando ragx não foi encontrado nesta máquina.',
         facts: [],
-        actions: [],
-        help: 'Instale com o instalador do RAGX (install.ps1 no Windows, install.sh no Linux e macOS) e reabra o painel.',
+        actions: canInstall ? [{ kind: 'ragx-install', label: 'Instalar o RAGX' }] : [],
+        help: canInstall
+          ? 'Clique em "Instalar o RAGX". Precisa de internet só agora, para baixar o Python 3.12 que o RAGX usa.'
+          : 'Instale com o instalador do RAGX (install.ps1 no Windows, install.sh no Linux e macOS) e reabra o painel.',
         lastMcpCallAt: null,
       }
     }
@@ -688,5 +694,6 @@ export function defaultCheckDeps(): CheckDeps {
     exists: (p) => fs.existsSync(p),
     httpGetJson,
     homeDir: os.homedir(),
+    canInstallRagx: () => findBundleDir() !== null,
   }
 }

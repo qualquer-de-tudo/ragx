@@ -47,6 +47,7 @@ describe('CONNECTION_JOB_KINDS', () => {
       'ollama-stop',
       'ollama-use-docker',
       'ollama-use-native',
+      'ragx-install',
     ])
   })
 })

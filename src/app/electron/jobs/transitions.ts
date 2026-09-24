@@ -9,6 +9,7 @@ const TERMINAL: ReadonlySet<JobView['state']> = new Set(['done', 'failed', 'canc
  */
 export const CONNECTION_JOB_KINDS: ReadonlySet<JobKind> = new Set<JobKind>([
   'mcp-register',
+  'ragx-install',
   'ollama-start',
   'ollama-pull',
   'ollama-use-native',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext } from '../catalog'
 import type { JobRequest } from '../../../src/types/ragx-bridge'
+import { BundleError } from '../../bootstrap/bundle'
 
 const PROJECT = { id: 'p1', name: 'Juriflux', path: 'C:/proj/juriflux' }
 const FEDERATED = { id: 'so-federacao', name: 'Federado', path: null }
@@ -147,6 +148,55 @@ describe('resolveJob - tabela do catálogo', () => {
     expect(job.steps).toEqual([
       { cmd: 'ragx', args: ['mcp', 'install', '--client', 'claude-code'], cwd: null, progress: false },
     ])
+  })
+
+  it('ragx-install: uv tool install do wheel do pacote e depois o registro do MCP', () => {
+    const bundle = () => ({
+      dir: 'C:/App/resources/ragx-bundle',
+      uvPath: 'C:/App/resources/ragx-bundle/uv.exe',
+      wheelPath: 'C:/App/resources/ragx-bundle/ragx-1.0.0b3-py3-none-any.whl',
+      version: '1.0.0b3',
+      python: '3.12',
+    })
+    const job = resolveJob({ kind: 'ragx-install' }, ctx({ bundle, ragxExe: () => 'C:/Users/ana/.local/bin/ragx.exe' }))
+    expect(job.label).toBe('Instalar o RAGX')
+    expect(job.projectId).toBeNull()
+    expect(job.dedupeKey).toBe('ragx-install||')
+    expect(job.steps).toEqual([
+      {
+        cmd: 'uv',
+        args: [
+          'tool',
+          'install',
+          '--force',
+          '--no-config',
+          '--python',
+          '3.12',
+          'C:/App/resources/ragx-bundle/ragx-1.0.0b3-py3-none-any.whl[all]',
+        ],
+        cwd: null,
+        progress: false,
+      },
+      {
+        cmd: 'ragx',
+        args: ['mcp', 'install', '--client', 'claude-code', '--command', 'C:/Users/ana/.local/bin/ragx.exe'],
+        cwd: null,
+        progress: false,
+      },
+    ])
+  })
+
+  it('mcp-register: com o caminho do ragx grava --command absoluto', () => {
+    const job = resolveJob({ kind: 'mcp-register' }, ctx({ ragxExe: () => 'C:/r/ragx.exe' }))
+    expect(job.steps[0].args).toEqual(['mcp', 'install', '--client', 'claude-code', '--command', 'C:/r/ragx.exe'])
+  })
+
+  it('ragx-install: pacote ausente ou corrompido vira JobRejected, sem processo', () => {
+    const quebrado = () => {
+      throw new BundleError('hash', 'hash diferente')
+    }
+    expect(() => resolveJob({ kind: 'ragx-install' }, ctx({ bundle: quebrado }))).toThrowError(JobRejected)
+    expect(() => resolveJob({ kind: 'ragx-install' }, ctx())).toThrowError(/ausente ou corrompido/)
   })
 
   it('ollama-start', () => {

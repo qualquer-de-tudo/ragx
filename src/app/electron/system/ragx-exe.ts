@@ -47,7 +47,12 @@ export function resolveRagx(deps: Deps = {}): string | null {
   return null
 }
 
-export function ragxCommand(): string {
-  if (cached === undefined) cached = resolveRagx()
+/**
+ * Só um caminho achado fica em cache. A ausência NÃO: o `ragx-install` põe o
+ * executável no disco com o painel já aberto, e o passo seguinte precisa
+ * enxergá-lo sem reiniciar o app.
+ */
+export function ragxCommand(resolve: () => string | null = resolveRagx): string {
+  if (cached === undefined || cached === null) cached = resolve()
   return cached ?? 'ragx'
 }

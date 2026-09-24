@@ -1,3 +1,4 @@
+import type { BundleInfo } from './bootstrap/bundle'
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
 import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
@@ -63,6 +64,10 @@ export interface HandlerDeps {
   getRequiredModels?: () => string[]
   /** Modo do Ollama escolhido por último (persistido); `null` se nunca escolheu. */
   getPreferredOllamaMode?: () => 'docker' | 'native' | null
+  /** Pacote de instalação da CLI que o `.exe` leva (já conferido); lança `BundleError` se ausente. */
+  getBundle?: () => BundleInfo
+  /** Caminho absoluto do `ragx.exe` para o registro do MCP. */
+  getRagxExe?: () => string
   /** Mede embeddings/s. `model` é escolhido aqui no processo principal; `null` = modelo padrão. */
   runOllamaBenchmark: (model: string | null) => Promise<OllamaBenchmark>
 }
@@ -186,6 +191,8 @@ export function createHandlers(deps: HandlerDeps) {
       ollamaEnv: deps.getOllamaEnv,
       requiredModels: deps.getRequiredModels,
       preferredOllamaMode: deps.getPreferredOllamaMode,
+      bundle: deps.getBundle,
+      ragxExe: deps.getRagxExe,
     }
   }
 

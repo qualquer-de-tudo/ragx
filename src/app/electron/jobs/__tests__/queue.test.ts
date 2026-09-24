@@ -640,6 +640,37 @@ describe('JobQueue - código de saída 4 (ocupado)', () => {
 })
 
 describe('JobQueue - texto do erro', () => {
+  it('ragx-install com arquivo travado explica que o ragx está em uso', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue({
+      kind: 'ragx-install',
+      label: 'Instalar o RAGX',
+      projectId: null,
+      steps: [{ cmd: 'uv', args: ['tool', 'install', 'x.whl'], cwd: null, progress: false }],
+      dedupeKey: 'ragx-install||',
+      model: null,
+    })
+    children[0].err('error: failed to remove file `ragx.exe`: Acesso negado. (os error 5)')
+    children[0].exit(2)
+
+    const view = findView(queue.list(), j.id)
+    expect(view.state).toBe('failed')
+    expect(view.error).toMatch(/O ragx está em uso\. Feche o Claude Code/)
+  })
+
+  it('só o ragx-install ganha essa tradução: outro job mostra o erro cru', () => {
+    const { spawn, children } = fakeSpawn()
+    const { queue } = makeQueue(spawn)
+
+    const j = queue.enqueue(job())
+    children[0].err('Acesso negado. (os error 5)')
+    children[0].exit(2)
+
+    expect(findView(queue.list(), j.id).error).toBe('Acesso negado. (os error 5)')
+  })
+
   it('usa o bloco que começa em "erro:" (a mensagem quebrada pelo Rich em várias linhas)', () => {
     const { spawn, children } = fakeSpawn()
     const { queue } = makeQueue(spawn)
@@ -1456,6 +1487,10 @@ describe('resolveSpawnCommand', () => {
     expect(resolveSpawnCommand('ragx', deps)).toBe('C:/r/ragx.exe')
     expect(resolveSpawnCommand('ollama', deps)).toBe('ollama')
     expect(resolveSpawnCommand('ollama', deps)).toBe('C:/o/ollama.exe')
+  })
+
+  it('uv vem do pacote do painel, não do PATH', () => {
+    expect(resolveSpawnCommand('uv', { ...base, uv: () => 'C:/App/ragx-bundle/uv.exe' })).toBe('C:/App/ragx-bundle/uv.exe')
   })
 
   it('powershell no Windows vem de %SystemRoot%\\System32\\WindowsPowerShell\\v1.0', () => {

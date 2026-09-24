@@ -5,6 +5,7 @@ import path from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
 import { ollamaCommand } from '../ollama/paths'
 import { ragxCommand } from '../system/ragx-exe'
+import { uvCommand } from '../bootstrap/bundle'
 import type { ResolvedJob, Step, StepCondition } from './catalog'
 import type { JobKind, JobView, JobState } from '../../src/types/ragx-bridge'
 
@@ -64,6 +65,7 @@ const MAX_LOG_TAIL = 20
 const MAX_STDERR_LINES = 50
 const MAX_FINISHED_HISTORY = 20
 const MAX_ERROR_LENGTH = 300
+const LOCKED_FILE_PATTERN = /os error (5|32)|acesso negado|access is denied|being used by another process/i
 
 /**
  * `IndexBusyError.exit_code` no core (`ragx sync`, `graph`, `dictionary` com
@@ -603,6 +605,11 @@ export class JobQueue {
    */
   private errorText(job: InternalJob): string | null {
     const lines = job.stderrLines
+    // No Windows o `ragx.exe` fica travado enquanto um cliente MCP o mantém
+    // aberto, e o `uv` reclama com um erro de sistema que não diz o motivo.
+    if (job.resolved.kind === 'ragx-install' && lines.some((l) => LOCKED_FILE_PATTERN.test(l))) {
+      return 'O ragx está em uso. Feche o Claude Code (e outras ferramentas que usam o MCP) e tente de novo.'
+    }
     for (let i = lines.length - 1; i >= 0; i--) {
       if (lines[i].trimStart().startsWith('erro:')) {
         const block = lines
@@ -691,6 +698,7 @@ export interface ResolveCommandDeps {
   env?: NodeJS.ProcessEnv
   platform?: NodeJS.Platform
   ragx?: () => string
+  uv?: () => string
   ollama?: () => string
 }
 
@@ -701,6 +709,7 @@ export interface ResolveCommandDeps {
  *   tem o PATH completo). `ollamaCommand()` não guarda um "não achei": logo
  *   depois do `winget install` o PATH deste processo continua velho, e o
  *   passo `ollama serve` seguinte precisa achar o recém-instalado.
+ * - `uv`: o `uv.exe` do pacote do painel, nunca um `uv` do PATH da pessoa.
  * - `powershell` no Windows:
  *   `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`, sem
  *   depender do PATH; sem `SystemRoot`, o nome nu.
@@ -709,6 +718,7 @@ export interface ResolveCommandDeps {
  */
 export function resolveSpawnCommand(cmd: string, deps: ResolveCommandDeps = {}): string {
   if (cmd === 'ragx') return (deps.ragx ?? ragxCommand)()
+  if (cmd === 'uv') return (deps.uv ?? uvCommand)()
   if (cmd === 'ollama') return (deps.ollama ?? ollamaCommand)()
   if (cmd === 'powershell') {
     const platform = deps.platform ?? process.platform

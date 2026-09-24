@@ -1,12 +1,20 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { randomUUID } from 'node:crypto'
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { initSqlWasm } from './data/project-stats'
 import { buildSnapshot } from './data/snapshot'
 import { runRagxCommand } from './data/run-ragx-command'
 import { checkAll, defaultCheckDeps } from './connections/checks'
-import { resetRagxCache } from './system/ragx-exe'
+import { resetRagxCache, resolveRagx } from './system/ragx-exe'
+import { execFileText } from './system/exec'
+import { findBundleDir, loadBundle, uvCommand } from './bootstrap/bundle'
+import { afterRagxInstall } from './bootstrap/post-install'
+import { realPathDeps, removeFromUserPath } from './bootstrap/path-user'
+import { uninstallCli } from './bootstrap/uninstall'
 import { JobQueue, defaultSpawn } from './jobs/queue'
+import { resolveJob } from './jobs/catalog'
 import { defaultVerifyDeps, verifyJob } from './jobs/verify'
 import { CONNECTION_JOB_KINDS, justFinishedJobs } from './jobs/transitions'
 import { isInsideGitWorkTree } from './data/git'
@@ -29,6 +37,12 @@ import {
 import type { ConnectionCheck, JobView, Snapshot } from '../src/types/ragx-bridge'
 
 const isDev = !app.isPackaged
+
+// Modos sem janela, chamados pelo instalador NSIS (`build/installer.nsh`).
+const BOOTSTRAP = process.argv.includes('--bootstrap')
+const UNINSTALL_CLI = process.argv.includes('--uninstall-cli')
+const REMOVE_DATA = process.argv.includes('--remove-data')
+const HEADLESS = BOOTSTRAP || UNINSTALL_CLI
 
 const SNAPSHOT_POLL_MS = 5000
 const CONNECTIONS_POLL_MS = 30_000
@@ -139,6 +153,8 @@ function sendJobsThrottled(jobs: JobView[]): void {
 }
 
 function onJobsChange(jobs: JobView[]): void {
+  // Sem janela não há o que atualizar: quem roda em modo headless espera a fila terminar.
+  if (HEADLESS) return
   const finished = justFinishedJobs(previousJobStates, jobs)
   const justFinished = finished.length > 0
   previousJobStates = new Map(jobs.map((j) => [j.id, j.state]))
@@ -161,7 +177,14 @@ function onJobsChange(jobs: JobView[]): void {
   // "Baixar modelo", trocas de modo do Ollama): confere de novo. Se uma
   // checagem já está no ar (começou antes), roda mais uma depois dela. O
   // resultado chega ao renderer por `ragx:connections`, como o do polling.
-  if (finished.some((j) => CONNECTION_JOB_KINDS.has(j.kind))) {
+  if (finished.some((j) => j.kind === 'ragx-install' && j.state === 'done')) {
+    // O `ragx.exe` acabou de aparecer: refaz o cache do caminho e o PATH do
+    // usuário ANTES de conferir as conexões, para o card já sair verde.
+    afterRagxInstall(postInstallDeps())
+      .catch((err) => console.error('pos-instalacao do ragx falhou:', err))
+      .then(() => handlers.recheckConnections())
+      .catch((err) => console.error('checagem de conexoes falhou apos instalar o ragx:', err))
+  } else if (finished.some((j) => CONNECTION_JOB_KINDS.has(j.kind))) {
     handlers.recheckConnections().catch((err) => console.error('checagem de conexoes falhou apos tarefa:', err))
   }
 
@@ -234,6 +257,8 @@ const handlers = createHandlers({
   getOllamaEnv: () => ollamaEnv.get(),
   getRequiredModels: () => distinctRequiredModels(latestSnapshot),
   getPreferredOllamaMode: preferredOllamaMode,
+  getBundle: () => loadBundle(),
+  getRagxExe,
   // O resultado fica em `handlers.getLastBenchmark()` (a checagem do Ollama o usa).
   runOllamaBenchmark: (model) => runOllamaBenchmark(defaultBenchDeps(model)),
 })
@@ -273,6 +298,87 @@ handleIpc('ragx:getSettings', () => handlers.getSettings())
 handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDone(done))
 // Sem argumentos: o que vier do renderer é descartado aqui.
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
+
+// -- instalação da CLI (bootstrap) -----------------------------------------
+
+/** Onde o `uv tool` põe o `ragx.exe`; é o mesmo lugar que `resolveRagx` olha por último. */
+function getRagxExe(): string {
+  return resolveRagx() ?? path.join(os.homedir(), '.local', 'bin', 'ragx.exe')
+}
+
+function postInstallDeps() {
+  return { resetCache: resetRagxCache, resolveRagx: () => resolveRagx(), pathDeps: realPathDeps(userDataDir()) }
+}
+
+function logBootstrap(message: string): void {
+  try {
+    fs.mkdirSync(userDataDir(), { recursive: true })
+    fs.appendFileSync(path.join(userDataDir(), 'bootstrap.log'), `${new Date().toISOString()} ${message}
+`)
+  } catch {
+    // o log é só para diagnóstico; nunca derruba o instalador
+  }
+}
+
+/** Enfileira o `ragx-install`; `null` (com o motivo no log) se o pacote falta ou já há um rodando. */
+function enqueueRagxInstall(): JobView | null {
+  try {
+    const resolved = resolveJob(
+      { kind: 'ragx-install' },
+      { projectById: () => undefined, folderByToken: () => undefined, bundle: () => loadBundle(), ragxExe: getRagxExe },
+    )
+    return queue.enqueue(resolved)
+  } catch (err) {
+    logBootstrap(`ragx-install nao enfileirado: ${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
+}
+
+const BOOTSTRAP_TIMEOUT_MS = 15 * 60_000
+
+/** `--bootstrap`: instala a CLI sem janela e devolve o código de saída (0 = ok). */
+async function runBootstrapHeadless(): Promise<number> {
+  const job = enqueueRagxInstall()
+  if (job === null) return 1
+  const deadline = Date.now() + BOOTSTRAP_TIMEOUT_MS
+  for (;;) {
+    const view = queue.list().find((j) => j.id === job.id)
+    if (view && view.state !== 'queued' && view.state !== 'running') {
+      if (view.state !== 'done') {
+        logBootstrap(`ragx-install terminou em ${view.state}: ${view.error ?? 'sem detalhe'}`)
+        return 1
+      }
+      const r = await afterRagxInstall(postInstallDeps())
+      logBootstrap(r.found ? `ragx instalado (PATH alterado: ${String(r.pathAdded)})` : 'ragx-install terminou, mas o ragx.exe nao apareceu')
+      return r.found ? 0 : 1
+    }
+    if (Date.now() > deadline) {
+      logBootstrap('ragx-install passou de 15 minutos; desistindo')
+      queue.cancel(job.id)
+      return 1
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+}
+
+/** `--uninstall-cli [--remove-data]`: desfaz o que o `ragx-install` fez; código 0 = sem erros. */
+async function runUninstallHeadless(): Promise<number> {
+  const pathDeps = realPathDeps(userDataDir())
+  const result = await uninstallCli(
+    { removeData: REMOVE_DATA },
+    {
+      exec: execFileText,
+      ragxPath: () => resolveRagx(),
+      uvPath: () => uvCommand(),
+      removeFromPath: () => removeFromUserPath(pathDeps),
+      rm: (p) => fs.promises.rm(p, { recursive: true, force: true }),
+      homedir: os.homedir(),
+    },
+  )
+  for (const step of result.steps) logBootstrap(`desinstalar: ${step}`)
+  for (const error of result.errors) logBootstrap(`desinstalar ERRO: ${error}`)
+  return result.errors.length === 0 ? 0 : 1
+}
 
 // -- polling ---------------------------------------------------------------
 
@@ -335,6 +441,9 @@ function createWindow(): void {
     // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`
     // já constrói um snapshot se ainda não houver nenhum (decisão 2 da Task 6).
     handlers.getConnections().catch((err) => console.error('getConnections() falhou no startup:', err))
+    // Painel aberto sem a CLI (o bootstrap do instalador falhou ou nunca rodou): tenta de novo
+    // já com a barra de progresso na tela. Sem pacote no `.exe` (dev), não faz nada.
+    if (resolveRagx() === null && findBundleDir() !== null) enqueueRagxInstall()
   })
 
   win.on('close', (e) => {
@@ -371,6 +480,12 @@ app.whenReady().then(async () => {
   await initSqlWasm().catch((err) => {
     console.error('initSqlWasm falhou; stats de projetos ficarão indisponíveis:', err)
   })
+
+  if (HEADLESS) {
+    const code = BOOTSTRAP ? await runBootstrapHeadless() : await runUninstallHeadless()
+    app.exit(code)
+    return
+  }
 
   createWindow()
 

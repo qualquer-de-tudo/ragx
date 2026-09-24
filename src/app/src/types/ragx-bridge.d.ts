@@ -72,6 +72,7 @@ export type ConnectionState = 'ok' | 'warn' | 'error'
 export interface ConnectionAction {
   kind:
     | 'mcp-register'
+    | 'ragx-install'
     | 'ollama-start'
     | 'ollama-pull'
     | 'ollama-use-native'
@@ -117,6 +118,7 @@ export type JobKind =
   | 'hooks-uninstall'
   | 'remove-from-hub'
   | 'mcp-register'
+  | 'ragx-install'
   | 'ollama-start'
   | 'ollama-pull'
   | 'ollama-use-native'

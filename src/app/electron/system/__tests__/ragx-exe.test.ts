@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import path from 'node:path'
-import { resolveRagx, resetRagxCache } from '../ragx-exe'
+import { resolveRagx, resetRagxCache, ragxCommand } from '../ragx-exe'
 
 describe('resolveRagx', () => {
   beforeEach(() => resetRagxCache())
@@ -59,5 +59,30 @@ describe('resolveRagx', () => {
 
   it('devolve null quando não acha', () => {
     expect(resolveRagx({ env: { PATH: '' }, platform: 'linux', exists: () => false })).toBeNull()
+  })
+})
+
+describe('ragxCommand', () => {
+  beforeEach(() => resetRagxCache())
+
+  it('não fixa a ausência em cache: acha o ragx instalado depois', () => {
+    const achado = path.join('C:', 'u', '.local', 'bin', 'ragx.exe')
+    let instalado = false
+    const resolve = () => (instalado ? achado : null)
+    expect(ragxCommand(resolve)).toBe('ragx')
+    instalado = true
+    expect(ragxCommand(resolve)).toBe(achado)
+  })
+
+  it('guarda em cache um caminho já achado', () => {
+    const achado = path.join('C:', 'u', 'ragx.exe')
+    let chamadas = 0
+    const resolve = () => {
+      chamadas += 1
+      return achado
+    }
+    ragxCommand(resolve)
+    ragxCommand(resolve)
+    expect(chamadas).toBe(1)
   })
 })

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { chooseStartMode } from '../ollama/choose-start'
+import { BundleError, type BundleInfo } from '../bootstrap/bundle'
 import type { JobKind, JobRequest, OllamaEnvironment } from '../../src/types/ragx-bridge'
 
 export type StepCondition =
@@ -11,7 +12,7 @@ export type StepCondition =
   | 'native-not-running'
 
 export interface Step {
-  cmd: 'ragx' | 'docker' | 'ollama' | 'winget' | 'powershell' | 'pkill'
+  cmd: 'ragx' | 'uv' | 'docker' | 'ollama' | 'winget' | 'powershell' | 'pkill'
   args: string[]
   cwd: string | null
   progress: boolean
@@ -70,6 +71,20 @@ export interface CatalogContext {
   requiredModels?: () => string[]
   /** Modo que o usuário escolheu por último (persistido pelo processo principal); `null` se nunca escolheu. */
   preferredOllamaMode?: () => 'docker' | 'native' | null
+  /** Pacote de instalação do `.exe` (já conferido); lança `BundleError` se ausente ou corrompido. */
+  bundle?: () => BundleInfo
+  /**
+   * Caminho absoluto do `ragx.exe` a gravar no config do Claude Code. Cliente
+   * gráfico nem sempre herda o PATH do usuário, e logo depois do `ragx-install`
+   * o PATH das janelas abertas ainda é o velho. Sem isto, grava `ragx` puro.
+   */
+  ragxExe?: () => string
+}
+
+function mcpInstallArgs(ctx: CatalogContext): string[] {
+  const base = ['mcp', 'install', '--client', 'claude-code']
+  const exe = ctx.ragxExe?.()
+  return exe ? [...base, '--command', exe] : base
 }
 
 /** Recusa de `resolveJob`: pedido fora do catálogo fechado, nunca vira processo. */
@@ -94,6 +109,7 @@ const KNOWN_KINDS: ReadonlySet<string> = new Set<JobKind>([
   'hooks-uninstall',
   'remove-from-hub',
   'mcp-register',
+  'ragx-install',
   'ollama-start',
   'ollama-pull',
   'ollama-use-native',
@@ -324,7 +340,35 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
       kind,
       label: 'Registrar o RAGX no Claude Code',
       projectId: null,
-      steps: [{ cmd: 'ragx', args: ['mcp', 'install', '--client', 'claude-code'], cwd: null, progress: false }],
+      steps: [{ cmd: 'ragx', args: mcpInstallArgs(ctx), cwd: null, progress: false }],
+      dedupeKey: dedupeKey(kind, null),
+    }
+  }
+
+  if (kind === 'ragx-install') {
+    let bundle: BundleInfo
+    try {
+      if (ctx.bundle === undefined) throw new BundleError('missing', 'sem pacote')
+      bundle = ctx.bundle()
+    } catch {
+      throw new JobRejected('O pacote de instalação do RAGX está ausente ou corrompido. Baixe o instalador do painel de novo.')
+    }
+    return {
+      kind,
+      label: 'Instalar o RAGX',
+      projectId: null,
+      steps: [
+        // `--no-config`: um uv.toml do usuário não pode mudar o resultado.
+        // `--python` explícito: o uv usa o Python 3.12 dele, isolado do sistema.
+        {
+          cmd: 'uv',
+          args: ['tool', 'install', '--force', '--no-config', '--python', bundle.python, `${bundle.wheelPath}[all]`],
+          cwd: null,
+          progress: false,
+        },
+        // Só depois do passo acima o `ragx.exe` existe; a fila resolve o caminho na hora do spawn.
+        { cmd: 'ragx', args: mcpInstallArgs(ctx), cwd: null, progress: false },
+      ],
       dedupeKey: dedupeKey(kind, null),
     }
   }
