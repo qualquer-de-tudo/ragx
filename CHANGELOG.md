@@ -11,6 +11,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Logo do RAGX no executável, no instalador e no painel.** O símbolo é um X
+  com uma abertura em losango no cruzamento (o foco: só o contexto relevante
+  passa) e um núcleo no centro (o trecho recuperado), no azul do painel. O
+  `RAGX Painel.exe` e o instalador/desinstalador passam a usar o ícone (tile
+  azul com o símbolo branco) em vez do ícone padrão do Electron, e o .exe ganha
+  ProductName/FileDescription. No painel, o símbolo aparece no topo da barra
+  lateral, no cabeçalho da configuração inicial e no favicon. Tudo sai de uma
+  única geometria em `src/app/scripts/brand.py` (SVGs em `src/app/brand/`,
+  `build/icon.ico` e os paths do componente `RagxMark`), com um desenho mais
+  grosso e sem núcleo para 32 px ou menos.
+
 - **Gráfico de economia de tokens no detalhe do projeto, com uso real.** O
   servidor MCP passa a gravar em `.ragx/logs/mcp.jsonl`, a cada `build_context`,
   o `baseline_tokens`: o tamanho em tokens dos arquivos inteiros de onde o

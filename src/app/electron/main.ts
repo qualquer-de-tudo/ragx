@@ -411,6 +411,9 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     title: 'RAGX Painel',
+    // Empacotado, a janela herda o ícone do .exe (gravado no afterPack); em
+    // dev o processo é o electron.exe, então o ícone vem do arquivo.
+    ...(isDev ? { icon: path.join(__dirname, '..', 'build', 'icon.ico') } : {}),
     autoHideMenuBar: true,
     backgroundColor: '#000000',
     webPreferences: {

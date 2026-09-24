@@ -47,11 +47,16 @@
 .brand {
   display: grid;
   place-items: center;
-  height: 56px;
-  font: 700 11px/1 var(--display);
+  align-content: center;
+  gap: 6px;
+  height: 72px;
+  user-select: none;
+}
+
+.brand-name {
+  font: 700 10px/1 var(--display);
   letter-spacing: 0.14em;
   color: var(--ink);
-  user-select: none;
 }
 
 .nav ul {
@@ -640,8 +645,14 @@
 }
 
 .onboarding-brand {
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   color: var(--ink-2);
+}
+
+.onboarding-brand-mark {
+  margin-right: 8px;
 }
 
 .onboarding-brand-name {
