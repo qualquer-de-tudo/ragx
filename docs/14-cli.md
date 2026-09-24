@@ -215,7 +215,17 @@ ragx mcp install
     --command CAMINHO       executável gravado na configuração (padrão: `ragx`)
     --dry-run               mostra o que mudaria, sem escrever
     --json
+
+ragx mcp uninstall
+    --client NOME           só destes (repetível); mesmos nomes do install
+    --dry-run               mostra o que mudaria, sem escrever
+    --json
 ```
+
+`ragx mcp uninstall` faz o caminho inverso: retira só a entrada `ragx` (ou a
+tabela `[mcp_servers.ragx]` no Codex), com as mesmas garantias abaixo —
+backup datado, idempotente (já ausente = sem mudança) e recusa de
+configuração ilegível.
 
 `ragx mcp install` registra o RAGX como servidor MCP nos clientes que encontra
 na máquina. É o que os instaladores chamam, e pode ser rodado à mão depois.

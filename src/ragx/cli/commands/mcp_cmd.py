@@ -126,6 +126,7 @@ def install(
         Outcome.UPDATED: "[green]~[/]",
         Outcome.UNCHANGED: "[dim]=[/]",
         Outcome.ABSENT: "[dim]·[/]",
+        Outcome.REMOVED: "[green]-[/]",
         Outcome.FAILED: "[red]x[/]",
     }
     console.print(f"\n[bold]Registro do servidor MCP[/]{'  [yellow](simulação)[/]' if dry_run else ''}\n")
@@ -149,5 +150,79 @@ def install(
         f"{len(ausentes)} não instalado(s) · {len(falhou)} com falha\n"
     )
     if mudou and not dry_run:
+        console.print("  [dim]Reinicie o cliente para que ele leia a configuração nova.[/]\n")
+    raise typer.Exit(1 if falhou else 0)
+
+
+@app.command("uninstall")
+def uninstall(
+    client: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--client",
+            help="Remover só destes clientes (repetível): "
+            "claude-desktop, claude-code, cursor, windsurf, gemini, codex.",
+        ),
+    ] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Mostra o que mudaria, sem escrever nada.")
+    ] = False,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Remove o RAGX da configuração MCP dos clientes.
+
+    Idempotente e conservador como o `install`: só a entrada `ragx` é retirada,
+    o resto da configuração fica intacto, e há backup datado antes de mudar.
+    """
+    from ragx.clients import Outcome, unregister_all
+
+    resultados = unregister_all(dry_run=dry_run, only=client)
+
+    if as_json:
+        console.print_json(
+            json.dumps(
+                [
+                    {
+                        "client": r.client.id,
+                        "label": r.client.label,
+                        "config": str(r.client.config),
+                        "outcome": r.outcome.value,
+                        "detail": r.detail,
+                        "backup": str(r.backup) if r.backup else None,
+                    }
+                    for r in resultados
+                ],
+                ensure_ascii=False,
+            )
+        )
+        raise typer.Exit(0 if all(r.ok for r in resultados) else 1)
+
+    icones = {
+        Outcome.REMOVED: "[green]-[/]",
+        Outcome.UNCHANGED: "[dim]=[/]",
+        Outcome.ABSENT: "[dim]·[/]",
+        Outcome.FAILED: "[red]x[/]",
+        Outcome.CREATED: "[green]+[/]",
+        Outcome.UPDATED: "[green]~[/]",
+    }
+    console.print(
+        f"\n[bold]Remoção do servidor MCP[/]{'  [yellow](simulação)[/]' if dry_run else ''}\n"
+    )
+    for r in resultados:
+        console.print(f"  {icones[r.outcome]} [cyan]{r.client.label:<16}[/] {escape(r.detail)}")
+        if r.outcome in (Outcome.REMOVED, Outcome.FAILED):
+            console.print(f"      [dim]{escape(str(r.client.config))}[/]")
+        if r.backup:
+            console.print(f"      [dim]backup: {r.backup.name}[/]")
+
+    removidos = [r for r in resultados if r.outcome is Outcome.REMOVED]
+    falhou = [r for r in resultados if r.outcome is Outcome.FAILED]
+    ausentes = [r for r in resultados if r.outcome is Outcome.ABSENT]
+    console.print(
+        f"\n  {len(removidos)} removido(s) · "
+        f"{len(resultados) - len(removidos) - len(falhou) - len(ausentes)} já sem o RAGX · "
+        f"{len(ausentes)} não instalado(s) · {len(falhou)} com falha\n"
+    )
+    if removidos and not dry_run:
         console.print("  [dim]Reinicie o cliente para que ele leia a configuração nova.[/]\n")
     raise typer.Exit(1 if falhou else 0)

@@ -40,6 +40,7 @@ class Outcome(StrEnum):
     UPDATED = "updated"      # o arquivo existia; a entrada `ragx` mudou
     UNCHANGED = "unchanged"  # já estava exatamente assim
     ABSENT = "absent"        # o cliente não está instalado nesta máquina
+    REMOVED = "removed"      # a entrada `ragx` foi retirada da configuração
     FAILED = "failed"        # sem permissão, ou configuração ilegível
 
 
@@ -356,3 +357,121 @@ def register_all(
         pedidos = {c.strip().lower() for c in only}
         alvos = tuple(c for c in alvos if c.id in pedidos)
     return [register(c, command, args, dry_run) for c in alvos]
+
+
+# ── remoção ─────────────────────────────────────────────────────────────
+def _remover_json(client: Client, dry_run: bool) -> Result:
+    if not client.config.is_file():
+        return Result(client, Outcome.UNCHANGED, "não estava registrado")
+    bruto = client.config.read_text(encoding="utf-8")
+    if not bruto.strip():
+        return Result(client, Outcome.UNCHANGED, "não estava registrado")
+    try:
+        dados = json.loads(bruto)
+    except json.JSONDecodeError as exc:
+        return Result(
+            client, Outcome.FAILED,
+            f"{client.config} não é JSON válido (linha {exc.lineno}). "
+            f"Não vou sobrescrever — corrija o arquivo e rode de novo.",
+        )
+    if not isinstance(dados, dict):
+        return Result(
+            client, Outcome.FAILED,
+            f"{client.config} não contém um objeto JSON no topo.",
+        )
+    servidores = dados.get(client.key)
+    if servidores is not None and not isinstance(servidores, dict):
+        return Result(
+            client, Outcome.FAILED,
+            f"`{client.key}` em {client.config} não é um objeto — não vou mexer.",
+        )
+    if not servidores or SERVER_NAME not in servidores:
+        return Result(client, Outcome.UNCHANGED, "não estava registrado")
+
+    backup = None if dry_run else _backup(client.config)
+    del servidores[SERVER_NAME]
+    if not dry_run:
+        try:
+            _escrever(
+                client.config,
+                json.dumps(dados, indent=2, ensure_ascii=False) + "\n",
+            )
+        except OSError as exc:
+            return Result(client, Outcome.FAILED, f"não consegui escrever: {exc}")
+    return Result(
+        client, Outcome.REMOVED,
+        f"servidor `{SERVER_NAME}` removido de `{client.key}`", backup,
+    )
+
+
+def _remover_toml(client: Client, dry_run: bool) -> Result:
+    """Retira só a tabela `[mcp_servers.ragx]` (e subtabelas dela), por texto."""
+    import tomllib
+
+    if not client.config.is_file():
+        return Result(client, Outcome.UNCHANGED, "não estava registrado")
+    original = client.config.read_text(encoding="utf-8")
+    if not original.strip():
+        return Result(client, Outcome.UNCHANGED, "não estava registrado")
+    try:
+        atual = tomllib.loads(original)
+    except tomllib.TOMLDecodeError as exc:
+        return Result(
+            client, Outcome.FAILED,
+            f"{client.config} não é TOML válido ({exc}). "
+            f"Não vou sobrescrever — corrija o arquivo e rode de novo.",
+        )
+    if SERVER_NAME not in (atual.get(client.key) or {}):
+        return Result(client, Outcome.UNCHANGED, "não estava registrado")
+
+    alvo = f"{client.key}.{SERVER_NAME}"
+    cabecalho = re.compile(rf"^\[{re.escape(alvo)}\]\s*$", re.M)
+    achado = cabecalho.search(original)
+    if not achado:  # forma inline/dotted: fora do que sabemos editar por texto
+        return Result(
+            client, Outcome.FAILED,
+            f"`{alvo}` está numa forma que não sei remover com segurança — não vou mexer.",
+        )
+    resto = original[achado.end() :]
+    # Próximo cabeçalho que não seja subtabela do próprio `ragx`.
+    proxima = re.search(rf"^\[(?!{re.escape(alvo)}[.\]])", resto, re.M)
+    fim = achado.end() + (proxima.start() if proxima else len(resto))
+    # Comentários logo acima do próximo cabeçalho pertencem a ele, não ao `ragx`.
+    comentarios = re.search(r"(?:^[ \t]*#.*\n)+\Z", original[achado.end() : fim], re.M)
+    if comentarios:
+        fim = achado.end() + comentarios.start()
+    novo = original[: achado.start()] + original[fim:]
+
+    backup = None if dry_run else _backup(client.config)
+    if not dry_run:
+        try:
+            _escrever(client.config, novo)
+        except OSError as exc:
+            return Result(client, Outcome.FAILED, f"não consegui escrever: {exc}")
+    return Result(client, Outcome.REMOVED, f"tabela `[{alvo}]` removida", backup)
+
+
+def unregister(client: Client, dry_run: bool = False) -> Result:
+    """Retira o RAGX da configuração de um cliente. Idempotente."""
+    if not client.installed:
+        return Result(client, Outcome.ABSENT, "não encontrado nesta máquina")
+    try:
+        if client.fmt == "toml":
+            return _remover_toml(client, dry_run)
+        return _remover_json(client, dry_run)
+    except PermissionError as exc:
+        return Result(client, Outcome.FAILED, f"sem permissão: {exc}")
+    except OSError as exc:
+        return Result(client, Outcome.FAILED, str(exc))
+
+
+def unregister_all(
+    dry_run: bool = False,
+    only: list[str] | None = None,
+) -> list[Result]:
+    """Espelho de `register_all` para a remoção."""
+    alvos = CLIENTS()
+    if only:
+        pedidos = {c.strip().lower() for c in only}
+        alvos = tuple(c for c in alvos if c.id in pedidos)
+    return [unregister(c, dry_run) for c in alvos]

@@ -18,6 +18,8 @@ from ragx.clients.registry import (
     detect,
     register,
     register_all,
+    unregister,
+    unregister_all,
 )
 
 __all__ = [
@@ -28,4 +30,6 @@ __all__ = [
     "detect",
     "register",
     "register_all",
+    "unregister",
+    "unregister_all",
 ]
