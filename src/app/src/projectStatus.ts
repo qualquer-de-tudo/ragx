@@ -104,6 +104,18 @@ function parseRun(v: unknown, i: number): IndexRun | null {
   }
 }
 
+export interface RunsPage {
+  runs: IndexRun[]
+  total: number
+}
+
+/** Resposta de `ragx runs --json`; `null` se não tiver o formato esperado. */
+export function parseRunsPage(raw: unknown, offset: number): RunsPage | null {
+  if (!isObj(raw) || !Array.isArray(raw.runs)) return null
+  const runs = raw.runs.map((r, i) => parseRun(r, offset + i)).filter((r): r is IndexRun => r !== null)
+  return { runs, total: count(raw.total) ?? runs.length }
+}
+
 /** `null` quando a resposta nem é um objeto: quem chama mostra erro. */
 export function parseProjectStatus(raw: unknown): ProjectStatus | null {
   if (!isObj(raw)) return null

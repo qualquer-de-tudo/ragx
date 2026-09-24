@@ -287,6 +287,7 @@ function handleIpc(channel: string, fn: (...args: unknown[]) => unknown): void {
 handleIpc('ragx:getSnapshot', () => handlers.getSnapshot())
 handleIpc('ragx:getProjectStatus', (projectId: unknown) => handlers.getProjectStatus(projectId))
 handleIpc('ragx:runTrial', (projectId: unknown) => handlers.runTrial(projectId))
+handleIpc('ragx:getIndexRuns', (projectId: unknown, offset: unknown) => handlers.getIndexRuns(projectId, offset))
 handleIpc('ragx:runSecurityScan', (projectId: unknown) => handlers.runSecurityScan(projectId))
 handleIpc('ragx:getConnections', () => handlers.getConnections())
 handleIpc('ragx:listJobs', () => handlers.listJobs())

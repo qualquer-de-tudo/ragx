@@ -108,7 +108,7 @@ describe('createHandlers - runTrial/getProjectStatus/runSecurityScan validam pro
 
     await handlers.runTrial('a')
 
-    expect(runRagxCommand).toHaveBeenCalledWith('C:/proj/a', ['trial', '--json'])
+    expect(runRagxCommand).toHaveBeenCalledWith('C:/proj/a', ['trial', '--json'], { timeoutMs: 240_000 })
   })
 
   it('getProjectStatus roda "ragx status --json" com o cwd do projeto', async () => {
@@ -765,5 +765,25 @@ describe('createHandlers - interruptor do Claude Code', () => {
     const handlers = createHandlers(makeDeps({ runRagxCommand }))
     await expect(handlers.setClaudeIntegration(true)).rejects.toThrow('boom')
     await expect(handlers.setClaudeIntegration(false)).resolves.toEqual({ enabled: false })
+  })
+})
+
+describe('createHandlers - getIndexRuns', () => {
+  it('roda "ragx runs" com página fixa e o offset pedido, no cwd do projeto', async () => {
+    const runRagxCommand = vi.fn(async () => ({ runs: [], total: 0 }))
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await handlers.getIndexRuns('a', 10)
+    expect(runRagxCommand).toHaveBeenCalledWith('C:/proj/a', ['runs', '--limit', '10', '--offset', '10', '--json'])
+  })
+
+  it('recusa offset inválido e projeto desconhecido, sem rodar nada', async () => {
+    const runRagxCommand = vi.fn(async () => ({}))
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    for (const bad of [-1, 1.5, '10', null, Number.NaN, 10_000_000]) {
+      await expect(handlers.getIndexRuns('a', bad)).rejects.toThrow(/offset/)
+    }
+    await expect(handlers.getIndexRuns('nao-existe', 0)).rejects.toThrow(/desconhecido/)
+    await expect(handlers.getIndexRuns('federado', 0)).rejects.toThrow(/pasta local/)
+    expect(runRagxCommand).not.toHaveBeenCalled()
   })
 })

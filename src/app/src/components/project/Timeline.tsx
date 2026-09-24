@@ -1,8 +1,9 @@
-import { useId } from 'react'
-import type { IndexRun } from '../../projectStatus'
+import { useId, useState } from 'react'
+import { parseRunsPage, type IndexRun } from '../../projectStatus'
 import { formatNumber, formatRelative } from '../../format'
 
-const MAX_RUNS = 10
+/** Tamanho da página: o `ragx status` traz as 10 primeiras, o `ragx runs` o resto. */
+const PAGE = 10
 
 /** Quem disparou a indexação (`index_runs.source`). */
 const SOURCE_LABEL: Record<string, string> = {
@@ -47,10 +48,13 @@ function outcome(run: IndexRun, isLatest: boolean, running: boolean): { text: st
  * commit, e o que mudou. É o que responde "o índice acompanha o que eu faço?".
  */
 export function Timeline({
+  projectId,
   runs,
   pending,
   running,
 }: {
+  /** Para pedir as páginas seguintes (`ragx runs`). */
+  projectId: string
   /** `null`: ainda não há resposta de `ragx status` (carregando ou erro). */
   runs: IndexRun[] | null
   /** Texto no lugar da lista enquanto `runs` é `null`. */
@@ -59,7 +63,38 @@ export function Timeline({
   running: boolean
 }) {
   const titleId = useId()
-  const shown = runs?.slice(0, MAX_RUNS) ?? null
+  // As páginas extras pertencem às primeiras que vieram do status: quando elas
+  // mudam (indexação nova), a lista volta para a primeira página.
+  const firstKey = runs?.[0]?.key ?? null
+  const [more, setMore] = useState<{ firstKey: string | null; runs: IndexRun[]; total: number | null }>({
+    firstKey,
+    runs: [],
+    total: null,
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const extra = more.firstKey === firstKey ? more : { firstKey, runs: [], total: null }
+
+  const head = runs?.slice(0, PAGE) ?? null
+  const seen = new Set(head?.map((r) => r.key))
+  const shown = head === null ? null : [...head, ...extra.runs.filter((r) => !seen.has(r.key))]
+  const hasMore =
+    shown !== null && (extra.total !== null ? shown.length < extra.total : head !== null && head.length >= PAGE)
+
+  async function loadMore() {
+    if (shown === null) return
+    setLoading(true)
+    setError(null)
+    try {
+      const page = parseRunsPage(await window.ragx.getIndexRuns(projectId, shown.length), shown.length)
+      if (page === null) throw new Error('resposta inesperada do ragx runs')
+      setMore({ firstKey, runs: [...extra.runs, ...page.runs], total: page.total })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <section className="card detail-card" aria-labelledby={titleId}>
@@ -100,6 +135,19 @@ export function Timeline({
             )
           })}
         </ol>
+      )}
+      {error && <p className="callout callout-error">Não foi possível carregar mais: {error}</p>}
+      {hasMore && (
+        <div className="timeline-more">
+          <button type="button" className="btn" onClick={() => void loadMore()} disabled={loading}>
+            {loading ? 'Carregando…' : 'Carregar mais'}
+          </button>
+          {extra.total !== null && shown !== null && (
+            <span className="hint">
+              {formatNumber(shown.length)} de {formatNumber(extra.total)}
+            </span>
+          )}
+        </div>
       )}
     </section>
   )

@@ -113,9 +113,13 @@ def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
             "project": cfg.project.name,
         }
         if tool == "build_context" and isinstance(result, dict) and result.get("ok"):
-            tokens = (result.get("data") or {}).get("estimated_tokens")
+            data = result.get("data") or {}
+            tokens = data.get("estimated_tokens")
             if isinstance(tokens, int):
                 entry["tokens_delivered"] = tokens
+            baseline = data.get("baseline_tokens")
+            if isinstance(baseline, int):
+                entry["baseline_tokens"] = baseline
 
         log_mcp_call(cfg.state_dir, entry)
     except Exception:
@@ -443,9 +447,32 @@ class KnowledgeAPI:
                 for f in pack.fragments
             ],
         }
+        payload["baseline_tokens"] = self._baseline_tokens(pack.sources)
         if req.format == "markdown":
             payload["markdown"] = render(pack, "markdown")
         return cap(ok(payload), self.cfg.mcp.max_response_bytes)
+
+    def _baseline_tokens(self, sources: tuple[str, ...]) -> int:
+        """Tokens que o agente gastaria lendo INTEIROS os arquivos de onde o
+        contexto saiu — o "sem RAGX" do gráfico de economia do painel.
+
+        Vem do índice (`documents.size_bytes`, ~4 bytes por token), nunca do
+        disco. Os chunks de topo não servem: não cobrem o arquivo inteiro.
+        """
+        if not sources:
+            return 0
+        from ragx.storage.db import open_db
+
+        try:
+            with open_db(self.cfg.db_path, read_only=True) as conn:
+                marks = ",".join("?" * len(sources))
+                row = conn.execute(
+                    f"SELECT COALESCE(SUM(size_bytes), 0) FROM documents WHERE rel_path IN ({marks})",
+                    list(sources),
+                ).fetchone()
+        except Exception:
+            return 0
+        return int(row[0]) // 4
 
     def get_dictionary(self, section: str | None = None) -> dict[str, Any]:
         blocked = self._guard()

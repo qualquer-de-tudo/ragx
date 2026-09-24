@@ -12,6 +12,7 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
     onSnapshot: vi.fn(() => () => {}),
     getProjectStatus: vi.fn(),
     runTrial: vi.fn(),
+    getIndexRuns: vi.fn(),
     runSecurityScan: vi.fn(),
     getConnections: vi.fn().mockResolvedValue([]),
     onConnections: vi.fn(() => () => {}),

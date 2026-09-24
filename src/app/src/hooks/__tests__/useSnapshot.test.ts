@@ -21,6 +21,7 @@ describe('useSnapshot', () => {
       }),
       getProjectStatus: vi.fn(),
       runTrial: vi.fn(),
+      getIndexRuns: vi.fn(),
       runSecurityScan: vi.fn(),
       getConnections: vi.fn(),
       onConnections: vi.fn(() => () => {}),

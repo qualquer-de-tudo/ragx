@@ -66,3 +66,39 @@ def test_trial_human_output_escapes_rich_markup_in_query(
     result = runner.invoke(app, ["trial", "--queries", "queries.yaml"])
     assert result.exit_code == 0, result.output
     assert "query with [brackets] inside" in result.output
+
+
+def test_trial_sem_queries_gera_consultas_do_indice(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    monkeypatch.chdir(proj)
+    r = runner.invoke(app, ["trial", "--json"])
+    assert r.exit_code == 0, r.output
+    dados = json.loads(r.output)
+    assert dados["auto_generated"] is True
+    assert dados["cases"] >= 1
+    assert dados["results"][0]["query"].startswith("como funciona")
+
+
+def test_trial_com_queries_explicito_inexistente_continua_erro(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(proj)
+    r = runner.invoke(app, ["trial", "--queries", "nao-existe.yaml", "--json"])
+    assert r.exit_code != 0
+
+
+def test_trial_sem_grafo_usa_nomes_de_arquivo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    (tmp_path / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n'
+        '[embedding]\nprovider = "hashing"\ndim = 128\nversioned_dim = 64\n',
+        encoding="utf-8",
+    )
+    corpo = "\n".join(f"export const valor{i} = {i}" for i in range(120))
+    (tmp_path / "billing-orders.ts").write_text(corpo, encoding="utf-8")
+    index_project(load_config(tmp_path))  # sem rebuild: grafo vazio
+    monkeypatch.chdir(tmp_path)
+    r = runner.invoke(app, ["trial", "--json"])
+    assert r.exit_code == 0, r.output
+    dados = json.loads(r.output)
+    assert [x["query"] for x in dados["results"]] == ["como funciona billing-orders"]

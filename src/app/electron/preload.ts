@@ -22,6 +22,8 @@ const ragx: RagxBridge = {
   },
   getProjectStatus: (projectId: string): Promise<unknown> => ipcRenderer.invoke('ragx:getProjectStatus', projectId),
   runTrial: (projectId: string): Promise<TrialResult> => ipcRenderer.invoke('ragx:runTrial', projectId),
+  getIndexRuns: (projectId: string, offset: number): Promise<unknown> =>
+    ipcRenderer.invoke('ragx:getIndexRuns', projectId, offset),
   runSecurityScan: (projectId: string): Promise<SecurityScanResult> =>
     ipcRenderer.invoke('ragx:runSecurityScan', projectId),
   getConnections: (): Promise<ConnectionCheck[]> => ipcRenderer.invoke('ragx:getConnections'),

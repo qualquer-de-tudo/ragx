@@ -38,6 +38,7 @@ describe('preload', () => {
         'enqueueJob',
         'getClaudeIntegration',
         'getConnections',
+        'getIndexRuns',
         'getProjectStatus',
         'getSettings',
         'getSnapshot',

@@ -9,6 +9,7 @@ aviso impresso por `ragx trial`.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from ragx.config import Config
 from ragx.context.engine import build_context
@@ -62,3 +63,58 @@ def run_trial(cfg: Config, cases: list[EvalCase], budget: int = 3000) -> list[Tr
             )
         )
     return out
+
+
+_NOT_TEST = """
+    d.rel_path NOT LIKE 'test%' AND d.rel_path NOT LIKE '%/test%'
+    AND d.rel_path NOT LIKE '%.test.%' AND d.rel_path NOT LIKE '%.spec.%'
+    AND d.rel_path NOT LIKE '%migration%'
+"""
+
+
+def auto_cases(cfg: Config, limit: int = 8) -> list[EvalCase]:
+    """Consultas geradas do próprio índice, para projeto sem `queries.yaml`.
+
+    Cada caso é "como funciona <nome>" com o arquivo que o define como fonte
+    esperada, sempre de código fora de testes e com nome que aparece uma vez
+    só (um `status` definido em cinco lugares não tem fonte certa).
+
+    Com grafo, os nomes são classes e funções, das mais conectadas para as
+    menos. Sem grafo (nunca gerado, ou linguagem sem extrator), são os nomes
+    dos arquivos de código de tamanho médio: grandes demais costumam ser
+    gerados, pequenos demais não têm o que economizar.
+    """
+    from ragx.storage.db import open_db
+
+    with open_db(cfg.db_path, read_only=True) as conn:
+        rows = conn.execute(
+            f"""
+            SELECT e.name, d.rel_path,
+                   (SELECT COUNT(*) FROM relations r WHERE r.src_id = e.id OR r.dst_id = e.id) AS grau
+            FROM entities e JOIN documents d ON d.id = e.document_id
+            WHERE e.type IN ('class', 'function') AND d.doc_kind = 'code'
+              AND LENGTH(e.name) >= 4 AND {_NOT_TEST}
+              AND (SELECT COUNT(*) FROM entities o
+                   WHERE o.name = e.name AND o.type IN ('class', 'function')) = 1
+            ORDER BY (e.type = 'class') DESC, grau DESC, e.name
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        pairs = [(name, path) for name, path, _ in rows]
+        if not pairs:
+            docs = conn.execute(
+                f"""
+                SELECT d.rel_path FROM documents d
+                WHERE d.doc_kind = 'code' AND d.size_bytes BETWEEN 1500 AND 60000 AND {_NOT_TEST}
+                ORDER BY d.size_bytes DESC
+                """
+            ).fetchall()
+            vistos: dict[str, str | None] = {}
+            for (rel,) in docs:
+                stem = Path(rel).stem.split(".")[0]
+                if len(stem) < 4 or stem.lower() in ("index", "main", "types", "utils"):
+                    continue
+                vistos[stem] = None if stem in vistos else rel
+            pairs = [(stem, rel) for stem, rel in vistos.items() if rel is not None][:limit]
+    return [EvalCase(query=f"como funciona {name}", relevant_paths=(path,)) for name, path in pairs]

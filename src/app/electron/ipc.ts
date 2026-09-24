@@ -44,7 +44,7 @@ export interface HandlerDeps {
   buildSnapshot: () => Promise<Snapshot>
   /** Último snapshot já construído (pelo polling ou por uma chamada anterior a `buildSnapshot`), sem reconstruir. */
   getCachedSnapshot: () => Snapshot | null
-  runRagxCommand: (cwd: string, args: string[]) => Promise<unknown>
+  runRagxCommand: (cwd: string, args: string[], opts?: { timeoutMs?: number }) => Promise<unknown>
   checkAll: (snapshot: Snapshot) => Promise<ConnectionCheck[]>
   /**
    * Avisa o renderer (`ragx:connections`) a cada checagem terminada, venha
@@ -79,6 +79,10 @@ function rejected(message: string): Error {
 }
 
 const MAX_ECHO_LENGTH = 60
+const TRIAL_TIMEOUT_MS = 240_000
+/** Indexações por página da linha do tempo. */
+export const RUNS_PAGE = 10
+const MAX_RUNS_OFFSET = 100_000
 
 /** Valor vindo do renderer repetido numa mensagem de erro: cortado, para um texto enorme não inundar o log. */
 function echo(value: unknown): string {
@@ -249,7 +253,31 @@ export function createHandlers(deps: HandlerDeps) {
 
     async runTrial(projectIdUnknown: unknown): Promise<TrialResult> {
       const project = requireLocalProject(projectIdUnknown)
-      return deps.runRagxCommand(project.path as string, ['trial', '--json']) as Promise<TrialResult>
+      // Sem `queries.yaml` o trial gera as consultas e roda o build_context de
+      // cada uma: com o Ollama em CPU passa de um minuto.
+      return deps.runRagxCommand(project.path as string, ['trial', '--json'], {
+        timeoutMs: TRIAL_TIMEOUT_MS,
+      }) as Promise<TrialResult>
+    },
+
+    /**
+     * Uma página do histórico de indexações (`ragx runs`), para o "Carregar
+     * mais" da linha do tempo. O tamanho da página é fixo aqui; do renderer
+     * só vem o deslocamento, conferido.
+     */
+    async getIndexRuns(projectIdUnknown: unknown, offsetUnknown: unknown): Promise<unknown> {
+      const project = requireLocalProject(projectIdUnknown)
+      if (typeof offsetUnknown !== 'number' || !Number.isInteger(offsetUnknown) || offsetUnknown < 0 || offsetUnknown > MAX_RUNS_OFFSET) {
+        throw rejected('offset precisa ser um inteiro não negativo')
+      }
+      return deps.runRagxCommand(project.path as string, [
+        'runs',
+        '--limit',
+        String(RUNS_PAGE),
+        '--offset',
+        String(offsetUnknown),
+        '--json',
+      ])
     },
 
     async runSecurityScan(projectIdUnknown: unknown): Promise<SecurityScanResult> {

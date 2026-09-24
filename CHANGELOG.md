@@ -11,6 +11,27 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Gráfico de economia de tokens no detalhe do projeto, com uso real.** O
+  servidor MCP passa a gravar em `.ragx/logs/mcp.jsonl`, a cada `build_context`,
+  o `baseline_tokens`: o tamanho em tokens dos arquivos inteiros de onde o
+  contexto saiu (lido do índice, `documents.size_bytes / 4`, sem abrir arquivo).
+  O painel soma por dia e mostra, nos últimos 14 dias, "sem RAGX" contra "com
+  RAGX": economia em %, totais, barras por dia com tooltip e a mesma série em
+  tabela. Conta só a partir desta versão; linhas antigas, sem o baseline, ficam
+  de fora. A simulação (`ragx trial`) virou parte do mesmo card.
+- **`ragx trial` funciona em qualquer projeto.** Sem `tests/eval/queries.yaml`,
+  gera 8 consultas do próprio índice (símbolos mais conectados do grafo ou,
+  sem grafo, nomes de arquivos de código) e marca `auto_generated` no JSON. O
+  painel espera até 4 minutos por ele.
+- **`ragx runs --limit --offset`** e **"Carregar mais" na linha do tempo**: o
+  histórico de indexações deixa de parar nas 10 últimas.
+- **Detalhe do projeto reorganizado:** índice e "Está em dia?" no topo, a
+  economia de tokens em destaque, linha do tempo ao lado de manutenção e hooks,
+  e "Knowledge versionado" virou "Conhecimento no git", explicando para que
+  serve a pasta `knowledge/` e o que cada ação faz e quando usar.
+- **Barra de rolagem no tema do painel**, fina, sem setas, e uma só: a janela
+  não rola mais junto com o conteúdo.
+
 - **`ragx perf`: quanto tempo o RAGX ocupa nas sessões do Claude Code.** Lê os
   transcripts do Claude Code e separa, do tempo ativo da sessão, o que foi volta
   do modelo e espera de ferramenta do RAGX, com espera por ferramenta (p50/p95)

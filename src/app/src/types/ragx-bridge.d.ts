@@ -48,6 +48,9 @@ export interface Snapshot {
 }
 
 export interface TrialResult {
+  /** Consultas geradas do índice (o projeto não tem `tests/eval/queries.yaml`). */
+  auto_generated?: boolean
+  cases?: number
   totals: {
     baseline_tokens: number
     ragx_tokens: number
@@ -220,6 +223,8 @@ export interface RagxBridge {
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void
   getProjectStatus: (projectId: string) => Promise<unknown>
   runTrial: (projectId: string) => Promise<TrialResult>
+  /** Página do histórico de indexações (`ragx runs --json`), a partir de `offset`. */
+  getIndexRuns: (projectId: string, offset: number) => Promise<unknown>
   runSecurityScan: (projectId: string) => Promise<SecurityScanResult>
   getConnections: () => Promise<ConnectionCheck[]>
   /** Resultado de cada checagem de conexões feita pelo processo principal (polling de 30 s incluso). */

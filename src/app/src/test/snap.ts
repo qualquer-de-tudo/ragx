@@ -34,6 +34,7 @@ export function installBridge(over: Partial<RagxBridge> = {}): RagxBridge {
     onSnapshot: vi.fn(() => () => {}),
     getProjectStatus: vi.fn(),
     runTrial: vi.fn(),
+    getIndexRuns: vi.fn(),
     runSecurityScan: vi.fn(),
     getConnections: vi.fn().mockResolvedValue([]),
     onConnections: vi.fn(() => () => {}),
