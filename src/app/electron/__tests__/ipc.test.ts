@@ -697,3 +697,73 @@ describe('createHandlers - discover repassa isNew', () => {
     ])
   })
 })
+
+describe('createHandlers - interruptor do Claude Code', () => {
+  it('getClaudeIntegration lê `ragx claude status --json` na pasta do usuário', async () => {
+    const runRagxCommand = vi.fn(async () => ({ enabled: true, config: 'C:/x/.claude.json' }))
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await expect(handlers.getClaudeIntegration()).resolves.toEqual({ enabled: true })
+    expect(runRagxCommand).toHaveBeenCalledWith(expect.any(String), ['claude', 'status', '--json'])
+  })
+
+  it('ligar grava o caminho absoluto do ragx.exe; desligar não leva argumento extra', async () => {
+    const runRagxCommand = vi.fn(async () => ({ enabled: true, changed: true }))
+    const handlers = createHandlers(makeDeps({ runRagxCommand, getRagxExe: () => 'C:/u/.local/bin/ragx.exe' }))
+    await handlers.setClaudeIntegration(true)
+    expect(runRagxCommand).toHaveBeenLastCalledWith(expect.any(String), [
+      'claude',
+      'on',
+      '--command',
+      'C:/u/.local/bin/ragx.exe',
+      '--json',
+    ])
+    await handlers.setClaudeIntegration(false)
+    expect(runRagxCommand).toHaveBeenLastCalledWith(expect.any(String), ['claude', 'off', '--json'])
+  })
+
+  it('recusa valor que não é booleano, sem rodar nada', () => {
+    const runRagxCommand = vi.fn(async () => ({}))
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    for (const bad of ['true', 1, null, undefined, { enabled: true }]) {
+      expect(() => handlers.setClaudeIntegration(bad)).toThrow(/booleano/)
+    }
+    expect(runRagxCommand).not.toHaveBeenCalled()
+  })
+
+  it('erro da CLI vira exceção com o motivo; resposta sem `enabled` também', async () => {
+    const erro = createHandlers(makeDeps({ runRagxCommand: vi.fn(async () => ({ enabled: false, error: 'não é JSON válido' })) }))
+    await expect(erro.setClaudeIntegration(true)).rejects.toThrow(/não é JSON válido/)
+    const lixo = createHandlers(makeDeps({ runRagxCommand: vi.fn(async () => ({ foo: 1 })) }))
+    await expect(lixo.getClaudeIntegration()).rejects.toThrow(/inesperada/)
+  })
+
+  it('pedidos seguidos rodam um por vez, na ordem', async () => {
+    const order: string[] = []
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => (release = r))
+    const runRagxCommand = vi.fn(async (_cwd: string, args: string[]) => {
+      order.push(`inicio ${args[1]}`)
+      if (args[1] === 'on') await gate
+      order.push(`fim ${args[1]}`)
+      return { enabled: args[1] === 'on' }
+    })
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    const a = handlers.setClaudeIntegration(true)
+    const b = handlers.setClaudeIntegration(false)
+    await Promise.resolve()
+    expect(order).toEqual(['inicio on'])
+    release()
+    await Promise.all([a, b])
+    expect(order).toEqual(['inicio on', 'fim on', 'inicio off', 'fim off'])
+  })
+
+  it('uma falha não trava os pedidos seguintes', async () => {
+    const runRagxCommand = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ enabled: false })
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await expect(handlers.setClaudeIntegration(true)).rejects.toThrow('boom')
+    await expect(handlers.setClaudeIntegration(false)).resolves.toEqual({ enabled: false })
+  })
+})

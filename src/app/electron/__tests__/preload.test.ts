@@ -36,6 +36,7 @@ describe('preload', () => {
         'cancelJob',
         'discover',
         'enqueueJob',
+        'getClaudeIntegration',
         'getConnections',
         'getProjectStatus',
         'getSettings',
@@ -48,6 +49,7 @@ describe('preload', () => {
         'runOllamaBenchmark',
         'runSecurityScan',
         'runTrial',
+        'setClaudeIntegration',
         'setOnboardingDone',
       ].sort(),
     )
@@ -71,5 +73,13 @@ describe('preload', () => {
     electron.invoke.mockClear()
     await ragx.runOllamaBenchmark('x; rm -rf /')
     expect(electron.invoke).toHaveBeenCalledWith('ragx:run-ollama-benchmark')
+  })
+
+  it('o interruptor do Claude Code usa os canais certos', async () => {
+    electron.invoke.mockClear()
+    await ragx.getClaudeIntegration()
+    await ragx.setClaudeIntegration(false)
+    expect(electron.invoke).toHaveBeenNthCalledWith(1, 'ragx:getClaudeIntegration')
+    expect(electron.invoke).toHaveBeenNthCalledWith(2, 'ragx:setClaudeIntegration', false)
   })
 })

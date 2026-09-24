@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
+  ClaudeIntegration,
   ConnectionCheck,
   DiscoverResult,
   JobRequest,
@@ -43,6 +44,9 @@ const ragx: RagxBridge = {
   setOnboardingDone: (done: boolean): Promise<void> => ipcRenderer.invoke('ragx:setOnboardingDone', done),
   // Sem argumentos de propósito: nada que o renderer passe chega ao processo principal.
   runOllamaBenchmark: (): Promise<OllamaBenchmark> => ipcRenderer.invoke('ragx:run-ollama-benchmark'),
+  getClaudeIntegration: (): Promise<ClaudeIntegration> => ipcRenderer.invoke('ragx:getClaudeIntegration'),
+  setClaudeIntegration: (enabled: boolean): Promise<ClaudeIntegration> =>
+    ipcRenderer.invoke('ragx:setClaudeIntegration', enabled),
 }
 
 contextBridge.exposeInMainWorld('ragx', ragx)

@@ -298,6 +298,8 @@ handleIpc('ragx:getSettings', () => handlers.getSettings())
 handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDone(done))
 // Sem argumentos: o que vier do renderer é descartado aqui.
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
+handleIpc('ragx:getClaudeIntegration', () => handlers.getClaudeIntegration())
+handleIpc('ragx:setClaudeIntegration', (enabled: unknown) => handlers.setClaudeIntegration(enabled))
 
 // -- instalação da CLI (bootstrap) -----------------------------------------
 

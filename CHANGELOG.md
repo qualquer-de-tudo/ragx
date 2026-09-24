@@ -11,6 +11,22 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **`ragx perf`: quanto tempo o RAGX ocupa nas sessões do Claude Code.** Lê os
+  transcripts do Claude Code e separa, do tempo ativo da sessão, o que foi volta
+  do modelo e espera de ferramenta do RAGX, com espera por ferramenta (p50/p95)
+  ao lado do tempo que o servidor registra em `.ragx/logs/mcp.jsonl` e o custo
+  fixo em tokens do schema das ferramentas.
+- **`ragx claude on|off|status`: interruptor global do RAGX no Claude Code.**
+  Retira ou devolve só a entrada `ragx` de `~/.claude.json` (backup datado,
+  idempotente), para alternar entre "só o Claude" e "Claude com RAGX" sem editar
+  arquivo à mão. Vale a partir da próxima sessão.
+- **Interruptor "RAGX no Claude" no header do painel.** Um switch ao lado da fila
+  liga e desliga o RAGX no Claude Code para todos os projetos, pelo mesmo
+  `ragx claude on|off` (que ganhou `--json`). O estado é lido da CLI, o botão só
+  muda quando ela confirma, dois cliques seguidos rodam um por vez e uma falha
+  mostra o motivo sem trocar o estado. Depois de trocar, o header lembra que
+  vale na próxima sessão do Claude Code.
+
 - **Instalador completo do RAGX Painel (Windows).** O `.exe` do painel agora
   instala tudo sozinho, numa máquina limpa e com internet: o NSIS chama o
   próprio painel com `--bootstrap`, que instala a CLI `ragx` (com o `uv`

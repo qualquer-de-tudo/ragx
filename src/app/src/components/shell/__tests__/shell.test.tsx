@@ -150,7 +150,15 @@ describe('Badge', () => {
 })
 
 describe('TopBar', () => {
-  const base = { query: '', onQuery: () => {}, jobs: [], onOpenConnections: () => {}, onCancelJob: () => {} }
+  const claudeOff = { enabled: false, busy: false, error: null, changed: false, toggle: () => {} }
+  const base = {
+    query: '',
+    onQuery: () => {},
+    jobs: [],
+    claude: claudeOff,
+    onOpenConnections: () => {},
+    onCancelJob: () => {},
+  }
 
   it.each([
     ['ok', 'Conexões: tudo certo'],
@@ -180,5 +188,41 @@ describe('TopBar', () => {
     expect(input).toHaveAttribute('placeholder', 'Buscar projeto')
     fireEvent.change(input, { target: { value: 'juri' } })
     expect(onQuery).toHaveBeenCalledWith('juri')
+  })
+
+  describe('interruptor do RAGX no Claude Code', () => {
+    it('é um switch que diz o estado em texto e em aria-checked', () => {
+      const { rerender } = render(<TopBar {...base} health="ok" claude={{ ...claudeOff, enabled: true }} />)
+      const on = screen.getByRole('switch', { name: 'RAGX no Claude Code' })
+      expect(on).toHaveAttribute('aria-checked', 'true')
+      expect(on).toHaveTextContent('ligado')
+      rerender(<TopBar {...base} health="ok" claude={claudeOff} />)
+      const off = screen.getByRole('switch', { name: 'RAGX no Claude Code' })
+      expect(off).toHaveAttribute('aria-checked', 'false')
+      expect(off).toHaveTextContent('desligado')
+    })
+
+    it('clicar chama toggle', () => {
+      const toggle = vi.fn()
+      render(<TopBar {...base} health="ok" claude={{ ...claudeOff, enabled: true, toggle }} />)
+      fireEvent.click(screen.getByRole('switch', { name: 'RAGX no Claude Code' }))
+      expect(toggle).toHaveBeenCalledOnce()
+    })
+
+    it('fica desabilitado sem estado conhecido e enquanto troca', () => {
+      const { rerender } = render(<TopBar {...base} health="ok" claude={{ ...claudeOff, enabled: null }} />)
+      expect(screen.getByRole('switch')).toBeDisabled()
+      rerender(<TopBar {...base} health="ok" claude={{ ...claudeOff, enabled: true, busy: true }} />)
+      expect(screen.getByRole('switch')).toBeDisabled()
+    })
+
+    it('depois de trocar avisa que vale na próxima sessão; com erro mostra o erro', () => {
+      const { rerender } = render(<TopBar {...base} health="ok" claude={{ ...claudeOff, changed: true }} />)
+      expect(screen.getByRole('switch')).toHaveTextContent('próxima sessão')
+      rerender(<TopBar {...base} health="ok" claude={{ ...claudeOff, error: 'falhou' }} />)
+      const sw = screen.getByRole('switch')
+      expect(sw).toHaveTextContent('erro')
+      expect(sw).toHaveAttribute('title', 'falhou')
+    })
   })
 })

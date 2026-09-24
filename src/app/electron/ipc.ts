@@ -1,9 +1,11 @@
+import os from 'node:os'
 import type { BundleInfo } from './bootstrap/bundle'
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
 import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
 import type { PanelSettings, RendererSettings } from './settings'
 import type {
+  ClaudeIntegration,
   ConnectionCheck,
   DiscoverItem,
   DiscoverResult,
@@ -176,6 +178,24 @@ export function createHandlers(deps: HandlerDeps) {
   }
 
   const connections = createCoalescedRun(runConnectionChecks)
+
+  let claudeChain: Promise<unknown> = Promise.resolve()
+
+  /**
+   * `ragx claude ...` é global (mexe em `~/.claude.json`), então roda na pasta
+   * do usuário e não num projeto. A CLI responde JSON mesmo quando falha
+   * (`error`), e a resposta é conferida: o renderer só recebe `{ enabled }`.
+   */
+  async function claudeCommand(args: string[]): Promise<ClaudeIntegration> {
+    const out = (await deps.runRagxCommand(os.homedir(), args)) as { enabled?: unknown; error?: unknown } | null
+    if (out !== null && typeof out === 'object' && typeof out.error === 'string') {
+      throw new Error(`Não consegui alterar o Claude Code: ${out.error}`)
+    }
+    if (out === null || typeof out !== 'object' || typeof out.enabled !== 'boolean') {
+      throw new Error('resposta inesperada de "ragx claude"')
+    }
+    return { enabled: out.enabled }
+  }
 
   function cachedProjects(): ProjectSnapshot[] {
     return deps.getCachedSnapshot()?.projects ?? []
@@ -357,6 +377,30 @@ export function createHandlers(deps: HandlerDeps) {
       if (lastBenchmark === null) return null
       if (lastBenchmark.mode !== currentMode()) return null
       return lastBenchmark.benchmark
+    },
+
+    /** Estado atual do interruptor, lido de `~/.claude.json` pela própria CLI. */
+    getClaudeIntegration(): Promise<ClaudeIntegration> {
+      return claudeCommand(['claude', 'status', '--json'])
+    },
+
+    /**
+     * Liga/desliga o RAGX no Claude Code (global). Um pedido por vez: dois
+     * cliques rápidos não gravam o `~/.claude.json` ao mesmo tempo, e o
+     * último vence. `on` grava o caminho absoluto do `ragx.exe`, como o
+     * registro do instalador: cliente gráfico nem sempre herda o PATH.
+     */
+    setClaudeIntegration(enabledUnknown: unknown): Promise<ClaudeIntegration> {
+      if (typeof enabledUnknown !== 'boolean') {
+        throw rejected('enabled precisa ser booleano')
+      }
+      const exe = enabledUnknown ? deps.getRagxExe?.() : undefined
+      const args = enabledUnknown
+        ? ['claude', 'on', ...(exe ? ['--command', exe] : []), '--json']
+        : ['claude', 'off', '--json']
+      const run = claudeChain.then(() => claudeCommand(args))
+      claudeChain = run.catch(() => undefined)
+      return run
     },
 
     /** Esquece o benchmark: uma troca, parada ou início do Ollama terminou (processo principal, não é canal de IPC). */

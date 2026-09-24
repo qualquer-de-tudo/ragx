@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSnapshot } from './hooks/useSnapshot'
 import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
+import { useClaudeIntegration } from './hooks/useClaudeIntegration'
 import { Sidebar } from './components/shell/Sidebar'
 import { TopBar, type Health } from './components/shell/TopBar'
 import type { Route } from './route'
@@ -31,6 +32,7 @@ function App() {
   // Depois de uma correção de conexão, quem confere de novo é o processo
   // principal (o resultado chega por `ragx:connections`).
   const { connections, checking, refresh } = useConnections()
+  const claude = useClaudeIntegration()
 
   // `null` enquanto não se sabe. Uma falha ao ler as preferências não prende
   // ninguém no onboarding.
@@ -159,6 +161,7 @@ function App() {
           onQuery={onQuery}
           jobs={jobs}
           health={health}
+          claude={claude}
           onOpenConnections={() => setRoute({ page: 'connections' })}
           onCancelJob={onCancelJob}
         />

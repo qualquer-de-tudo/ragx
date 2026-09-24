@@ -210,6 +210,11 @@ export interface OllamaBenchmark {
   error: string | null
 }
 
+/** O RAGX está registrado no Claude Code (global)? Vale a partir da próxima sessão do Claude Code. */
+export interface ClaudeIntegration {
+  enabled: boolean
+}
+
 export interface RagxBridge {
   getSnapshot: () => Promise<Snapshot>
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void
@@ -230,6 +235,9 @@ export interface RagxBridge {
   setOnboardingDone: (done: boolean) => Promise<void>
   /** Mede embeddings/s no Ollama em uso; o modelo é escolhido pelo processo principal. Sem argumentos. */
   runOllamaBenchmark: () => Promise<OllamaBenchmark>
+  /** Interruptor do RAGX no Claude Code (`ragx claude status|on|off`), para todos os projetos. */
+  getClaudeIntegration: () => Promise<ClaudeIntegration>
+  setClaudeIntegration: (enabled: boolean) => Promise<ClaudeIntegration>
 }
 
 declare global {
