@@ -6,6 +6,11 @@ files:
   - dist/**/*
   - dist-electron/**/*
   - package.json
+# Bundle da CLI (uv.exe + wheel + bundle.json), gerado por scripts/prepare-bundle.mjs.
+# Fica em <instalacao>/resources/ragx-bundle, fora do asar.
+extraResources:
+  - from: resources/ragx-bundle
+    to: ragx-bundle
 # sql.js carrega seu binário .wasm via `fs` em tempo de execução
 # (ver electron/data/project-stats.ts). Dentro de um asar, `fs` não consegue
 # ler binários da forma que o sql.js espera, então o .wasm precisa ficar
@@ -32,3 +37,7 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  # Sem espaços: o nome vai para a release e para o SHA256SUMS.txt.
+  artifactName: RAGX-Painel-Setup-${version}.${ext}
+  # customInstall/customRemoveFiles: instala e remove a CLI ragx (ver o arquivo).
+  include: build/installer.nsh

@@ -20,5 +20,6 @@ as motivou. Formato: contexto → decisão → consequências → alternativas r
 | [0013](ADR-0013-conhecimento-base-compartilhado.md) | Conhecimento base por máquina, opt-in por projeto | aceito |
 | [0014](ADR-0014-orquestracao-local-e-o-que-e-versionavel.md) | Banco de orquestração separado; definição versionada, execução não | aceito |
 | [0015](ADR-0015-quem-executa-a-tarefa.md) | RAGX é a fila; o agente é o executor | aceito |
+| [0016](ADR-0016-instalador-completo-do-painel.md) | O `.exe` do painel instala a CLI; a lógica fica em TypeScript | aceito |
 
 Status possíveis: `proposto` · `aceito` · `substituído por ADR-NNNN` · `obsoleto`.

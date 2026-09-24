@@ -201,10 +201,93 @@ jobs:
             exit 1
           fi
 
+  # ── 4b. painel desktop (Windows) ──────────────────────────────────────
+  # O .exe do painel instala sozinho a CLI (uv + Python 3.12 + wheel, via
+  # --bootstrap no NSIS). Este job é o teste ponta a ponta disso: instala em
+  # silêncio, confere que `ragx` responde, desinstala pedindo a remoção da CLI
+  # e confere que ela sumiu. Spec: docs/superpowers/specs/2026-09-23-instalador-completo-design.md
+  painel-windows:
+    name: Painel (Windows)
+    needs: verificar
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/app/package-lock.json
+      # `prepare-bundle.mjs` chama `uv build --wheel` e o painel embute o uv.
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Empacotar o painel
+        working-directory: src/app
+        run: |
+          npm ci --no-audit --no-fund
+          npm run package
+
+      - name: Localizar o instalador
+        id: exe
+        run: |
+          $exe = Get-ChildItem src/app/release -Filter '*Setup*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'instalador .exe não foi gerado em src/app/release' }
+          Write-Host "instalador: $($exe.FullName) ($([math]::Round($exe.Length/1MB)) MB)"
+          "caminho=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Instalar em silêncio
+        run: |
+          # /S dispara o customInstall, que roda `--bootstrap` e só volta quando
+          # a CLI foi instalada (ExecWait). O NSIS não devolve erro do bootstrap
+          # de propósito; quem confere é o passo seguinte.
+          $p = Start-Process -FilePath '${{ steps.exe.outputs.caminho }}' -ArgumentList '/S' -Wait -PassThru
+          Write-Host "instalador terminou com código $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "instalador saiu com $($p.ExitCode)" }
+          # Margem para o processo do bootstrap terminar de gravar o binário.
+          $ragx = Join-Path $env:USERPROFILE '.local\bin\ragx.exe'
+          for ($i = 0; $i -lt 60 -and -not (Test-Path $ragx); $i++) { Start-Sleep -Seconds 5 }
+          if (-not (Test-Path $ragx)) {
+            $log = Join-Path $env:APPDATA 'RAGX Painel\bootstrap.log'
+            if (Test-Path $log) { Get-Content $log }
+            throw "ragx.exe não apareceu em $ragx"
+          }
+
+      - name: Verificar a CLI instalada
+        run: |
+          # O PATH do usuário foi gravado no registro, mas este processo não o
+          # relê: usamos o diretório direto, como o painel faz.
+          $env:PATH = "$env:USERPROFILE\.local\bin;$env:PATH"
+          ragx --version
+          if ($LASTEXITCODE -ne 0) { throw 'ragx --version falhou' }
+          ragx mcp serve --help
+          if ($LASTEXITCODE -ne 0) { throw 'ragx mcp serve --help falhou (extra [mcp] ausente?)' }
+
+      - name: Desinstalar removendo a CLI
+        run: |
+          $uninst = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $uninst) { throw 'desinstalador do painel não encontrado' }
+          Write-Host "desinstalador: $($uninst.FullName)"
+          # `_?=` faz o desinstalador NSIS rodar no lugar (senão ele se copia
+          # para %TEMP% e devolve o controle antes de terminar).
+          $p = Start-Process -FilePath $uninst.FullName -ArgumentList "/S --remove-cli _?=$($uninst.DirectoryName)" -Wait -PassThru
+          Write-Host "desinstalador terminou com código $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "desinstalador saiu com $($p.ExitCode)" }
+          $ragx = Join-Path $env:USERPROFILE '.local\bin\ragx.exe'
+          if (Test-Path $ragx) { throw "ragx.exe continua em $ragx depois da desinstalação" }
+          Write-Host 'ragx.exe removido'
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: painel-windows
+          path: src/app/release/*Setup*.exe
+          retention-days: 7
+
   # ── 5. publicar ───────────────────────────────────────────────────────
   publicar:
     name: Publicar release
-    needs: [pacote, extensao, instalar]
+    needs: [pacote, extensao, instalar, painel-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -221,6 +304,7 @@ jobs:
           mkdir -p release
           cp baixados/pacote-python/* release/
           cp baixados/extensao-vscode/*.vsix release/
+          cp baixados/painel-windows/*.exe release/
           # Cópia binária: o `.ps1` precisa continuar ASCII e SEM BOM, e o
           # `.sh` precisa de LF. Qualquer reescrita de texto aqui desfaria os
           # dois em silêncio — e um BOM no `.ps1` quebra o `irm | iex`.

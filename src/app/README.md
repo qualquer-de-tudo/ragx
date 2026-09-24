@@ -72,9 +72,50 @@ npx tsc -p tsconfig.electron.json --noEmit  # tipos do processo principal
 npm run package
 ```
 
-Gera o instalador Windows (`.exe`, NSIS) em `release/`. O comando roda o
-build do renderer, compila o processo principal e chama `electron-builder`
-(config em `electron-builder.yml`).
+Gera o instalador Windows (`.exe`, NSIS) em `release/`
+(`RAGX-Painel-Setup-<versão>.exe`). O comando roda antes `npm run bundle`
+(`scripts/prepare-bundle.mjs`), depois o build do renderer, compila o processo
+principal e chama `electron-builder` (config em `electron-builder.yml`).
+Precisa de rede, `uv` e `tar` (vem no Windows 10+).
+
+`npm run bundle` monta `resources/ragx-bundle/` (ignorado pelo Git), que o
+`electron-builder` copia para `<instalação>esourcesagx-bundle`:
+
+- `ragx-<versão>-py3-none-any.whl`, de `uv build --wheel` na raiz do repositório;
+- `uv.exe`, extraído do zip oficial da Astral numa versão **fixa** (constante
+  `UV_VERSION` no script), com o SHA256 publicado ao lado do zip conferido;
+- `bundle.json` com `version`, `python` e o SHA256 de cada arquivo final.
+
+### Como o painel instala a CLI
+
+Ao terminar de copiar os arquivos, `build/installer.nsh` (`customInstall`)
+executa `RAGX Painel.exe --bootstrap`. É a mesma rotina do botão "Instalar /
+Tentar de novo" do card RAGX CLI: valida os hashes do bundle e roda
+`uv tool install --force --python 3.12 <wheel>[all]` (com fallback sem o extra),
+garante `~\.local\bin` no PATH do usuário e registra o MCP no Claude Code se ele
+estiver instalado. O log fica em `%APPDATA%\RAGX Painel\bootstrap.log`. Falha do
+bootstrap nunca falha a instalação (só avisa, e nada é exibido em `/S`): o
+painel refaz na primeira abertura se `ragx` não for encontrado.
+
+### Desinstalando
+
+O desinstalador faz duas perguntas:
+
+1. **Remover também a CLI ragx e o registro no Claude Code?** (padrão Sim)
+2. **Remover também os dados do hub (`~\.ragx`)?** (padrão Não)
+
+Em modo silencioso o padrão é não remover nada; peça na linha de comando:
+
+```powershell
+& "Uninstall RAGX Painel.exe" /S --remove-cli              # CLI + MCP + PATH
+& "Uninstall RAGX Painel.exe" /S --remove-cli --remove-data # e ~\.ragx
+```
+
+A remoção roda `--uninstall-cli` **antes** de o NSIS apagar a pasta do painel
+(por isso o hook é `customRemoveFiles`, e não `customUnInstall`, que só roda
+depois). Ollama e os `.ragx/` dos projetos nunca são tocados. Atualizar o
+painel por cima não pergunta nada nem remove a CLI. Desinstalar sem marcar a
+CLI deixa o `ragx` instalado.
 
 ## De onde vêm os dados
 

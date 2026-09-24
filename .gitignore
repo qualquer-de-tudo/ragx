@@ -20,6 +20,8 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 build/
+# ganchos NSIS do instalador do painel (não é saída de build)
+!src/app/build/
 dist/
 .venv/
 venv/
@@ -56,3 +58,6 @@ Thumbs.db
 
 # Scratch de execucao de planos (superpowers:subagent-driven-development)
 .superpowers/
+
+# Bundle da CLI do painel (uv.exe + wheel), gerado por src/app/scripts/prepare-bundle.mjs
+src/app/resources/

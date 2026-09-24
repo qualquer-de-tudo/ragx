@@ -11,6 +11,28 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Instalador completo do RAGX Painel (Windows).** O `.exe` do painel agora
+  instala tudo sozinho, numa máquina limpa e com internet: o NSIS chama o
+  próprio painel com `--bootstrap`, que instala a CLI `ragx` (com o `uv`
+  embutido em `resources/ragx-bundle`, Python 3.12 e o wheel, com SHA256
+  conferido contra `bundle.json`), garante `~\.local\bin` no PATH do usuário e
+  registra o MCP no Claude Code quando ele existe. Se o bootstrap falhar, a
+  instalação não falha: o card "RAGX CLI" ganha "Instalar / Tentar de novo".
+  O desinstalador pergunta duas coisas (remover a CLI e o registro no Claude
+  Code, padrão Sim; remover os dados do hub `~\.ragx`, padrão Não) e, em modo
+  silencioso, aceita `--remove-cli` e `--remove-data`. Ollama e os `.ragx/` dos
+  projetos nunca são tocados. `npm run package` agora roda `npm run bundle`
+  (`scripts/prepare-bundle.mjs`, `uv` 0.12.18 fixo com SHA256 conferido), e a
+  release ganha o job `painel-windows`, que instala, confere `ragx --version`
+  e `ragx mcp serve --help`, desinstala e confere que o `ragx.exe` sumiu, e
+  anexa o instalador aos arquivos da release. Ver
+  [ADR-0016](docs/adr/ADR-0016-instalador-completo-do-painel.md).
+
+- **`ragx mcp uninstall`** remove o RAGX da configuração dos clientes MCP
+  (`--client`, `--dry-run`, `--json`). Retira só a entrada `ragx` (ou a tabela
+  `[mcp_servers.ragx]` no Codex), com backup datado, idempotente e sem tocar
+  em configuração ilegível.
+
 - **`ragx doctor` informa se o Ollama usa GPU ou CPU.** Quando o Ollama
   responde e o modelo do projeto está baixado, o diagnóstico ganha a linha
   `Ollama`, lida de `GET /api/ps`: "GPU (N MB de VRAM)", "CPU" ou

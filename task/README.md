@@ -26,7 +26,8 @@ task/
 ├── fase-12-autonomia-e-conhecimento-base/  5 tarefas · RAGX-0081 .. 0085
 ├── fase-13-task-analyzer-orquestracao/    11 tarefas · RAGX-0086 .. 0096
 ├── fase-14-evolucao-do-rag/               18 tarefas · RAGX-0097 .. 0114
-└── fase-15-painel-desktop/                 3 tarefas · RAGX-0115 .. 0117
+├── fase-15-painel-desktop/                 3 tarefas · RAGX-0115 .. 0117
+└── fase-16-instalador-completo.md          1 tarefa  · RAGX-0118
 ```
 
 Um arquivo por tarefa. ID sequencial e **imutável** — os IDs não são contíguos por
