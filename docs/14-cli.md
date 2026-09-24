@@ -94,6 +94,10 @@ ragx status
     --json
     # --json inclui freshness {state, current, reasons} e recent_runs (últimas 10)
 
+ragx runs                        histórico de indexações, do mais novo ao mais antigo
+    --limit N  --offset M        paginação (padrão: 10 a partir do 0)
+    --json                       {runs, total, offset, limit}
+
 ragx documents
     --lang LANG  --kind KIND  --path GLOB  --limit N
 
@@ -166,6 +170,13 @@ ragx trial "<query>"
 
 `ragx trial` compara o contexto montado com a leitura integral dos arquivos e
 mostra a diferença em tokens.
+
+Sem `--queries` e sem `tests/eval/queries.yaml` no projeto, o `trial` gera 8
+consultas do próprio índice ("como funciona <nome>", com o arquivo que o define
+como fonte esperada): classes e funções mais conectadas do grafo, ou, sem grafo,
+nomes de arquivos de código de tamanho médio, sempre fora de testes. O JSON
+marca `auto_generated: true`. Um `--queries` explícito que não existe continua
+sendo erro.
 
 > **O número é uma ESTIMATIVA de ordem de grandeza, não uma previsão de custo.**
 > Os tokens são contados por um tokenizador aproximado — `tiktoken` quando

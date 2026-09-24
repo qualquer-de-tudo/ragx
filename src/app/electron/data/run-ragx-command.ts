@@ -13,7 +13,8 @@ function spawnError(err: NodeJS.ErrnoException, cmd: string, cwd: string): Error
   return err
 }
 
-export function runRagxCommand(cwd: string, args: string[]): Promise<unknown> {
+export function runRagxCommand(cwd: string, args: string[], opts: { timeoutMs?: number } = {}): Promise<unknown> {
+  const timeoutMs = opts.timeoutMs ?? TIMEOUT_MS
   return new Promise((resolve, reject) => {
     const cmd = ragxCommand()
     const child = spawn(cmd, args, { cwd, windowsHide: true })
@@ -29,8 +30,8 @@ export function runRagxCommand(cwd: string, args: string[]): Promise<unknown> {
       if (settled) return
       settled = true
       child.kill()
-      reject(new Error(`ragx ${args.join(' ')} excedeu o tempo limite de ${TIMEOUT_MS / 1000}s`))
-    }, TIMEOUT_MS)
+      reject(new Error(`ragx ${args.join(' ')} excedeu o tempo limite de ${timeoutMs / 1000}s`))
+    }, timeoutMs)
 
     child.stdout.on('data', (chunk: Buffer) => {
       stdout += outDecoder.write(chunk)

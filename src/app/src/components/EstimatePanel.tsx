@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import type { TrialResult } from '../types/ragx-bridge'
 import { readCache, writeTrial, type Cached } from '../onDemandCache'
 import { formatNumber, formatPercent, formatTime } from '../format'
@@ -11,8 +11,13 @@ interface Props {
 
 type State = Cached<TrialResult> | 'loading' | { error: string } | null
 
-export function EstimatePanel({ projectId, projectPath }: Props) {
-  const titleId = useId()
+/**
+ * Simulação (`ragx trial`): o contexto que o RAGX monta contra a leitura dos
+ * arquivos inteiros, com as consultas de avaliação do projeto ou, sem elas,
+ * consultas geradas do próprio índice. Vive dentro do card "Economia de
+ * tokens", abaixo do uso real.
+ */
+export function TrialEstimate({ projectId, projectPath }: Props) {
   const [state, setState] = useState<State>(() => readCache(projectId).trial ?? null)
 
   async function run() {
@@ -30,16 +35,13 @@ export function EstimatePanel({ projectId, projectPath }: Props) {
   const failed = state !== null && state !== 'loading' && 'error' in state ? state.error : null
 
   return (
-    <section className="card detail-card panel" aria-labelledby={titleId}>
+    <div className="trial-block">
       <div className="card-head">
-        <h2 className="card-title" id={titleId}>
-          Economia estimada
-        </h2>
+        <h3 className="subhead">Simulação</h3>
         <Badge tone="muted">estimativa</Badge>
       </div>
       <p className="dim panel-lede">
-        Compara o contexto que o RAGX monta com a leitura dos arquivos inteiros, usando as consultas
-        de avaliação do projeto. Não mede o uso real dos agentes.
+        Roda consultas de exemplo e compara o contexto do RAGX com a leitura dos arquivos inteiros. Não mede o uso real.
       </p>
 
       {done && <TrialFigures result={done.result} at={done.at} />}
@@ -47,11 +49,11 @@ export function EstimatePanel({ projectId, projectPath }: Props) {
 
       <div className="action-row">
         <button type="button" className="btn" onClick={run} disabled={loading || !projectPath}>
-          {loading ? 'Calculando…' : done ? 'Recalcular estimativa' : 'Ver economia estimada'}
+          {loading ? 'Calculando… (pode levar um minuto)' : done ? 'Simular de novo' : 'Simular economia'}
         </button>
         {!projectPath && <p className="hint">Disponível apenas para projetos clonados localmente.</p>}
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -60,7 +62,7 @@ function TrialFigures({ result, at }: { result: TrialResult; at: string }) {
   const saves = saved_ratio >= 0
   return (
     <div className="trial">
-      <p className="trial-figure">
+      <p className="trial-figure trial-figure-sm">
         <span className="trial-value">{formatPercent(Math.abs(saved_ratio))}</span>
         <span className="trial-unit">{saves ? 'menos tokens' : 'mais tokens'}</span>
       </p>
@@ -78,7 +80,12 @@ function TrialFigures({ result, at }: { result: TrialResult; at: string }) {
           <dd>{formatPercent(source_coverage)}</dd>
         </div>
       </dl>
-      <p className="hint">Calculada às {formatTime(at)}</p>
+      <p className="hint">
+        {result.auto_generated
+          ? `${result.cases ?? 'Algumas'} consultas geradas dos arquivos do projeto (ele não tem tests/eval/queries.yaml). `
+          : ''}
+        Calculada às {formatTime(at)}
+      </p>
     </div>
   )
 }

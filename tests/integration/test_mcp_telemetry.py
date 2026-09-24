@@ -71,6 +71,23 @@ def test_build_context_logs_tokens_delivered(proj: Path) -> None:
     assert isinstance(matching[0]["tokens_delivered"], int)
 
 
+def test_build_context_logs_baseline_from_index(proj: Path) -> None:
+    """O "sem RAGX" do gráfico: tamanho dos arquivos-fonte inteiros, lido do índice."""
+    import asyncio
+
+    cfg = load_config(proj)
+    asyncio.run(_call_tool(cfg, "build_context", query="login sso", tokens=500))
+
+    entry = next(e for e in _log_lines(proj) if e["tool"] == "build_context")
+
+    from ragx.mcp.server import KnowledgeAPI
+    from ragx.mcp.tools import BuildContextRequest
+
+    fontes = KnowledgeAPI(cfg).build_context(BuildContextRequest(query="login sso", tokens=500))["data"]["sources"]
+    assert "auth.py" in fontes
+    assert entry["baseline_tokens"] == sum((proj / f).stat().st_size for f in fontes) // 4
+
+
 def test_failed_call_still_logs(proj: Path) -> None:
     import asyncio
 

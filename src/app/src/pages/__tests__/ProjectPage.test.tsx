@@ -323,7 +323,7 @@ describe('ProjectPage: linha do tempo', () => {
     expect(await within(section('Linha do tempo')).findByText(label)).toBeInTheDocument()
   })
 
-  it('mostra só as 10 mais recentes', async () => {
+  it('mostra as 10 mais recentes e oferece carregar mais', async () => {
     renderPage({ status: status({ recent_runs: Array.from({ length: 12 }, (_, i) => run({ id: i + 1 })) }) })
     await screen.findAllByText('Terminal')
     expect(within(section('Linha do tempo')).getAllByRole('listitem')).toHaveLength(10)
@@ -435,7 +435,7 @@ describe('ProjectPage: manutenção e knowledge', () => {
     expect(full).toBeDisabled()
     expect(full).toHaveTextContent('Rodando')
 
-    const k = within(section('Knowledge versionado'))
+    const k = within(section('Conhecimento no git'))
     expect(k.getByRole('button', { name: 'Reconstruir grafo: rodando' })).toBeDisabled()
     expect(k.getByRole('button', { name: 'Sincronizar knowledge' })).toBeEnabled()
     expect(k.getByRole('button', { name: 'Gerar dicionário' })).toBeEnabled()
@@ -444,7 +444,7 @@ describe('ProjectPage: manutenção e knowledge', () => {
 
   it('knowledge avisa do diff e enfileira sync, graph e dictionary', async () => {
     const { bridge } = renderPage()
-    const k = within(section('Knowledge versionado'))
+    const k = within(section('Conhecimento no git'))
     expect(
       k.getByText('Estas ações alteram arquivos versionados em knowledge/. Revise o diff antes de commitar.'),
     ).toBeInTheDocument()
@@ -524,7 +524,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
         hooksInstalled: null,
       }),
     })
-    const trial = screen.getByRole('button', { name: /ver economia estimada/i })
+    const trial = screen.getByRole('button', { name: /simular economia/i })
     const scan = screen.getByRole('button', { name: /atualizar achados de segurança/i })
     expect(trial).toBeDisabled()
     expect(scan).toBeDisabled()
@@ -538,7 +538,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
 
   it('mantém as ações sob demanda habilitadas quando o projeto tem path local', async () => {
     renderPage({ project: snap({ id: 'local', path: 'C:\\a' }) })
-    expect(screen.getByRole('button', { name: /ver economia estimada/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /simular economia/i })).toBeEnabled()
     expect(screen.getByRole('button', { name: /atualizar achados de segurança/i })).toBeEnabled()
     expect(screen.queryByText('Disponível apenas para projetos clonados localmente.')).not.toBeInTheDocument()
     await screen.findByText('Em dia com o que está no disco')
@@ -551,12 +551,12 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
     renderPage({ project: snap({ id: 'trial-neg' }), bridge: { runTrial } })
     expect(screen.getByText('estimativa')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /ver economia estimada/i }))
+    fireEvent.click(screen.getByRole('button', { name: /simular economia/i }))
 
     await waitFor(() => expect(screen.getByText('mais tokens')).toBeInTheDocument())
     expect(runTrial).toHaveBeenCalledWith('trial-neg')
     expect(screen.getByText('35%')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /recalcular estimativa/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /simular de novo/i })).toBeEnabled()
   })
 
   it('mostra a mensagem de erro real quando ragx trial falha', async () => {
@@ -566,7 +566,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
         runTrial: vi.fn().mockRejectedValue(new Error('ragx trial --json saiu com código 2: queries.yaml não encontrado')),
       },
     })
-    fireEvent.click(screen.getByRole('button', { name: /ver economia estimada/i }))
+    fireEvent.click(screen.getByRole('button', { name: /simular economia/i }))
     expect(await screen.findByText(/não foi possível calcular agora: .*queries\.yaml não encontrado/i)).toBeInTheDocument()
   })
 
@@ -618,7 +618,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
       totals: { baseline_tokens: 1000, ragx_tokens: 760, saved_ratio: 0.24, source_coverage: 0.63 },
     })
     const { unmount } = renderPage({ project: snap({ id: 'trial-cache' }), bridge: { runTrial } })
-    fireEvent.click(screen.getByRole('button', { name: /ver economia estimada/i }))
+    fireEvent.click(screen.getByRole('button', { name: /simular economia/i }))
     await waitFor(() => expect(screen.getByText('menos tokens')).toBeInTheDocument())
     unmount()
 
@@ -626,5 +626,79 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
     expect(screen.getByText('menos tokens')).toBeInTheDocument()
     expect(screen.getByText('24%')).toBeInTheDocument()
     expect(runTrial).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ProjectPage: linha do tempo paginada', () => {
+  it('"Carregar mais" pede a página seguinte e some quando acaba', async () => {
+    const first = Array.from({ length: 10 }, (_, i) => run({ id: 20 - i }))
+    const getIndexRuns = vi.fn().mockResolvedValue({ runs: [run({ id: 10 }), run({ id: 9 })], total: 12 })
+    renderPage({ status: status({ recent_runs: first }), bridge: { getIndexRuns } })
+    const tl = () => within(section('Linha do tempo'))
+    fireEvent.click(await tl().findByRole('button', { name: 'Carregar mais' }))
+    await waitFor(() => expect(tl().getAllByRole('listitem')).toHaveLength(12))
+    expect(getIndexRuns).toHaveBeenCalledWith('p1', 10)
+    expect(tl().queryByRole('button', { name: 'Carregar mais' })).toBeNull()
+  })
+
+  it('com menos de 10 indexações não oferece carregar mais', async () => {
+    renderPage({ status: status({ recent_runs: [run()] }) })
+    await screen.findAllByText('Terminal')
+    expect(within(section('Linha do tempo')).queryByRole('button', { name: 'Carregar mais' })).toBeNull()
+  })
+
+  it('falha ao carregar mostra o motivo e mantém o botão', async () => {
+    const first = Array.from({ length: 10 }, (_, i) => run({ id: 20 - i }))
+    const getIndexRuns = vi.fn().mockRejectedValue(new Error('boom'))
+    renderPage({ status: status({ recent_runs: first }), bridge: { getIndexRuns } })
+    const tl = () => within(section('Linha do tempo'))
+    fireEvent.click(await tl().findByRole('button', { name: 'Carregar mais' }))
+    expect(await tl().findByText('Não foi possível carregar mais: boom')).toBeInTheDocument()
+    expect(tl().getByRole('button', { name: 'Carregar mais' })).toBeEnabled()
+  })
+})
+
+describe('ProjectPage: economia de tokens (uso real)', () => {
+  function days(values: Array<[number, number, number]>) {
+    return values.map(([baseline, delivered, calls], i) => ({
+      date: `2026-09-${String(10 + i).padStart(2, '0')}`,
+      baseline,
+      delivered,
+      calls,
+    }))
+  }
+
+  it('sem medições, explica e oferece a simulação', async () => {
+    renderPage()
+    const s = within(section('Economia de tokens'))
+    expect(s.getByText(/Ainda sem medições de uso real/)).toBeInTheDocument()
+    expect(s.getByRole('button', { name: /simular economia/i })).toBeInTheDocument()
+    await screen.findByText('Em dia com o que está no disco')
+  })
+
+  it('com medições, mostra a economia, os totais, o gráfico e a tabela', async () => {
+    const d = days([
+      [0, 0, 0],
+      [10000, 2000, 2],
+      [30000, 6000, 3],
+    ])
+    const project = snap({
+      telemetry: {
+        callsByTool: [],
+        totalCalls: 5,
+        tokensDelivered: 8000,
+        lastCallAt: null,
+        savings: { days: d, baseline: 40000, delivered: 8000, calls: 5 },
+      },
+    })
+    renderPage({ project })
+    const s = within(section('Economia de tokens'))
+    expect(s.getByText('menos tokens').closest('.trial-figure')).toHaveTextContent('80%menos tokens')
+    expect(s.getByText('32.000')).toBeInTheDocument()
+    expect(s.getByRole('img', { name: 'Tokens por dia, sem e com o RAGX' })).toBeInTheDocument()
+    // a tabela lista só os dias com consulta
+    const rows = within(s.getByRole('table')).getAllByRole('row')
+    expect(rows).toHaveLength(3)
+    await screen.findByText('Em dia com o que está no disco')
   })
 })

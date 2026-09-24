@@ -6,7 +6,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -156,6 +156,43 @@ def index(
     if report.degraded:
         console.print(f"  [yellow]Degraded   {report.degraded:>8,}[/]   [dim]parsing caiu no fallback[/]")
     console.print(f"\n  Tempo {s.duration_ms / 1000:.1f} s" + ("  [dim](dry-run)[/]" if dry_run else ""))
+    console.print()
+
+
+def runs(
+    limit: Annotated[int, typer.Option("--limit", min=1, max=200)] = 10,
+    offset: Annotated[int, typer.Option("--offset", min=0)] = 0,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Histórico de indexações, da mais nova para a mais antiga, paginado."""
+    from ragx.storage.db import open_db
+    from ragx.storage.repositories import RunRepo
+
+    cfg = load_config()
+    if not cfg.db_path.exists():
+        page: list[dict[str, Any]] = []
+        total = 0
+    else:
+        with open_db(cfg.db_path, read_only=True) as conn:
+            repo = RunRepo(conn)
+            page = repo.recent(limit, offset)
+            total = repo.count()
+    if as_json:
+        console.print_json(
+            json.dumps(
+                {"runs": page, "total": total, "offset": offset, "limit": limit},
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+        return
+    console.print(f"\n[bold]Indexações[/] {offset + 1}–{offset + len(page)} de {total}\n")
+    for r in page:
+        fim = r.get("finished_at") or "em andamento"
+        console.print(
+            f"  {r['id']:>5}  {fim}  {r.get('source') or '-':<20} {r.get('mode') or '-':<12} "
+            f"{r.get('indexed') if r.get('indexed') is not None else '-'} arquivo(s)"
+        )
     console.print()
 
 

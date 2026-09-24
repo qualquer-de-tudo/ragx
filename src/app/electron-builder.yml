@@ -19,10 +19,14 @@ extraResources:
 # transparente pelo Electron.
 asarUnpack:
   - node_modules/sql.js/dist/*.wasm
+# Ícone e metadados do .exe: gravados por este hook com o rcedit do npm (ver
+# signAndEditExecutable abaixo).
+afterPack: scripts/after-pack.cjs
 win:
   target: nsis
-  # public/favicon.svg não é um .ico válido para o NSIS; sem `icon:` o
-  # instalador cai no ícone padrão do Electron, aceitável para esta versão.
+  # Gerado por scripts/brand.py (tile azul com o símbolo). O NSIS usa o mesmo
+  # arquivo para o instalador e o desinstalador.
+  icon: build/icon.ico
   #
   # signAndEditExecutable: false — este build não assina o executável (sem
   # certificado configurado, e não é objetivo desta versão). Sem essa flag,
@@ -31,8 +35,8 @@ win:
   # download falha em Windows sem "Developer Mode" habilitado, porque o
   # 7z contém symlinks (libs .dylib do macOS) que exigem privilégio de
   # criar link simbólico. Desabilitar edição de recursos evita essa
-  # dependência por completo; não afeta o funcionamento do app, só deixa
-  # de embutir metadados (ProductName/FileDescription/ícone) no .exe.
+  # dependência por completo; o ícone e os metadados do .exe ficam a cargo
+  # do hook afterPack acima.
   signAndEditExecutable: false
 nsis:
   oneClick: false

@@ -197,13 +197,16 @@ class RunRepo:
         )
         return int(cur.lastrowid or 0)
 
-    def recent(self, limit: int = 10) -> list[dict[str, Any]]:
+    def recent(self, limit: int = 10, offset: int = 0) -> list[dict[str, Any]]:
         return [
             dict(r)
             for r in self.conn.execute(
-                "SELECT * FROM index_runs ORDER BY id DESC LIMIT ?", (limit,)
+                "SELECT * FROM index_runs ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset)
             )
         ]
+
+    def count(self) -> int:
+        return int(self.conn.execute("SELECT COUNT(*) FROM index_runs").fetchone()[0])
 
     def finish(self, run_id: int, stats: dict[str, int], error: str | None = None) -> None:
         self.conn.execute(

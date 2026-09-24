@@ -36,6 +36,13 @@ body,
   height: 100%;
 }
 
+/* Quem rola é a área de conteúdo (.content), nunca a janela: sem isto uma
+   segunda barra aparecia na borda da janela, ao lado da do conteúdo. */
+html,
+body {
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -103,4 +110,39 @@ button:disabled {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Barra de rolagem no tom do tema, em todo o painel: fina, sem setas, com o
+   polegar recuado da borda (a borda transparente + background-clip é o que
+   "descola" a barra da borda da janela). Aparece mais forte no hover.
+   Sem `scrollbar-width`/`scrollbar-color` de propósito: no Chromium, qualquer
+   um dos dois desliga o `::-webkit-scrollbar` e as setas voltam. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--line-strong) padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-3) padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--ink-2) padding-box;
 }

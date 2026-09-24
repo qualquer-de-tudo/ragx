@@ -19,7 +19,7 @@ import { ConfirmButton } from '../components/project/ConfirmButton'
 import { JobButton } from '../components/project/JobButton'
 import { MaintenancePanel } from '../components/project/MaintenancePanel'
 import { Timeline } from '../components/project/Timeline'
-import { EstimatePanel } from '../components/EstimatePanel'
+import { TokenSavings } from '../components/project/TokenSavings'
 import { SecurityPanel } from '../components/SecurityPanel'
 
 type StatusView =
@@ -251,18 +251,51 @@ function HooksSection({ project, jobs }: { project: ProjectSnapshot; jobs: reado
   )
 }
 
+/** As três ações que regravam `knowledge/`, cada uma com o que faz e quando usar. */
+const KNOWLEDGE_ACTIONS = [
+  {
+    kind: 'sync',
+    label: 'Sincronizar knowledge',
+    what: 'Faz tudo de uma vez: atualiza o índice, o grafo e o dicionário e regrava a pasta.',
+    when: 'Antes de um commit ou PR, para quem clonar receber o conhecimento em dia.',
+  },
+  {
+    kind: 'graph',
+    label: 'Reconstruir grafo',
+    what: 'Refaz o mapa de quem chama, importa e depende de quem.',
+    when: 'Depois de mudanças grandes de estrutura: pastas movidas, módulos renomeados.',
+  },
+  {
+    kind: 'dictionary',
+    label: 'Gerar dicionário',
+    what: 'Refaz o resumo do projeto que o agente lê primeiro: tecnologias, serviços, módulos.',
+    when: 'Quando entrou uma tecnologia ou um serviço novo.',
+  },
+] as const
+
 function KnowledgeSection({ project, jobs }: { project: ProjectSnapshot; jobs: readonly JobView[] }) {
   const off = !project.exists
   return (
-    <Section title="Knowledge versionado">
+    <Section title="Conhecimento no git" className="knowledge">
+      <p className="dim">
+        A pasta <span className="mono">knowledge/</span> guarda o grafo e o dicionário deste projeto dentro do
+        repositório. Quem clona (outra pessoa, outra máquina, a CI) recebe esse conhecimento pronto, sem reindexar do
+        zero. Os hooks de git atualizam o índice local; estas ações atualizam o que vai para o git.
+      </p>
+      <ul className="knowledge-actions">
+        {KNOWLEDGE_ACTIONS.map((a) => (
+          <li key={a.kind}>
+            <div>
+              <p className="knowledge-what">{a.what}</p>
+              <p className="hint">{a.when}</p>
+            </div>
+            <JobButton kind={a.kind} label={a.label} projectId={project.id} jobs={jobs} disabled={off} />
+          </li>
+        ))}
+      </ul>
       <p className="callout callout-warning">
         Estas ações alteram arquivos versionados em knowledge/. Revise o diff antes de commitar.
       </p>
-      <div className="action-row">
-        <JobButton kind="sync" label="Sincronizar knowledge" projectId={project.id} jobs={jobs} disabled={off} />
-        <JobButton kind="graph" label="Reconstruir grafo" projectId={project.id} jobs={jobs} disabled={off} />
-        <JobButton kind="dictionary" label="Gerar dicionário" projectId={project.id} jobs={jobs} disabled={off} />
-      </div>
     </Section>
   )
 }
@@ -397,29 +430,33 @@ export function ProjectPage({
         </p>
       </header>
 
-      <div className="detail-grid detail-grid-2">
+      <div className="detail-grid detail-grid-top">
         <IndexSection project={project} jobs={jobs} />
         <FreshnessSection project={project} view={status} />
       </div>
 
-      <Timeline
-        runs={status.phase === 'ok' ? status.status.runs : null}
-        pending={status.phase === 'loading' ? 'Verificando…' : 'sem dados'}
-        running={project.running !== null}
-      />
+      <TokenSavings projectId={project.id} projectPath={project.path} savings={project.telemetry.savings} />
 
-      <div className="detail-grid detail-grid-3">
-        <HooksSection project={project} jobs={jobs} />
-        <MaintenancePanel project={project} jobs={jobs} />
-        <KnowledgeSection project={project} jobs={jobs} />
+      <div className="detail-grid detail-grid-main">
+        <Timeline
+          key={project.id}
+          projectId={project.id}
+          runs={status.phase === 'ok' ? status.status.runs : null}
+          pending={status.phase === 'loading' ? 'Verificando…' : 'sem dados'}
+          running={project.running !== null}
+        />
+        <div className="detail-stack">
+          <MaintenancePanel project={project} jobs={jobs} />
+          <HooksSection project={project} jobs={jobs} />
+        </div>
       </div>
-
-      <UsageSection telemetry={project.telemetry} />
 
       <div className="detail-grid detail-grid-2">
-        <EstimatePanel projectId={project.id} projectPath={project.path} />
+        <UsageSection telemetry={project.telemetry} />
         <SecurityPanel projectId={project.id} projectPath={project.path} />
       </div>
+
+      <KnowledgeSection project={project} jobs={jobs} />
 
       <RemoveFromHub project={project} jobs={jobs} onBack={onBack} />
     </section>
