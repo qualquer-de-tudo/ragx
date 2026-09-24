@@ -79,6 +79,8 @@ export interface CatalogContext {
    * o PATH das janelas abertas ainda é o velho. Sem isto, grava `ragx` puro.
    */
   ragxExe?: () => string
+  /** Plataforma alvo; o padrão é a do processo. Existe para o teste não depender de onde roda. */
+  platform?: NodeJS.Platform
 }
 
 function mcpInstallArgs(ctx: CatalogContext): string[] {
@@ -221,6 +223,47 @@ function stopNativeSteps(env: OllamaEnvironment | null): Step[] {
   ]
 }
 
+/**
+ * Libera o ambiente da CLI antes de reinstalá-la, no Windows. O `uv tool
+ * install --force` troca o ambiente NO LUGAR: com um `python.exe` dele em uso
+ * (uma indexação disparada por hook, o servidor MCP de um Claude Code aberto),
+ * a troca falha no meio e deixa o `ragx.exe` sem o pacote `ragx`, quebrado até
+ * a próxima instalação. Então quem segura o ambiente sai ANTES.
+ *
+ * Encerra só: (1) processos cujo executável está dentro de `RAGX_TOOL_DIR`
+ * (o ambiente do `ragx` no `uv`) e (2) `ragx.exe`/`rag.exe` de `RAGX_BIN_DIR`,
+ * com os filhos deles. Os dois caminhos chegam pelo ambiente do processo,
+ * nunca dentro deste texto; `StartsWith` ordinal, sem curingas, e a barra no
+ * fim impede `...\ragx` de casar com `...\ragx2`. Sem `RAGX_TOOL_DIR`, não
+ * encerra nada. Sai com 1 se algo ainda estiver vivo depois.
+ */
+export const STOP_RAGX_WINDOWS_SCRIPT = [
+  '$tool = $env:RAGX_TOOL_DIR',
+  'if (-not $tool) { exit 0 }',
+  "$tool = $tool.TrimEnd('\\') + '\\'",
+  "$bin = if ($env:RAGX_BIN_DIR) { $env:RAGX_BIN_DIR.TrimEnd('\\') + '\\' } else { '' }",
+  "$shims = @('ragx.exe', 'rag.exe')",
+  '$cmp = [System.StringComparison]::OrdinalIgnoreCase',
+  'function Get-Alvos { @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and ($_.ExecutablePath.StartsWith($tool, $cmp) -or ($bin -and ($shims -contains $_.Name) -and $_.ExecutablePath.StartsWith($bin, $cmp))) }) }',
+  'function Get-Filhos($id) { Get-CimInstance Win32_Process -Filter "ParentProcessId=$id" | ForEach-Object { $_; Get-Filhos $_.ProcessId } }',
+  'foreach ($a in @(Get-Alvos)) { @(Get-Filhos $a.ProcessId) | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Stop-Process -Id $a.ProcessId -Force -ErrorAction SilentlyContinue }',
+  'Start-Sleep -Milliseconds 500',
+  "if (@(Get-Alvos).Count -gt 0) { [Console]::Error.WriteLine('O ragx continua em uso.'); exit 1 }",
+  'exit 0',
+].join('; ')
+
+/** Pasta do ambiente do `ragx` no `uv` (`UV_TOOL_DIR`, ou `%APPDATA%\uv\tools`) e a dos executáveis (`UV_TOOL_BIN_DIR`, ou a do `ragx.exe`). */
+function stopRagxStep(ctx: CatalogContext): Step {
+  const home = process.env.USERPROFILE ?? process.env.HOME ?? ''
+  const toolRoot = process.env.UV_TOOL_DIR ?? path.win32.join(process.env.APPDATA ?? path.win32.join(home, 'AppData', 'Roaming'), 'uv', 'tools')
+  const exe = ctx.ragxExe?.()
+  const binDir = process.env.UV_TOOL_BIN_DIR ?? (exe ? path.win32.dirname(exe) : path.win32.join(home, '.local', 'bin'))
+  return {
+    ...plainStep('powershell', ['-NoProfile', '-NonInteractive', '-Command', STOP_RAGX_WINDOWS_SCRIPT]),
+    env: { RAGX_TOOL_DIR: path.win32.join(toolRoot, 'ragx'), RAGX_BIN_DIR: binDir },
+  }
+}
+
 /** Modelos requeridos, cada um passando por `MODEL_PATTERN`; inválido é ignorado com nota, nunca vira argumento. */
 function requiredModelsOf(ctx: CatalogContext): { models: string[]; notes: string[] } {
   const models: string[] = []
@@ -353,11 +396,16 @@ function resolveSteps(req: JobRequest, ctx: CatalogContext): Omit<ResolvedJob, '
     } catch {
       throw new JobRejected('O pacote de instalação do RAGX está ausente ou corrompido. Baixe o instalador do painel de novo.')
     }
+    const win = (ctx.platform ?? process.platform) === 'win32'
     return {
       kind,
       label: 'Instalar o RAGX',
       projectId: null,
+      ...(win
+        ? { notes: ['Servidores MCP e indexações do RAGX em andamento são encerrados para a troca; reconecte o Claude Code depois (/mcp).'] }
+        : {}),
       steps: [
+        ...(win ? [stopRagxStep(ctx)] : []),
         // `--no-config`: um uv.toml do usuário não pode mudar o resultado.
         // `--python` explícito: o uv usa o Python 3.12 dele, isolado do sistema.
         {

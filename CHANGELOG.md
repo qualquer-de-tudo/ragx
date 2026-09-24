@@ -211,6 +211,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **Reinstalar o painel não deixa mais o `ragx` quebrado.** O `ragx-install` trocava o
+  ambiente da CLI no lugar (`uv tool install --force`); com um `python.exe` dele em
+  uso (indexação disparada por hook, servidor MCP de um Claude Code aberto) a troca
+  falhava no meio e o `ragx.exe` ficava sem o pacote (`ModuleNotFoundError: No
+  module named 'ragx'`, card "RAGX CLI" em "Não conectado"). No Windows, um passo
+  novo encerra, antes da troca, só os processos do ambiente do `ragx` no `uv` e os
+  `ragx.exe`/`rag.exe` da pasta de executáveis (com os filhos), e a tarefa avisa
+  para reconectar o Claude Code (`/mcp`).
+
 - **Commit não abre mais janela de terminal no Windows.** A indexação que o hook
   de git dispara rodava com `DETACHED_PROCESS`, sem console, e cada `git` que ela
   chamava ganhava uma janela nova. Agora usa `CREATE_NO_WINDOW` (console oculto,

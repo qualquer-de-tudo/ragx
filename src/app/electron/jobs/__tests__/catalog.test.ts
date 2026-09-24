@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext } from '../catalog'
+import { resolveJob, JobRejected, MODEL_PATTERN, STOP_RAGX_WINDOWS_SCRIPT, type CatalogContext } from '../catalog'
 import type { JobRequest } from '../../../src/types/ragx-bridge'
 import { BundleError } from '../../bootstrap/bundle'
 
@@ -158,7 +158,10 @@ describe('resolveJob - tabela do catálogo', () => {
       version: '1.0.0b3',
       python: '3.12',
     })
-    const job = resolveJob({ kind: 'ragx-install' }, ctx({ bundle, ragxExe: () => 'C:/Users/ana/.local/bin/ragx.exe' }))
+    const job = resolveJob(
+      { kind: 'ragx-install' },
+      ctx({ bundle, ragxExe: () => 'C:/Users/ana/.local/bin/ragx.exe', platform: 'linux' }),
+    )
     expect(job.label).toBe('Instalar o RAGX')
     expect(job.projectId).toBeNull()
     expect(job.dedupeKey).toBe('ragx-install||')
@@ -184,6 +187,36 @@ describe('resolveJob - tabela do catálogo', () => {
         progress: false,
       },
     ])
+  })
+
+  it('ragx-install no Windows: libera o ambiente da CLI ANTES do uv tool install', () => {
+    const bundle = () => ({
+      dir: 'C:/App/resources/ragx-bundle',
+      uvPath: 'C:/App/resources/ragx-bundle/uv.exe',
+      wheelPath: 'C:/App/resources/ragx-bundle/ragx-1.0.0b3-py3-none-any.whl',
+      version: '1.0.0b3',
+      python: '3.12',
+    })
+    const job = resolveJob(
+      { kind: 'ragx-install' },
+      ctx({ bundle, ragxExe: () => String.raw`C:\Users\ana\.local\bin\ragx.exe`, platform: 'win32' }),
+    )
+    expect(job.steps.map((s) => s.cmd)).toEqual(['powershell', 'uv', 'ragx'])
+    const stop = job.steps[0]
+    expect(stop.args.slice(0, 3)).toEqual(['-NoProfile', '-NonInteractive', '-Command'])
+    // Os caminhos chegam pelo ambiente, nunca dentro do texto do script.
+    expect(stop.args[3]).toBe(STOP_RAGX_WINDOWS_SCRIPT)
+    expect(stop.args[3]).not.toContain('ana')
+    expect(stop.env?.RAGX_TOOL_DIR).toMatch(/uv[\\/]tools[\\/]ragx$/)
+    expect(stop.env?.RAGX_BIN_DIR).toBe(String.raw`C:\Users\ana\.local\bin`)
+    expect(job.notes?.[0]).toMatch(/reconecte o Claude Code/)
+  })
+
+  it('ragx-install fora do Windows não tem passo de encerramento', () => {
+    const bundle = () => ({ dir: 'd', uvPath: 'u', wheelPath: 'w.whl', version: '1', python: '3.12' })
+    const job = resolveJob({ kind: 'ragx-install' }, ctx({ bundle, platform: 'linux' }))
+    expect(job.steps.map((s) => s.cmd)).toEqual(['uv', 'ragx'])
+    expect(job.notes).toBeUndefined()
   })
 
   it('mcp-register: com o caminho do ragx grava --command absoluto', () => {
