@@ -17,6 +17,7 @@ from pathlib import Path
 
 from ragx.config import Config
 from ragx.indexing.pipeline import index_project
+from ragx.procs import run_quiet
 from ragx.storage.db import get_meta, open_db, set_meta
 from ragx.sync import serialize
 from ragx.sync.rehydrate import RehydrateReport, rehydrate
@@ -44,7 +45,7 @@ class SyncReport:
 
 def _git(root: Path, *args: str) -> str | None:
     try:
-        out = subprocess.run(
+        out = run_quiet(
             ["git", *args], cwd=root, capture_output=True, text=True,
             check=True, timeout=15,
         )

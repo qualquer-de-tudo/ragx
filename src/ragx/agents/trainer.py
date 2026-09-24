@@ -224,10 +224,10 @@ def _propose_examples(cfg: Config, paths: ProfilePaths, report: TrainReport) -> 
 
     Exemplo ruim ensina padrão ruim — por isso nada entra automaticamente.
     """
-    import subprocess
+    from ragx.procs import run_quiet
 
     try:
-        out = subprocess.run(
+        out = run_quiet(
             ["git", "log", "--format=%H%x00%s", "-n", "40"],
             cwd=cfg.root, capture_output=True, text=True, check=True, timeout=15,
         )
@@ -242,7 +242,7 @@ def _propose_examples(cfg: Config, paths: ProfilePaths, report: TrainReport) -> 
             continue
         sha, subject = line.split("\x00", 1)
         try:
-            diff = subprocess.run(
+            diff = run_quiet(
                 ["git", "show", "--stat", "--format=%B", sha],
                 cwd=cfg.root, capture_output=True, text=True, check=True, timeout=15,
             ).stdout

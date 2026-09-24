@@ -220,10 +220,13 @@ def spawn_index(root: Path, event: str) -> None:
         "cwd": root, "stdin": subprocess.DEVNULL, "stdout": log, "stderr": log,
     }
     if sys.platform == "win32":
-        # Git for Windows não tem nohup: sem DETACHED_PROCESS o hook espera a
-        # indexação inteira. BREAKAWAY_FROM_JOB pode ser negado pelo job pai;
-        # nesse caso tenta sem ele.
-        detached = 0x00000008 | 0x00000200  # DETACHED_PROCESS | NEW_PROCESS_GROUP
+        # Git for Windows não tem nohup: o hook não pode esperar a indexação
+        # inteira, então ela roda solta (NEW_PROCESS_GROUP + saída no log).
+        # NÃO usar DETACHED_PROCESS: sem console, cada `git` que a indexação
+        # roda ganha uma janela de terminal nova (piscava a cada commit).
+        # CREATE_NO_WINDOW dá um console oculto, herdado pelos filhos.
+        # BREAKAWAY_FROM_JOB pode ser negado pelo job pai; nesse caso tenta sem ele.
+        detached = 0x08000000 | 0x00000200  # CREATE_NO_WINDOW | NEW_PROCESS_GROUP
         try:
             subprocess.Popen(_index_argv(root, event),
                              creationflags=detached | 0x01000000, **kwargs)

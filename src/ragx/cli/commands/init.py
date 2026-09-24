@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-import subprocess
 from pathlib import Path
 from typing import Annotated
 
@@ -12,6 +11,7 @@ import typer
 from rich.console import Console
 
 from ragx.config import CONFIG_NAME, load_config
+from ragx.procs import run_quiet
 
 console = Console()
 
@@ -36,7 +36,7 @@ _GITIGNORE_BLOCK = """
 def _project_id(root: Path) -> str:
     """Derivado do remote quando existir (por HASH — a URL pode conter token)."""
     try:
-        out = subprocess.run(
+        out = run_quiet(
             ["git", "remote", "get-url", "origin"],
             cwd=root, capture_output=True, text=True, check=True, timeout=5,
         )

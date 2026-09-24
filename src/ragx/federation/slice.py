@@ -164,10 +164,11 @@ def _write(path: Path, data: Any) -> int:
 
 def _remote_hash(root: Path) -> str | None:
     import hashlib
-    import subprocess
+
+    from ragx.procs import run_quiet
 
     try:
-        out = subprocess.run(
+        out = run_quiet(
             ["git", "remote", "get-url", "origin"], cwd=root,
             capture_output=True, text=True, check=True, timeout=5,
         )

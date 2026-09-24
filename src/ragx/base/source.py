@@ -15,13 +15,13 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from ragx.config import Config
 from ragx.core.errors import RagxError, UsageError
+from ragx.procs import run_quiet
 from ragx.storage.db import utcnow
 
 PREFIX = "@base"
@@ -108,7 +108,7 @@ def _slug(origin: str) -> str:
 
 
 def _git(cwd: Path, *args: str, timeout: int = 180) -> str:
-    out = subprocess.run(
+    out = run_quiet(
         ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=timeout
     )
     if out.returncode != 0:

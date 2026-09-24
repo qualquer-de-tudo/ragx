@@ -16,6 +16,7 @@ from rich.console import Console
 
 from ragx.config import load_config
 from ragx.core.models import Severity, Verdict
+from ragx.procs import run_quiet
 
 app = typer.Typer(no_args_is_help=True)
 console = Console()
@@ -159,7 +160,7 @@ def rules(
 
 def _staged_files(root: Path) -> set[str] | None:
     try:
-        out = subprocess.run(
+        out = run_quiet(
             ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
             cwd=root,
             capture_output=True,

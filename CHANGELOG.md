@@ -211,6 +211,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **Commit não abre mais janela de terminal no Windows.** A indexação que o hook
+  de git dispara rodava com `DETACHED_PROCESS`, sem console, e cada `git` que ela
+  chamava ganhava uma janela nova. Agora usa `CREATE_NO_WINDOW` (console oculto,
+  herdado pelos filhos), e todo `subprocess.run` do pacote passa por
+  `ragx.procs.run_quiet`, com teste que barra chamada direta nova.
+
 - `ragx mcp install` voltou a funcionar. O pacote `ragx.clients` tinha se perdido
   num merge e o comando (e os instaladores, que o chamam) quebrava com
   `ModuleNotFoundError`.

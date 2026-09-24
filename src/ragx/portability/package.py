@@ -53,10 +53,10 @@ class ImportReport:
 
 def _remote_hash(root: Path) -> str | None:
     """Hash do remote, NUNCA a URL — ela pode conter token."""
-    import subprocess
+    from ragx.procs import run_quiet
 
     try:
-        out = subprocess.run(
+        out = run_quiet(
             ["git", "remote", "get-url", "origin"], cwd=root,
             capture_output=True, text=True, check=True, timeout=5,
         )
@@ -67,10 +67,10 @@ def _remote_hash(root: Path) -> str | None:
 
 
 def _git_commit(root: Path) -> str | None:
-    import subprocess
+    from ragx.procs import run_quiet
 
     try:
-        out = subprocess.run(
+        out = run_quiet(
             ["git", "rev-parse", "HEAD"], cwd=root,
             capture_output=True, text=True, check=True, timeout=5,
         )

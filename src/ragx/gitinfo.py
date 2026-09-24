@@ -14,6 +14,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from ragx.procs import run_quiet
+
 _TIMEOUT_S = 5
 
 
@@ -26,7 +28,7 @@ class GitState:
 
 def git(root: Path, *args: str) -> str | None:
     try:
-        out = subprocess.run(
+        out = run_quiet(
             # `--no-optional-locks`: `git status` por padrão refresca e grava
             # `.git/index`. Rodado em background (hook, watcher) ao mesmo
             # tempo que um `git rebase`/`checkout`/`commit` do usuário, essa
