@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ConnectionCheck, JobView } from '../types/ragx-bridge'
+import { RagxMark } from '../components/brand/RagxMark'
 import { ConnectionGrid } from '../components/connections/ConnectionCard'
 import { AddProjectFlow, type PickedProject } from '../components/project/AddProjectFlow'
 import { HOW_IT_WORKS, HOW_IT_WORKS_TITLE } from '../components/onboarding/howItWorks'
@@ -108,6 +109,7 @@ export function Onboarding({
     <div className="onboarding">
       <header className="onboarding-top">
         <span className="onboarding-brand">
+          <RagxMark size={22} className="onboarding-brand-mark" />
           <span className="onboarding-brand-name">RAGX</span> Configuração inicial
         </span>
         <button type="button" className="btn btn-quiet" onClick={() => void finish()} disabled={busy}>

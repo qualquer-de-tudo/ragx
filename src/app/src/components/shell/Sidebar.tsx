@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { navSection, type Route } from '../../route'
+import { RagxMark } from '../brand/RagxMark'
 
 type Section = 'projects' | 'connections' | 'how'
 
@@ -69,7 +70,8 @@ export function Sidebar({ route, onNavigate }: { route: Route; onNavigate: (rout
   return (
     <aside className="sidebar">
       <div className="brand" aria-hidden="true">
-        RAGX
+        <RagxMark size={26} />
+        <span className="brand-name">RAGX</span>
       </div>
       <nav className="nav" aria-label="Principal">
         <ul>

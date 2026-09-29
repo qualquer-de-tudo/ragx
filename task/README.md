@@ -1,8 +1,8 @@
 # Board de tarefas — RAGX
 
-117 tarefas, 16 fases. As 96 primeiras entregaram o MVP; a Fase 14 vem da
+124 tarefas, 17 fases. As 96 primeiras entregaram o MVP; a Fase 14 vem da
 auditoria de recuperação ([docs/23](../docs/23-auditoria-e-evolucao-do-rag.md)) e a
-Fase 15 do uso real do painel desktop.
+Fase 15 do uso real do painel desktop; a Fase 17 é o backlog de distribuição do painel em Windows, Linux e macOS.
 Índice completo em [BACKLOG.md](BACKLOG.md) · plano em [../docs/roadmap.md](../docs/roadmap.md).
 
 ## Estrutura
@@ -27,7 +27,8 @@ task/
 ├── fase-13-task-analyzer-orquestracao/    11 tarefas · RAGX-0086 .. 0096
 ├── fase-14-evolucao-do-rag/               18 tarefas · RAGX-0097 .. 0114
 ├── fase-15-painel-desktop/                 3 tarefas · RAGX-0115 .. 0117
-└── fase-16-instalador-completo.md          1 tarefa  · RAGX-0118
+├── fase-16-instalador-completo.md          1 tarefa  · RAGX-0118
+└── fase-17-distribuicao-multiplataforma/   6 tarefas · RAGX-0119 .. 0124
 ```
 
 Um arquivo por tarefa. ID sequencial e **imutável** — os IDs não são contíguos por
