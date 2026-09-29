@@ -11,7 +11,7 @@ assinatura de código por último (0124), porque depende de compra de certificad
 | ID | Tarefa | Prio | Est. | Status |
 |---|---|---|---|---|
 | [RAGX-0119](RAGX-0119-ci-do-painel-em-tres-sistemas.md) | CI do painel (vitest, eslint, tsc) em Windows, Linux e macOS | P1 | 0,5d | `todo` |
-| [RAGX-0120](RAGX-0120-release-publica-o-instalador-do-painel.md) | A release publica o instalador do painel de ponta a ponta | P1 | 0,5d | `todo` |
+| [RAGX-0120](RAGX-0120-release-publica-o-instalador-do-painel.md) | A release publica o instalador do painel de ponta a ponta | P1 | 0,5d | `review` |
 | [RAGX-0121](RAGX-0121-bundle-e-bootstrap-multiplataforma.md) | Bundle (`uv`) e bootstrap da CLI por plataforma | P2 | ~2d | `todo` |
 | [RAGX-0122](RAGX-0122-painel-linux.md) | Painel no Linux (AppImage e `.deb`) | P2 | ~2d | `todo` |
 | [RAGX-0123](RAGX-0123-painel-macos.md) | Painel no macOS (`.dmg` Intel e Apple Silicon) | P2 | ~3d | `todo` |

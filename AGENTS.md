@@ -42,7 +42,7 @@ uv tool install --editable --force --python 3.12 ".[all]"
 ## Testes e lint
 
 ```bash
-uv run pytest -m "not slow"     # suíte rápida (712 testes)
+uv run pytest -m "not slow"     # suíte rápida (1087 testes)
 uv run pytest tests/security    # suíte de segurança isolada — ver marker abaixo
 uv run ruff check .
 uv run mypy src/ragx/core src/ragx/security   # strict nestes dois pacotes

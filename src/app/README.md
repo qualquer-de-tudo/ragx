@@ -78,8 +78,22 @@ Gera o instalador Windows (`.exe`, NSIS) em `release/`
 principal e chama `electron-builder` (config em `electron-builder.yml`).
 Precisa de rede, `uv` e `tar` (vem no Windows 10+).
 
+**Na release.** Ninguém precisa gerar o `.exe` à mão para distribuir: o push de
+uma tag `v*` roda o `.github/workflows/release.yml`, que testa, empacota o
+painel, instala e desinstala o `.exe` num Windows limpo e o anexa à release,
+com a versão no nome. Commit comum não gera instalador. A versão do painel
+(`package.json`) acompanha a do produto; `scripts/versao.py` sobe as duas
+juntas, e a release recusa a tag se alguma divergir:
+
+```bash
+uv run python scripts/versao.py 1.0.0-beta.4 --tag   # versão, CHANGELOG, commit e tag
+git push origin main v1.0.0-beta.4                    # dispara a release
+```
+
 `npm run bundle` monta `resources/ragx-bundle/` (ignorado pelo Git), que o
-`electron-builder` copia para `<instalação>esourcesagx-bundle`:
+`electron-builder` copia para `<instalação>
+esources
+agx-bundle`:
 
 - `ragx-<versão>-py3-none-any.whl`, de `uv build --wheel` na raiz do repositório;
 - `uv.exe`, extraído do zip oficial da Astral numa versão **fixa** (constante

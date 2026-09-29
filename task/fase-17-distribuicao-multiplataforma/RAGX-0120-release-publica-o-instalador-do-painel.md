@@ -7,7 +7,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | RAGX-0118 |
 | **Documentação** | [release.yml](../../.github/workflows/release.yml) · [install/README.md](../../install/README.md) |
-| **Status** | `todo` |
+| **Status** | `review` |
 
 ## Objetivo
 
@@ -18,10 +18,10 @@ instalador anexado nunca rodou de ponta a ponta.
 ## Entregáveis
 
 - [ ] Rodar o `release.yml` por `workflow_dispatch` com `draft: true` e conferir que o rascunho traz o `.exe`, o `.vsix`, o wheel, o sdist, os scripts e o `SHA256SUMS.txt`
-- [ ] O `SHA256SUMS.txt` inclui o `RAGX-Painel-Setup-<versão>.exe`
-- [ ] Notas da release citam o instalador do painel e o aviso do SmartScreen (executável não assinado)
-- [ ] `install/README.md` e `src/app/README.md` dizem onde baixar o `.exe`
-- [ ] Versão do painel alinhada à do produto (hoje o `package.json` do painel está em `0.0.0` e o instalador sai como `...-0.0.0.exe`)
+- [x] O `SHA256SUMS.txt` inclui o `RAGX-Painel-Setup-<versão>.exe`
+- [x] Notas da release citam o instalador do painel e o aviso do SmartScreen (executável não assinado)
+- [x] `install/README.md` e `src/app/README.md` dizem onde baixar o `.exe`
+- [x] Versão do painel alinhada à do produto (hoje o `package.json` do painel está em `0.0.0` e o instalador sai como `...-0.0.0.exe`)
 - [ ] Se algo falhar no rascunho, corrigir o workflow e repetir até passar
 
 ## Fora de escopo
@@ -34,7 +34,7 @@ instalador anexado nunca rodou de ponta a ponta.
 
 - [ ] Um rascunho de release, gerado pelo workflow, contém o instalador do painel e passa no smoke de instalar, verificar e desinstalar
 - [ ] Baixar o `.exe` do rascunho e instalar numa máquina Windows limpa deixa "RAGX CLI" verde no painel
-- [ ] O nome do instalador carrega a versão real do produto
+- [x] O nome do instalador carrega a versão real do produto
 
 ## Testes
 
@@ -49,5 +49,17 @@ mesma checagem (ou uma cópia da versão) para o painel.
 ## Definition of Done
 
 - [ ] Todos os critérios de aceite acima verificados
-- [ ] CHANGELOG atualizado na MESMA alteração
+- [x] CHANGELOG atualizado na MESMA alteração
 - [ ] Verificado num rascunho real de release
+
+## Andamento (2026-09-29)
+
+Feito no código: o painel acompanha a versão do produto (`1.0.0-beta.3`); a
+release confere tag x `pyproject.toml` x painel x extensão; o disparo manual
+não usa mais o nome do ramo como tag; as notas saem da seção da versão no
+CHANGELOG e explicam o `.exe` e o SmartScreen; `scripts/versao.py` sobe a
+versão, fecha o CHANGELOG e cria a tag. O passo de montar as notas e a checagem
+de versão foram simulados localmente.
+
+Falta: rodar o `release.yml` por `workflow_dispatch` com `draft: true` no
+GitHub e conferir o rascunho (entregáveis 1 e 6, critérios 1 e 2).

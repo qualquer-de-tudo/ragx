@@ -11,7 +11,8 @@ O comando único é o mais rápido e serve para experimentar. Para pregar uma
 versão, ou para usar a extensão do VS Code, baixe os arquivos da release — o
 instalador encontra o wheel e o `.vsix` na pasta sozinho.
 
-> **Usa o painel desktop no Windows?** O `RAGX-Painel-Setup-*.exe` da release
+> **Usa o painel desktop no Windows?** O `RAGX-Painel-Setup-<versão>.exe`, em
+> *Assets* na [página de releases](https://github.com/qualquer-de-tudo/ragx/releases),
 > já instala tudo: a CLI `ragx` (com `uv` e Python 3.12 embutidos/baixados), o
 > PATH e o registro do MCP no Claude Code. Não precisa rodar o `install.ps1`
 > abaixo. Detalhes em [src/app/README.md](../src/app/README.md#empacotando).

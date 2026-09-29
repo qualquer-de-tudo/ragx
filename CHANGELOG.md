@@ -28,6 +28,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   diretório de `CLAUDE_CONFIG_DIR`. Antes só `~/.claude.json` era lido, e o painel
   dizia "ligado" com o perfil da empresa sem a ferramenta. `status --json` traz
   `profiles`, e `enabled` só é verdadeiro com todos ligados.
+- **`scripts/versao.py`: versão, CHANGELOG e tag num comando.** Sobe a versão no
+  `pyproject.toml`, `uv.lock`, painel e extensão, abre a seção da versão com o que
+  estava em `[Não lançado]` e, com `--tag`, commita e cria a tag `v<versão>`. O
+  push da tag dispara a release, que agora publica o instalador do painel.
 - **Logo do RAGX no executável, no instalador e no painel.** O símbolo é um X
   com uma abertura em losango no cruzamento (o foco: só o contexto relevante
   passa) e um núcleo no centro (o trecho recuperado), no azul do painel. O
@@ -283,6 +287,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   outro processo escrevendo (o painel indexando, um hook de commit) por mais que o
   `busy_timeout`, o "database is locked" virava esse erro falso. A sonda agora roda
   num banco em memória, uma vez por processo.
+- **A release publica o instalador do painel com a versão certa.** O
+  `package.json` do painel estava em `0.0.0`, e o instalador sairia como
+  `RAGX-Painel-Setup-0.0.0.exe`; agora acompanha o produto, e a release recusa a
+  tag se `pyproject.toml`, painel e extensão divergirem. No disparo manual, a
+  release usava o nome do ramo (`main`) como tag. As notas saem da seção da versão
+  no CHANGELOG (as da beta 3 ainda anunciavam a beta 1) e explicam como instalar o
+  `.exe` e passar pelo aviso do SmartScreen.
 - A suíte de testes não herda mais `CLAUDE_CONFIG_DIR`: rodada de dentro de um
   perfil separado, ela gravaria na configuração real dele.
 

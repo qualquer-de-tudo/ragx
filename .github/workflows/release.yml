@@ -75,18 +75,33 @@ jobs:
           echo "valor=$v" >> "$GITHUB_OUTPUT"
           echo "RAGX $v"
 
-      - name: Conferir que a tag bate com o pyproject
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Conferir que a versão pedida bate com os arquivos
         shell: bash
+        env:
+          PEDIDA: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.version }}
         run: |
-          tag="${GITHUB_REF_NAME#v}"
-          arquivo="${{ steps.versao.outputs.valor }}"
-          if [ "$tag" != "$arquivo" ]; then
-            echo "::error::a tag é v$tag mas o pyproject diz $arquivo"
-            echo "Publicar com os dois em desacordo produz um release que"
-            echo "instala uma versão diferente da que o nome promete."
+          set -euo pipefail
+          pedida="${PEDIDA#v}"
+          # O painel e a extensão têm versão própria no package.json. O painel
+          # ficou em 0.0.0 enquanto o produto estava na beta 3, e o instalador
+          # sairia como RAGX-Painel-Setup-0.0.0.exe. `scripts/versao.py` sobe
+          # os três juntos; aqui só se confere.
+          painel=$(grep -m1 '"version"' src/app/package.json | sed 's/.*"\([^"]*\)",*$/\1/')
+          plugin=$(grep -m1 '"version"' vscode-plugin/package.json | sed 's/.*"\([^"]*\)",*$/\1/')
+          erro=0
+          for par in "pyproject.toml=${{ steps.versao.outputs.valor }}" "src/app/package.json=$painel" "vscode-plugin/package.json=$plugin"; do
+            if [ "${par#*=}" != "$pedida" ]; then
+              echo "::error::a release pede $pedida mas ${par%%=*} diz ${par#*=}"
+              erro=1
+            fi
+          done
+          if [ "$erro" != 0 ]; then
+            echo "Publicar com versões em desacordo produz uma release que instala"
+            echo "uma versão diferente da que o nome promete. Rode:"
+            echo "  uv run python scripts/versao.py $pedida"
             exit 1
           fi
+          echo "versão $pedida confere nos três arquivos"
 
       - run: uv build
 
@@ -323,7 +338,17 @@ jobs:
           RAGX="${{ needs.pacote.outputs.versao }}"
           PLUGIN="${{ needs.extensao.outputs.versao }}"
           REPO="${{ github.repository }}"
-          TAG="${{ github.ref_name }}"
+          # No disparo manual, `github.ref_name` é o nome do ramo (`main`).
+          TAG="${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}"
+          EXE="$(cd release && ls *Setup*.exe | head -1)"
+
+          # A seção desta versão no CHANGELOG vira "Novidades". Texto fixo aqui
+          # envelhecia: as notas da beta 3 ainda anunciavam o que era da beta 1.
+          awk -v alvo="## [$RAGX]" 'index($0, alvo)==1 {f=1; next} f && /^## \[/ {exit} f {print}' \
+            CHANGELOG.md > novidades.md
+          if ! grep -q '[^[:space:]]' novidades.md; then
+            echo "Sem seção [$RAGX] no CHANGELOG; veja o arquivo completo." > novidades.md
+          fi
           VSIX="${{ steps.reunir.outputs.vsix }}"
           WHL="${{ steps.reunir.outputs.whl }}"
 
@@ -340,6 +365,20 @@ jobs:
           agentes via MCP. Sem servidor, sem nuvem, sem chave de API.
 
           ## Instalar
+
+          ### Painel (Windows): o jeito mais simples
+
+          Baixe **`__EXE__`** logo abaixo, em *Assets*, e execute. O
+          instalador põe o painel **e** a CLI (uv, Python 3.12 e o `ragx`), sem
+          precisar de nada instalado antes. Para atualizar, é só rodar o
+          instalador da versão nova por cima.
+
+          O executável ainda não é assinado, então o Windows SmartScreen mostra
+          "O Windows protegeu o computador". Clique em **Mais informações →
+          Executar assim mesmo**. Para conferir que o arquivo é este, compare o
+          hash com o `SHA256SUMS.txt`.
+
+          ### Só a CLI, em qualquer sistema
 
           **Um comando.**
 
@@ -427,26 +466,17 @@ jobs:
 
           ## Novidades desta versão
 
-          - **Extensão do VS Code** — busca, documentos, grafo, dicionário,
-            origens e tarefas, em barra lateral ou tela cheia.
-          - **`list_documents`** — inventário do índice por MCP: o que existe e
-            de que origem vem, sem trazer conteúdo.
-          - **Erro de argumento agora é `invalid_argument`**, com campo, limite
-            e valor recebido na mensagem. Antes virava `internal` e mandava
-            caçar num traceback.
-          - **Instaladores para Linux, macOS e Windows**, com registro do MCP,
-            PATH e verificação no fim — e que **dizem em que linha pararam** se
-            algo der errado.
-          - **Conhecimento compartilhado entre projetos** (`@base/...`), com a
-            origem sempre explícita no resultado.
+          __NOVIDADES__
 
           Detalhe de tudo no
           [CHANGELOG](https://github.com/__REPO__/blob/__TAG__/CHANGELOG.md).
 
           ## Verificado nesta build
 
-          - testes em Ubuntu e Windows
-          - instalação a partir do wheel nos dois sistemas
+          - testes em Ubuntu, macOS e Windows
+          - instalação a partir do wheel nos três sistemas
+          - o instalador do painel, em silêncio, deixa o `ragx` respondendo, e
+            o desinstalador o remove
           - ciclo completo num projeto novo: `init`, `index`, `search`, MCP
           - um `.env` com credencial no projeto de teste **não** entra no
             índice — o build quebra se entrar
@@ -467,14 +497,19 @@ jobs:
           NOTAS
 
           sed -i "s|__RAGX__|$RAGX|g;  s|__PLUGIN__|$PLUGIN|g; s|__REPO__|$REPO|g; \
-                  s|__TAG__|$TAG|g;    s|__VSIX__|$VSIX|g;     s|__WHL__|$WHL|g" NOTAS.md
+                  s|__TAG__|$TAG|g;    s|__VSIX__|$VSIX|g;     s|__WHL__|$WHL|g; \
+                  s|__EXE__|$EXE|g" NOTAS.md
+          # O CHANGELOG entra por último e por arquivo: tem `|`, `&` e barras
+          # que um `sed` interpretaria.
+          awk 'FNR==NR {n = n $0 "\n"; next} $0 == "__NOVIDADES__" {printf "%s", n; next} {print}' \
+            novidades.md NOTAS.md > NOTAS.tmp && mv NOTAS.tmp NOTAS.md
           cat NOTAS.md
 
       - name: Publicar
         uses: softprops/action-gh-release@v2
         with:
           name: RAGX ${{ needs.pacote.outputs.versao }}
-          tag_name: ${{ github.ref_name || format('v{0}', inputs.version) }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}
           body_path: NOTAS.md
           files: release/*
           draft: ${{ inputs.draft || false }}
