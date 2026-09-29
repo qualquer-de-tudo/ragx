@@ -43,6 +43,10 @@ def hub_isolado(tmp_path_factory: pytest.TempPathFactory) -> None:
     # significar tirar do teste a escolha que ele fez de propósito.
     os.environ["HOME"] = str(casa)
     os.environ["USERPROFILE"] = str(casa)
+    # Um perfil separado do Claude Code (`claude-empresa`, por exemplo) roda com
+    # CLAUDE_CONFIG_DIR apontando para a config REAL da pessoa. Herdado aqui, o
+    # `ragx claude on` dos testes gravaria nela, apesar do HOME redirecionado.
+    os.environ.pop("CLAUDE_CONFIG_DIR", None)
 
     # Com HOME redirecionado, `expanduser` só acerta se o cache do pathlib não
     # tiver congelado o valor antigo — conferimos em vez de torcer.

@@ -101,6 +101,64 @@ def _claude_desktop_config() -> Path:
     return home / ".config" / "Claude" / "claude_desktop_config.json"
 
 
+#: Id base do Claude Code. Perfis extras viram `claude-code:<nome>`.
+CLAUDE_CODE = "claude-code"
+
+
+def _claude_code_profiles(home: Path) -> list[Client]:
+    """O perfil padrão do Claude Code e os perfis separados por `CLAUDE_CONFIG_DIR`.
+
+    Quem separa contas (pessoal x empresa) roda o Claude Code com
+    `CLAUDE_CONFIG_DIR=~/.claude-empresa`, e aí a configuração inteira, MCP
+    incluído, mora em `<dir>/.claude.json`. Olhar só para `~/.claude.json`
+    deixava esses perfis sem o RAGX sem ninguém perceber: o painel dizia
+    "ligado" e o agente da empresa nunca tinha a ferramenta.
+
+    Um diretório `~/.claude-*` só conta se tem `.claude.json`: é a prova de que
+    o Claude Code já rodou com ele. A variável de ambiente, quando existe, conta
+    se o diretório existe.
+    """
+    perfis = [
+        Client(
+            CLAUDE_CODE, "Claude Code",
+            home / ".claude.json", "json", "mcpServers",
+            # `~/.claude/` é criado pelo Claude Code; o `$HOME` não prova nada.
+            markers=(home / ".claude",),
+        )
+    ]
+    candidatos: list[Path] = []
+    env = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    if env:
+        candidatos.append(Path(os.path.expanduser(env)))
+    with contextlib.suppress(OSError):
+        candidatos.extend(
+            sorted(p for p in home.glob(".claude-*") if (p / ".claude.json").is_file())
+        )
+
+    vistos: set[str] = set()
+    for pasta in candidatos:
+        chave = os.path.normcase(os.path.abspath(pasta))
+        if chave in vistos or not pasta.is_dir():
+            continue
+        vistos.add(chave)
+        nome = pasta.name.removeprefix(".claude-").lstrip(".") or pasta.name
+        perfis.append(
+            Client(
+                f"{CLAUDE_CODE}:{nome}", f"Claude Code ({nome})",
+                pasta / ".claude.json", "json", "mcpServers",
+                markers=(pasta,),
+            )
+        )
+    return perfis
+
+
+def claude_settings(client: Client) -> Path:
+    """O `settings.json` do perfil: é onde moram os hooks do Claude Code."""
+    if client.id == CLAUDE_CODE:
+        return client.config.parent / ".claude" / "settings.json"
+    return client.config.parent / "settings.json"
+
+
 def _clients() -> tuple[Client, ...]:
     home = _home()
     return (
@@ -108,12 +166,7 @@ def _clients() -> tuple[Client, ...]:
             "claude-desktop", "Claude Desktop",
             _claude_desktop_config(), "json", "mcpServers",
         ),
-        Client(
-            "claude-code", "Claude Code",
-            home / ".claude.json", "json", "mcpServers",
-            # `~/.claude/` é criado pelo Claude Code; o `$HOME` não prova nada.
-            markers=(home / ".claude",),
-        ),
+        *_claude_code_profiles(home),
         Client(
             "cursor", "Cursor",
             home / ".cursor" / "mcp.json", "json", "mcpServers",
@@ -340,6 +393,15 @@ def register(
         return Result(client, Outcome.FAILED, str(exc))
 
 
+def _filtrar(alvos: tuple[Client, ...], only: list[str]) -> tuple[Client, ...]:
+    """`claude-code` pede o Claude Code inteiro: o perfil padrão e os extras."""
+    pedidos = {c.strip().lower() for c in only}
+    return tuple(
+        c for c in alvos
+        if c.id.lower() in pedidos or c.id.split(":", 1)[0] in pedidos
+    )
+
+
 def register_all(
     command: str = "ragx",
     args: list[str] | None = None,
@@ -354,8 +416,7 @@ def register_all(
     """
     alvos = CLIENTS()
     if only:
-        pedidos = {c.strip().lower() for c in only}
-        alvos = tuple(c for c in alvos if c.id in pedidos)
+        alvos = _filtrar(alvos, only)
     return [register(c, command, args, dry_run) for c in alvos]
 
 
@@ -490,6 +551,5 @@ def unregister_all(
     """Espelho de `register_all` para a remoção."""
     alvos = CLIENTS()
     if only:
-        pedidos = {c.strip().lower() for c in only}
-        alvos = tuple(c for c in alvos if c.id in pedidos)
+        alvos = _filtrar(alvos, only)
     return [unregister(c, dry_run) for c in alvos]

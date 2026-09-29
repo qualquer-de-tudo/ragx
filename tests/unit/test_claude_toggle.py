@@ -78,7 +78,9 @@ def test_on_e_off_json_para_o_painel(casa: Path) -> None:
     _config(casa).write_text("{}", encoding="utf-8")
     on = runner.invoke(app, ["claude", "on", "--json"])
     assert on.exit_code == 0, on.output
-    assert json.loads(on.output) == {"enabled": True, "changed": True, "detail": json.loads(on.output)["detail"]}
+    dados_on = json.loads(on.output)
+    assert dados_on["enabled"] is True and dados_on["changed"] is True
+    assert [p["id"] for p in dados_on["profiles"]] == ["claude-code"]
     off = runner.invoke(app, ["claude", "off", "--json"])
     dados = json.loads(off.output)
     assert dados["enabled"] is False and dados["changed"] is True

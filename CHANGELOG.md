@@ -11,6 +11,23 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **O agente passa a saber que o projeto tem RAGX, e o perfil da empresa também tem o RAGX.**
+  Em 14 dias de uso real, com o servidor registrado, o Claude Code abriu cerca de 50
+  sessões e chamou o RAGX 4 vezes, todas no próprio repositório do RAGX: as
+  ferramentas chegam como *deferred* e Grep/Read já estão à mão. Por isso os cards
+  "Economia de tokens" e "Uso pelos agentes" do painel ficavam vazios. Agora
+  `ragx claude on` instala um hook `SessionStart` que roda `ragx claude hint`. Num
+  projeto indexado, ele diz ao agente que há índice (documentos, data, branch),
+  quando usar `search_hybrid`/`build_context` e como carregá-las. Numa pasta acima
+  de projetos indexados (monorepo com front e back separados), lista o
+  `scope="project:<nome>"` de cada um. Fora de projeto RAGX, fica calado.
+  `--no-hint` liga só o MCP; `off` tira o hook e preserva os seus.
+- **Perfis do Claude Code com `CLAUDE_CONFIG_DIR`** (ex.: `~/.claude-empresa`).
+  `ragx claude on|off|status` e `ragx mcp install --client claude-code` tratam cada
+  perfil como um Claude Code: o padrão, cada `~/.claude-*` com `.claude.json` e o
+  diretório de `CLAUDE_CONFIG_DIR`. Antes só `~/.claude.json` era lido, e o painel
+  dizia "ligado" com o perfil da empresa sem a ferramenta. `status --json` traz
+  `profiles`, e `enabled` só é verdadeiro com todos ligados.
 - **Logo do RAGX no executável, no instalador e no painel.** O símbolo é um X
   com uma abertura em losango no cruzamento (o foco: só o contexto relevante
   passa) e um núcleo no centro (o trecho recuperado), no azul do painel. O
@@ -266,6 +283,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   outro processo escrevendo (o painel indexando, um hook de commit) por mais que o
   `busy_timeout`, o "database is locked" virava esse erro falso. A sonda agora roda
   num banco em memória, uma vez por processo.
+- A suíte de testes não herda mais `CLAUDE_CONFIG_DIR`: rodada de dentro de um
+  perfil separado, ela gravaria na configuração real dele.
 
 - **Reinstalar o painel não deixa mais o `ragx` quebrado.** O `ragx-install` trocava o
   ambiente da CLI no lugar (`uv tool install --force`); com um `python.exe` dele em

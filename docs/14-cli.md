@@ -340,9 +340,10 @@ ragx doctor --json               as mesmas checagens em JSON, saindo com 0
 
 ```bash
 ragx perf [--days 7] [--project NOME] [--top 5] [--json]
-ragx claude status [--json]      o RAGX está ligado no Claude Code agora?
-ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projetos
-ragx claude on [--dry-run]       põe de volta
+ragx claude status [--json]      o RAGX está ligado no Claude Code agora? (por perfil)
+ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projetos e perfis
+ragx claude on [--dry-run] [--no-hint]   põe de volta, com a dica de início de sessão
+ragx claude hint                 o texto que a dica entrega ao agente nesta pasta
 ```
 
 `ragx perf` lê os transcripts do Claude Code (`~/.claude/projects`), que carimbam
@@ -361,8 +362,27 @@ com backup datado e recusa de configuração ilegível). Vale a partir da próxi
 sessão do Claude Code; uma sessão já aberta continua com as ferramentas que
 carregou. `on` regrava a entrada padrão (`ragx mcp serve`).
 
-`on` e `off` aceitam `--json` (`{enabled, changed, detail}`, e `error` quando falha, saindo
-com 1): é o que o interruptor do header do painel usa.
+`on` e `off` aceitam `--json` (`{enabled, changed, detail, profiles}`, e `error` quando
+falha, saindo com 1): é o que o interruptor do header do painel usa. `enabled` só é
+verdadeiro quando **todos** os perfis estão ligados.
+
+**Perfis.** Quem separa contas roda o Claude Code com `CLAUDE_CONFIG_DIR` (ex.:
+`~/.claude-empresa`), e aí a configuração do perfil, MCP incluído, mora em
+`<dir>/.claude.json`. `ragx claude` e `ragx mcp install --client claude-code`
+tratam cada perfil como um Claude Code: o padrão (`~/.claude.json`), cada
+`~/.claude-*` que já tenha `.claude.json` e o diretório de `CLAUDE_CONFIG_DIR`,
+se estiver definido.
+
+**Dica de início de sessão.** Registrar o servidor não basta: as ferramentas do
+RAGX chegam ao agente como *deferred* (só o nome), e Grep/Read já estão
+carregados. `on` instala, no `settings.json` de cada perfil, um hook
+`SessionStart` que roda `ragx claude hint`. Num projeto indexado, o agente lê que
+há índice (quantos documentos, de quando), quando usar `search_hybrid` e
+`build_context` e como carregá-las com ToolSearch. Numa pasta acima de projetos
+indexados (um monorepo com front e back separados), a dica lista o
+`scope="project:<nome>"` de cada um. Fora de projeto RAGX, não diz nada. O hook
+nunca falha: um erro ali atrasaria toda sessão. `off` remove só esse hook; os
+seus ficam. `--no-hint` liga o MCP sem a dica.
 
 ## Orçamento de tamanho (Fases 1 e 9)
 
