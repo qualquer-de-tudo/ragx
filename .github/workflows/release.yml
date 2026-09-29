@@ -254,6 +254,11 @@ jobs:
 
       - name: Instalar em silêncio
         run: |
+          # O setup-uv (necessário só para empacotar) define UV_TOOL_DIR e
+          # UV_TOOL_BIN_DIR, e o uv do instalador herdava isso: o ragx.exe ia
+          # para D:\a\_temp\uv-tool-bin-dir e este passo o procurava em
+          # ~\.local\bin. Sem elas, a instalação é a de uma máquina de verdade.
+          Remove-Item Env:UV_TOOL_DIR, Env:UV_TOOL_BIN_DIR, Env:UV_CACHE_DIR -ErrorAction SilentlyContinue
           # /S dispara o customInstall, que roda `--bootstrap` e só volta quando
           # a CLI foi instalada (ExecWait). O NSIS não devolve erro do bootstrap
           # de propósito; quem confere é o passo seguinte.
@@ -271,6 +276,7 @@ jobs:
 
       - name: Verificar a CLI instalada
         run: |
+          Remove-Item Env:UV_TOOL_DIR, Env:UV_TOOL_BIN_DIR, Env:UV_CACHE_DIR -ErrorAction SilentlyContinue
           # O PATH do usuário foi gravado no registro, mas este processo não o
           # relê: usamos o diretório direto, como o painel faz.
           $env:PATH = "$env:USERPROFILE\.local\bin;$env:PATH"
@@ -281,6 +287,7 @@ jobs:
 
       - name: Desinstalar removendo a CLI
         run: |
+          Remove-Item Env:UV_TOOL_DIR, Env:UV_TOOL_BIN_DIR, Env:UV_CACHE_DIR -ErrorAction SilentlyContinue
           $uninst = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $uninst) { throw 'desinstalador do painel não encontrado' }
           Write-Host "desinstalador: $($uninst.FullName)"
