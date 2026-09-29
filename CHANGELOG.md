@@ -243,6 +243,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **"Este Python foi compilado sem FTS5" aparecia com o banco apenas ocupado.**
+  A sonda de FTS5 criava uma tabela no próprio banco a cada conexão de escrita; com
+  outro processo escrevendo (o painel indexando, um hook de commit) por mais que o
+  `busy_timeout`, o "database is locked" virava esse erro falso. A sonda agora roda
+  num banco em memória, uma vez por processo.
+
 - **Reinstalar o painel não deixa mais o `ragx` quebrado.** O `ragx-install` trocava o
   ambiente da CLI no lugar (`uv tool install --force`); com um `python.exe` dele em
   uso (indexação disparada por hook, servidor MCP de um Claude Code aberto) a troca

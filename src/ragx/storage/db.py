@@ -6,6 +6,8 @@ PRAGMA user_version. Ver docs/03-modelo-de-dados.md.
 
 from __future__ import annotations
 
+import contextlib
+import functools
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -44,22 +46,39 @@ def connect(path: Path, read_only: bool = False) -> sqlite3.Connection:
         if read_only and key in ("journal_mode", "synchronous"):
             continue
         conn.execute(f"PRAGMA {key} = {value}")
-    # O probe de FTS5 CRIA uma tabela — impossível em modo ro, e desnecessário:
-    # o banco só existe porque foi criado com FTS5 disponível.
+    # Em modo ro é desnecessário: o banco só existe porque foi criado com FTS5.
     if not read_only:
-        _require_fts5(conn)
+        _require_fts5()
     return conn
 
 
-def _require_fts5(conn: sqlite3.Connection) -> None:
+def _sonda_fts5() -> bool:
+    """FTS5 é da biblioteca SQLite, não do arquivo: a sonda roda em memória.
+
+    Ela rodava no próprio banco, criando e apagando uma tabela. Com outro
+    processo escrevendo (o painel indexando, um hook de commit) por mais que o
+    busy_timeout, o SQLite respondia "database is locked", e isso virava a
+    mensagem "este Python foi compilado sem FTS5", falsa e assustadora.
+    """
     try:
-        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS _fts5_probe USING fts5(x)")
-        conn.execute("DROP TABLE IF EXISTS _fts5_probe")
-    except sqlite3.OperationalError as exc:
+        with contextlib.closing(sqlite3.connect(":memory:")) as mem:
+            mem.execute("CREATE VIRTUAL TABLE _fts5_probe USING fts5(x)")
+        return True
+    except sqlite3.OperationalError:
+        return False
+
+
+@functools.cache
+def _fts5_disponivel() -> bool:
+    return _sonda_fts5()
+
+
+def _require_fts5() -> None:
+    if not _fts5_disponivel():
         raise EnvError(
             "este Python foi compilado sem FTS5; a busca por palavra-chave depende dele.\n"
             "  → instale um Python com SQLite >= 3.9 com FTS5 habilitado"
-        ) from exc
+        )
 
 
 def _migrations() -> list[tuple[int, Path]]:
