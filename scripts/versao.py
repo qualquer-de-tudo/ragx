@@ -93,13 +93,26 @@ def uv_lock(texto: str, versao: str) -> str:
 
 
 def package_json(texto: str, versao: str) -> str:
-    dados = json.loads(texto)
-    dados["version"] = versao
-    # package-lock.json repete a versão do próprio pacote em `packages[""]`.
-    raiz = (dados.get("packages") or {}).get("")
+    """Troca só a linha da versão, sem reserializar o arquivo.
+
+    A primeira versão deste script regravava o JSON inteiro, e o
+    `vscode-plugin/package.json`, com outra formatação, saía com 175 linhas
+    mudadas para uma versão nova. Aqui a troca é textual, e o resultado é
+    conferido: tem de ser o JSON original com só as versões diferentes.
+    """
+    esperado = json.loads(texto)
+    esperado["version"] = versao
+    # package-lock.json repete a versão do próprio pacote em `packages[""]`,
+    # que é sempre a segunda ocorrência de "version" no arquivo.
+    raiz = (esperado.get("packages") or {}).get("")
+    trocas = 1
     if isinstance(raiz, dict) and "version" in raiz:
         raiz["version"] = versao
-    return json.dumps(dados, indent=2, ensure_ascii=False) + "\n"
+        trocas = 2
+    novo, n = re.subn(r'("version"\s*:\s*)"[^"]*"', rf'\g<1>"{versao}"', texto, count=trocas)
+    if n != trocas or json.loads(novo) != esperado:
+        raise RecusaError("não consegui trocar só a versão no package.json; edite à mão")
+    return novo
 
 
 ARQUIVOS = {

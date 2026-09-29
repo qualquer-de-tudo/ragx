@@ -69,3 +69,20 @@ def test_pyproject_troca_so_a_versao_do_projeto() -> None:
 @pytest.mark.parametrize("v", ["1.0", "v1.0.0-", "1.0.0 beta", "1.0.0-beta..4"])
 def test_versao_que_nao_e_semver_e_recusada(v: str) -> None:
     assert versao.main([v]) == 1
+
+
+def test_package_json_muda_so_a_linha_da_versao() -> None:
+    """O package.json da extensão tem formatação própria: reserializar mudava 175 linhas."""
+    texto = '{\n  "name": "x",\n  "version": "1.0.0-beta.3",\n  "keywords": ["a", "b"],\n  "engines": {"vscode": "^1.90.0"}\n}\n'
+    novo = versao.package_json(texto, "1.0.0-beta.4")
+    assert novo == texto.replace("1.0.0-beta.3", "1.0.0-beta.4")
+
+
+def test_arquivos_reais_mudam_uma_linha_por_versao() -> None:
+    raiz = _ARQ.parents[1]
+    for rel in ("src/app/package.json", "src/app/package-lock.json",
+                "vscode-plugin/package.json", "vscode-plugin/package-lock.json"):
+        texto = (raiz / rel).read_text(encoding="utf-8")
+        novo = versao.package_json(texto, "9.9.9")
+        mudadas = [a for a, b in zip(texto.splitlines(), novo.splitlines(), strict=True) if a != b]
+        assert len(mudadas) == (2 if rel.endswith("lock.json") else 1), (rel, mudadas)
