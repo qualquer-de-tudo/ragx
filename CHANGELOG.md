@@ -9,6 +9,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.0.0-beta.4] — 2026-09-29
+
 ### Adicionado
 
 - **O agente passa a saber que o projeto tem RAGX, e o perfil da empresa também tem o RAGX.**
