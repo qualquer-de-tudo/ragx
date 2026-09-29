@@ -262,8 +262,22 @@ jobs:
           # /S dispara o customInstall, que roda `--bootstrap` e só volta quando
           # a CLI foi instalada (ExecWait). O NSIS não devolve erro do bootstrap
           # de propósito; quem confere é o passo seguinte.
-          $p = Start-Process -FilePath '${{ steps.exe.outputs.caminho }}' -ArgumentList '/S' -Wait -PassThru
-          Write-Host "instalador terminou com código $($p.ExitCode)"
+          #
+          # Neste runner o stub do NSIS às vezes morre com 0xC0000005 (acesso
+          # inválido) nos primeiros 2-3 s, antes de extrair qualquer arquivo: 2
+          # de 5 instalações na mesma imagem, com o mesmo .exe, que nas outras
+          # instala tudo em ~16 s. Só esse código ganha nova tentativa; qualquer
+          # outro reprova na hora. O módulo que crashou vai para o log (evento
+          # 1000 do Windows Error Reporting) para a causa poder ser tratada.
+          for ($tentativa = 1; $tentativa -le 3; $tentativa++) {
+            $inicio = Get-Date
+            $p = Start-Process -FilePath '${{ steps.exe.outputs.caminho }}' -ArgumentList '/S' -Wait -PassThru
+            Write-Host "instalador terminou com código $($p.ExitCode) (tentativa $tentativa)"
+            if ($p.ExitCode -ne -1073741819) { break }
+            $crash = Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000; StartTime=$inicio} -ErrorAction SilentlyContinue |
+              Select-Object -First 1
+            Write-Host "::warning::instalador do painel crashou (0xC0000005) na tentativa $tentativa. $($crash.Message -replace '\s+', ' ')"
+          }
           if ($p.ExitCode -ne 0) { throw "instalador saiu com $($p.ExitCode)" }
           # Margem para o processo do bootstrap terminar de gravar o binário.
           $ragx = Join-Path $env:USERPROFILE '.local\bin\ragx.exe'
