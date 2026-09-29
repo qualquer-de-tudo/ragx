@@ -104,6 +104,30 @@ dist/  build/  target/  .next/  .nuxt/
 não listado no `.gitignore` continua sendo bloqueado pelo scanner. O IgnoreEngine
 reduz volume; quem protege é o scanner.
 
+**Pasta ignorada é podada, não percorrida.** O walker não desce numa pasta que o
+IgnoreEngine ignora (`IgnoreEngine.can_prune`), em vez de pular os arquivos dela
+um a um. Num monorepo pnpm, cujo `node_modules` no Windows é feito de junctions,
+com worktrees ignorados em `.claude/worktrees/`, percorrer tudo custava mais de 20
+minutos por commit. Podar não lê nada que antes seria lido, então não afrouxa o
+Gate. Nos repositórios de referência, o conjunto de arquivos admitidos, com os
+veredictos, ficou idêntico com e sem poda. Regras:
+
+- negação **com caminho** que aponta para dentro da pasta (`!build/keep.txt`,
+  `--include node_modules/pkg/**`) impede a poda: esse arquivo continua entrando;
+- negação **genérica** de arquivo de ignore (`!.env.example`, `!**/*.md`) não entra
+  em pasta excluída, como no git ("não é possível reincluir um arquivo se um
+  diretório pai está excluído"). Fora de pasta excluída, vale como sempre;
+- `--include` genérico (`[index].include`, flag da CLI) é pedido explícito e vale
+  em qualquer lugar: com ele, nenhuma pasta é podada.
+
+A busca pelos próprios arquivos de ignore vai de cima para baixo, como o git: em
+cada pasta, carrega os arquivos de ignore dela e só então decide se desce nas
+subpastas. Por isso **arquivo de ignore dentro de pasta excluída não é lido**. Um
+worktree em `.claude/worktrees/`, ignorado, traz os `.gitignore` do projeto, e as
+negações com caminho deles (`!.yarn/patches`) impediriam a poda da pasta. Cada
+pasta é visitada uma vez (mesmo `st_dev`/`st_ino`, como o walker), e symlink não
+é seguido.
+
 ## SecurityScanner — fase 1: nome do arquivo
 
 Deny-list por *glob*, avaliada antes de qualquer leitura de conteúdo.

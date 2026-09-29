@@ -7,7 +7,7 @@ Ver docs/04-indexacao.md e ADR-0008.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -49,7 +49,7 @@ def iter_files(
     root = Path(root).resolve()
     visited: set[tuple[int, int]] = set()
 
-    for path in _walk(root, follow_symlinks, visited):
+    for path in _walk(root, follow_symlinks, visited, gate.ignore.can_prune):
         inner = path.relative_to(root).as_posix()
         rel = prefix + inner
         if only is not None and rel not in only:
@@ -127,7 +127,7 @@ def scan_fingerprints(
     root = Path(root).resolve()
     visited: set[tuple[int, int]] = set()
     out: dict[str, tuple[int, int]] = {}
-    for path in _walk(root, follow_symlinks, visited):
+    for path in _walk(root, follow_symlinks, visited, gate.ignore.can_prune):
         rel = path.relative_to(root).as_posix()
         ignored, _ = gate.ignore.should_ignore(rel)
         if ignored:
@@ -141,8 +141,14 @@ def scan_fingerprints(
 
 
 def _walk(
-    root: Path, follow_symlinks: bool, visited: set[tuple[int, int]]
+    root: Path,
+    follow_symlinks: bool,
+    visited: set[tuple[int, int]],
+    can_prune: Callable[[str], bool] | None = None,
 ) -> Iterator[Path]:
+    """`can_prune` pula a pasta ignorada inteira (ver `IgnoreEngine.can_prune`):
+    descer num `node_modules` ou num worktree ignorado só para pular arquivo por
+    arquivo custava dezenas de minutos por commit num monorepo pnpm."""
     stack = [root]
     while stack:
         current = stack.pop()
@@ -160,6 +166,8 @@ def _walk(
                     if not target.is_relative_to(root):
                         continue
                 if entry.is_dir():
+                    if can_prune is not None and can_prune(entry.relative_to(root).as_posix()):
+                        continue
                     st = entry.stat()
                     key = (st.st_dev, st.st_ino)
                     if key in visited:  # ciclo

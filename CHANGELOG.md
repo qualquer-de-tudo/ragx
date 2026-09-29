@@ -243,6 +243,24 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **Indexar um monorepo pnpm travava por mais de 20 minutos a cada commit.** A
+  busca pelos arquivos de ignore fazia três `rglob` pela árvore inteira, e o do
+  Python 3.12 entra nas junctions do `node_modules` do pnpm sem lembrar onde já
+  esteve: só o `node_modules` do projeto de referência levava 119 s, contra 4 s
+  visitando cada pasta uma vez. Com worktrees em `.claude/worktrees/`, o `ragx
+  index` passava de 20 minutos a 100% de CPU antes de ler um arquivo, e os hooks de
+  commit empilhavam pedidos. Agora é uma varredura só, sem revisitar pasta, e o
+  walker **poda pasta ignorada** em vez de pular os arquivos dela um a um: a
+  varredura completa desse projeto caiu para 55 s. Nos repositórios de referência,
+  os arquivos admitidos ficaram idênticos com e sem poda. Uma mudança de
+  semântica, igual ao git: negação genérica (`!.env.example`) não reinclui mais
+  arquivo **dentro** de pasta excluída, e arquivo de ignore de dentro de pasta
+  excluída não é lido; negação com caminho (`!build/keep.txt`) e `--include`
+  continuam valendo. Contra o código anterior, em cinco repositórios reais,
+  quatro deram exatamente os mesmos arquivos admitidos, de 2,5x a 6x mais
+  rápido; no quinto, um `!README.md` no `.gitignore` trazia 659 `README.md` de
+  pacotes do `node_modules` para o índice, e agora não traz mais. Ver
+  `docs/02-seguranca.md`.
 - **"Este Python foi compilado sem FTS5" aparecia com o banco apenas ocupado.**
   A sonda de FTS5 criava uma tabela no próprio banco a cada conexão de escrita; com
   outro processo escrevendo (o painel indexando, um hook de commit) por mais que o
