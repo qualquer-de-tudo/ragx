@@ -1,7 +1,8 @@
 import { useId, type MouseEvent } from 'react'
 import type { JobKind, JobView, ProjectSnapshot } from '../../types/ragx-bridge'
-import { STATE_ACTION, jobStateLabel, STATE_LABEL, STATE_TONE, type ProjectState } from '../../state'
+import { STATE_LABEL, STATE_TONE, type ProjectState } from '../../state'
 import { formatCompact, formatEta, formatRelative } from '../../format'
+import { ProjectActionButton, ProjectNumbers } from './ProjectBits'
 import { Badge } from '../shell/Badge'
 import { LivePill } from '../shell/LivePill'
 
@@ -93,37 +94,9 @@ export function ProjectCard({
   const running = job && job.state === 'running' && job.total !== null && job.total > 0 ? job : null
   const progressDone = running ? Math.min(running.done ?? 0, running.total ?? 0) : 0
 
-  const action = STATE_ACTION[state]
-
-  let button
-  if (state === 'indexing') {
-    button = (
-      <button type="button" className="btn btn-block" disabled>
-        Indexando…
-      </button>
-    )
-  } else if (action === null || action.kind === 'open') {
-    // Sem ação de fila (pasta ausente, erro, atualizado): o botão abre o detalhe.
-    button = (
-      <button type="button" className="btn btn-block" onClick={open}>
-        {action?.label ?? 'Ver detalhes'}
-      </button>
-    )
-  } else {
-    const kind = action.kind
-    const busy = active ? jobStateLabel(active) : null
-    button = (
-      <button
-        type="button"
-        className="btn btn-primary btn-block"
-        disabled={busy !== null}
-        aria-label={busy ? `${action.label}: ${busy.toLowerCase()}` : undefined}
-        onClick={() => onAction(kind)}
-      >
-        {busy ?? action.label}
-      </button>
-    )
-  }
+  const button = (
+    <ProjectActionButton project={project} state={state} active={active} onOpen={open} onAction={onAction} block />
+  )
 
   return (
     <article className="card project-card" aria-labelledby={titleId} onClick={onCardClick}>
@@ -148,6 +121,8 @@ export function ProjectCard({
       <p className="project-card-line">
         {project.index ? `Indexado ${formatRelative(project.index.finishedAt)}` : 'Ainda não indexado com esta versão'}
       </p>
+
+      <ProjectNumbers project={project} />
 
       <div className="project-card-emb">
         <div

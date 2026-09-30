@@ -36,6 +36,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   de tirar da lista. O interruptor do topo continua ligando e desligando todos.
   Na CLI: `ragx claude profiles list|add|remove` (as pastas ficam em
   `~/.ragx/claude-profiles.json`) e `ragx claude on|off --profile <nome>`.
+- **Lista de projetos com resumo, números, ordenação e visão em lista.** No
+  topo, o resumo do hub: projetos, chamadas MCP nas últimas 24 h, tokens
+  economizados em 14 dias e quantos pedem atenção. Cada card mostra a economia,
+  as chamadas em 24 h e os documentos. Dá para ordenar por nome, uso recente ou
+  estado (o que pede atenção primeiro), e alternar entre a grade de cards e uma
+  lista compacta em tabela, com a mesma ação do card; a escolha fica lembrada
+  enquanto o painel estiver aberto.
 
 ### Alterado
 

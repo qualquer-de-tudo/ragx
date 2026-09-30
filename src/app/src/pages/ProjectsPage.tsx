@@ -10,9 +10,15 @@ import {
   lastFailureFor,
   type ProjectState,
 } from '../state'
-import { commonBase, foldForSearch, parentHint } from '../format'
+import { commonBase, foldForSearch, formatCompact, formatNumber, formatPercent, formatRelative, parentHint } from '../format'
 import { ProjectCard } from '../components/project/ProjectCard'
 import { AddProjectDialog } from '../components/project/AddProjectDialog'
+import { ProjectActionButton } from '../components/project/ProjectBits'
+import { Badge } from '../components/shell/Badge'
+import { LivePill } from '../components/shell/LivePill'
+import { Stat } from '../components/shell/Card'
+import { STATE_LABEL, STATE_TONE } from '../state'
+import { SORT_LABEL, listPrefs, needsAttention, savingsRatio, sortRows, tokensSaved, type ListView, type SortKey } from '../projectMetrics'
 
 type Filter = 'all' | 'outdated' | 'problem'
 
@@ -118,6 +124,16 @@ export function ProjectsPage({
   onOpen: (id: string) => void
 }) {
   const [filter, setFilter] = useState<Filter>('all')
+  const [sort, setSortState] = useState<SortKey>(listPrefs.sort)
+  const [view, setViewState] = useState<ListView>(listPrefs.view)
+  const setSort = (k: SortKey) => {
+    setSortState(k)
+    listPrefs.setSort(k)
+  }
+  const setView = (v: ListView) => {
+    setViewState(v)
+    listPrefs.setView(v)
+  }
   const [adding, setAdding] = useState(false)
   const { notice, show } = useNotice()
 
@@ -151,7 +167,14 @@ export function ProjectsPage({
     FILTERS.map((f) => [f.id, searched.filter((r) => f.test(r.state)).length]),
   ) as Record<Filter, number>
   const test = FILTERS.find((f) => f.id === filter)!.test
-  const shown = searched.filter((r) => test(r.state))
+  const shown = sortRows(searched.filter((r) => test(r.state)), sort)
+
+  // Resumo de todos os projetos (não da busca): é a foto do hub inteiro.
+  const resumo = {
+    chamadas: projects.reduce((n, p) => n + p.telemetry.totalCalls, 0),
+    economizados: projects.reduce((n, p) => n + tokensSaved(p), 0),
+    atencao: rows.filter((r) => needsAttention(r.state)).length,
+  }
 
   return (
     <section className="page">
@@ -160,6 +183,106 @@ export function ProjectsPage({
         <SegmentedFilter value={filter} counts={counts} onChange={setFilter} />
       </header>
 
+      {projects.length > 0 && (
+        <div className="stats stats-4 projects-summary" aria-label="Resumo dos projetos">
+          <Stat label="Projetos" value={formatNumber(projects.length)} />
+          <Stat label="Chamadas MCP" value={formatNumber(resumo.chamadas)} note="últimas 24 h" />
+          <Stat label="Tokens economizados" value={formatCompact(resumo.economizados)} note="últimos 14 dias" />
+          <Stat
+            label="Pedem atenção"
+            value={formatNumber(resumo.atencao)}
+            note={resumo.atencao === 0 ? 'tudo em dia' : 'defasados ou com problema'}
+          />
+        </div>
+      )}
+
+      <div className="projects-toolbar">
+        <label className="projects-sort">
+          <span className="dim">Ordenar por</span>
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+            {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
+              <option key={k} value={k}>
+                {SORT_LABEL[k]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="segmented" role="radiogroup" aria-label="Visualização">
+          {(['grade', 'lista'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={view === v}
+              className="segmented-item"
+              onClick={() => setView(v)}
+            >
+              {v === 'grade' ? 'Grade' : 'Lista'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'lista' ? (
+        <>
+          <button type="button" className="btn projects-add-inline" onClick={() => setAdding(true)}>
+            + Adicionar projeto
+          </button>
+          {shown.length > 0 && (
+            <div className="projects-table-wrap">
+              <table className="projects-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Projeto</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" className="num">Economia</th>
+                    <th scope="col" className="num">Chamadas 24 h</th>
+                    <th scope="col" className="num">
+                      <abbr title="Documentos">Docs</abbr>
+                    </th>
+                    <th scope="col">Indexado</th>
+                    <th scope="col">
+                      <span className="sr-only">Ação</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((r) => {
+                    const ratio = savingsRatio(r.project)
+                    return (
+                      <tr key={r.project.id}>
+                        <th scope="row">
+                          <button type="button" className="link-button" onClick={() => onOpen(r.project.id)}>
+                            {r.project.name}
+                          </button>
+                          {liveIds?.has(r.project.id) && <LivePill />}
+                          <span className="projects-table-hint dim">{r.hint ?? 'sem dados'}</span>
+                        </th>
+                        <td>
+                          <Badge tone={STATE_TONE[r.state]}>{STATE_LABEL[r.state]}</Badge>
+                        </td>
+                        <td className="num">{ratio === null ? 'sem uso' : formatPercent(ratio)}</td>
+                        <td className="num">{formatNumber(r.project.telemetry.totalCalls)}</td>
+                        <td className="num">{r.project.counts ? formatCompact(r.project.counts.documents) : 'sem dados'}</td>
+                        <td className="dim">{r.project.index ? formatRelative(r.project.index.finishedAt) : 'não indexado'}</td>
+                        <td className="projects-table-action">
+                          <ProjectActionButton
+                            project={r.project}
+                            state={r.state}
+                            active={activeAction(jobs, r.project.id, r.state)}
+                            onOpen={() => onOpen(r.project.id)}
+                            onAction={(kind) => queueAction(r.project, kind)}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      ) : (
       <ul className="project-grid" aria-label="Projetos">
         <li>
           <button type="button" className="add-card" onClick={() => setAdding(true)}>
@@ -186,6 +309,7 @@ export function ProjectsPage({
           </li>
         ))}
       </ul>
+      )}
 
       {shown.length === 0 && (
         <p className="empty" role="status">

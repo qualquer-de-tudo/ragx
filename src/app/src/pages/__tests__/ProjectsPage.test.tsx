@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { ProjectsPage } from '../ProjectsPage'
 import { installBridge, job, snap } from '../../test/snap'
+import { listPrefs } from '../../projectMetrics'
 import type { JobView, ProjectSnapshot } from '../../types/ragx-bridge'
 
 // Um projeto por estado (a ordem das regras de `deriveProjectState` decide).
@@ -367,5 +368,66 @@ describe('ProjectsPage: em uso agora', () => {
     render(<ProjectsPage projects={ALL} jobs={[]} query="" liveIds={new Set([ALL[0].id])} onOpen={vi.fn()} />)
     expect(within(card(ALL[0].name)).getByText('em uso agora')).toBeInTheDocument()
     expect(within(card(ALL[1].name)).queryByText('em uso agora')).not.toBeInTheDocument()
+  })
+})
+
+describe('ProjectsPage: resumo, números, ordenar e grade/lista (RAGX-0127)', () => {
+  const tele = (calls: number, lastCallAt: string | null, baseline = 0, delivered = 0) => ({
+    callsByTool: [], totalCalls: calls, tokensDelivered: delivered, lastCallAt,
+    savings: { days: [], baseline, delivered, calls },
+  })
+  const USO: ProjectSnapshot[] = [
+    snap({ id: 'a', name: 'Alfa', path: 'C:/p/alfa', telemetry: tele(0, null) }),
+    snap({ id: 'b', name: 'Beta', path: 'C:/p/beta', telemetry: tele(5, '2026-09-23T11:00:00Z', 10000, 800) }),
+    snap({ id: 'c', name: 'Gama', path: 'C:/p/gama', lastError: 'embedder fora', telemetry: tele(2, '2026-09-23T09:00:00Z') }),
+  ]
+
+  afterEach(() => {
+    listPrefs.setSort('nome')
+    listPrefs.setView('grade')
+  })
+
+  const nomes = () => screen.getAllByRole('article').map((a) => within(a).getByRole('heading').textContent)
+
+  it('resumo no topo soma o hub inteiro', () => {
+    render(<ProjectsPage projects={USO} jobs={[]} query="" onOpen={vi.fn()} />)
+    const resumo = within(screen.getByLabelText('Resumo dos projetos'))
+    expect(resumo.getByText('Projetos').nextSibling).toHaveTextContent('3')
+    expect(resumo.getByText('Chamadas MCP').nextSibling).toHaveTextContent('7')
+    expect(resumo.getByText('Tokens economizados').nextSibling).toHaveTextContent('9.200')
+    expect(resumo.getByText('Pedem atenção').nextSibling).toHaveTextContent('1')
+  })
+
+  it('o card mostra economia, chamadas e documentos; sem medição, "sem uso"', () => {
+    render(<ProjectsPage projects={USO} jobs={[]} query="" onOpen={vi.fn()} />)
+    const beta = within(card('Beta'))
+    expect(beta.getByText('Economia').nextSibling).toHaveTextContent('92%')
+    expect(beta.getByText('Chamadas 24 h').nextSibling).toHaveTextContent('5')
+    expect(within(card('Alfa')).getByText('Economia').nextSibling).toHaveTextContent('sem uso')
+  })
+
+  it('ordena por uso recente e por estado, com o nome como desempate', () => {
+    render(<ProjectsPage projects={USO} jobs={[]} query="" onOpen={vi.fn()} />)
+    expect(nomes()).toEqual(['Alfa', 'Beta', 'Gama'])
+    fireEvent.change(screen.getByRole('combobox', { name: /Ordenar por/ }), { target: { value: 'uso' } })
+    expect(nomes()).toEqual(['Beta', 'Gama', 'Alfa'])
+    fireEvent.change(screen.getByRole('combobox', { name: /Ordenar por/ }), { target: { value: 'estado' } })
+    expect(nomes()[0]).toBe('Gama')
+  })
+
+  it('lista compacta: uma linha por projeto com os números e a ação; a escolha fica lembrada', () => {
+    const onOpen = vi.fn()
+    const { unmount } = render(<ProjectsPage projects={USO} jobs={[]} query="" onOpen={onOpen} />)
+    fireEvent.click(screen.getByRole('radio', { name: 'Lista' }))
+    const linhas = within(screen.getByRole('table')).getAllByRole('row').slice(1)
+    expect(linhas).toHaveLength(3)
+    const beta = within(linhas[1])
+    expect(beta.getByText('92%')).toBeInTheDocument()
+    fireEvent.click(beta.getByRole('button', { name: 'Beta' }))
+    expect(onOpen).toHaveBeenCalledWith('b')
+    unmount()
+
+    render(<ProjectsPage projects={USO} jobs={[]} query="" onOpen={vi.fn()} />)
+    expect(screen.getByRole('table')).toBeInTheDocument()
   })
 })

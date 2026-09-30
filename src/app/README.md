@@ -15,7 +15,12 @@ instalado no sistema. Tema sempre escuro; título da janela "RAGX Painel".
   branch atual (com aviso quando o índice é de outra branch), há quanto
   tempo foi indexado, a cobertura de embeddings e um botão que faz o que o
   estado pede. Um filtro segmentado separa "Todos", "Defasados" e "Com
-  problema"; a busca no topo ignora maiúsculas e acentos. "Adicionar
+  problema"; a busca no topo ignora maiúsculas e acentos. No topo, o
+  resumo do hub (projetos, chamadas MCP em 24 h, tokens economizados em 14
+  dias, quantos pedem atenção); cada card mostra economia, chamadas em 24 h
+  e documentos. "Ordenar por" (nome, uso recente, estado) e "Grade/Lista"
+  (tabela compacta com a mesma ação do card) ficam lembrados enquanto o
+  painel estiver aberto. "Adicionar
   projeto" pede uma pasta, lista os projetos do RAGX encontrados dentro
   dela e instala os hooks de git por padrão.
 - **Detalhe do projeto**: quatro abas. **Visão geral**: os números do
