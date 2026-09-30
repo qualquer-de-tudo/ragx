@@ -800,7 +800,8 @@ export function defaultSpawn(): SpawnFn {
     const child = nodeSpawn(resolvedCmd, args, {
       cwd: workDir,
       windowsHide: true,
-      env: { ...process.env, COLUMNS: '500', ...opts?.env },
+      // RAGX_CALLER: tarefa da fila do painel não é consulta de quem está no terminal.
+      env: { ...process.env, COLUMNS: '500', RAGX_CALLER: 'painel', ...opts?.env },
     })
 
     let outCb: (line: string) => void = () => {}

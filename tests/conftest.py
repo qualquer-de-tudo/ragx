@@ -47,6 +47,12 @@ def hub_isolado(tmp_path_factory: pytest.TempPathFactory) -> None:
     # CLAUDE_CONFIG_DIR apontando para a config REAL da pessoa. Herdado aqui, o
     # `ragx claude on` dos testes gravaria nela, apesar do HOME redirecionado.
     os.environ.pop("CLAUDE_CONFIG_DIR", None)
+    # Rodando dentro do Claude Code, estas dizem "chamado pelo Claude Code" aos
+    # logs de atividade (`ragx.clients.registry.claude_origin`), e a mesma
+    # suíte gravaria linhas diferentes dentro e fora dele. Quem testa a
+    # origem liga as variáveis de propósito.
+    for var in ("CLAUDECODE", "CLAUDE_CODE_SESSION_ID", "RAGX_CALLER"):
+        os.environ.pop(var, None)
 
     # Com HOME redirecionado, `expanduser` só acerta se o cache do pathlib não
     # tiver congelado o valor antigo — conferimos em vez de torcer.

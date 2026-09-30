@@ -190,6 +190,29 @@ def hint_text(start: Path | None = None) -> str:
     return _texto_pasta_pai(cfg)
 
 
+def record_session_start(start: Path | None = None) -> None:
+    """Uma sessão do Claude Code abriu num projeto indexado: vira evento na tela de atividade.
+
+    Só quando o próprio Claude Code roda o hook (a origem diz qual perfil e qual
+    sessão); rodar `ragx claude hint` à mão no terminal não é início de sessão.
+    """
+    from ragx.clients.registry import claude_origin
+    from ragx.config import load_config
+    from ragx.diagnostics import log_cli_call
+    from ragx.storage.db import utcnow
+
+    if not claude_origin():
+        return
+    cfg = load_config(start)
+    if not cfg.db_path.exists():
+        return
+    log_cli_call(cfg.state_dir, {
+        "ts": utcnow(),
+        "command": "session_start",
+        "project": cfg.project.name or cfg.root.name,
+    })
+
+
 def _status(cfg: Any) -> dict[str, Any]:
     try:
         dados = json.loads((cfg.state_dir / "status.json").read_text(encoding="utf-8"))

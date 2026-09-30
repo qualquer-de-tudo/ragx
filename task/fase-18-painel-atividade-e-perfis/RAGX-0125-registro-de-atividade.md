@@ -6,7 +6,7 @@
 | **Prioridade** | P1 |
 | **Estimativa** | 0,5d |
 | **Depende de** | — |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -17,14 +17,14 @@ rastro nenhum.
 
 ## Entregáveis
 
-- [ ] `mcp.jsonl` ganha `client` (nome do cliente MCP, do `initialize`) e
+- [x] `mcp.jsonl` ganha `client` (nome do cliente MCP, do `initialize`) e
       `profile` (perfil do Claude Code pelo `CLAUDE_CONFIG_DIR` herdado: `padrão`
       sem a variável, o sufixo de `~/.claude-<nome>`, ou o nome da pasta)
-- [ ] `.ragx/logs/cli.jsonl`: uma linha por comando de consulta rodado à mão
+- [x] `.ragx/logs/cli.jsonl`: uma linha por comando de consulta rodado à mão
       (`search`, `context`, `graph-search`, `chunk`, `trial`), com `ts`,
       `command`, `ms`, `ok` e `project`; nunca a consulta nem os argumentos
-- [ ] `ragx claude hint` registra `session_start` (com o perfil) quando há índice
-- [ ] Chamadas feitas pelo painel não entram (`RAGX_CALLER=painel`), senão o
+- [x] `ragx claude hint` registra `session_start` (com o perfil) quando há índice
+- [x] Chamadas feitas pelo painel não entram (`RAGX_CALLER=painel`), senão o
       `ragx status` a cada poucos segundos afogaria o feed
 
 ## Fora de escopo
@@ -35,9 +35,9 @@ rastro nenhum.
 
 ## Critérios de aceite
 
-- [ ] Chamada MCP de um Claude com `CLAUDE_CONFIG_DIR=~/.claude-empresa` grava `profile: "empresa"`
-- [ ] `ragx search x` no terminal grava uma linha sem a palavra `x`
-- [ ] Comando rodado pelo painel não grava nada
+- [x] Chamada MCP de um Claude com `CLAUDE_CONFIG_DIR=~/.claude-empresa` grava `profile: "empresa"`
+- [x] `ragx search x` no terminal grava uma linha sem a palavra `x`
+- [x] Comando rodado pelo painel não grava nada
 
 ## Testes
 
@@ -46,6 +46,6 @@ sem a consulta; nada com `RAGX_CALLER=painel`) e do `hint`.
 
 ## Definition of Done
 
-- [ ] Critérios verificados
-- [ ] CHANGELOG na mesma alteração
-- [ ] docs/14-cli.md atualizado
+- [x] Critérios verificados
+- [x] CHANGELOG na mesma alteração
+- [x] docs/09-mcp.md atualizado (seção Observabilidade)

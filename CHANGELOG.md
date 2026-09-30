@@ -9,6 +9,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **O log de atividade diz quem chamou e o que a CLI fez.** Cada linha de
+  `.ragx/logs/mcp.jsonl` chamada pelo Claude Code passa a trazer `client`,
+  `profile` (o perfil, pelo `CLAUDE_CONFIG_DIR`: `padrão`, `empresa`...) e
+  `session`. Os comandos de consulta rodados à mão (`search`, `context`,
+  `graph-search`, `chunk`, `trial`) e o início de uma sessão do Claude Code num
+  projeto indexado vão para `.ragx/logs/cli.jsonl`, sem a consulta nem os
+  argumentos. O que o próprio painel roda não entra (`RAGX_CALLER=painel`).
+  Base da tela de atividade (RAGX-0126).
+
 ### Alterado
 
 - **Detalhe do projeto em abas.** Os onze blocos empilhados numa página só viraram

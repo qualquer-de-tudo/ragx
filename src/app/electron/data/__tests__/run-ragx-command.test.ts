@@ -37,6 +37,7 @@ describe('runRagxCommand', () => {
     expect(spawn).toHaveBeenCalledWith(expect.any(String), ['trial', '--json'], {
       cwd: 'C:\\projeto',
       windowsHide: true,
+      env: expect.objectContaining({ RAGX_CALLER: 'painel' }),
     })
   })
 

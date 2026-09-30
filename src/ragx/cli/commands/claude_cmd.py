@@ -153,9 +153,10 @@ def hint() -> None:
     import sys
 
     try:
-        from ragx.clients.claude_hint import hint_text
+        from ragx.clients.claude_hint import hint_text, record_session_start
 
         texto = hint_text()
+        record_session_start()
     except Exception:
         return
     if texto:

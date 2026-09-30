@@ -289,14 +289,27 @@ diretório que não é um projeto RAGX) não gera log nem cria `.ragx/` só por
 causa de uma chamada:
 
 ```json
-{"ts":"2026-09-15T12:31:02Z","tool":"build_context","ms":84,"project":"ragx","tokens_delivered":3847}
+{"ts":"2026-09-15T12:31:02Z","tool":"build_context","ms":84,"project":"ragx","tokens_delivered":3847,"baseline_tokens":26290,"client":"claude-code","profile":"empresa","session":"0c1f9a2e"}
 ```
 
 Cada linha registra `ts` (timestamp), `tool` (ferramenta chamada), `ms` (latência em
 milissegundos), `project` (projeto), e para `build_context` (quando bem-sucedido)
-`tokens_delivered` (tokens entregues ao agente). Query e argumentos nunca são
-gravados, evitando que o log vire uma cópia do que o time está perguntando sobre
-o próprio código.
+`tokens_delivered` (tokens entregues ao agente) e `baseline_tokens` (o tamanho dos
+arquivos inteiros de onde o contexto saiu). Quando quem chama é o Claude Code, entram
+também `client`, `profile` (o perfil, pelo `CLAUDE_CONFIG_DIR`: `padrão`, `empresa`
+de `~/.claude-empresa`...) e `session` (os 8 primeiros caracteres da sessão). Essa
+origem vem do ambiente do processo e é gravada fora do pacote MCP
+(`ragx.diagnostics`), que não lê o ambiente. Fora do Claude Code esses campos não
+aparecem: sem as variáveis dele não dá para saber quem chamou. Query e argumentos
+nunca são gravados, evitando que o log vire uma cópia do que o time está
+perguntando sobre o próprio código.
+
+Os comandos de consulta da CLI rodados à mão (`search`, `context`, `graph-search`,
+`chunk`, `trial`) e o início de uma sessão do Claude Code num projeto indexado (pela
+dica de `ragx claude hint`) vão para `.ragx/logs/cli.jsonl`, no mesmo formato:
+`command` no lugar de `tool`, e `ok`. O que o próprio painel roda (`status`, `trial`
+pelo botão) leva `RAGX_CALLER=painel` e não entra. É o que alimenta a tela de
+atividade do painel.
 
 ## Critério de aceite da Fase 6
 

@@ -38,12 +38,38 @@ def log_exception(state_dir: Path, scope: str, exc: BaseException) -> None:
 
 
 def log_mcp_call(state_dir: Path, entry: dict[str, Any]) -> None:
-    """Grava telemetria de chamada MCP. Falha de log nunca vira falha adicional."""
+    """Grava telemetria de chamada MCP. Falha de log nunca vira falha adicional.
+
+    A origem (Claude Code, qual perfil, qual sessão) entra aqui e não no
+    servidor: vem do ambiente do processo, e `ragx.mcp` não lê o ambiente
+    (ADR-0006). É o que deixa a tela de atividade do painel dizer quem chamou.
+    """
+    _append(state_dir, "mcp.jsonl", {**entry, **_origin()})
+
+
+def log_cli_call(state_dir: Path, entry: dict[str, Any]) -> None:
+    """Uma linha por comando de consulta da CLI (`.ragx/logs/cli.jsonl`).
+
+    Nunca a consulta nem os argumentos: o painel mostra QUE houve uma busca,
+    quando e por quem, não o que se buscou.
+    """
+    _append(state_dir, "cli.jsonl", {**entry, **_origin()})
+
+
+def _origin() -> dict[str, str]:
+    try:
+        from ragx.clients.registry import claude_origin
+
+        return claude_origin()
+    except Exception:
+        return {}
+
+
+def _append(state_dir: Path, name: str, entry: dict[str, Any]) -> None:
     try:
         folder = Path(state_dir) / "logs"
         folder.mkdir(parents=True, exist_ok=True)
-        path = folder / "mcp.jsonl"
-        with path.open("a", encoding="utf-8", newline="\n") as f:
+        with (folder / name).open("a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass

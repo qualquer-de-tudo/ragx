@@ -17,7 +17,9 @@ export function runRagxCommand(cwd: string, args: string[], opts: { timeoutMs?: 
   const timeoutMs = opts.timeoutMs ?? TIMEOUT_MS
   return new Promise((resolve, reject) => {
     const cmd = ragxCommand()
-    const child = spawn(cmd, args, { cwd, windowsHide: true })
+    // RAGX_CALLER: o painel roda `ragx status` a cada poucos segundos; sem a
+    // marca, cada um viraria uma linha na tela de atividade (ver ragx.cli.main).
+    const child = spawn(cmd, args, { cwd, windowsHide: true, env: { ...process.env, RAGX_CALLER: 'painel' } })
     // `StringDecoder`: um caractere multibyte partido entre dois pedaços do
     // stream não vira lixo (o que `chunk.toString()` por pedaço fazia).
     const outDecoder = new StringDecoder('utf8')

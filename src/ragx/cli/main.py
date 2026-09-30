@@ -140,16 +140,69 @@ def _invocar() -> None:
     typer.main.get_command(app)(windows_expand_args=False)
 
 
+#: Comandos de CONSULTA que entram no log de atividade (`.ragx/logs/cli.jsonl`).
+#: Manutenção (`index`, `sync`...) já fica no histórico de indexações.
+_COMANDOS_REGISTRADOS = frozenset({"search", "context", "graph-search", "chunk", "trial"})
+
+
+def _comando(argv: list[str]) -> str | None:
+    return next((a for a in argv if not a.startswith("-")), None)
+
+
+def _registrar(inicio: float, codigo: int) -> None:
+    """Deixa a tela de atividade do painel ver uma consulta feita no terminal.
+
+    Grava o nome do comando, o tempo e se deu certo; nunca a consulta nem os
+    argumentos. O próprio painel roda a CLI o tempo todo (`status`, `trial`),
+    e marca isso com `RAGX_CALLER=painel`: essas não entram.
+    """
+    import os
+    import time
+
+    comando = _comando(sys.argv[1:])
+    if comando not in _COMANDOS_REGISTRADOS or os.environ.get("RAGX_CALLER") == "painel":
+        return
+    try:
+        from ragx.config import load_config
+        from ragx.diagnostics import log_cli_call
+        from ragx.storage.db import utcnow
+
+        cfg = load_config()
+        if not cfg.db_path.exists():
+            return
+        log_cli_call(cfg.state_dir, {
+            "ts": utcnow(),
+            "command": comando,
+            "ms": round((time.monotonic() - inicio) * 1000, 1),
+            "ok": codigo == 0,
+            "project": cfg.project.name or cfg.root.name,
+        })
+    except Exception:
+        pass
+
+
 def main() -> None:
+    import time
+
     err = Console(stderr=True)
+    inicio = time.monotonic()
+    codigo = 1
     try:
         _invocar()
+        codigo = 0
+    except SystemExit as exc:
+        codigo = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
+        raise
     except RagxError as exc:
+        codigo = exc.exit_code
         err.print(f"[bold red]erro:[/] {exc}")
         raise SystemExit(exc.exit_code) from exc
     except KeyboardInterrupt:
+        codigo = 130
         err.print("[yellow]interrompido[/]")
         raise SystemExit(130) from None
+    finally:
+        _registrar(inicio, codigo)
 
 
 if __name__ == "__main__":

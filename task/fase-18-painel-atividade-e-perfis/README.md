@@ -10,7 +10,7 @@ e pasta adicionada à mão, quantos a pessoa quiser.
 
 | ID | Tarefa | Prio | Est. | Status |
 |---|---|---|---|---|
-| [RAGX-0125](RAGX-0125-registro-de-atividade.md) | Registro de atividade: cliente e perfil no MCP, comandos da CLI | P1 | 0,5d | `todo` |
+| [RAGX-0125](RAGX-0125-registro-de-atividade.md) | Registro de atividade: cliente e perfil no MCP, comandos da CLI | P1 | 0,5d | `done` |
 | [RAGX-0126](RAGX-0126-tela-de-atividade-ao-vivo.md) | Tela "Atividade" ao vivo e sinal "em uso agora" | P1 | 1d | `todo` |
 | [RAGX-0127](RAGX-0127-lista-de-projetos.md) | Lista de projetos: resumo, números, ordenar/filtrar, grade/lista | P2 | 1d | `todo` |
 | [RAGX-0128](RAGX-0128-perfis-do-claude-no-painel.md) | Perfis do Claude Code em Conexões | P1 | 1d | `todo` |
