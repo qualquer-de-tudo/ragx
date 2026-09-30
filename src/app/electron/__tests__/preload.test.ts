@@ -53,6 +53,9 @@ describe('preload', () => {
         'runSecurityScan',
         'runTrial',
         'setClaudeIntegration',
+        'setClaudeProfile',
+        'addClaudeProfile',
+        'removeClaudeProfile',
         'setOnboardingDone',
       ].sort(),
     )

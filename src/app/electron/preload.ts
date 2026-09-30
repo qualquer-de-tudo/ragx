@@ -56,6 +56,10 @@ const ragx: RagxBridge = {
   getClaudeIntegration: (): Promise<ClaudeIntegration> => ipcRenderer.invoke('ragx:getClaudeIntegration'),
   setClaudeIntegration: (enabled: boolean): Promise<ClaudeIntegration> =>
     ipcRenderer.invoke('ragx:setClaudeIntegration', enabled),
+  setClaudeProfile: (id: string, enabled: boolean): Promise<ClaudeIntegration> =>
+    ipcRenderer.invoke('ragx:setClaudeProfile', id, enabled),
+  addClaudeProfile: (token: string): Promise<ClaudeIntegration> => ipcRenderer.invoke('ragx:addClaudeProfile', token),
+  removeClaudeProfile: (id: string): Promise<ClaudeIntegration> => ipcRenderer.invoke('ragx:removeClaudeProfile', id),
 }
 
 contextBridge.exposeInMainWorld('ragx', ragx)

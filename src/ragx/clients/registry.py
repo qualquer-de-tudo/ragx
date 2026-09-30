@@ -67,6 +67,8 @@ class Client:
     #: `~/.claude.json` para quem nunca usou o Claude Code. Para esses casos a
     #: prova é outra: o próprio arquivo, ou um diretório irmão.
     markers: tuple[Path, ...] = ()
+    #: Perfil do Claude Code que a pessoa adicionou à mão (`ragx claude profiles add`).
+    added: bool = False
 
     @property
     def installed(self) -> bool:
@@ -117,7 +119,9 @@ def _claude_code_profiles(home: Path) -> list[Client]:
 
     Um diretório `~/.claude-*` só conta se tem `.claude.json`: é a prova de que
     o Claude Code já rodou com ele. A variável de ambiente, quando existe, conta
-    se o diretório existe.
+    se o diretório existe. E conta toda pasta que a pessoa adicionou à mão
+    (`~/.ragx/claude-profiles.json`), onde quer que esteja: foi ela quem disse
+    que é um perfil.
     """
     perfis = [
         Client(
@@ -127,30 +131,94 @@ def _claude_code_profiles(home: Path) -> list[Client]:
             markers=(home / ".claude",),
         )
     ]
-    candidatos: list[Path] = []
+    candidatos: list[tuple[Path, bool]] = []
     env = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
     if env:
-        candidatos.append(Path(os.path.expanduser(env)))
+        candidatos.append((Path(os.path.expanduser(env)), False))
     with contextlib.suppress(OSError):
         candidatos.extend(
-            sorted(p for p in home.glob(".claude-*") if (p / ".claude.json").is_file())
+            (p, False) for p in sorted(home.glob(".claude-*")) if (p / ".claude.json").is_file()
         )
+    candidatos.extend((p, True) for p in added_profile_dirs(home))
 
-    vistos: set[str] = set()
-    for pasta in candidatos:
-        chave = os.path.normcase(os.path.abspath(pasta))
+    vistos = {_chave(home / ".claude"), _chave(home)}
+    ids = {CLAUDE_CODE}
+    for pasta, added in candidatos:
+        chave = _chave(pasta)
         if chave in vistos or not pasta.is_dir():
             continue
         vistos.add(chave)
         nome = profile_name(str(pasta))
+        # Duas pastas `cliente` em lugares diferentes não podem virar o mesmo id.
+        base, n = nome, 2
+        while f"{CLAUDE_CODE}:{nome}" in ids:
+            nome, n = f"{base}-{n}", n + 1
+        ids.add(f"{CLAUDE_CODE}:{nome}")
         perfis.append(
             Client(
                 f"{CLAUDE_CODE}:{nome}", f"Claude Code ({nome})",
                 pasta / ".claude.json", "json", "mcpServers",
-                markers=(pasta,),
+                markers=(pasta,), added=added,
             )
         )
     return perfis
+
+
+def _chave(pasta: Path) -> str:
+    return os.path.normcase(os.path.abspath(pasta))
+
+
+def added_profiles_file(home: Path | None = None) -> Path:
+    """Onde ficam as pastas de perfil do Claude Code adicionadas à mão."""
+    return (home or _home()) / ".ragx" / "claude-profiles.json"
+
+
+def added_profile_dirs(home: Path | None = None) -> list[Path]:
+    """As pastas adicionadas à mão. Arquivo ausente ou ilegível: nenhuma, sem erro."""
+    try:
+        dados = json.loads(added_profiles_file(home).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    lista = dados.get("profiles") if isinstance(dados, dict) else None
+    if not isinstance(lista, list):
+        return []
+    return [Path(p) for p in lista if isinstance(p, str) and p.strip()]
+
+
+def _gravar_adicionados(pastas: list[Path], home: Path | None = None) -> None:
+    alvo = added_profiles_file(home)
+    alvo.parent.mkdir(parents=True, exist_ok=True)
+    conteudo = json.dumps({"profiles": [str(p) for p in pastas]}, indent=2, ensure_ascii=False)
+    _escrever(alvo, conteudo + "\n")
+
+
+def add_claude_profile(pasta: Path) -> tuple[bool, str]:
+    """Adiciona uma pasta de perfil do Claude Code. Devolve (mudou, mensagem)."""
+    home = _home()
+    pasta = Path(os.path.abspath(os.path.expanduser(str(pasta))))
+    if not pasta.is_dir():
+        raise ValueError(f"{pasta} não existe ou não é uma pasta")
+    if _chave(pasta) in (_chave(home / ".claude"), _chave(home)):
+        raise ValueError(f"{pasta} é o perfil padrão do Claude Code; ele já está na lista")
+    ja = next((c for c in _claude_code_profiles(home) if c.id != CLAUDE_CODE and _chave(c.config.parent) == _chave(pasta)), None)
+    if ja is not None:
+        return False, f"{pasta} já está na lista como {ja.label}"
+    _gravar_adicionados([*added_profile_dirs(home), pasta], home)
+    novo = next(c for c in _claude_code_profiles(home) if _chave(c.config.parent) == _chave(pasta))
+    return True, f"{novo.label} adicionado ({pasta})"
+
+
+def remove_claude_profile(pasta: Path) -> tuple[bool, str]:
+    """Tira uma pasta da lista dos adicionados. A configuração dela não é tocada."""
+    home = _home()
+    chave = _chave(Path(os.path.expanduser(str(pasta))))
+    atuais = added_profile_dirs(home)
+    restantes = [p for p in atuais if _chave(p) != chave]
+    if len(restantes) == len(atuais):
+        return False, f"{pasta} não estava entre os perfis adicionados"
+    _gravar_adicionados(restantes, home)
+    return True, f"{pasta} saiu da lista; a configuração dela não foi alterada"
+
 
 
 def profile_name(config_dir: str | None) -> str:

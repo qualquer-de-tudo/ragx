@@ -35,8 +35,9 @@ def _comandos() -> set[str]:
         for grupo in typer_app.registered_groups:
             nome = grupo.name or ""
             if nome and grupo.typer_instance is not None:
-                out.add(nome)
-                anda(grupo.typer_instance, f"{nome} ")
+                # Prefixo acumulado: `claude profiles add`, não `profiles add`.
+                out.add(f"{prefixo}{nome}")
+                anda(grupo.typer_instance, f"{prefixo}{nome} ")
 
     anda(app)
     return out

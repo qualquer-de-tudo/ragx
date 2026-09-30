@@ -189,3 +189,79 @@ def test_comando_hint_escreve_no_stdout_e_nunca_falha(tmp_path: Path, monkeypatc
     monkeypatch.setattr("ragx.clients.claude_hint.hint_text", lambda *a, **k: 1 / 0)
     r = runner.invoke(app, ["claude", "hint"])
     assert r.exit_code == 0 and r.output == ""
+
+
+# ── perfis adicionados à mão e --profile (RAGX-0128) ────────────────────
+def test_pasta_adicionada_entra_na_lista_e_liga_so_ela(casa: Path, tmp_path: Path) -> None:
+    empresa = _perfil(casa, "empresa")
+    outra = tmp_path / "contas" / "cliente"
+    outra.mkdir(parents=True)
+
+    r = runner.invoke(app, ["claude", "profiles", "add", str(outra), "--json"])
+    assert r.exit_code == 0, r.output
+    dados = json.loads(r.output)
+    assert dados["changed"] is True
+    perfil = next(p for p in dados["profiles"] if p["name"] == "cliente")
+    assert perfil["added"] is True and perfil["enabled"] is False
+
+    r = runner.invoke(app, ["claude", "on", "--profile", "cliente", "--json"])
+    assert r.exit_code == 0, r.output
+    estado = {p["name"]: p for p in json.loads(r.output)["profiles"]}
+    assert estado["cliente"]["enabled"] and estado["cliente"]["hint"]
+    assert not estado["padrão"]["enabled"] and not estado["empresa"]["enabled"]
+    assert _hooks(outra / "settings.json")
+    assert not (empresa / "settings.json").exists()
+
+
+def test_desligar_um_perfil_nao_mexe_nos_outros(casa: Path) -> None:
+    _perfil(casa, "empresa")
+    runner.invoke(app, ["claude", "on"])
+    r = runner.invoke(app, ["claude", "off", "--profile", "claude-code:empresa", "--json"])
+    assert r.exit_code == 0, r.output
+    estado = {p["name"]: p["enabled"] for p in json.loads(r.output)["profiles"]}
+    assert estado == {"padrão": True, "empresa": False}
+
+
+def test_perfil_desconhecido_e_recusado(casa: Path) -> None:
+    r = runner.invoke(app, ["claude", "on", "--profile", "nao-existe"])
+    assert r.exit_code == 2
+    assert "não encontrado" in r.output
+
+
+def test_adicionar_repetido_padrao_ou_pasta_inexistente(casa: Path, tmp_path: Path) -> None:
+    empresa = _perfil(casa, "empresa")
+    repetido = json.loads(runner.invoke(app, ["claude", "profiles", "add", str(empresa), "--json"]).output)
+    assert repetido["ok"] is True and repetido["changed"] is False
+
+    padrao = runner.invoke(app, ["claude", "profiles", "add", str(casa / ".claude"), "--json"])
+    assert padrao.exit_code == 1 and "padrão" in json.loads(padrao.output)["error"]
+
+    sumida = runner.invoke(app, ["claude", "profiles", "add", str(tmp_path / "nada"), "--json"])
+    assert sumida.exit_code == 1
+
+
+def test_tirar_da_lista_nao_mexe_na_configuracao(casa: Path, tmp_path: Path) -> None:
+    outra = tmp_path / "cliente"
+    outra.mkdir()
+    runner.invoke(app, ["claude", "profiles", "add", str(outra), "--on"])
+    assert is_registered(next(c for c in CLIENTS() if c.id == "claude-code:cliente"))
+
+    r = runner.invoke(app, ["claude", "profiles", "remove", str(outra), "--json"])
+    assert json.loads(r.output)["changed"] is True
+    assert "claude-code:cliente" not in _ids()
+    # a configuração que já estava lá continua: tirar da lista não é desligar
+    assert "ragx" in json.loads((outra / ".claude.json").read_text(encoding="utf-8"))["mcpServers"]
+
+
+def test_duas_pastas_com_o_mesmo_nome_nao_colidem(casa: Path, tmp_path: Path) -> None:
+    for base in ("a", "b"):
+        pasta = tmp_path / base / "cliente"
+        pasta.mkdir(parents=True)
+        runner.invoke(app, ["claude", "profiles", "add", str(pasta)])
+    assert _ids() == ["claude-code", "claude-code:cliente", "claude-code:cliente-2"]
+
+
+def test_arquivo_de_perfis_ilegivel_e_ignorado(casa: Path) -> None:
+    (casa / ".ragx").mkdir(exist_ok=True)
+    (casa / ".ragx" / "claude-profiles.json").write_text("{quebrado", encoding="utf-8")
+    assert _ids() == ["claude-code"]

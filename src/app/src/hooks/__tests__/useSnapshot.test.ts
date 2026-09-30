@@ -38,6 +38,9 @@ describe('useSnapshot', () => {
       runOllamaBenchmark: vi.fn(),
       getClaudeIntegration: vi.fn(),
       setClaudeIntegration: vi.fn(),
+      setClaudeProfile: vi.fn(),
+      addClaudeProfile: vi.fn(),
+      removeClaudeProfile: vi.fn(),
     }
   })
 

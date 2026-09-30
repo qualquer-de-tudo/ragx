@@ -343,7 +343,11 @@ ragx perf [--days 7] [--project NOME] [--top 5] [--json]
 ragx claude status [--json]      o RAGX está ligado no Claude Code agora? (por perfil)
 ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projetos e perfis
 ragx claude on [--dry-run] [--no-hint]   põe de volta, com a dica de início de sessão
+ragx claude on|off --profile empresa     só num perfil (id ou nome)
 ragx claude hint                 o texto que a dica entrega ao agente nesta pasta
+ragx claude profiles list [--json]       perfis que o RAGX enxerga, detectados e adicionados
+ragx claude profiles add PASTA [--on]    adiciona uma pasta de perfil (qualquer lugar)
+ragx claude profiles remove PASTA        tira da lista, sem mexer na configuração dela
 ```
 
 `ragx perf` lê os transcripts do Claude Code (`~/.claude/projects`), que carimbam
@@ -370,8 +374,13 @@ verdadeiro quando **todos** os perfis estão ligados.
 `~/.claude-empresa`), e aí a configuração do perfil, MCP incluído, mora em
 `<dir>/.claude.json`. `ragx claude` e `ragx mcp install --client claude-code`
 tratam cada perfil como um Claude Code: o padrão (`~/.claude.json`), cada
-`~/.claude-*` que já tenha `.claude.json` e o diretório de `CLAUDE_CONFIG_DIR`,
-se estiver definido.
+`~/.claude-*` que já tenha `.claude.json`, o diretório de `CLAUDE_CONFIG_DIR`, se
+estiver definido, e as pastas adicionadas com `ragx claude profiles add`, guardadas
+em `~/.ragx/claude-profiles.json` (para quem mantém a conta de um cliente fora de
+`~/.claude-*`). Cada perfil tem id `claude-code:<nome>`; duas pastas com o mesmo
+nome viram `cliente` e `cliente-2`. `--profile` liga ou desliga um só; sem ele,
+todos. `profiles remove` só tira a pasta da lista: se o RAGX estava ligado lá,
+desligue antes com `off --profile`.
 
 **Dica de início de sessão.** Registrar o servidor não basta: as ferramentas do
 RAGX chegam ao agente como *deferred* (só o nome), e Grep/Read já estão

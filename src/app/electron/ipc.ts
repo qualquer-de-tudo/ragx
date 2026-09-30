@@ -6,6 +6,7 @@ import type { DiscoverResult as DiscoverProjectsResult } from './projects/discov
 import type { PanelSettings, RendererSettings } from './settings'
 import type {
   ClaudeIntegration,
+  ClaudeProfile,
   ConnectionCheck,
   DiscoverItem,
   DiscoverResult,
@@ -72,6 +73,26 @@ export interface HandlerDeps {
   getRagxExe?: () => string
   /** Mede embeddings/s. `model` é escolhido aqui no processo principal; `null` = modelo padrão. */
   runOllamaBenchmark: (model: string | null) => Promise<OllamaBenchmark>
+}
+
+/** A lista de perfis de `ragx claude status --json`, conferida item a item; o que não tem a forma certa fica de fora. */
+export function parseClaudeProfiles(value: unknown): ClaudeProfile[] {
+  if (!Array.isArray(value)) return []
+  const text = (v: unknown, fallback: string) => (typeof v === 'string' && v.length > 0 ? v : fallback)
+  return value.flatMap((item): ClaudeProfile[] => {
+    if (typeof item !== 'object' || item === null) return []
+    const r = item as Record<string, unknown>
+    if (typeof r.id !== 'string' || r.id.length === 0 || typeof r.enabled !== 'boolean') return []
+    return [{
+      id: r.id,
+      name: text(r.name, r.id),
+      label: text(r.label, r.id),
+      dir: text(r.dir, ''),
+      enabled: r.enabled,
+      hint: r.hint === true,
+      added: r.added === true,
+    }]
+  })
 }
 
 function rejected(message: string): Error {
@@ -191,14 +212,39 @@ export function createHandlers(deps: HandlerDeps) {
    * (`error`), e a resposta é conferida: o renderer só recebe `{ enabled }`.
    */
   async function claudeCommand(args: string[]): Promise<ClaudeIntegration> {
-    const out = (await deps.runRagxCommand(os.homedir(), args)) as { enabled?: unknown; error?: unknown } | null
+    const out = (await deps.runRagxCommand(os.homedir(), args)) as {
+      enabled?: unknown
+      error?: unknown
+      profiles?: unknown
+    } | null
     if (out !== null && typeof out === 'object' && typeof out.error === 'string') {
       throw new Error(`Não consegui alterar o Claude Code: ${out.error}`)
     }
-    if (out === null || typeof out !== 'object' || typeof out.enabled !== 'boolean') {
+    if (out === null || typeof out !== 'object' || (typeof out.enabled !== 'boolean' && !Array.isArray(out.profiles))) {
       throw new Error('resposta inesperada de "ragx claude"')
     }
-    return { enabled: out.enabled }
+    const profiles = parseClaudeProfiles(out.profiles)
+    // `profiles add/remove` não dizem `enabled`: ligado é todos os perfis ligados, como no `status`.
+    const enabled = typeof out.enabled === 'boolean' ? out.enabled : profiles.length > 0 && profiles.every((p) => p.enabled)
+    return { enabled, profiles }
+  }
+
+  /** Um pedido por vez no Claude Code: dois cliques rápidos não gravam a mesma configuração juntos. */
+  function inClaudeChain<T>(fn: () => Promise<T>): Promise<T> {
+    const run = claudeChain.then(fn)
+    claudeChain = run.catch(() => undefined)
+    return run
+  }
+
+  /** O perfil tem de ser um dos que a CLI acabou de listar: o id nunca vira argumento sem conferência. */
+  async function knownProfile(idUnknown: unknown): Promise<ClaudeProfile> {
+    if (typeof idUnknown !== 'string' || idUnknown.length === 0 || idUnknown.length > 200) {
+      throw rejected('perfil precisa ser um id de perfil')
+    }
+    const atual = await claudeCommand(['claude', 'status', '--json'])
+    const perfil = atual.profiles.find((p) => p.id === idUnknown)
+    if (!perfil) throw rejected(`perfil desconhecido: ${idUnknown}`)
+    return perfil
   }
 
   function cachedProjects(): ProjectSnapshot[] {
@@ -426,9 +472,50 @@ export function createHandlers(deps: HandlerDeps) {
       const args = enabledUnknown
         ? ['claude', 'on', ...(exe ? ['--command', exe] : []), '--json']
         : ['claude', 'off', '--json']
-      const run = claudeChain.then(() => claudeCommand(args))
-      claudeChain = run.catch(() => undefined)
-      return run
+      return inClaudeChain(() => claudeCommand(args))
+    },
+
+    /** Liga ou desliga o RAGX num perfil só (`ragx claude on|off --profile`). */
+    setClaudeProfile(idUnknown: unknown, enabledUnknown: unknown): Promise<ClaudeIntegration> {
+      if (typeof enabledUnknown !== 'boolean') {
+        throw rejected('enabled precisa ser booleano')
+      }
+      return inClaudeChain(async () => {
+        const perfil = await knownProfile(idUnknown)
+        const exe = enabledUnknown ? deps.getRagxExe?.() : undefined
+        return claudeCommand(
+          enabledUnknown
+            ? ['claude', 'on', '--profile', perfil.id, ...(exe ? ['--command', exe] : []), '--json']
+            : ['claude', 'off', '--profile', perfil.id, '--json'],
+        )
+      })
+    },
+
+    /**
+     * Adiciona uma pasta de perfil do Claude Code e já liga o RAGX nela. A pasta
+     * vem de um `pickFolder()` anterior, pelo token: o renderer nunca manda caminho.
+     */
+    addClaudeProfile(tokenUnknown: unknown): Promise<ClaudeIntegration> {
+      if (typeof tokenUnknown !== 'string') throw rejected('token precisa ser texto')
+      const dir = deps.folderTokens.get(tokenUnknown)
+      if (dir === undefined) throw rejected('pasta desconhecida: escolha de novo')
+      const exe = deps.getRagxExe?.()
+      return inClaudeChain(() =>
+        claudeCommand(['claude', 'profiles', 'add', dir, '--on', ...(exe ? ['--command', exe] : []), '--json']),
+      )
+    },
+
+    /**
+     * Tira um perfil adicionado à mão. Desliga o RAGX nele antes: para quem
+     * clica "Remover", o esperado é o RAGX sair daquela conta, não só da lista.
+     */
+    removeClaudeProfile(idUnknown: unknown): Promise<ClaudeIntegration> {
+      return inClaudeChain(async () => {
+        const perfil = await knownProfile(idUnknown)
+        if (!perfil.added) throw rejected('só dá para remover um perfil adicionado à mão')
+        if (perfil.enabled) await claudeCommand(['claude', 'off', '--profile', perfil.id, '--json'])
+        return claudeCommand(['claude', 'profiles', 'remove', perfil.dir, '--json'])
+      })
     },
 
     /** Esquece o benchmark: uma troca, parada ou início do Ollama terminou (processo principal, não é canal de IPC). */

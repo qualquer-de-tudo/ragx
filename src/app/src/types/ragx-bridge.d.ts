@@ -216,8 +216,26 @@ export interface OllamaBenchmark {
 }
 
 /** O RAGX está registrado no Claude Code (global)? Vale a partir da próxima sessão do Claude Code. */
-export interface ClaudeIntegration {
+/** Um perfil do Claude Code (uma conta, um `CLAUDE_CONFIG_DIR`), como `ragx claude status` o descreve. */
+export interface ClaudeProfile {
+  /** `claude-code` (padrão) ou `claude-code:<nome>`. */
+  id: string
+  name: string
+  label: string
+  /** A pasta do perfil (`~/.claude`, `~/.claude-empresa`...). */
+  dir: string
+  /** O servidor MCP do RAGX está registrado nele. */
   enabled: boolean
+  /** A dica de início de sessão está instalada. */
+  hint: boolean
+  /** Adicionado à mão (`ragx claude profiles add`); os outros foram detectados. */
+  added: boolean
+}
+
+export interface ClaudeIntegration {
+  /** Ligado em todos os perfis (é o que o interruptor do topo mostra). */
+  enabled: boolean
+  profiles: ClaudeProfile[]
 }
 
 export interface RagxBridge {
@@ -249,6 +267,10 @@ export interface RagxBridge {
   /** Interruptor do RAGX no Claude Code (`ragx claude status|on|off`), para todos os projetos. */
   getClaudeIntegration: () => Promise<ClaudeIntegration>
   setClaudeIntegration: (enabled: boolean) => Promise<ClaudeIntegration>
+  setClaudeProfile: (id: string, enabled: boolean) => Promise<ClaudeIntegration>
+  /** `token` vem de `pickFolder()`: a pasta do perfil nunca viaja como caminho. */
+  addClaudeProfile: (token: string) => Promise<ClaudeIntegration>
+  removeClaudeProfile: (id: string) => Promise<ClaudeIntegration>
 }
 
 declare global {

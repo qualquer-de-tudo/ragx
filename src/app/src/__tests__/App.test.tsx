@@ -29,6 +29,9 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
     runOllamaBenchmark: vi.fn(),
     getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true }),
     setClaudeIntegration: vi.fn(),
+    setClaudeProfile: vi.fn(),
+    addClaudeProfile: vi.fn(),
+    removeClaudeProfile: vi.fn(),
   }
   window.ragx = b
   return b

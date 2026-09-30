@@ -311,6 +311,9 @@ handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDon
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
 handleIpc('ragx:getClaudeIntegration', () => handlers.getClaudeIntegration())
 handleIpc('ragx:setClaudeIntegration', (enabled: unknown) => handlers.setClaudeIntegration(enabled))
+handleIpc('ragx:setClaudeProfile', (id: unknown, enabled: unknown) => handlers.setClaudeProfile(id, enabled))
+handleIpc('ragx:addClaudeProfile', (token: unknown) => handlers.addClaudeProfile(token))
+handleIpc('ragx:removeClaudeProfile', (id: unknown) => handlers.removeClaudeProfile(id))
 
 // -- instalação da CLI (bootstrap) -----------------------------------------
 

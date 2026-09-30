@@ -164,7 +164,13 @@ function App() {
       break
     case 'connections':
       page = (
-        <ConnectionsPage connections={connections} checking={checking} onRefresh={() => void refresh()} jobs={jobs} />
+        <ConnectionsPage
+          connections={connections}
+          checking={checking}
+          onRefresh={() => void refresh()}
+          jobs={jobs}
+          claude={claude}
+        />
       )
       break
     case 'how':

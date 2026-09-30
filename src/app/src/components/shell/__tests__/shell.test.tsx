@@ -161,7 +161,7 @@ describe('Badge', () => {
 })
 
 describe('TopBar', () => {
-  const claudeOff = { enabled: false, busy: false, error: null, changed: false, toggle: () => {} }
+  const claudeOff = { enabled: false, busy: false, error: null, changed: false, toggle: () => {}, profiles: [], setProfile: () => {}, addProfile: () => {}, removeProfile: () => {} }
   const base = {
     query: '',
     onQuery: () => {},

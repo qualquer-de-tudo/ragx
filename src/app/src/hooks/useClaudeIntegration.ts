@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ClaudeIntegration, ClaudeProfile } from '../types/ragx-bridge'
 
 export interface ClaudeToggle {
   /** `null` enquanto não se sabe o estado (ou se a leitura falhou). */
@@ -8,6 +9,12 @@ export interface ClaudeToggle {
   /** Houve uma troca nesta sessão do painel: o Claude Code só a vê na próxima sessão dele. */
   changed: boolean
   toggle: () => void
+  /** Os perfis do Claude Code (contas), com o estado de cada um. Vazio enquanto não se sabe. */
+  profiles: ClaudeProfile[]
+  setProfile: (id: string, enabled: boolean) => void
+  /** Pede a pasta ao sistema e adiciona como perfil, já ligado. */
+  addProfile: () => void
+  removeProfile: (id: string) => void
 }
 
 /**
@@ -21,6 +28,7 @@ export function useClaudeIntegration(): ClaudeToggle {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [changed, setChanged] = useState(false)
+  const [profiles, setProfiles] = useState<ClaudeProfile[]>([])
   const alive = useRef(true)
   const inFlight = useRef(false)
 
@@ -28,7 +36,9 @@ export function useClaudeIntegration(): ClaudeToggle {
     alive.current = true
     window.ragx.getClaudeIntegration().then(
       (s) => {
-        if (alive.current) setEnabled(s.enabled)
+        if (!alive.current) return
+        setEnabled(s.enabled)
+        setProfiles(s.profiles ?? [])
       },
       (err: unknown) => {
         console.error('getClaudeIntegration() falhou:', err)
@@ -50,6 +60,7 @@ export function useClaudeIntegration(): ClaudeToggle {
         inFlight.current = false
         if (!alive.current) return
         setEnabled(s.enabled)
+        setProfiles(s.profiles ?? [])
         setChanged(true)
         setBusy(false)
       },
@@ -63,5 +74,46 @@ export function useClaudeIntegration(): ClaudeToggle {
     )
   }, [enabled])
 
-  return { enabled, busy, error, changed, toggle }
+  /** Mesma regra do interruptor: um pedido por vez, e a tela só muda quando a CLI confirma. */
+  const run = useCallback((action: () => Promise<ClaudeIntegration | null>) => {
+    if (inFlight.current) return
+    inFlight.current = true
+    setBusy(true)
+    setError(null)
+    action().then(
+      (s) => {
+        inFlight.current = false
+        if (!alive.current) return
+        if (s !== null) {
+          setEnabled(s.enabled)
+          setProfiles(s.profiles ?? [])
+          setChanged(true)
+        }
+        setBusy(false)
+      },
+      (err: unknown) => {
+        inFlight.current = false
+        console.error('perfil do Claude Code falhou:', err)
+        if (!alive.current) return
+        setError(err instanceof Error ? err.message : 'Não consegui alterar o Claude Code.')
+        setBusy(false)
+      },
+    )
+  }, [])
+
+  const setProfile = useCallback(
+    (id: string, on: boolean) => run(() => window.ragx.setClaudeProfile(id, on)),
+    [run],
+  )
+  const addProfile = useCallback(
+    () =>
+      run(async () => {
+        const picked = await window.ragx.pickFolder()
+        return picked === null ? null : window.ragx.addClaudeProfile(picked.token)
+      }),
+    [run],
+  )
+  const removeProfile = useCallback((id: string) => run(() => window.ragx.removeClaudeProfile(id)), [run])
+
+  return { enabled, busy, error, changed, toggle, profiles, setProfile, addProfile, removeProfile }
 }

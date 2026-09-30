@@ -28,7 +28,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   evento aparece em até ~1,5 s: o painel lê só o que foi acrescentado aos
   logs. O card e o detalhe do projeto mostram "em uso agora", e o item do menu
   acende, quando houve atividade no último minuto.
-
+- **Vários Claude Code no mesmo computador, cada um com o seu interruptor.** Em
+  Conexões, o card "Perfis do Claude Code" lista cada conta (o padrão, os
+  `~/.claude-*` detectados e as pastas que você adicionar, em qualquer lugar),
+  com a pasta, se foi detectada ou adicionada e um interruptor por perfil.
+  "Adicionar perfil" pede a pasta e já liga o RAGX nela; "Remover" desliga antes
+  de tirar da lista. O interruptor do topo continua ligando e desligando todos.
+  Na CLI: `ragx claude profiles list|add|remove` (as pastas ficam em
+  `~/.ragx/claude-profiles.json`) e `ragx claude on|off --profile <nome>`.
 ### Alterado
 
 - **Detalhe do projeto em abas.** Os onze blocos empilhados numa página só viraram

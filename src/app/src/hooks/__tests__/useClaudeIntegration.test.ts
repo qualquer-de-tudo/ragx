@@ -1,10 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useClaudeIntegration } from '../useClaudeIntegration'
+import type { ClaudeIntegration } from '../../types/ragx-bridge'
 
 function bridge(over: Partial<Window['ragx']> = {}) {
   const b = {
-    getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true }),
+    getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true, profiles: [] }),
     setClaudeIntegration: vi.fn(),
     ...over,
   }
@@ -18,15 +19,15 @@ describe('useClaudeIntegration', () => {
   })
 
   it('lê o estado da CLI ao montar', async () => {
-    bridge({ getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: false }) })
+    bridge({ getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: false, profiles: [] }) })
     const { result } = renderHook(() => useClaudeIntegration())
     expect(result.current.enabled).toBeNull()
     await waitFor(() => expect(result.current.enabled).toBe(false))
   })
 
   it('só muda quando a CLI confirma, e marca changed', async () => {
-    let resolve: (v: { enabled: boolean }) => void = () => {}
-    const b = bridge({ setClaudeIntegration: vi.fn(() => new Promise<{ enabled: boolean }>((r) => (resolve = r))) })
+    let resolve: (v: ClaudeIntegration) => void = () => {}
+    const b = bridge({ setClaudeIntegration: vi.fn(() => new Promise<ClaudeIntegration>((r) => (resolve = r))) })
     const { result } = renderHook(() => useClaudeIntegration())
     await waitFor(() => expect(result.current.enabled).toBe(true))
 
@@ -35,14 +36,14 @@ describe('useClaudeIntegration', () => {
     expect(result.current.busy).toBe(true)
     expect(result.current.enabled).toBe(true) // ainda não confirmou
 
-    await act(async () => resolve({ enabled: false }))
+    await act(async () => resolve({ enabled: false, profiles: [] }))
     expect(result.current.enabled).toBe(false)
     expect(result.current.busy).toBe(false)
     expect(result.current.changed).toBe(true)
   })
 
   it('cliques enquanto troca não disparam outro pedido', async () => {
-    const b = bridge({ setClaudeIntegration: vi.fn(() => new Promise<{ enabled: boolean }>(() => {})) })
+    const b = bridge({ setClaudeIntegration: vi.fn(() => new Promise<ClaudeIntegration>(() => {})) })
     const { result } = renderHook(() => useClaudeIntegration())
     await waitFor(() => expect(result.current.enabled).toBe(true))
     act(() => result.current.toggle())

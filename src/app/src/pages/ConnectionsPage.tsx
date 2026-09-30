@@ -1,5 +1,7 @@
 import type { ConnectionCheck, JobView } from '../types/ragx-bridge'
 import { ConnectionGrid } from '../components/connections/ConnectionCard'
+import { ClaudeProfilesCard } from '../components/connections/ClaudeProfilesCard'
+import type { ClaudeToggle } from '../hooks/useClaudeIntegration'
 
 /**
  * Tela Conexões: RAGX CLI, Claude Code e Ollama (no Docker ou local), cada um
@@ -13,11 +15,14 @@ export function ConnectionsPage({
   checking,
   onRefresh,
   jobs,
+  claude,
 }: {
   connections: ConnectionCheck[] | null
   checking: boolean
   onRefresh: () => void
   jobs: readonly JobView[]
+  /** Os perfis do Claude Code; sem ele (testes antigos), o card não aparece. */
+  claude?: ClaudeToggle
 }) {
   return (
     <section className="page">
@@ -31,6 +36,7 @@ export function ConnectionsPage({
         </button>
       </header>
       <ConnectionGrid connections={connections} jobs={jobs} />
+      {claude && <ClaudeProfilesCard claude={claude} />}
     </section>
   )
 }

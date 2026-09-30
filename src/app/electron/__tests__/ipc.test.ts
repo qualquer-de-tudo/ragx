@@ -702,7 +702,7 @@ describe('createHandlers - interruptor do Claude Code', () => {
   it('getClaudeIntegration lê `ragx claude status --json` na pasta do usuário', async () => {
     const runRagxCommand = vi.fn(async () => ({ enabled: true, config: 'C:/x/.claude.json' }))
     const handlers = createHandlers(makeDeps({ runRagxCommand }))
-    await expect(handlers.getClaudeIntegration()).resolves.toEqual({ enabled: true })
+    await expect(handlers.getClaudeIntegration()).resolves.toEqual({ enabled: true, profiles: [] })
     expect(runRagxCommand).toHaveBeenCalledWith(expect.any(String), ['claude', 'status', '--json'])
   })
 
@@ -764,7 +764,7 @@ describe('createHandlers - interruptor do Claude Code', () => {
       .mockResolvedValueOnce({ enabled: false })
     const handlers = createHandlers(makeDeps({ runRagxCommand }))
     await expect(handlers.setClaudeIntegration(true)).rejects.toThrow('boom')
-    await expect(handlers.setClaudeIntegration(false)).resolves.toEqual({ enabled: false })
+    await expect(handlers.setClaudeIntegration(false)).resolves.toEqual({ enabled: false, profiles: [] })
   })
 })
 
@@ -785,5 +785,63 @@ describe('createHandlers - getIndexRuns', () => {
     await expect(handlers.getIndexRuns('nao-existe', 0)).rejects.toThrow(/desconhecido/)
     await expect(handlers.getIndexRuns('federado', 0)).rejects.toThrow(/pasta local/)
     expect(runRagxCommand).not.toHaveBeenCalled()
+  })
+})
+
+describe('createHandlers - perfis do Claude Code', () => {
+  const PADRAO = { id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, added: false }
+  const CLIENTE = { id: 'claude-code:cliente', name: 'cliente', label: 'Claude Code (cliente)', dir: 'D:/contas/cliente', enabled: true, hint: true, added: true }
+
+  function cli(profiles = [PADRAO, CLIENTE]) {
+    return vi.fn(async (_cwd: string, args: string[]) => {
+      if (args[1] === 'status') return { enabled: true, profiles }
+      return { enabled: true, ok: true, profiles }
+    })
+  }
+
+  it('status traz os perfis, conferidos item a item', async () => {
+    const runRagxCommand = vi.fn(async () => ({ enabled: true, profiles: [PADRAO, { id: 1 }, null, { id: 'x' }] }))
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await expect(handlers.getClaudeIntegration()).resolves.toEqual({ enabled: true, profiles: [PADRAO] })
+  })
+
+  it('liga e desliga um perfil só, pelo id que a CLI conhece', async () => {
+    const runRagxCommand = cli()
+    const handlers = createHandlers(makeDeps({ runRagxCommand, getRagxExe: () => 'C:/r/ragx.exe' }))
+    await handlers.setClaudeProfile('claude-code:cliente', true)
+    expect(runRagxCommand).toHaveBeenLastCalledWith(expect.any(String), [
+      'claude', 'on', '--profile', 'claude-code:cliente', '--command', 'C:/r/ragx.exe', '--json',
+    ])
+    await handlers.setClaudeProfile('claude-code', false)
+    expect(runRagxCommand).toHaveBeenLastCalledWith(expect.any(String), ['claude', 'off', '--profile', 'claude-code', '--json'])
+  })
+
+  it('id que a CLI não listou é recusado antes de virar argumento', async () => {
+    const runRagxCommand = cli()
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await expect(handlers.setClaudeProfile('--help', true)).rejects.toThrow(/desconhecido/)
+    await expect(handlers.setClaudeProfile(42, true)).rejects.toThrow(/id de perfil/)
+    expect(() => handlers.setClaudeProfile('claude-code', 'sim')).toThrow(/booleano/)
+    expect(runRagxCommand.mock.calls.every(([, args]) => args[1] === 'status')).toBe(true)
+  })
+
+  it('adicionar usa a pasta do token e já liga; token desconhecido é recusado', async () => {
+    const runRagxCommand = cli()
+    const deps = makeDeps({ runRagxCommand, getRagxExe: () => 'C:/r/ragx.exe' })
+    const handlers = createHandlers(deps)
+    await handlers.addClaudeProfile(deps.folderTokens.issue('D:/contas/cliente'))
+    expect(runRagxCommand).toHaveBeenLastCalledWith(expect.any(String), [
+      'claude', 'profiles', 'add', 'D:/contas/cliente', '--on', '--command', 'C:/r/ragx.exe', '--json',
+    ])
+    expect(() => handlers.addClaudeProfile('token-inventado')).toThrow(/escolha de novo/)
+  })
+
+  it('remover desliga antes e tira da lista; perfil detectado não se remove', async () => {
+    const runRagxCommand = cli()
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await handlers.removeClaudeProfile('claude-code:cliente')
+    const comandos = runRagxCommand.mock.calls.map(([, args]) => args.slice(0, 4).join(' '))
+    expect(comandos.slice(-2)).toEqual(['claude off --profile claude-code:cliente', 'claude profiles remove D:/contas/cliente'])
+    await expect(handlers.removeClaudeProfile('claude-code')).rejects.toThrow(/adicionado à mão/)
   })
 })
