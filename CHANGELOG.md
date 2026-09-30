@@ -36,6 +36,7 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   de tirar da lista. O interruptor do topo continua ligando e desligando todos.
   Na CLI: `ragx claude profiles list|add|remove` (as pastas ficam em
   `~/.ragx/claude-profiles.json`) e `ragx claude on|off --profile <nome>`.
+
 ### Alterado
 
 - **Tela Conexões redesenhada.** Os três cards estreitos, esticados até a altura
