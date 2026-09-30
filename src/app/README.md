@@ -43,14 +43,24 @@ instalado no sistema. Tema sempre escuro; título da janela "RAGX Painel".
   1,5 s, e empurra os eventos por `ragx:activity`. O card e o detalhe do
   projeto mostram "em uso agora", e o item do menu acende, quando houve
   evento no último minuto. Nunca mostra a consulta: o log não a tem.
-- **Conexões**: três cards (RAGX CLI, Claude Code e Ollama), cada
-  um com o selo "Conectado", "Atenção" ou "Não conectado", os fatos da
-  checagem e as correções de um clique ("Registrar para todos os
-  projetos", "Iniciar container", "Baixar nomic-embed-text"). O card do
-  Ollama mostra o modo (Docker ou local), o processador (GPU ou CPU) e a
-  velocidade em chunks/s (ver "Ollama: Docker ou local"). O painel
-  confere as três a cada 30 segundos, na hora com "Verificar agora" e logo
-  depois que uma correção termina.
+- **Conexões**: uma faixa por peça (RAGX CLI, Claude Code e Ollama), na
+  largura toda: ícone, nome, selo ("Conectado", "Atenção" ou "Não
+  conectado") e resumo à esquerda, as correções de um clique à direita
+  ("Registrar para todos os projetos", "Iniciar container", "Baixar
+  nomic-embed-text", "Medir velocidade"...), e os fatos da checagem em
+  blocos compactos embaixo. No topo, o resumo ("3 de 3 conectadas" ou
+  quantas pedem atenção) ao lado de "Verificar agora". A faixa do Ollama
+  mostra o modo (Docker ou local), o processador (GPU ou CPU, depois de
+  medir) e a velocidade em chunks/s (ver "Ollama: Docker ou local"). A do
+  Claude Code traz os **perfis** (contas): uma linha por `CLAUDE_CONFIG_DIR`
+  (o padrão, os `~/.claude-*` com `.claude.json` e as pastas adicionadas à
+  mão), com a pasta, se foi detectada ou adicionada, um aviso quando está
+  ligada sem a dica de início de sessão e um interruptor próprio (`ragx
+  claude on|off --profile`). "Adicionar perfil" escolhe a pasta e já liga o
+  RAGX nela; "Remover" (só nos adicionados, com segundo clique) desliga
+  antes de tirar da lista. O painel confere as três peças a cada 30
+  segundos, na hora com "Verificar agora" e logo depois que uma correção
+  termina.
 - **Como funciona**: repete a explicação do primeiro passo da configuração
   inicial e permite refazê-la.
 - **Configuração inicial (onboarding)**: tela cheia, sem barra lateral, com

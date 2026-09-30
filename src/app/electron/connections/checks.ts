@@ -349,7 +349,8 @@ function decimalPtBr(n: number): string {
 }
 
 function processorFact(bench: OllamaBenchmark | null | undefined): string {
-  if (!bench || bench.processor === 'unknown') return 'ainda não medido'
+  // Sem medição não dá para afirmar GPU nem CPU; diz o que fazer para saber.
+  if (!bench || bench.processor === 'unknown') return 'GPU ou CPU? Use "Medir velocidade"'
   if (bench.processor === 'cpu') return 'CPU'
   return bench.vramMB !== null ? `GPU (${decimalPtBr(bench.vramMB / 1024)} GB de VRAM)` : 'GPU'
 }

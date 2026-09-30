@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import type { ConnectionAction, ConnectionCheck, JobView } from '../../types/ragx-bridge'
 import { Badge, type Tone } from '../shell/Badge'
 import { activeConnectionJob, activeOllamaSwitch, jobStateLabel } from '../../state'
@@ -53,9 +53,35 @@ function HelpBlock({ text }: { text: string }) {
   )
 }
 
+/** Ícone de cada serviço, para o olho achar a faixa sem ler o título. */
+function ConnIcon({ id }: { id: ConnectionCheck['id'] | 'pending' }) {
+  const paths: Record<string, ReactNode> = {
+    ragx: (
+      <>
+        <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+        <path d="m7.5 10 2.5 2-2.5 2M12.5 14.5h4" />
+      </>
+    ),
+    claude: <path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18" />,
+    ollama: (
+      <>
+        <rect x="6" y="6" width="12" height="12" rx="2" />
+        <path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3" />
+      </>
+    ),
+  }
+  return (
+    <span className={`conn-icon conn-icon-${id}`} aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        {paths[id] ?? <circle cx="12" cy="12" r="7" />}
+      </svg>
+    </span>
+  )
+}
+
 /**
- * Botão de uma ação. Principal: azul, largura total. De apoio (`secondary`):
- * neutro e menor, no grupo "Outras ações". Com tarefa do mesmo tipo na fila
+ * Botão de uma ação. Principal: azul. De apoio (`secondary`): neutro, no
+ * grupo "Outras ações". Com tarefa do mesmo tipo na fila
  * ou rodando (ou medição em andamento) diz isso e fica desabilitado.
  */
 function ActionButton({
@@ -83,7 +109,7 @@ function ActionButton({
   return (
     <button
       type="button"
-      className={action.secondary ? 'btn conn-btn-more' : 'btn btn-primary btn-block'}
+      className={action.secondary ? 'btn conn-btn-more' : 'btn btn-primary'}
       disabled={busy !== null || locked}
       aria-busy={isMeasuring || undefined}
       aria-label={busy ? `${action.label}: ${busy.spoken}` : undefined}
@@ -108,11 +134,11 @@ function SwitchNote({ job }: { job: JobView }) {
 }
 
 /**
- * Card de uma conexão, no estilo dos provedores do Perssua: título, selo,
- * resumo, fatos, ajuda e as ações. As principais vêm em botões azuis de
- * largura total; as de apoio (medir velocidade, parar o Ollama), num grupo
- * neutro e menor logo abaixo. Com tarefa da mesma ação na fila ou rodando, o
- * botão diz isso e fica desabilitado.
+ * Faixa de uma conexão, na largura toda: ícone, título, selo e resumo à
+ * esquerda, as ações à direita na mesma linha, e os fatos numa faixa de
+ * blocos compactos embaixo. `children` entra depois dos fatos (os perfis do
+ * Claude Code, na faixa do Claude). Com tarefa da mesma ação na fila ou
+ * rodando, o botão diz isso e fica desabilitado.
  *
  * "Medir velocidade" não passa por `onAction`: não é tarefa da fila, e o card
  * precisa esperar a medição para mostrar "Medindo…" e o erro, se houver.
@@ -121,10 +147,12 @@ export function ConnectionCard({
   check,
   onAction = (a) => void enqueueConnectionAction(a),
   jobs = [],
+  children,
 }: {
   check: ConnectionCheck
   onAction?: (action: ConnectionAction) => void
   jobs?: readonly JobView[]
+  children?: ReactNode
 }) {
   const titleId = useId()
   const badge = BADGE[check.state]
@@ -183,20 +211,35 @@ export function ConnectionCard({
 
   return (
     <article className={`card conn-card conn-${check.state}`} aria-labelledby={titleId}>
-      <div className="card-head">
-        <h2 className="card-title" id={titleId}>
-          {check.title}
-        </h2>
-        <Badge tone={badge.tone}>{badge.label}</Badge>
+      <div className="conn-head">
+        <ConnIcon id={check.id} />
+        <div className="conn-ident">
+          <div className="conn-title-row">
+            <h2 className="card-title" id={titleId}>
+              {check.title}
+            </h2>
+            <Badge tone={badge.tone}>{badge.label}</Badge>
+          </div>
+          <p className="conn-summary">{check.summary}</p>
+        </div>
+        {check.actions.length > 0 && (
+          <div className="conn-actions">
+            {main.map(button)}
+            {more.length > 0 && (
+              <div className="conn-actions-more" role="group" aria-label="Outras ações">
+                {more.map(button)}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      <p className="conn-summary">{check.summary}</p>
       {switching && <SwitchNote job={switching} />}
       {facts.length > 0 && (
-        <dl className="pairs conn-facts">
+        <dl className="conn-facts">
           {facts.map((f) => (
-            <div key={f.label}>
+            <div key={f.label} className="conn-fact">
               <dt>{f.label}</dt>
-              <dd>{f.value}</dd>
+              <dd title={f.value}>{f.value}</dd>
             </div>
           ))}
         </dl>
@@ -207,16 +250,7 @@ export function ConnectionCard({
           Não foi possível medir: {benchError}
         </p>
       )}
-      {check.actions.length > 0 && (
-        <div className="conn-actions">
-          {main.map(button)}
-          {more.length > 0 && (
-            <div className="conn-actions-more" role="group" aria-label="Outras ações">
-              {more.map(button)}
-            </div>
-          )}
-        </div>
-      )}
+      {children}
     </article>
   )
 }
@@ -226,26 +260,33 @@ function PendingCard({ title }: { title: string }) {
   const titleId = useId()
   return (
     <article className="card conn-card" aria-labelledby={titleId} aria-busy="true">
-      <div className="card-head">
-        <h2 className="card-title" id={titleId}>
-          {title}
-        </h2>
-        <Badge tone="muted">Verificando…</Badge>
+      <div className="conn-head">
+        <ConnIcon id="pending" />
+        <div className="conn-ident">
+          <div className="conn-title-row">
+            <h2 className="card-title" id={titleId}>
+              {title}
+            </h2>
+            <Badge tone="muted">Verificando…</Badge>
+          </div>
+          <p className="conn-summary dim">Conferindo esta conexão.</p>
+        </div>
       </div>
-      <p className="conn-summary dim">Conferindo esta conexão.</p>
     </article>
   )
 }
 
-/** Grade com os três cards (ou os três neutros antes da primeira checagem). */
+/** As três faixas (ou as três neutras antes da primeira checagem). `extra` põe conteúdo dentro de uma faixa. */
 export function ConnectionGrid({
   connections,
   jobs,
   onAction,
+  extra,
 }: {
   connections: ConnectionCheck[] | null
   jobs: readonly JobView[]
   onAction?: (action: ConnectionAction) => void
+  extra?: (check: ConnectionCheck) => ReactNode
 }) {
   return (
     <ul className="conn-grid" aria-label="Conexões">
@@ -257,7 +298,9 @@ export function ConnectionGrid({
           ))
         : connections.map((c) => (
             <li key={c.id}>
-              <ConnectionCard check={c} jobs={jobs} onAction={onAction} />
+              <ConnectionCard check={c} jobs={jobs} onAction={onAction}>
+                {extra?.(c)}
+              </ConnectionCard>
             </li>
           ))}
     </ul>

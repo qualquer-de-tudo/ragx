@@ -36,7 +36,9 @@ describe('ConnectionsPage', () => {
     installBridge()
     renderPage({ connections: connectionChecks({ ollama: { state: 'error', stateLabel: 'Não conectado' } }) })
     expect(screen.getByRole('heading', { level: 1, name: 'Conexões' })).toBeInTheDocument()
-    expect(screen.getByText('O painel confere estas três peças a cada 30 segundos.')).toBeInTheDocument()
+    expect(screen.getByText('O que o RAGX precisa para funcionar. O painel confere a cada 30 segundos.')).toBeInTheDocument()
+    // resumo no topo: duas das três pedem atenção
+    expect(screen.getByText('2 de 3 pedem atenção')).toBeInTheDocument()
 
     expect(within(card('RAGX CLI')).getByText('Conectado')).toBeInTheDocument()
     expect(within(card('Claude Code')).getByText('Atenção')).toBeInTheDocument()
@@ -435,5 +437,21 @@ describe('ConnectionsPage: card do Ollama', () => {
     })
     expect(button(/Iniciar container/)).toHaveTextContent('Na fila')
     expect(button(/Iniciar container/)).toBeDisabled()
+  })
+})
+
+describe('ConnectionsPage: perfis do Claude Code', () => {
+  it('ficam dentro da faixa do Claude Code, não num card à parte', () => {
+    installBridge()
+    const claude = {
+      enabled: true, busy: false, error: null, changed: false, toggle: vi.fn(),
+      profiles: [{ id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, added: false }],
+      setProfile: vi.fn(), addProfile: vi.fn(), removeProfile: vi.fn(),
+    }
+    render(<ConnectionsPage connections={connectionChecks()} checking={false} onRefresh={vi.fn()} jobs={[]} claude={claude} />)
+    const faixa = within(card('Claude Code'))
+    expect(faixa.getByRole('heading', { name: 'Perfis (contas)' })).toBeInTheDocument()
+    expect(faixa.getByRole('switch', { name: 'RAGX no perfil padrão' })).toBeInTheDocument()
+    expect(within(card('RAGX CLI')).queryByText('Perfis (contas)')).not.toBeInTheDocument()
   })
 })

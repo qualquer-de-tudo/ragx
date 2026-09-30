@@ -778,55 +778,108 @@
 
 .conn-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
 }
 
 .conn-grid > li {
-  display: grid;
   min-width: 0;
 }
 
+/* Uma faixa por serviço, na largura toda. */
 .conn-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  gap: 16px;
   padding: 18px 20px;
 }
 
-.conn-card > .card-head {
-  margin-bottom: 0;
+.conn-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.conn-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  color: var(--ink-2);
+}
+
+.conn-ok .conn-icon {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--good);
+}
+
+.conn-warn .conn-icon {
+  background: rgba(245, 165, 36, 0.12);
+  color: var(--warning);
+}
+
+.conn-error .conn-icon {
+  background: rgba(240, 72, 72, 0.12);
+  color: var(--critical);
+}
+
+.conn-ident {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.conn-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.conn-title-row .card-title {
+  margin: 0;
 }
 
 .conn-summary {
+  margin: 0;
   font-size: 13px;
   color: var(--ink-2);
   line-height: 1.5;
 }
 
-/* Fatos em rótulo pequeno e discreto em cima, valor normal e alinhado à
-   esquerda embaixo: rótulo/valor lado a lado não sobra espaço para valores
-   longos (nome de modelo, lista de projetos) sem quebrar mal. */
-.pairs.conn-facts > div {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 4px;
-  padding: 10px 0;
+/* Fatos em blocos do tamanho do conteúdo, lado a lado enquanto cabem: um fato
+   sozinho não vira uma barra da largura toda. */
+.conn-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
 }
 
-.conn-facts dt {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.conn-fact {
+  flex: 0 1 auto;
+  min-width: 150px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.conn-fact dt {
+  font-size: 12px;
   color: var(--ink-3);
 }
 
-.conn-facts dd {
-  min-width: 0;
-  width: 100%;
-  text-align: left;
-  overflow-wrap: anywhere;
+.conn-fact dd {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .conn-help {
@@ -855,23 +908,22 @@
   gap: 8px;
 }
 
+/* Ações à direita do título, na mesma linha: a principal (azul) primeiro, as de apoio depois. */
 .conn-actions {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
-  margin-top: auto;
+  flex: 0 1 auto;
+  max-width: 50%;
 }
 
-/* Rótulo longo ("Registrar para todos os projetos") quebra em vez de alargar o card. */
 .conn-actions .btn {
-  height: auto;
   min-height: 32px;
   padding: 6px 14px;
-  white-space: normal;
-  text-align: center;
 }
 
-/* Ações de apoio (medir, parar): neutras, mais baixas e em linha. Lado a lado
-   quando cabem; num card estreito cada uma ocupa a linha inteira. */
 .conn-actions-more {
   display: flex;
   flex-wrap: wrap;
@@ -879,10 +931,7 @@
 }
 
 .conn-actions .conn-btn-more {
-  flex: 1 1 auto;
-  min-height: 28px;
-  padding: 4px 12px;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 /* Troca de modo em andamento: a tarefa é longa, o card avisa onde acompanhar. */
@@ -926,9 +975,29 @@
   overflow-wrap: anywhere;
 }
 
-/* No onboarding o painel é mais estreito: os três cards cabem lado a lado. */
-.onboarding .conn-grid {
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+/* Janela estreita (e o onboarding): as ações descem para baixo do título. */
+@media (max-width: 900px) {
+  .conn-head {
+    flex-wrap: wrap;
+  }
+
+  .conn-actions {
+    max-width: none;
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 54px;
+  }
+}
+
+.onboarding .conn-head {
+  flex-wrap: wrap;
+}
+
+.onboarding .conn-actions {
+  max-width: none;
+  width: 100%;
+  justify-content: flex-start;
+  padding-left: 54px;
 }
 
 .how-card h2 {
@@ -2369,8 +2438,41 @@
 
 /* ── perfis do Claude Code (Conexões) ──────────────────────────────── */
 
-.claude-profiles {
-  margin-top: 12px;
+.conn-sub {
+  display: grid;
+  gap: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.conn-sub-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.conn-sub-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.conn-sub-lede {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.conn-sub-status {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.profile-warn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--warning);
 }
 
 .profile-list {
@@ -2425,15 +2527,56 @@
   flex: none;
 }
 
-.profile-footer {
+
+.conn-overall {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
+  gap: 10px;
 }
 
-.profile-footer p {
+.conn-overall-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.conn-overall-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+
+.conn-overall-ok {
+  color: var(--good);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.conn-overall-ok .conn-overall-dot {
+  background: var(--good);
+}
+
+.conn-overall-warn {
+  color: var(--warning);
+  border-color: rgba(245, 165, 36, 0.35);
+}
+
+.conn-overall-warn .conn-overall-dot {
+  background: var(--warning);
+}
+
+.conn-overall-error {
+  color: var(--critical);
+  border-color: rgba(240, 72, 72, 0.35);
+}
+
+.conn-overall-error .conn-overall-dot {
+  background: var(--critical);
 }

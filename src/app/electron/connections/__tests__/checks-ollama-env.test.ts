@@ -220,7 +220,7 @@ describe('checkOllama com ambiente', () => {
   it('facts sem benchmark: ainda não medido, sem velocidade nem placa', async () => {
     const c = await checkOllama(baseDeps(), snap1, env({ gpu: { vendor: 'none', name: null } }), null)
     expect(c.facts.map((f) => f.label)).toEqual(['Modo', 'Processador', 'Modelos instalados', 'Projetos que dependem'])
-    expect(c.facts[1].value).toBe('ainda não medido')
+    expect(c.facts[1].value).toBe('GPU ou CPU? Use "Medir velocidade"')
     const cpu = await checkOllama(baseDeps(), snap1, env(), bench({ processor: 'cpu', vramMB: null }))
     expect(cpu.facts[1].value).toBe('CPU')
   })

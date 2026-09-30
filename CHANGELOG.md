@@ -38,6 +38,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   `~/.ragx/claude-profiles.json`) e `ragx claude on|off --profile <nome>`.
 ### Alterado
 
+- **Tela Conexões redesenhada.** Os três cards estreitos, esticados até a altura
+  do maior, viraram uma faixa por peça na largura toda: ícone, nome, selo e
+  resumo à esquerda, as ações na mesma linha à direita, os fatos em blocos
+  compactos embaixo. O topo resume "3 de 3 conectadas" (ou quantas pedem
+  atenção), e os perfis do Claude Code ficam dentro da faixa do Claude, em vez de
+  num card à parte. Sem medição, o processador do Ollama diz `GPU ou CPU? Use
+  "Medir velocidade"` em vez de "ainda não medido".
 - **Detalhe do projeto em abas.** Os onze blocos empilhados numa página só viraram
   quatro abas: **Visão geral** (índice, "Está em dia?" e uso pelos agentes nas
   últimas 24 h), **Economia de tokens** (gráfico, tabela e simulação),
