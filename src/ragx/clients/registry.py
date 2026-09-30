@@ -225,7 +225,9 @@ def profile_name(config_dir: str | None) -> str:
     """Nome curto do perfil: `padrão`, `empresa` (de `~/.claude-empresa`) ou o nome da pasta."""
     if not config_dir or not config_dir.strip():
         return "padrão"
-    nome = Path(config_dir.strip().rstrip("\\/")).name
+    # Os dois separadores, em qualquer sistema: `Path` no Linux e no macOS não
+    # corta em `\`, e um caminho do Windows virava o nome inteiro do perfil.
+    nome = re.split(r"[\\/]", config_dir.strip().rstrip("\\/"))[-1]
     if nome in ("", ".claude"):
         return "padrão"
     return nome.removeprefix(".claude-").lstrip(".") or nome
