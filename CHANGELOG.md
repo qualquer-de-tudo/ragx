@@ -9,6 +9,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.0.0-beta.5] — 2026-09-30
+
 ### Adicionado
 
 - **O log de atividade diz quem chamou e o que a CLI fez.** Cada linha de
