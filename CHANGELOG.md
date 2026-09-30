@@ -19,6 +19,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   projeto indexado vão para `.ragx/logs/cli.jsonl`, sem a consulta nem os
   argumentos. O que o próprio painel roda não entra (`RAGX_CALLER=painel`).
   Base da tela de atividade (RAGX-0126).
+- **Tela "Atividade" no painel, ao vivo.** Um item novo no menu mostra o que
+  os agentes e a CLI estão fazendo nos projetos: resumo das últimas 24 h
+  (chamadas MCP, sessões do Claude, comandos no terminal, tokens economizados,
+  projetos em uso), as indexações em andamento e o feed dos eventos com hora,
+  projeto, ferramenta ou comando, quem chamou (perfil do Claude ou terminal),
+  tokens com a economia e o tempo, com filtro por tipo e por projeto. Um
+  evento aparece em até ~1,5 s: o painel lê só o que foi acrescentado aos
+  logs. O card e o detalhe do projeto mostram "em uso agora", e o item do menu
+  acende, quando houve atividade no último minuto.
 
 ### Alterado
 

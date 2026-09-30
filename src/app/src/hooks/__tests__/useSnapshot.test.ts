@@ -19,6 +19,8 @@ describe('useSnapshot', () => {
           if (i >= 0) listeners.splice(i, 1)
         }
       }),
+      getActivity: vi.fn().mockResolvedValue([]),
+      onActivity: vi.fn(() => () => {}),
       getProjectStatus: vi.fn(),
       runTrial: vi.fn(),
       getIndexRuns: vi.fn(),

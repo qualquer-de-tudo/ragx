@@ -8,6 +8,8 @@ function bridge(over: Partial<RagxBridge> = {}): RagxBridge {
   return {
     getSnapshot: vi.fn(),
     onSnapshot: vi.fn(() => () => {}),
+    getActivity: vi.fn().mockResolvedValue([]),
+    onActivity: vi.fn(() => () => {}),
     getProjectStatus: vi.fn(),
     runTrial: vi.fn(),
     getIndexRuns: vi.fn(),

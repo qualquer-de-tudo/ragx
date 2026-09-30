@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { navSection, type Route } from '../../route'
 import { RagxMark } from '../brand/RagxMark'
 
-type Section = 'projects' | 'connections' | 'how'
+type Section = 'projects' | 'activity' | 'connections' | 'how'
 
 function Icon({ children }: { children: ReactNode }) {
   return (
@@ -39,6 +39,16 @@ const ITEMS: Array<{ section: Section; label: string; route: Route; icon: ReactN
     ),
   },
   {
+    section: 'activity',
+    label: 'Atividade',
+    route: { page: 'activity' },
+    icon: (
+      <Icon>
+        <path d="M3 12h4l2.5-6 5 12 2.5-6h4" />
+      </Icon>
+    ),
+  },
+  {
     section: 'connections',
     label: 'Conexões',
     route: { page: 'connections' },
@@ -65,7 +75,16 @@ const ITEMS: Array<{ section: Section; label: string; route: Route; icon: ReactN
   },
 ]
 
-export function Sidebar({ route, onNavigate }: { route: Route; onNavigate: (route: Route) => void }) {
+export function Sidebar({
+  route,
+  onNavigate,
+  live = false,
+}: {
+  route: Route
+  onNavigate: (route: Route) => void
+  /** Algum projeto teve atividade no último minuto: acende o ponto de "Atividade". */
+  live?: boolean
+}) {
   const active = navSection(route)
   return (
     <aside className="sidebar">
@@ -85,6 +104,9 @@ export function Sidebar({ route, onNavigate }: { route: Route; onNavigate: (rout
               >
                 {item.icon}
                 <span className="nav-label">{item.label}</span>
+                {item.section === 'activity' && live && (
+                  <span className="live-dot live-dot-on nav-live" role="img" aria-label="em uso agora" />
+                )}
               </button>
             </li>
           ))}

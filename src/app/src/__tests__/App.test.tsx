@@ -10,6 +10,8 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
   const b: RagxBridge = {
     getSnapshot: vi.fn().mockResolvedValue(snapshot),
     onSnapshot: vi.fn(() => () => {}),
+    getActivity: vi.fn().mockResolvedValue([]),
+    onActivity: vi.fn(() => () => {}),
     getProjectStatus: vi.fn(),
     runTrial: vi.fn(),
     getIndexRuns: vi.fn(),

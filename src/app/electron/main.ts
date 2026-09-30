@@ -6,6 +6,7 @@ import path from 'node:path'
 import { initSqlWasm } from './data/project-stats'
 import { buildSnapshot } from './data/snapshot'
 import { runRagxCommand } from './data/run-ragx-command'
+import { ActivityTail } from './data/activity'
 import { checkAll, defaultCheckDeps } from './connections/checks'
 import { resetRagxCache, resolveRagx } from './system/ragx-exe'
 import { execFileText } from './system/exec'
@@ -46,11 +47,15 @@ const HEADLESS = BOOTSTRAP || UNINSTALL_CLI
 
 const SNAPSHOT_POLL_MS = 5000
 const CONNECTIONS_POLL_MS = 30_000
+/** Atividade: só lê o que foi acrescentado aos logs, então dá para ser curto. */
+const ACTIVITY_POLL_MS = 1500
 const JOBS_THROTTLE_MS = 250
 
 let mainWindow: BrowserWindow | null = null
 let snapshotTimer: ReturnType<typeof setInterval> | null = null
 let connectionsTimer: ReturnType<typeof setInterval> | null = null
+let activityTimer: ReturnType<typeof setInterval> | null = null
+const activity = new ActivityTail()
 
 // Último snapshot/checagens conhecidos - fonte de verdade para validar
 // `projectId`/caminhos nos handlers de IPC (nunca o pedido do renderer) e
@@ -285,6 +290,11 @@ function handleIpc(channel: string, fn: (...args: unknown[]) => unknown): void {
 }
 
 handleIpc('ragx:getSnapshot', () => handlers.getSnapshot())
+// Sem argumentos: o que já está em memória (24 h); o resto chega por `ragx:activity`.
+handleIpc('ragx:getActivity', () => {
+  pollActivity()
+  return activity.recent()
+})
 handleIpc('ragx:getProjectStatus', (projectId: unknown) => handlers.getProjectStatus(projectId))
 handleIpc('ragx:runTrial', (projectId: unknown) => handlers.runTrial(projectId))
 handleIpc('ragx:getIndexRuns', (projectId: unknown, offset: unknown) => handlers.getIndexRuns(projectId, offset))
@@ -392,6 +402,32 @@ function startSnapshotPolling(): void {
   snapshotTimer = setInterval(pushSnapshotNow, SNAPSHOT_POLL_MS)
 }
 
+/**
+ * Tela de atividade: lê o que os agentes e a CLI acrescentaram aos logs dos
+ * projetos locais e empurra só os eventos novos. Os projetos vêm do último
+ * snapshot; antes do primeiro, não há o que acompanhar.
+ */
+function pollActivity(): void {
+  const snapshot = latestSnapshot
+  if (!snapshot) return
+  const sources = snapshot.projects
+    .filter((p) => p.path !== null && p.exists)
+    .map((p) => ({ id: p.id, name: p.name, path: p.path }))
+  const novos = activity.poll(sources)
+  if (novos.length > 0) mainWindow?.webContents.send('ragx:activity', novos)
+}
+
+function startActivityPolling(): void {
+  if (activityTimer) return
+  activityTimer = setInterval(() => {
+    try {
+      pollActivity()
+    } catch (err) {
+      console.error('pollActivity() falhou:', err)
+    }
+  }, ACTIVITY_POLL_MS)
+}
+
 function startConnectionsPolling(): void {
   if (connectionsTimer) return
   // Único poller de conexões: `getConnections` já junta chamadas que chegam
@@ -443,6 +479,7 @@ function createWindow(): void {
   win.webContents.once('did-finish-load', () => {
     startSnapshotPolling()
     startConnectionsPolling()
+    startActivityPolling()
     // Fix round 1 (MINOR 4): a primeira checagem de conexão roda logo depois
     // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`
     // já constrói um snapshot se ainda não houver nenhum (decisão 2 da Task 6).
@@ -472,6 +509,7 @@ function createWindow(): void {
   win.on('closed', () => {
     if (snapshotTimer) clearInterval(snapshotTimer)
     if (connectionsTimer) clearInterval(connectionsTimer)
+    if (activityTimer) clearInterval(activityTimer)
     snapshotTimer = null
     connectionsTimer = null
     mainWindow = null

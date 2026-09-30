@@ -3,6 +3,9 @@ import { useSnapshot } from './hooks/useSnapshot'
 import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
 import { useClaudeIntegration } from './hooks/useClaudeIntegration'
+import { useActivity, useNow } from './hooks/useActivity'
+import { liveProjectIds } from './activity'
+import { ActivityPage } from './pages/ActivityPage'
 import { Sidebar } from './components/shell/Sidebar'
 import { TopBar, type Health } from './components/shell/TopBar'
 import type { Route } from './route'
@@ -33,6 +36,10 @@ function App() {
   // principal (o resultado chega por `ragx:connections`).
   const { connections, checking, refresh } = useConnections()
   const claude = useClaudeIntegration()
+  const activity = useActivity()
+  // "Em uso agora" apaga um minuto depois do último evento, sem evento novo.
+  const now = useNow(5000)
+  const liveIds = useMemo(() => liveProjectIds(activity, now), [activity, now])
 
   // `null` enquanto não se sabe. Uma falha ao ler as preferências não prende
   // ninguém no onboarding.
@@ -128,6 +135,18 @@ function App() {
           projects={projects}
           jobs={jobs}
           query={query}
+          liveIds={liveIds}
+          onOpen={(id) => setRoute({ page: 'project', id })}
+        />
+      )
+      break
+    case 'activity':
+      page = (
+        <ActivityPage
+          events={activity}
+          projects={projects}
+          jobs={jobs}
+          now={now}
           onOpen={(id) => setRoute({ page: 'project', id })}
         />
       )
@@ -138,6 +157,7 @@ function App() {
           key={route.id}
           project={projects.find((p) => p.id === route.id) ?? null}
           jobs={jobs}
+          live={liveIds.has(route.id)}
           onBack={() => setRoute({ page: 'projects' })}
         />
       )
@@ -154,7 +174,7 @@ function App() {
 
   return (
     <div className="shell">
-      <Sidebar route={route} onNavigate={setRoute} />
+      <Sidebar route={route} onNavigate={setRoute} live={liveIds.size > 0} />
       <div className="shell-main">
         <TopBar
           query={query}

@@ -1,22 +1,10 @@
 import { useId, useState } from 'react'
 import { parseRunsPage, type IndexRun } from '../../projectStatus'
 import { formatNumber, formatRelative } from '../../format'
+import { sourceLabel } from '../../indexSource'
 
 /** Tamanho da página: o `ragx status` traz as 10 primeiras, o `ragx runs` o resto. */
 const PAGE = 10
-
-/** Quem disparou a indexação (`index_runs.source`). */
-const SOURCE_LABEL: Record<string, string> = {
-  cli: 'Terminal',
-  panel: 'Painel',
-  watch: 'Watcher',
-  sync: 'Sync',
-  'mcp:refresh': 'Agente (refresh)',
-  'mcp:index': 'Agente (reindex)',
-  'hook:post-checkout': 'Troca de branch',
-  'hook:post-commit': 'Commit',
-  'hook:post-merge': 'Merge ou pull',
-}
 
 const MODE_LABEL: Record<string, string> = {
   incremental: 'incremental',
@@ -122,7 +110,7 @@ export function Timeline({
                     ) : (
                       <span className="timeline-when">sem dados</span>
                     )}
-                    <span className="timeline-source">{label(SOURCE_LABEL, run.source)}</span>
+                    <span className="timeline-source">{sourceLabel(run.source)}</span>
                     <span className="timeline-mode">{label(MODE_LABEL, run.mode)}</span>
                   </p>
                   <p className="timeline-meta">

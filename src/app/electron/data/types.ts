@@ -45,6 +45,30 @@ export interface SavingsSeries {
   calls: number
 }
 
+/** `mcp`: ferramenta chamada por um agente; `cli`: comando de consulta no terminal; `session`: sessão do Claude aberta no projeto. */
+export type ActivityKind = 'mcp' | 'cli' | 'session'
+
+/** Uma linha de `.ragx/logs/mcp.jsonl` ou `cli.jsonl`, para a tela de atividade. Nunca a consulta. */
+export interface ActivityEvent {
+  /** Único e estável: projeto, arquivo e posição da linha. */
+  id: string
+  ts: string
+  projectId: string
+  projectName: string
+  kind: ActivityKind
+  /** Ferramenta MCP (`build_context`) ou comando (`search`, `session_start`). */
+  name: string
+  ms: number | null
+  ok: boolean | null
+  tokensDelivered: number | null
+  baselineTokens: number | null
+  /** `claude-code` quando quem chamou foi o Claude Code; `null` quando não dá para saber. */
+  client: string | null
+  /** Perfil do Claude Code (`padrão`, `empresa`...). */
+  profile: string | null
+  session: string | null
+}
+
 export interface TelemetrySummary {
   callsByTool: TelemetryCallCount[]
   totalCalls: number

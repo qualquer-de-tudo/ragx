@@ -2,16 +2,19 @@
 export type Route =
   | { page: 'projects' }
   | { page: 'project'; id: string }
+  | { page: 'activity' }
   | { page: 'connections' }
   | { page: 'how' }
   | { page: 'onboarding' }
 
 /** Item da barra lateral que fica ativo para cada rota (`null`: nenhum). */
-export function navSection(route: Route): 'projects' | 'connections' | 'how' | null {
+export function navSection(route: Route): 'projects' | 'activity' | 'connections' | 'how' | null {
   switch (route.page) {
     case 'projects':
     case 'project':
       return 'projects'
+    case 'activity':
+      return 'activity'
     case 'connections':
       return 'connections'
     case 'how':

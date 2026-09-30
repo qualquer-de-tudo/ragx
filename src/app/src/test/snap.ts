@@ -32,6 +32,8 @@ export function installBridge(over: Partial<RagxBridge> = {}): RagxBridge {
   const b: RagxBridge = {
     getSnapshot: vi.fn().mockResolvedValue({ projects: [], generatedAt: '2026-09-23T10:00:00Z' }),
     onSnapshot: vi.fn(() => () => {}),
+    getActivity: vi.fn().mockResolvedValue([]),
+    onActivity: vi.fn(() => () => {}),
     getProjectStatus: vi.fn(),
     runTrial: vi.fn(),
     getIndexRuns: vi.fn(),

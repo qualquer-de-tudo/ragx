@@ -18,17 +18,31 @@ instalado no sistema. Tema sempre escuro; título da janela "RAGX Painel".
   problema"; a busca no topo ignora maiúsculas e acentos. "Adicionar
   projeto" pede uma pasta, lista os projetos do RAGX encontrados dentro
   dela e instala os hooks de git por padrão.
-- **Detalhe do projeto**: responde "o índice está em dia?" com os motivos
-  exatos de `ragx status --json` e mostra a linha do tempo das últimas 10
-  indexações (quando, quem disparou, o modo, a branch e o commit). Também
-  traz os números do índice com a cobertura de embeddings, o interruptor
-  dos hooks de git, os botões "Atualizar agora", "Gerar embeddings
-  faltantes" e "Reindexar do zero" (com segundo clique), as ações que
-  alteram `knowledge/` versionado (sincronizar, reconstruir grafo, gerar
-  dicionário), o uso pelos agentes nas últimas 24 horas, a economia
-  estimada sob demanda (`ragx trial`), os achados de segurança sob demanda
-  (`ragx security scan`) e "Remover do hub" (com segundo clique; nada é
-  apagado no disco).
+- **Detalhe do projeto**: quatro abas. **Visão geral**: os números do
+  índice com a cobertura de embeddings, "o índice está em dia?" com os
+  motivos exatos de `ragx status --json` e o uso pelos agentes nas últimas
+  24 horas. **Economia de tokens**: o uso real dos últimos 14 dias e a
+  simulação sob demanda (`ragx trial`). **Histórico**: a linha do tempo das
+  indexações (quando, quem disparou, o modo, a branch e o commit), com
+  "Carregar mais". **Manutenção**: "Atualizar agora", "Gerar embeddings
+  faltantes" e "Reindexar do zero" (com segundo clique), o interruptor dos
+  hooks de git, os achados de segurança sob demanda (`ragx security scan`),
+  as ações que alteram `knowledge/` versionado e "Remover do hub" (com
+  segundo clique; nada é apagado no disco). A aba escolhida vale para o
+  próximo projeto aberto; as outras ficam montadas e ocultas, então trocar
+  de aba não perde estado.
+- **Atividade**: o que os agentes e a CLI estão fazendo, ao vivo. No topo, o
+  resumo das últimas 24 h (chamadas MCP, sessões do Claude, comandos no
+  terminal, tokens economizados, projetos em uso); depois "Em andamento", com
+  as indexações rodando agora (por hook, CLI ou fila do painel); e o feed dos
+  eventos, do mais novo ao mais antigo: hora, projeto, o que foi (ferramenta
+  MCP, `ragx search`, sessão aberta), quem (`Claude Code · empresa`, `Terminal
+  do Claude · padrão`, `Terminal`), tokens com a economia e o tempo. Filtra
+  por tipo e por projeto. Vem de `.ragx/logs/mcp.jsonl` e `cli.jsonl` de cada
+  projeto local: o processo principal lê só o que foi acrescentado, a cada
+  1,5 s, e empurra os eventos por `ragx:activity`. O card e o detalhe do
+  projeto mostram "em uso agora", e o item do menu acende, quando houve
+  evento no último minuto. Nunca mostra a consulta: o log não a tem.
 - **Conexões**: três cards (RAGX CLI, Claude Code e Ollama), cada
   um com o selo "Conectado", "Atenção" ou "Não conectado", os fatos da
   checagem e as correções de um clique ("Registrar para todos os

@@ -6,7 +6,7 @@
 | **Prioridade** | P1 |
 | **Estimativa** | 1d |
 | **Depende de** | RAGX-0125 |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,15 +15,15 @@ que custo: um item "Atividade" no menu e um sinal no card e no detalhe.
 
 ## Entregáveis
 
-- [ ] Processo principal acompanha `mcp.jsonl` e `cli.jsonl` de cada projeto
+- [x] Processo principal acompanha `mcp.jsonl` e `cli.jsonl` de cada projeto
       local pelo deslocamento no arquivo (só o que foi acrescentado), junta as
       indexações em andamento e empurra os eventos ao renderer
-- [ ] Tela "Atividade": feed dos eventos das últimas 24 h, o mais novo em cima,
+- [x] Tela "Atividade": feed dos eventos das últimas 24 h, o mais novo em cima,
       com hora, projeto, o que foi (ferramenta MCP, comando, sessão, indexação),
       quem (perfil do Claude, terminal, hook), tokens e tempo; filtro por
       projeto e por tipo; indicador "ao vivo"
-- [ ] Card e detalhe mostram "em uso agora" quando houve evento no último minuto
-- [ ] Clicar num evento abre o projeto
+- [x] Card e detalhe mostram "em uso agora" quando houve evento no último minuto
+- [x] Clicar num evento abre o projeto
 
 ## Fora de escopo
 
@@ -32,9 +32,9 @@ que custo: um item "Atividade" no menu e um sinal no card e no detalhe.
 
 ## Critérios de aceite
 
-- [ ] Uma chamada MCP aparece na tela em até ~2 s, sem recarregar
-- [ ] Arquivo de log grande não é relido inteiro a cada ciclo
-- [ ] Log com linha quebrada ou truncada não derruba o feed
+- [x] Uma chamada MCP aparece na tela em até ~2 s, sem recarregar (leitura a cada 1,5 s; verificado com o painel rodando)
+- [x] Arquivo de log grande não é relido inteiro a cada ciclo
+- [x] Log com linha quebrada ou truncada não derruba o feed
 
 ## Testes
 
@@ -43,6 +43,6 @@ inválida); vitest da tela e do sinal no card.
 
 ## Definition of Done
 
-- [ ] Critérios verificados
-- [ ] CHANGELOG na mesma alteração
-- [ ] src/app/README.md atualizado
+- [x] Critérios verificados
+- [x] CHANGELOG na mesma alteração
+- [x] src/app/README.md atualizado

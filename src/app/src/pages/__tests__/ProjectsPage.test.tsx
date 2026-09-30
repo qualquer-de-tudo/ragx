@@ -361,3 +361,11 @@ describe('ProjectsPage', () => {
     expect(c.getByText('Sem git')).toBeInTheDocument()
   })
 })
+
+describe('ProjectsPage: em uso agora', () => {
+  it('o card do projeto com atividade no último minuto diz "em uso agora"; os outros não', () => {
+    render(<ProjectsPage projects={ALL} jobs={[]} query="" liveIds={new Set([ALL[0].id])} onOpen={vi.fn()} />)
+    expect(within(card(ALL[0].name)).getByText('em uso agora')).toBeInTheDocument()
+    expect(within(card(ALL[1].name)).queryByText('em uso agora')).not.toBeInTheDocument()
+  })
+})

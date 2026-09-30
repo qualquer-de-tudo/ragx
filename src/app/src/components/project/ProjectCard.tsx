@@ -3,6 +3,7 @@ import type { JobKind, JobView, ProjectSnapshot } from '../../types/ragx-bridge'
 import { STATE_ACTION, jobStateLabel, STATE_LABEL, STATE_TONE, type ProjectState } from '../../state'
 import { formatCompact, formatEta, formatRelative } from '../../format'
 import { Badge } from '../shell/Badge'
+import { LivePill } from '../shell/LivePill'
 
 export function BranchIcon() {
   return (
@@ -51,6 +52,7 @@ export function ProjectCard({
   job = null,
   active = null,
   failure = null,
+  live = false,
   onOpen,
   onAction,
 }: {
@@ -64,6 +66,8 @@ export function ProjectCard({
   active?: JobView | null
   /** Erro da última tarefa do projeto, quando ela falhou. */
   failure?: string | null
+  /** Houve atividade (MCP, CLI, sessão) no último minuto. */
+  live?: boolean
   onOpen: (id: string) => void
   onAction: (kind: JobKind) => void
 }) {
@@ -131,6 +135,7 @@ export function ProjectCard({
         </h2>
         <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>
       </div>
+      {live && <LivePill />}
 
       <p className="project-card-where">{hint ?? 'sem dados'}</p>
 

@@ -17,7 +17,7 @@ rastro nenhum.
 
 ## Entregáveis
 
-- [x] `mcp.jsonl` ganha `client` (nome do cliente MCP, do `initialize`) e
+- [x] `mcp.jsonl` ganha `client` (Claude Code, pelo `CLAUDECODE` que ele passa aos processos filhos) e
       `profile` (perfil do Claude Code pelo `CLAUDE_CONFIG_DIR` herdado: `padrão`
       sem a variável, o sufixo de `~/.claude-<nome>`, ou o nome da pasta)
 - [x] `.ragx/logs/cli.jsonl`: uma linha por comando de consulta rodado à mão

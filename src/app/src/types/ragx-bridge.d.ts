@@ -1,4 +1,6 @@
-import type { TelemetrySummary } from '../../electron/data/types'
+import type { ActivityEvent, TelemetrySummary } from '../../electron/data/types'
+
+export type { ActivityEvent }
 import type { RendererSettings } from '../../electron/settings'
 
 /** Só o que o renderer vê; o modo preferido do Ollama fica no processo principal. */
@@ -221,6 +223,10 @@ export interface ClaudeIntegration {
 export interface RagxBridge {
   getSnapshot: () => Promise<Snapshot>
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void
+  /** Eventos de atividade das últimas 24 h em memória, do mais antigo ao mais novo. */
+  getActivity: () => Promise<ActivityEvent[]>
+  /** Só os eventos novos, a cada ~1,5 s em que algum log cresceu. */
+  onActivity: (cb: (events: ActivityEvent[]) => void) => () => void
   getProjectStatus: (projectId: string) => Promise<unknown>
   runTrial: (projectId: string) => Promise<TrialResult>
   /** Página do histórico de indexações (`ragx runs --json`), a partir de `offset`. */

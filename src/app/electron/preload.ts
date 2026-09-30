@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
+  ActivityEvent,
   ClaudeIntegration,
   ConnectionCheck,
   DiscoverResult,
@@ -19,6 +20,12 @@ const ragx: RagxBridge = {
     const listener = (_event: Electron.IpcRendererEvent, snapshot: Snapshot) => cb(snapshot)
     ipcRenderer.on('ragx:snapshot', listener)
     return () => ipcRenderer.removeListener('ragx:snapshot', listener)
+  },
+  getActivity: (): Promise<ActivityEvent[]> => ipcRenderer.invoke('ragx:getActivity'),
+  onActivity: (cb: (events: ActivityEvent[]) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, events: ActivityEvent[]) => cb(events)
+    ipcRenderer.on('ragx:activity', listener)
+    return () => ipcRenderer.removeListener('ragx:activity', listener)
   },
   getProjectStatus: (projectId: string): Promise<unknown> => ipcRenderer.invoke('ragx:getProjectStatus', projectId),
   runTrial: (projectId: string): Promise<TrialResult> => ipcRenderer.invoke('ragx:runTrial', projectId),

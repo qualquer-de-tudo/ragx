@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import type { JobView, ProjectSnapshot } from '../types/ragx-bridge'
 import type { TelemetrySummary } from '../../electron/data/types'
 import {
@@ -14,6 +14,8 @@ import { formatNumber, formatPercent, formatRelative } from '../format'
 import { parseProjectStatus, reasonText, UNKNOWN_FRESHNESS_TEXT, type ProjectStatus } from '../projectStatus'
 import { enqueue } from '../jobs'
 import { Badge } from '../components/shell/Badge'
+import { Section, Stat } from '../components/shell/Card'
+import { LivePill } from '../components/shell/LivePill'
 import { BranchIcon } from '../components/project/ProjectCard'
 import { ConfirmButton } from '../components/project/ConfirmButton'
 import { JobButton } from '../components/project/JobButton'
@@ -100,28 +102,6 @@ function BackButton({ onBack }: { onBack: () => void }) {
 }
 
 /** Seção com título `h2` que dá nome à região (leitor de tela e testes). */
-function Section({ title, className, children }: { title: string; className?: string; children: ReactNode }) {
-  const titleId = useId()
-  return (
-    <section className={`card detail-card${className ? ` ${className}` : ''}`} aria-labelledby={titleId}>
-      <h2 className="card-title" id={titleId}>
-        {title}
-      </h2>
-      {children}
-    </section>
-  )
-}
-
-function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
-  return (
-    <div className="stat">
-      <p className="stat-label">{label}</p>
-      <p className="stat-value">{value}</p>
-      {note && <p className="stat-note">{note}</p>}
-    </div>
-  )
-}
-
 function coverageText(counts: NonNullable<ProjectSnapshot['counts']>): string {
   if (counts.chunks === 0) return 'sem dados'
   // Arredonda para baixo: faltando um chunk, não mostra "100%".
@@ -393,10 +373,13 @@ function branchText(git: ProjectSnapshot['git']): string {
 export function ProjectPage({
   project,
   jobs,
+  live = false,
   onBack,
 }: {
   project: ProjectSnapshot | null
   jobs: readonly JobView[]
+  /** Houve atividade no último minuto (tela de atividade). */
+  live?: boolean
   onBack: () => void
 }) {
   const status = useProjectStatus(project)
@@ -426,6 +409,7 @@ export function ProjectPage({
         <div className="detail-title-row">
           <h1 className="page-title">{project.name}</h1>
           <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>
+          {live && <LivePill />}
         </div>
         <p className="mono dim">{project.path ?? 'sem dados'}</p>
         <p className="detail-branch">

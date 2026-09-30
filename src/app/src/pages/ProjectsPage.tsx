@@ -107,11 +107,14 @@ export function ProjectsPage({
   projects,
   jobs,
   query,
+  liveIds,
   onOpen,
 }: {
   projects: ProjectSnapshot[]
   jobs: JobView[]
   query: string
+  /** Projetos com atividade no último minuto (tela de atividade). */
+  liveIds?: ReadonlySet<string>
   onOpen: (id: string) => void
 }) {
   const [filter, setFilter] = useState<Filter>('all')
@@ -176,6 +179,7 @@ export function ProjectsPage({
               job={r.job}
               active={activeAction(jobs, r.project.id, r.state)}
               failure={r.failure}
+              live={liveIds?.has(r.project.id) ?? false}
               onOpen={onOpen}
               onAction={(kind) => queueAction(r.project, kind)}
             />

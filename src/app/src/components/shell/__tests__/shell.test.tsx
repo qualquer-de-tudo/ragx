@@ -55,6 +55,17 @@ describe('Sidebar', () => {
   })
 })
 
+describe('Sidebar: atividade', () => {
+  it('tem o item Atividade, que acende quando há uso no último minuto', () => {
+    const onNavigate = vi.fn()
+    const { rerender } = render(<Sidebar route={{ page: 'activity' }} onNavigate={onNavigate} />)
+    expect(screen.getByRole('button', { name: 'Atividade' })).toHaveAttribute('aria-current', 'page')
+    rerender(<Sidebar route={{ page: 'projects' }} onNavigate={onNavigate} live />)
+    fireEvent.click(screen.getByRole('button', { name: 'Atividade em uso agora' }))
+    expect(onNavigate).toHaveBeenCalledWith({ page: 'activity' })
+  })
+})
+
 describe('QueueIndicator', () => {
   it('diz "Nenhuma tarefa" com a fila vazia', () => {
     render(<QueueIndicator jobs={[]} onCancel={() => {}} />)
