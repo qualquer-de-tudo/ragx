@@ -9,6 +9,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Alterado
+
+- **Detalhe do projeto em abas.** Os onze blocos empilhados numa página só viraram
+  quatro abas: **Visão geral** (índice, "Está em dia?" e uso pelos agentes nas
+  últimas 24 h), **Economia de tokens** (gráfico, tabela e simulação),
+  **Histórico** (linha do tempo na largura toda) e **Manutenção** (ações, hooks,
+  segurança, conhecimento no git e "Remover do hub"). A aba escolhida vale para o
+  próximo projeto aberto, e trocar de aba não perde a página carregada da linha
+  do tempo nem a simulação. Navegável pelo teclado (setas, Home, End).
+
 ## [1.0.0-beta.4] — 2026-09-29
 
 ### Adicionado

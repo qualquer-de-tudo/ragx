@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ProjectPage } from '../ProjectPage'
 import { installBridge, job, snap } from '../../test/snap'
+import { rememberProjectTab, type ProjectTab } from '../../projectTab'
 import type { JobView, ProjectSnapshot, RagxBridge } from '../../types/ragx-bridge'
 
 /** Resposta de `ragx status --json`; cada teste troca só o que importa. */
@@ -57,6 +58,12 @@ function renderPage(
 
 const section = (name: string) => screen.getByRole('region', { name })
 
+/** A página separa as seções em abas; a aba lembrada é a que abre. */
+const naAba = (aba: ProjectTab) => beforeEach(() => rememberProjectTab(aba))
+const abrirAba = (nome: string) => fireEvent.click(screen.getByRole('tab', { name: nome }))
+const botaoTrial = () => (abrirAba('Economia de tokens'), screen.getByRole('button', { name: /simular economia/i }))
+const botaoScan = () => (abrirAba('Manutenção'), screen.getByRole('button', { name: /atualizar achados de segurança/i }))
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-09-23T12:00:00Z'))
@@ -64,6 +71,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
+  rememberProjectTab('geral')
 })
 
 describe('ProjectPage: topo', () => {
@@ -216,6 +224,7 @@ describe('ProjectPage: está em dia?', () => {
       }),
     })
     expect(await screen.findByText('O índice está defasado.')).toBeInTheDocument()
+    abrirAba('Histórico')
     expect(within(section('Linha do tempo')).getAllByRole('listitem')).toHaveLength(1)
   })
 
@@ -276,6 +285,8 @@ describe('ProjectPage: está em dia?', () => {
 })
 
 describe('ProjectPage: linha do tempo', () => {
+  naAba('historico')
+
   it('traduz origem e modo, e mostra quando, branch, commit e o que mudou', async () => {
     renderPage({
       status: status({
@@ -336,6 +347,8 @@ describe('ProjectPage: linha do tempo', () => {
 })
 
 describe('ProjectPage: hooks de git', () => {
+  naAba('manutencao')
+
   it('instalados: interruptor ligado, e desligar enfileira hooks-uninstall', async () => {
     const { bridge } = renderPage({ project: snap({ hooksInstalled: true }) })
     const hooks = within(section('Hooks de git'))
@@ -378,6 +391,8 @@ describe('ProjectPage: hooks de git', () => {
 })
 
 describe('ProjectPage: manutenção e knowledge', () => {
+  naAba('manutencao')
+
   it('"Atualizar agora" enfileira update', async () => {
     const { bridge } = renderPage()
     fireEvent.click(within(section('Manutenção')).getByRole('button', { name: 'Atualizar agora' }))
@@ -459,6 +474,8 @@ describe('ProjectPage: manutenção e knowledge', () => {
 })
 
 describe('ProjectPage: remover do hub', () => {
+  naAba('manutencao')
+
   it('só enfileira no segundo clique e depois volta para Projetos', async () => {
     const { bridge, onBack } = renderPage()
     expect(screen.getByText('Tira o projeto do painel. Nada é apagado no disco.')).toBeInTheDocument()
@@ -512,6 +529,8 @@ describe('ProjectPage: uso pelos agentes', () => {
 })
 
 describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
+  naAba('economia')
+
   it('desabilita as ações sob demanda e explica o motivo quando o projeto não tem path local (só federação)', () => {
     const { bridge } = renderPage({
       project: snap({
@@ -524,8 +543,8 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
         hooksInstalled: null,
       }),
     })
-    const trial = screen.getByRole('button', { name: /simular economia/i })
-    const scan = screen.getByRole('button', { name: /atualizar achados de segurança/i })
+    const trial = botaoTrial()
+    const scan = botaoScan()
     expect(trial).toBeDisabled()
     expect(scan).toBeDisabled()
     expect(screen.getAllByText('Disponível apenas para projetos clonados localmente.')).toHaveLength(2)
@@ -538,8 +557,8 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
 
   it('mantém as ações sob demanda habilitadas quando o projeto tem path local', async () => {
     renderPage({ project: snap({ id: 'local', path: 'C:\\a' }) })
-    expect(screen.getByRole('button', { name: /simular economia/i })).toBeEnabled()
-    expect(screen.getByRole('button', { name: /atualizar achados de segurança/i })).toBeEnabled()
+    expect(botaoTrial()).toBeEnabled()
+    expect(botaoScan()).toBeEnabled()
     expect(screen.queryByText('Disponível apenas para projetos clonados localmente.')).not.toBeInTheDocument()
     await screen.findByText('Em dia com o que está no disco')
   })
@@ -551,7 +570,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
     renderPage({ project: snap({ id: 'trial-neg' }), bridge: { runTrial } })
     expect(screen.getByText('estimativa')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /simular economia/i }))
+    fireEvent.click(botaoTrial())
 
     await waitFor(() => expect(screen.getByText('mais tokens')).toBeInTheDocument())
     expect(runTrial).toHaveBeenCalledWith('trial-neg')
@@ -566,7 +585,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
         runTrial: vi.fn().mockRejectedValue(new Error('ragx trial --json saiu com código 2: queries.yaml não encontrado')),
       },
     })
-    fireEvent.click(screen.getByRole('button', { name: /simular economia/i }))
+    fireEvent.click(botaoTrial())
     expect(await screen.findByText(/não foi possível calcular agora: .*queries\.yaml não encontrado/i)).toBeInTheDocument()
   })
 
@@ -578,7 +597,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
       redacted: [{ path: 'docs/setup.md', findings: 2 }],
     })
     renderPage({ project: snap({ id: 'scan-dirty' }), bridge: { runSecurityScan } })
-    fireEvent.click(screen.getByRole('button', { name: /atualizar achados de segurança/i }))
+    fireEvent.click(botaoScan())
 
     await waitFor(() => expect(screen.getByText('.env')).toBeInTheDocument())
     expect(runSecurityScan).toHaveBeenCalledWith('scan-dirty')
@@ -600,7 +619,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
         }),
       },
     })
-    fireEvent.click(screen.getByRole('button', { name: /atualizar achados de segurança/i }))
+    fireEvent.click(botaoScan())
     await waitFor(() => expect(screen.getByText(/nenhum segredo encontrado em 12 arquivos/i)).toBeInTheDocument())
   })
 
@@ -609,7 +628,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
       project: snap({ id: 'scan-err' }),
       bridge: { runSecurityScan: vi.fn().mockRejectedValue(new Error('ragx não encontrado no PATH')) },
     })
-    fireEvent.click(screen.getByRole('button', { name: /atualizar achados de segurança/i }))
+    fireEvent.click(botaoScan())
     expect(await screen.findByText(/não foi possível escanear agora: ragx não encontrado no path/i)).toBeInTheDocument()
   })
 
@@ -618,7 +637,7 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
       totals: { baseline_tokens: 1000, ragx_tokens: 760, saved_ratio: 0.24, source_coverage: 0.63 },
     })
     const { unmount } = renderPage({ project: snap({ id: 'trial-cache' }), bridge: { runTrial } })
-    fireEvent.click(screen.getByRole('button', { name: /simular economia/i }))
+    fireEvent.click(botaoTrial())
     await waitFor(() => expect(screen.getByText('menos tokens')).toBeInTheDocument())
     unmount()
 
@@ -630,6 +649,8 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
 })
 
 describe('ProjectPage: linha do tempo paginada', () => {
+  naAba('historico')
+
   it('"Carregar mais" pede a página seguinte e some quando acaba', async () => {
     const first = Array.from({ length: 10 }, (_, i) => run({ id: 20 - i }))
     const getIndexRuns = vi.fn().mockResolvedValue({ runs: [run({ id: 10 }), run({ id: 9 })], total: 12 })
@@ -659,6 +680,8 @@ describe('ProjectPage: linha do tempo paginada', () => {
 })
 
 describe('ProjectPage: economia de tokens (uso real)', () => {
+  naAba('economia')
+
   function days(values: Array<[number, number, number]>) {
     return values.map(([baseline, delivered, calls], i) => ({
       date: `2026-09-${String(10 + i).padStart(2, '0')}`,
@@ -699,6 +722,48 @@ describe('ProjectPage: economia de tokens (uso real)', () => {
     // a tabela lista só os dias com consulta
     const rows = within(s.getByRole('table')).getAllByRole('row')
     expect(rows).toHaveLength(3)
+    await screen.findByText('Em dia com o que está no disco')
+  })
+})
+
+describe('ProjectPage: abas', () => {
+  it('abre na visão geral, com as outras seções ocultas mas montadas', async () => {
+    renderPage()
+    expect(screen.getByRole('tab', { name: 'Visão geral' })).toHaveAttribute('aria-selected', 'true')
+    expect(section('Índice')).toBeVisible()
+    expect(screen.queryByRole('region', { name: 'Linha do tempo' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Linha do tempo', hidden: true })).not.toBeVisible()
+    await screen.findByText('Em dia com o que está no disco')
+  })
+
+  it('clique troca a aba, e a escolhida vale para o próximo projeto aberto', async () => {
+    const { unmount } = renderPage()
+    abrirAba('Manutenção')
+    expect(screen.getByRole('tab', { name: 'Manutenção' })).toHaveAttribute('aria-selected', 'true')
+    expect(section('Hooks de git')).toBeVisible()
+    await screen.findByText('Em dia com o que está no disco')
+    unmount()
+
+    renderPage({ project: snap({ id: 'outro' }) })
+    expect(screen.getByRole('tab', { name: 'Manutenção' })).toHaveAttribute('aria-selected', 'true')
+    await screen.findByText('Em dia com o que está no disco')
+  })
+
+  it('setas, Home e End navegam entre as abas pelo teclado', async () => {
+    renderPage()
+    const geral = screen.getByRole('tab', { name: 'Visão geral' })
+    geral.focus()
+    fireEvent.keyDown(geral, { key: 'ArrowRight' })
+    expect(screen.getByRole('tab', { name: 'Economia de tokens' })).toHaveFocus()
+    expect(screen.getByRole('tab', { name: 'Economia de tokens' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(document.activeElement!, { key: 'End' })
+    expect(screen.getByRole('tab', { name: 'Manutenção' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' })
+    expect(geral).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowLeft' })
+    expect(screen.getByRole('tab', { name: 'Manutenção' })).toHaveFocus()
+    // só a aba ativa entra na ordem do Tab
+    expect(screen.getAllByRole('tab').filter((t) => t.tabIndex === 0)).toHaveLength(1)
     await screen.findByText('Em dia com o que está no disco')
   })
 })

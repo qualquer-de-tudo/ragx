@@ -21,6 +21,8 @@ import { MaintenancePanel } from '../components/project/MaintenancePanel'
 import { Timeline } from '../components/project/Timeline'
 import { TokenSavings } from '../components/project/TokenSavings'
 import { SecurityPanel } from '../components/SecurityPanel'
+import { TabPanel, Tabs, type TabItem } from '../components/shell/Tabs'
+import { lastProjectTab, rememberProjectTab, type ProjectTab } from '../projectTab'
 
 type StatusView =
   | { phase: 'loading' }
@@ -402,6 +404,8 @@ export function ProjectPage({
     () => (project ? deriveProjectState(project, busyProjectIds(jobs)) : null),
     [project, jobs],
   )
+  const [tab, chooseTab] = useRememberedTab()
+  const tabsId = useId()
 
   if (project === null || state === null) {
     return (
@@ -430,14 +434,21 @@ export function ProjectPage({
         </p>
       </header>
 
-      <div className="detail-grid detail-grid-top">
-        <IndexSection project={project} jobs={jobs} />
-        <FreshnessSection project={project} view={status} />
-      </div>
+      <Tabs label="Detalhe do projeto" tabs={PROJECT_TABS} active={tab} onChange={chooseTab} idPrefix={tabsId} />
 
-      <TokenSavings projectId={project.id} projectPath={project.path} savings={project.telemetry.savings} />
+      <TabPanel id="geral" idPrefix={tabsId} active={tab === 'geral'}>
+        <div className="detail-grid detail-grid-top">
+          <IndexSection project={project} jobs={jobs} />
+          <FreshnessSection project={project} view={status} />
+        </div>
+        <UsageSection telemetry={project.telemetry} />
+      </TabPanel>
 
-      <div className="detail-grid detail-grid-main">
+      <TabPanel id="economia" idPrefix={tabsId} active={tab === 'economia'}>
+        <TokenSavings projectId={project.id} projectPath={project.path} savings={project.telemetry.savings} />
+      </TabPanel>
+
+      <TabPanel id="historico" idPrefix={tabsId} active={tab === 'historico'}>
         <Timeline
           key={project.id}
           projectId={project.id}
@@ -445,20 +456,38 @@ export function ProjectPage({
           pending={status.phase === 'loading' ? 'Verificando…' : 'sem dados'}
           running={project.running !== null}
         />
-        <div className="detail-stack">
+      </TabPanel>
+
+      <TabPanel id="manutencao" idPrefix={tabsId} active={tab === 'manutencao'}>
+        <div className="detail-grid detail-grid-2">
           <MaintenancePanel project={project} jobs={jobs} />
           <HooksSection project={project} jobs={jobs} />
         </div>
-      </div>
-
-      <div className="detail-grid detail-grid-2">
-        <UsageSection telemetry={project.telemetry} />
         <SecurityPanel projectId={project.id} projectPath={project.path} />
-      </div>
-
-      <KnowledgeSection project={project} jobs={jobs} />
-
-      <RemoveFromHub project={project} jobs={jobs} onBack={onBack} />
+        <KnowledgeSection project={project} jobs={jobs} />
+        <RemoveFromHub project={project} jobs={jobs} onBack={onBack} />
+      </TabPanel>
     </section>
   )
+}
+
+/**
+ * Onze blocos numa página só era informação demais de uma vez. O que se olha
+ * todo dia (índice, está em dia?, uso) fica na primeira aba; o que se usa de
+ * vez em quando (economia, histórico, manutenção) fica a um clique.
+ */
+const PROJECT_TABS: readonly TabItem<ProjectTab>[] = [
+  { id: 'geral', label: 'Visão geral' },
+  { id: 'economia', label: 'Economia de tokens' },
+  { id: 'historico', label: 'Histórico' },
+  { id: 'manutencao', label: 'Manutenção' },
+]
+
+function useRememberedTab(): [ProjectTab, (tab: ProjectTab) => void] {
+  const [tab, setTab] = useState<ProjectTab>(lastProjectTab)
+  const choose = (next: ProjectTab) => {
+    setTab(next)
+    rememberProjectTab(next)
+  }
+  return [tab, choose]
 }

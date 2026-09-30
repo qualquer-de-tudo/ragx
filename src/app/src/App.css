@@ -1838,6 +1838,67 @@
   color: var(--ink-3);
 }
 
+/* ── abas ───────────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  position: relative;
+  padding: 10px 14px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.tab:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.tab-active {
+  color: var(--ink);
+}
+
+/* Sublinhado da aba ativa, por cima da linha do tablist. */
+.tab-active::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.tab-panel {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+/* `display: grid` acima venceria o `hidden` do navegador. */
+.tab-panel[hidden] {
+  display: none;
+}
+
 /* ── detalhe do projeto: composição ─────────────────────────────────── */
 
 /* Números do índice ocupam mais; "Está em dia?" é a coluna estreita. */
@@ -1846,20 +1907,8 @@
   align-items: stretch;
 }
 
-/* Linha do tempo à esquerda; manutenção e hooks empilhados à direita. */
-.detail-grid-main {
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-}
-
-.detail-stack {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-}
-
 @media (max-width: 960px) {
-  .detail-grid-top,
-  .detail-grid-main {
+  .detail-grid-top {
     grid-template-columns: minmax(0, 1fr);
   }
 }
