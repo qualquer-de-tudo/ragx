@@ -26,6 +26,7 @@ import { RelativeTime } from '../components/shell/RelativeTime'
 import { Icon } from '../components/ui/Icon'
 import { IconButton } from '../components/ui/IconButton'
 import { Switch } from '../components/ui/Switch'
+import { SkeletonRegion, SkeletonText } from '../components/ui/Skeleton'
 import { Tooltip } from '../components/ui/Tooltip'
 import { TabPanel, Tabs, type TabItem } from '../components/shell/Tabs'
 import { lastProjectTab, rememberProjectTab, type ProjectTab } from '../projectTab'
@@ -138,9 +139,9 @@ function FreshnessSection({ project, view }: { project: ProjectSnapshot; view: S
   let body
   if (view.phase === 'loading') {
     body = (
-      <p className="dim" role="status">
-        Verificando…
-      </p>
+      <SkeletonRegion label="Verificando…">
+        <SkeletonText lines={2} />
+      </SkeletonRegion>
     )
   } else if (view.phase === 'error') {
     body = <p className="callout callout-error">Não foi possível verificar agora: {view.message}</p>

@@ -131,7 +131,12 @@
 
   window.__VISUAL_ONBOARDING__ = new URLSearchParams(location.search).get('onboarding') === '1'
   window.ragx = {
-    getSnapshot: async () => ({ projects, generatedAt: new Date().toISOString(), connectionsHealth: 'warn' }),
+    // `?snapshotDelay=3000` atrasa a primeira resposta (medição de primeira pintura, RAGX-0182)
+    getSnapshot: async () => {
+      const delay = Number(new URLSearchParams(location.search).get('snapshotDelay') || 0)
+      if (delay > 0) await new Promise((r) => setTimeout(r, delay))
+      return { projects, generatedAt: new Date().toISOString(), connectionsHealth: 'warn' }
+    },
     onSnapshot: none,
     getActivity: async () => activity,
     onActivity: none,

@@ -8,6 +8,8 @@ import { useJobFailureToasts } from './hooks/useJobFailureToasts'
 import { ipcErrorMessage } from './ipcError'
 import { notify } from './toast'
 import { Toaster } from './components/ui/Toaster'
+import { SkeletonCard, SkeletonRegion } from './components/ui/Skeleton'
+import { formatClock } from './format'
 import { useLiveIds } from './hooks/useClock'
 import { ActivityPage } from './pages/ActivityPage'
 import { Sidebar } from './components/shell/Sidebar'
@@ -34,7 +36,7 @@ function worstOf(checks: ConnectionCheck[] | null): Health {
 }
 
 function App() {
-  const { snapshot } = useSnapshot()
+  const { snapshot, fromCache, error: snapshotError, retry } = useSnapshot()
   const jobs = useJobs()
   useJobFailureToasts(jobs)
   // Depois de uma correção de conexão, quem confere de novo é o processo
@@ -116,16 +118,12 @@ function App() {
     setRoute({ page: 'projects' })
   }, [])
 
-  if (route === null) {
-    return (
-      <div className="boot" role="status">
-        Carregando…
-      </div>
-    )
-  }
+  // Só as preferências ainda são desconhecidas: fundo vazio, sem "Carregando…" em tela cheia e sem piscar a casca
+  // antes do onboarding (RAGX-0182).
+  if (route === null && onboardingDone !== true) return <div className="boot" />
 
   // Onboarding é tela cheia, sem barra lateral nem barra superior.
-  if (route.page === 'onboarding') {
+  if (route !== null && route.page === 'onboarding') {
     return (
       <>
         <Onboarding
@@ -140,8 +138,10 @@ function App() {
     )
   }
 
+  // Preferências lidas e nenhum snapshot ainda: a casca já aparece, com skeleton (ou o erro) no conteúdo.
+  const shellRoute: Route = route ?? { page: 'projects' }
   let page
-  switch (route.page) {
+  switch (shellRoute.page) {
     case 'projects':
       page = (
         <ProjectsPage
@@ -166,10 +166,10 @@ function App() {
     case 'project':
       page = (
         <ProjectPage
-          key={route.id}
-          project={projects.find((p) => p.id === route.id) ?? null}
+          key={shellRoute.id}
+          project={projects.find((p) => p.id === shellRoute.id) ?? null}
           jobs={jobs}
-          live={liveIds.has(route.id)}
+          live={liveIds.has(shellRoute.id)}
           onBack={() => setRoute({ page: 'projects' })}
         />
       )
@@ -192,7 +192,7 @@ function App() {
 
   return (
     <div className="shell">
-      <Sidebar route={route} onNavigate={setRoute} live={liveIds.size > 0} />
+      <Sidebar route={shellRoute} onNavigate={setRoute} live={liveIds.size > 0} />
       <div className="shell-main">
         <TopBar
           query={query}
@@ -204,7 +204,38 @@ function App() {
           onCancelJob={onCancelJob}
         />
         <main className="content" ref={contentRef}>
-          <div className="content-inner">{page}</div>
+          <div className="content-inner">
+            {fromCache && snapshot !== null && (
+              <p className="stale-banner" role="status">
+                Dados de {formatClock(snapshot.generatedAt)}, atualizando…
+              </p>
+            )}
+            {route === null ? (
+              snapshotError !== null ? (
+                <section className="page" aria-labelledby="snapshot-error-title">
+                  <h1 className="page-title" id="snapshot-error-title">
+                    Não foi possível carregar os projetos
+                  </h1>
+                  <p className="callout callout-error">{snapshotError}</p>
+                  <button type="button" className="btn btn-primary" onClick={retry}>
+                    Tentar de novo
+                  </button>
+                </section>
+              ) : (
+                <SkeletonRegion label="Carregando projetos" className="page">
+                  <ul className="project-grid" aria-hidden="true">
+                    {Array.from({ length: 6 }, (_, i) => (
+                      <li key={i}>
+                        <SkeletonCard />
+                      </li>
+                    ))}
+                  </ul>
+                </SkeletonRegion>
+              )
+            ) : (
+              page
+            )}
+          </div>
         </main>
       </div>
       <Toaster />

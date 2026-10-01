@@ -17,6 +17,11 @@ export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
+/** "14:05" (hora e minuto locais). */
+export function formatClock(iso: string): string {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
 const MINUTE_S = 60
 const HOUR_S = 3600
 const DAY_S = 86400

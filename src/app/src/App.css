@@ -606,6 +606,43 @@
   color: var(--ink-2);
 }
 
+/* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
+.skeleton {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%;
+  animation: skeleton-shine 1.4s linear infinite;
+}
+
+@keyframes skeleton-shine {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  display: grid;
+  gap: var(--sp-8);
+  margin-top: var(--sp-8);
+}
+
+.skeleton-card {
+  display: grid;
+  gap: var(--sp-12);
+}
+
+/* Faixa de dado do cache, até chegar o vivo. */
+.stale-banner {
+  margin-bottom: var(--sp-16);
+  padding: var(--sp-8) var(--sp-12);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: var(--fs-md);
+}
+
 /* Avisos (ui/Toaster): canto inferior direito; abaixo de 640 px ocupam a largura toda. */
 .toaster {
   position: fixed;

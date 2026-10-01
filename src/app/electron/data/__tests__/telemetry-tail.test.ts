@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTelemetryTail, readTelemetryFull, TELEMETRY_INITIAL_TAIL_BYTES } from '../telemetry'
 import type { TailFs } from '../activity'
 
@@ -196,6 +196,18 @@ describe('createTelemetryTail', () => {
   })
 
   it('PROPRIEDADE: linhas aleatórias, corrompidas e escritas parciais batem com a leitura completa a cada passo', () => {
+    // Relógio congelado: com o `Date.now()` andando, um evento perto da borda de 24 h podia cair dentro da janela
+    // numa leitura e fora na outra (falhou uma vez sob carga na suíte inteira).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-01T12:00:00Z'))
+    try {
+      propriedade()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  function propriedade(): void {
     let seed = 12345
     const rnd = (): number => {
       seed = (seed * 1664525 + 1013904223) % 4294967296
@@ -243,5 +255,5 @@ describe('createTelemetryTail', () => {
       }
       expectSameAsFull(tail)
     }
-  })
+  }
 })

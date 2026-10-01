@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Primeira pintura do painel sem esperar o snapshot, com cache e erro.** O painel abria numa tela cheia de
+  "Carregando…" até o primeiro snapshot (um `git` por projeto) e, se `getSnapshot()` falhasse, ela nunca saía. Agora a
+  casca aparece com skeletons em 115 ms, o último snapshot (guardado em `localStorage`, sem o estado de conexões) é
+  pintado em 186 ms com a faixa "Dados de HH:mm, atualizando…" e trocado pelo vivo sem remontar, e a falha mostra o
+  motivo com "Tentar de novo". Conexões e "Está em dia?" também usam skeleton (RAGX-0182).
 - **O painel passa a caber de 450 a 3440 px.** Com zoom de 150% a 200% (600 e 450 px de CSS) a barra superior e o
   conteúdo estouravam a janela (818 px a 480 px) e, a 3440 px, a barra e o conteúdo tinham bordas diferentes (1084 px
   de diferença). Agora a barra superior fica compacta até 900 px e em duas linhas até 640 px, o conteúdo e a barra

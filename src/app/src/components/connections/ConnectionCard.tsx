@@ -8,6 +8,7 @@ import { useClock } from '../../hooks/useClock'
 import { ipcErrorMessage } from '../../ipcError'
 import { notify } from '../../toast'
 import { Icon } from '../ui/Icon'
+import { SkeletonText } from '../ui/Skeleton'
 import { Tooltip } from '../ui/Tooltip'
 
 const BADGE: Record<ConnectionCheck['state'], { tone: Tone; label: string }> = {
@@ -263,6 +264,7 @@ function PendingCard({ title }: { title: string }) {
             <Badge tone="muted">Verificando…</Badge>
           </div>
           <p className="conn-summary dim">Conferindo esta conexão.</p>
+          <SkeletonText lines={2} />
         </div>
       </div>
     </article>

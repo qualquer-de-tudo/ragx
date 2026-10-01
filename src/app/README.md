@@ -272,6 +272,19 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Primeira pintura
+
+O painel não espera o snapshot (RAGX-0182). Com as preferências lidas e sem dado, a casca (barra lateral e superior)
+já aparece com skeletons no conteúdo (`ui/Skeleton`: blocos `aria-hidden` numa região `aria-busy` com um só
+`role="status"`); se `getSnapshot()` rejeitar sem nada na tela, aparece o motivo e "Tentar de novo" (antes o
+"Carregando…" nunca saía). O último snapshot fica em `localStorage` (`src/snapshotCache.ts`, chave `ragx.snapshot.v1`,
+no máximo uma gravação a cada 15 s, validado na leitura, hub vazio não é guardado) e é pintado na hora com a faixa
+"Dados de HH:mm, atualizando…" até o vivo chegar, trocando os dados sem remontar a página. O cache guarda nomes,
+pastas e contagens dos projetos (~22 mil caracteres para 12 projetos com a série de 14 dias), só no armazenamento
+local do app, e **não** guarda `connectionsHealth`: o indicador de conexões diz "verificando" até a checagem real.
+`node scripts/measure-first-paint.mjs` reproduz a medição (atrasa `getSnapshot` em 3 s). Nos testes, o
+`localStorage` vem de um polyfill em memória (`src/test/setup.ts`), porque o Node 25 esconde o do jsdom.
+
 ## Larguras suportadas
 
 O painel funciona de **450 px** (zoom de 200% numa janela de 900 DIP, o mínimo da janela) a **3440 px** de CSS, e 60
