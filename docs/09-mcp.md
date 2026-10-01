@@ -348,6 +348,27 @@ Como ligar (o padrão **não** muda): `[mcp] profile = "slim"` no `ragx.toml` ou
 `full` tem (`task_status`, `list_projects`): não o aponte para o `slim`. As contagens ("33 ferramentas")
 nos READMEs são as do `full`.
 
+### Como escrever a descrição de uma ferramenta, e por que a lista é estável (RAGX-0158)
+
+O cliente (Claude Code) descobre ferramentas por **Tool Search**, que lê o nome e a descrição, e perde o
+cache de prompt quando a lista de ferramentas muda. Duas consequências, ambas cobertas por
+`tests/integration/test_mcp_estavel.py`:
+
+- **A descrição começa por um verbo e diz o que a ferramenta faz** ("Localiza código e documentação...",
+  "Mostra as relações diretas de um símbolo: quem o chama..."), com os termos de quem procura
+  ("localizar", "onde", "quem chama", "reindexar"), em **no máximo 200 caracteres** e sem valor que mude
+  (contagem, nome do projeto, data). Verbo novo na lista de verbos do teste, de propósito.
+- **A lista é estável.** A ordem de registro é fixa e nada em `list_tools()` nem nas `instructions`
+  depende do estado da sessão (a escrita ligada ou não também não muda a lista). Os arquivos
+  `tests/fixtures/mcp_tools_full.json` e `mcp_tools_slim.json` guardam o `list_tools()` serializado: mudar
+  uma descrição ou um schema passa a exigir regravá-los de propósito
+  (`RAGX_REGRAVAR_OURO=1 uv run pytest tests/integration/test_mcp_estavel.py`). Trocar de perfil muda a
+  lista entre sessões, não dentro de uma.
+
+As `instructions` do servidor cabem em **2.048 bytes** (o Claude Code trunca em ~2 KB; hoje 531 no `full`
+e 356 no `slim`, com escrita ligada) e só citam ferramentas que o perfil expõe: no `slim` não há
+`get_playbook` nem `sync`.
+
 ## Execução
 
 **Aquecimento (RAGX-0142).** A primeira busca de um processo pagava o carregamento do modelo de

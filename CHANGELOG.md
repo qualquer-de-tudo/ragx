@@ -11,6 +11,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Descrições das ferramentas MCP para Tool Search, `instructions` com teto e lista estável.** As 33
+  descrições foram reescritas: começam por um verbo, dizem o que a ferramenta faz com os termos de quem
+  procura ("localiza", "onde", "quem chama", "reindexa") e têm no máximo 200 caracteres (a maior: 141).
+  As `instructions` passam a ser montadas por perfil em `playbook.py` (o `slim` não cita `get_playbook`
+  nem `sync`), com teto de 2.048 bytes (hoje 531 no `full`, 356 no `slim`) e sem depender de estado da
+  sessão. Dois arquivos-ouro (`tests/fixtures/mcp_tools_full.json` e `mcp_tools_slim.json`) travam a lista:
+  mudar uma descrição ou um schema por acaso agora falha o teste, e regravar é deliberado. Custo fixo: o
+  `full` foi de 2.575 para 2.680 tokens (as descrições ficaram mais informativas, +4%) e o `slim` de 355
+  para 370 (RAGX-0158).
 - **Perfil `slim` do servidor MCP: 6 ferramentas.** O servidor expõe 33 ferramentas e só 5 aparecem
   nos logs de uso real; as outras 28 custam tokens em todo turno (2.773 tokens de nome, descrição e
   schema, na régua de antes). `[mcp] profile = "slim"` (ou `RAGX_MCP_PROFILE=slim`, ou

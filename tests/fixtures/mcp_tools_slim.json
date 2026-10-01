@@ -1,0 +1,126 @@
+[
+ {
+  "description": "Mostra o mapa do projeto: tecnologias, serviços, módulos, convenções. Use primeiro.",
+  "input_schema": {
+   "properties": {
+    "section": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  },
+  "name": "get_dictionary"
+ },
+ {
+  "description": "Localiza código e docs por busca híbrida (semântica + palavra-chave): onde algo está.",
+  "input_schema": {
+   "properties": {
+    "kind": {
+     "type": "string"
+    },
+    "lang": {
+     "type": "string"
+    },
+    "limit": {
+     "type": "integer"
+    },
+    "path_glob": {
+     "type": "string"
+    },
+    "query": {
+     "type": "string"
+    },
+    "response_format": {
+     "enum": [
+      "concise",
+      "detailed"
+     ],
+     "type": "string"
+    },
+    "scope": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "name": "search_hybrid"
+ },
+ {
+  "description": "Abre o texto completo de um chunk pelo chunk_id de um resultado.",
+  "input_schema": {
+   "properties": {
+    "chunk_id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "chunk_id"
+   ],
+   "type": "object"
+  },
+  "name": "get_chunk"
+ },
+ {
+  "description": "Mostra as relações diretas de um símbolo: quem o chama e de que depende.",
+  "input_schema": {
+   "properties": {
+    "depth": {
+     "type": "integer"
+    },
+    "name": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "name"
+   ],
+   "type": "object"
+  },
+  "name": "get_entity"
+ },
+ {
+  "description": "Monta o contexto de uma tarefa (trechos com arquivo e linhas) dentro de um orçamento de tokens.",
+  "input_schema": {
+   "properties": {
+    "format": {
+     "type": "string"
+    },
+    "include_graph": {
+     "type": "boolean"
+    },
+    "query": {
+     "type": "string"
+    },
+    "response_format": {
+     "enum": [
+      "concise",
+      "detailed"
+     ],
+     "type": "string"
+    },
+    "scope": {
+     "type": "string"
+    },
+    "tokens": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "name": "build_context"
+ },
+ {
+  "description": "Reindexa o que mudou no disco (incremental). Chame no início de uma tarefa.",
+  "input_schema": {
+   "properties": {},
+   "type": "object"
+  },
+  "name": "refresh"
+ }
+]

@@ -1,0 +1,805 @@
+[
+ {
+  "description": "Ensina a operar o RAGX: ordem das ferramentas, quando reindexar e o que o índice não faz. Leia uma vez, no início da sessão.",
+  "input_schema": {
+   "properties": {},
+   "title": "get_playbookArguments",
+   "type": "object"
+  },
+  "name": "get_playbook"
+ },
+ {
+  "description": "Mostra o mapa barato do projeto: tecnologias, serviços, módulos e convenções. Use primeiro, para se orientar.",
+  "input_schema": {
+   "properties": {
+    "section": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Section"
+    }
+   },
+   "title": "get_dictionaryArguments",
+   "type": "object"
+  },
+  "name": "get_dictionary"
+ },
+ {
+  "description": "Busca por significado (semântica) no conhecimento indexado. Para localizar também por palavra-chave, prefira search_hybrid.",
+  "input_schema": {
+   "properties": {
+    "kind": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Kind"
+    },
+    "lang": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Lang"
+    },
+    "limit": {
+     "default": 10,
+     "title": "Limit",
+     "type": "integer"
+    },
+    "path_glob": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Path Glob"
+    },
+    "query": {
+     "title": "Query",
+     "type": "string"
+    },
+    "response_format": {
+     "anyOf": [
+      {
+       "enum": [
+        "concise",
+        "detailed"
+       ],
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Response Format"
+    },
+    "scope": {
+     "default": "current",
+     "title": "Scope",
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "title": "search_knowledgeArguments",
+   "type": "object"
+  },
+  "name": "search_knowledge"
+ },
+ {
+  "description": "Localiza código e documentação por busca híbrida (semântica + palavra-chave): onde algo está, o que trata de X. O modo padrão para localizar.",
+  "input_schema": {
+   "properties": {
+    "kind": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Kind"
+    },
+    "lang": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Lang"
+    },
+    "limit": {
+     "default": 10,
+     "title": "Limit",
+     "type": "integer"
+    },
+    "path_glob": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Path Glob"
+    },
+    "query": {
+     "title": "Query",
+     "type": "string"
+    },
+    "response_format": {
+     "anyOf": [
+      {
+       "enum": [
+        "concise",
+        "detailed"
+       ],
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Response Format"
+    },
+    "scope": {
+     "default": "current",
+     "title": "Scope",
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "title": "search_hybridArguments",
+   "type": "object"
+  },
+  "name": "search_hybrid"
+ },
+ {
+  "description": "Lista os chunks e os metadados de um documento já indexado, pelo caminho relativo. Não lê o arquivo do disco.",
+  "input_schema": {
+   "properties": {
+    "path": {
+     "title": "Path",
+     "type": "string"
+    }
+   },
+   "required": [
+    "path"
+   ],
+   "title": "get_documentArguments",
+   "type": "object"
+  },
+  "name": "get_document"
+ },
+ {
+  "description": "Lista os documentos indexados e de que origem vêm (@base/... é conhecimento compartilhado). Só metadado, sem conteúdo.",
+  "input_schema": {
+   "properties": {
+    "kind": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Kind"
+    },
+    "lang": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Lang"
+    },
+    "limit": {
+     "default": 200,
+     "title": "Limit",
+     "type": "integer"
+    },
+    "path_glob": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Path Glob"
+    }
+   },
+   "title": "list_documentsArguments",
+   "type": "object"
+  },
+  "name": "list_documents"
+ },
+ {
+  "description": "Abre o texto completo de um chunk pelo chunk_id de um resultado de busca.",
+  "input_schema": {
+   "properties": {
+    "chunk_id": {
+     "title": "Chunk Id",
+     "type": "string"
+    }
+   },
+   "required": [
+    "chunk_id"
+   ],
+   "title": "get_chunkArguments",
+   "type": "object"
+  },
+  "name": "get_chunk"
+ },
+ {
+  "description": "Mostra as relações diretas de um símbolo do grafo: quem o chama, quem ele chama e de que depende.",
+  "input_schema": {
+   "properties": {
+    "depth": {
+     "default": 1,
+     "title": "Depth",
+     "type": "integer"
+    },
+    "name": {
+     "title": "Name",
+     "type": "string"
+    }
+   },
+   "required": [
+    "name"
+   ],
+   "title": "get_entityArguments",
+   "type": "object"
+  },
+  "name": "get_entity"
+ },
+ {
+  "description": "Localiza o que está ligado a um assunto combinando vetor e grafo: quem chama, depende ou documenta o resultado.",
+  "input_schema": {
+   "properties": {
+    "depth": {
+     "default": 1,
+     "title": "Depth",
+     "type": "integer"
+    },
+    "limit": {
+     "default": 10,
+     "title": "Limit",
+     "type": "integer"
+    },
+    "query": {
+     "title": "Query",
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "title": "search_graphArguments",
+   "type": "object"
+  },
+  "name": "search_graph"
+ },
+ {
+  "description": "Monta o contexto de trabalho de uma tarefa (trechos com arquivo e linhas) dentro de um orçamento de tokens.",
+  "input_schema": {
+   "properties": {
+    "format": {
+     "default": "markdown",
+     "title": "Format",
+     "type": "string"
+    },
+    "include_graph": {
+     "default": true,
+     "title": "Include Graph",
+     "type": "boolean"
+    },
+    "query": {
+     "title": "Query",
+     "type": "string"
+    },
+    "response_format": {
+     "anyOf": [
+      {
+       "enum": [
+        "concise",
+        "detailed"
+       ],
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Response Format"
+    },
+    "scope": {
+     "default": "current",
+     "title": "Scope",
+     "type": "string"
+    },
+    "tokens": {
+     "default": 3000,
+     "title": "Tokens",
+     "type": "integer"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "title": "build_contextArguments",
+   "type": "object"
+  },
+  "name": "build_context"
+ },
+ {
+  "description": "Lista os projetos disponíveis, integrações e divergências. Use primeiro em ambiente multirrepositório.",
+  "input_schema": {
+   "properties": {},
+   "title": "list_projectsArguments",
+   "type": "object"
+  },
+  "name": "list_projects"
+ },
+ {
+  "description": "Mostra o contrato de um endpoint ou evento e o projeto que o provê. Funciona para projeto não clonado.",
+  "input_schema": {
+   "properties": {
+    "kind": {
+     "default": "http",
+     "title": "Kind",
+     "type": "string"
+    },
+    "name": {
+     "title": "Name",
+     "type": "string"
+    }
+   },
+   "required": [
+    "name"
+   ],
+   "title": "get_contractArguments",
+   "type": "object"
+  },
+  "name": "get_contract"
+ },
+ {
+  "description": "Lista as fontes de conhecimento base (@base/...) ativas nesta máquina.",
+  "input_schema": {
+   "properties": {},
+   "title": "list_base_sourcesArguments",
+   "type": "object"
+  },
+  "name": "list_base_sources"
+ },
+ {
+  "description": "Reindexa o que mudou no disco (incremental, ~1 s sem mudança). Chame no início de uma tarefa. Não regrava knowledge/ (isso é sync).",
+  "input_schema": {
+   "properties": {},
+   "title": "refreshArguments",
+   "type": "object"
+  },
+  "name": "refresh"
+ },
+ {
+  "description": "Reindexa o projeto. Incremental por padrão; use full=true só quando o chunker ou o modelo de embedding mudou.",
+  "input_schema": {
+   "properties": {
+    "embed": {
+     "default": true,
+     "title": "Embed",
+     "type": "boolean"
+    },
+    "full": {
+     "default": false,
+     "title": "Full",
+     "type": "boolean"
+    }
+   },
+   "title": "reindexArguments",
+   "type": "object"
+  },
+  "name": "reindex"
+ },
+ {
+  "description": "Sincroniza tudo: reidrata, reindexa, reconstrói grafo e dicionário e regrava knowledge/. Operação cara: use após mudanças estruturais.",
+  "input_schema": {
+   "properties": {
+    "full": {
+     "default": false,
+     "title": "Full",
+     "type": "boolean"
+    },
+    "write_knowledge": {
+     "default": true,
+     "title": "Write Knowledge",
+     "type": "boolean"
+    }
+   },
+   "title": "syncArguments",
+   "type": "object"
+  },
+  "name": "sync"
+ },
+ {
+  "description": "Reconstrói o grafo de entidades e relações.",
+  "input_schema": {
+   "properties": {},
+   "title": "rebuild_graphArguments",
+   "type": "object"
+  },
+  "name": "rebuild_graph"
+ },
+ {
+  "description": "Regenera o Knowledge Dictionary a partir do grafo atual.",
+  "input_schema": {
+   "properties": {},
+   "title": "generate_dictionaryArguments",
+   "type": "object"
+  },
+  "name": "generate_dictionary"
+ },
+ {
+  "description": "Instala o conhecimento base que o projeto declara e falta nesta máquina. A origem vem de arquivo versionado, não do agente.",
+  "input_schema": {
+   "properties": {},
+   "title": "base_syncArguments",
+   "type": "object"
+  },
+  "name": "base_sync"
+ },
+ {
+  "description": "Republica a superfície pública deste projeto (rotas, eventos, clientes) no hub da máquina.",
+  "input_schema": {
+   "properties": {},
+   "title": "publish_contractArguments",
+   "type": "object"
+  },
+  "name": "publish_contract"
+ },
+ {
+  "description": "Classifica uma solicitação: executar agora ou documentar e decompor antes. Não escreve nada.",
+  "input_schema": {
+   "properties": {
+    "request": {
+     "title": "Request",
+     "type": "string"
+    }
+   },
+   "required": [
+    "request"
+   ],
+   "title": "analyze_requestArguments",
+   "type": "object"
+  },
+  "name": "analyze_request"
+ },
+ {
+  "description": "Monta o plano de trabalho (documentos, tarefas, dependências). Com apply=true, cria o projeto.",
+  "input_schema": {
+   "properties": {
+    "apply": {
+     "default": false,
+     "title": "Apply",
+     "type": "boolean"
+    },
+    "request": {
+     "title": "Request",
+     "type": "string"
+    }
+   },
+   "required": [
+    "request"
+   ],
+   "title": "plan_workArguments",
+   "type": "object"
+  },
+  "name": "plan_work"
+ },
+ {
+  "description": "Lista tarefas, com filtro por projeto e estado.",
+  "input_schema": {
+   "properties": {
+    "limit": {
+     "default": 50,
+     "title": "Limit",
+     "type": "integer"
+    },
+    "project_id": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Project Id"
+    },
+    "status": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Status"
+    }
+   },
+   "title": "list_tasksArguments",
+   "type": "object"
+  },
+  "name": "list_tasks"
+ },
+ {
+  "description": "Mostra o detalhe de uma tarefa: critérios, escopo, dependências e último resultado.",
+  "input_schema": {
+   "properties": {
+    "task_id": {
+     "title": "Task Id",
+     "type": "string"
+    }
+   },
+   "required": [
+    "task_id"
+   ],
+   "title": "get_taskArguments",
+   "type": "object"
+  },
+  "name": "get_task"
+ },
+ {
+  "description": "Mostra o DAG de tarefas do projeto: nós e arestas.",
+  "input_schema": {
+   "properties": {
+    "project_id": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Project Id"
+    }
+   },
+   "title": "task_graphArguments",
+   "type": "object"
+  },
+  "name": "task_graph"
+ },
+ {
+  "description": "Indica a próxima tarefa executável, sem reivindicá-la. Use para decidir antes de pegar.",
+  "input_schema": {
+   "properties": {
+    "project_id": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Project Id"
+    }
+   },
+   "title": "next_taskArguments",
+   "type": "object"
+  },
+  "name": "next_task"
+ },
+ {
+  "description": "Mostra o painel: tarefas por estado, projetos, conhecimento e agendamentos.",
+  "input_schema": {
+   "properties": {},
+   "title": "task_statusArguments",
+   "type": "object"
+  },
+  "name": "task_status"
+ },
+ {
+  "description": "Reivindica uma tarefa com lease e devolve o contexto já montado. É assim que o agente pega trabalho.",
+  "input_schema": {
+   "properties": {
+    "project_id": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Project Id"
+    },
+    "task_id": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Task Id"
+    },
+    "tokens": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Tokens"
+    }
+   },
+   "title": "claim_taskArguments",
+   "type": "object"
+  },
+  "name": "claim_task"
+ },
+ {
+  "description": "Entrega o resultado da tarefa. Dispara a validação determinística e libera as dependentes.",
+  "input_schema": {
+   "properties": {
+    "result": {
+     "additionalProperties": true,
+     "title": "Result",
+     "type": "object"
+    },
+    "task_id": {
+     "title": "Task Id",
+     "type": "string"
+    }
+   },
+   "required": [
+    "task_id",
+    "result"
+   ],
+   "title": "report_task_resultArguments",
+   "type": "object"
+  },
+  "name": "report_task_result"
+ },
+ {
+  "description": "Devolve uma tarefa reivindicada sem executá-la.",
+  "input_schema": {
+   "properties": {
+    "reason": {
+     "default": "",
+     "title": "Reason",
+     "type": "string"
+    },
+    "task_id": {
+     "title": "Task Id",
+     "type": "string"
+    }
+   },
+   "required": [
+    "task_id"
+   ],
+   "title": "release_taskArguments",
+   "type": "object"
+  },
+  "name": "release_task"
+ },
+ {
+  "description": "Muda o estado de uma tarefa (blocked, cancelled, ready...), respeitando a matriz de transições.",
+  "input_schema": {
+   "properties": {
+    "reason": {
+     "default": "",
+     "title": "Reason",
+     "type": "string"
+    },
+    "status": {
+     "title": "Status",
+     "type": "string"
+    },
+    "task_id": {
+     "title": "Task Id",
+     "type": "string"
+    }
+   },
+   "required": [
+    "task_id",
+    "status"
+   ],
+   "title": "set_task_statusArguments",
+   "type": "object"
+  },
+  "name": "set_task_status"
+ },
+ {
+  "description": "Cria uma dependência entre tarefas. Ciclo é recusado, com o caminho completo.",
+  "input_schema": {
+   "properties": {
+    "depends_on": {
+     "title": "Depends On",
+     "type": "string"
+    },
+    "kind": {
+     "default": "depends_on",
+     "title": "Kind",
+     "type": "string"
+    },
+    "task_id": {
+     "title": "Task Id",
+     "type": "string"
+    }
+   },
+   "required": [
+    "task_id",
+    "depends_on"
+   ],
+   "title": "add_task_dependencyArguments",
+   "type": "object"
+  },
+  "name": "add_task_dependency"
+ },
+ {
+  "description": "Roda um ciclo do worker: expira leases, promove prontas, aplica retry, dispara agendamentos. Não executa tarefa.",
+  "input_schema": {
+   "properties": {},
+   "title": "run_workerArguments",
+   "type": "object"
+  },
+  "name": "run_worker"
+ }
+]

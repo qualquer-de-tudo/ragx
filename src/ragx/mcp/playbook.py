@@ -132,26 +132,46 @@ def playbook(cfg: Config, write_enabled: bool) -> dict[str, Any]:
     }
 
 
+#: A ordem em que as ferramentas ajudam, para cada perfil. Só cita o que o perfil expõe.
+_ORDEM = {
+    "full": (
+        "Ordem recomendada: get_dictionary (orientação barata) -> search_hybrid (localizar) -> "
+        "build_context (montar o contexto de trabalho) -> get_chunk (aprofundar)."
+    ),
+    "slim": (
+        "Ordem: get_dictionary (orientar) -> search_hybrid (localizar) -> build_context (montar o "
+        "contexto da tarefa) -> get_chunk (aprofundar); get_entity mostra quem chama quem."
+    ),
+}
+
+#: Teto do texto de `instructions`: o Claude Code trunca em ~2 KB (RAGX-0158).
+INSTRUCTIONS_MAX_BYTES = 2048
+
+
 def short_instructions(write_enabled: bool, profile: str = "full") -> str:
-    """As duas frases que o cliente MCP mostra antes de qualquer chamada."""
-    if profile == "slim":
-        # só cita ferramentas que o perfil `slim` expõe: `get_playbook` e `sync` não existem nele
+    """O que o cliente MCP mostra antes de qualquer chamada. Cabe em 2 KB e só cita ferramentas do perfil.
+
+    Não depende de estado da sessão (nome do projeto, contagens, datas): a lista de ferramentas e este
+    texto são estáveis, e é isso que preserva o cache de prompt do cliente.
+    """
+    slim = profile == "slim"
+    if slim:
         base = (
             "Conhecimento do projeto indexado pelo RAGX; tudo vem do índice, que não contém segredos. "
             "Comece por get_dictionary."
         )
         if write_enabled:
             base += " Chame refresh no início de uma tarefa para reindexar o que mudou."
-        return base
-    base = (
-        "Conhecimento do projeto indexado pelo RAGX. Nenhuma ferramenta lê o "
-        "filesystem: tudo vem do índice, que por construção não contém segredos. "
-        "Comece por get_playbook (uma vez) e depois get_dictionary."
-    )
-    if write_enabled:
-        base += (
-            " Este servidor tem ESCRITA habilitada: você pode reindexar e "
-            "sincronizar o índice. Chame refresh no início de uma tarefa; "
-            "sync só depois de mudanças estruturais."
+    else:
+        base = (
+            "Conhecimento do projeto indexado pelo RAGX. Nenhuma ferramenta lê o "
+            "filesystem: tudo vem do índice, que por construção não contém segredos. "
+            "Comece por get_playbook (uma vez) e depois get_dictionary."
         )
-    return base
+        if write_enabled:
+            base += (
+                " Este servidor tem ESCRITA habilitada: você pode reindexar e "
+                "sincronizar o índice. Chame refresh no início de uma tarefa; "
+                "sync só depois de mudanças estruturais."
+            )
+    return base + " " + _ORDEM["slim" if slim else "full"]

@@ -12,7 +12,7 @@ Um `build_context` de 3.000 tokens entrega **7.684** no fio (2,6×): o conteúdo
 | [RAGX-0155](RAGX-0155-respostas-mcp-compactas-sem-indentacao-sem-repeticao-sem-outputschema-inutil.md) | Respostas MCP compactas (sem indentação, sem repetição, sem `outputSchema` inútil) | P0 | 1d | `done` |
 | [RAGX-0156](RAGX-0156-telemetria-honesta-ok-err-code-resp-chars-tokens-reais.md) | Telemetria honesta: `ok`, `err_code`, `resp_chars`, tokens reais | P1 | 0,5d | `done` |
 | [RAGX-0157](RAGX-0157-perfil-slim-do-mcp-6-ferramentas-full-continua-disponivel.md) | Perfil `slim` do MCP: 6 ferramentas (`full` continua disponível) | P0 | 2d | `review` |
-| [RAGX-0158](RAGX-0158-instructions-ate-2-kb-descricoes-para-tool-search-e-lista-estavel.md) | `instructions` ≤ 2 KB, descrições para Tool Search e lista estável | P1 | 0,5d | `todo` |
+| [RAGX-0158](RAGX-0158-instructions-ate-2-kb-descricoes-para-tool-search-e-lista-estavel.md) | `instructions` ≤ 2 KB, descrições para Tool Search e lista estável | P1 | 0,5d | `done` |
 | [RAGX-0159](RAGX-0159-dedupe-de-sessao-chunk-ja-entregue-volta-como-referencia.md) | Dedupe de sessão: chunk já entregue volta como referência | P1 | 1,5d | `todo` |
 | [RAGX-0160](RAGX-0160-hook-pretooluse-em-grep-glob-lembra-do-indice-uma-vez-por-sessao.md) | Hook `PreToolUse` em `Grep\|Glob` lembra do índice uma vez por sessão | P1 | 1d | `todo` |
 | [RAGX-0161](RAGX-0161-subagente-ragx-explorer-instalavel.md) | Subagente `ragx-explorer` instalável | P2 | 0,5d | `todo` |
