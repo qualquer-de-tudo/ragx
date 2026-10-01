@@ -109,7 +109,7 @@ ragx mcp serve --read-only  # só consulta
 | Ferramenta | Quando o agente usa | Custo |
 |---|---|---|
 | `get_playbook` | uma vez, no início da sessão | trivial |
-| `refresh` | no início de cada tarefa | barato quando nada mudou |
+| `refresh` | no início de cada tarefa | só reindexa: ~0,6 s sem mudança; não consolida (isso é `sync`) |
 | `reindex` | varredura explícita; `full=true` só se o chunker mudou | médio |
 | `sync` | depois de mudança estrutural (merge grande, arquivos movidos) | caro |
 | `rebuild_graph` | grafo atrás do código | médio |

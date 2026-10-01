@@ -38,8 +38,8 @@ Detalhadas em [16 — Orçamento de tamanho](16-orcamento-de-tamanho.md) e
 [ADR-0010](adr/ADR-0010-conteudo-nao-versionado-e-embeddings-quantizados.md).
 
 **1. Conteúdo de chunk não vai para o Git.** É redundante: já está no repositório,
-no caminho e nas linhas registradas. `ragx sync` reidrata do working tree e confere
-`content_hash`.
+no caminho e nas linhas registradas. `ragx sync --rehydrate` reidrata do working tree e confere
+`content_hash` (opt-in: o `sync` comum não reidrata, porque relê o projeto inteiro).
 
 ```text
 {"id":"a3f1…","ordinal":4,"kind":"method","symbol":"AuthService.login",
@@ -229,7 +229,7 @@ disparar.
 
 ## Reidratação em detalhe
 
-É o mecanismo que permite não versionar conteúdo. Roda no `ragx sync`, antes do delta:
+É o mecanismo que permite não versionar conteúdo. Roda no `ragx sync --rehydrate` (e `--report`, que o implica), antes do delta. **Não** roda no `sync` comum nem no `refresh` do MCP: relê, passa pelo gate e rechunka o projeto inteiro para produzir um relatório, 13,7 s no repo do RAGX (RAGX-0131). Também no `sync`, o grafo é refeito **antes** de `knowledge/` ser regravado, e a regravação é pulada quando nada mudou desde o último `sync` completo (token em `meta('knowledge_token')`):
 
 ```text
 para cada chunk em knowledge/chunks/*.jsonl:

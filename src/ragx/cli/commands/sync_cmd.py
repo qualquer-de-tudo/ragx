@@ -19,7 +19,11 @@ def sync(
     resolve: Annotated[bool, typer.Option("--resolve", help="Rederiva artefatos em conflito.")] = False,
     resolve_file: Annotated[str | None, typer.Option("--resolve-file")] = None,
     quiet: Annotated[bool, typer.Option("--quiet")] = False,
-    report: Annotated[bool, typer.Option("--report", help="Detalha a reidratação.")] = False,
+    report: Annotated[bool, typer.Option("--report", help="Detalha a reidratação (implica --rehydrate).")] = False,
+    rehydrate: Annotated[
+        bool,
+        typer.Option("--rehydrate", help="Reidrata e confere knowledge/ contra o working tree (lento)."),
+    ] = False,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Reconstrói o índice a partir de knowledge/ + working tree."""
@@ -32,7 +36,7 @@ def sync(
         if resolve or resolve_file:
             r = run_resolve(cfg, resolve_file)
         else:
-            r = run_sync(cfg, from_commit=from_commit, full=full)
+            r = run_sync(cfg, from_commit=from_commit, full=full, rehydrate=rehydrate or report)
     except IndexBusyError as exc:
         # A mensagem GENÉRICA de IndexBusyError ("este pedido ficou agendado")
         # não vale pra `sync`: a trava (.ragx/index.lock) só cobre

@@ -49,9 +49,10 @@ arquivo; `get_entity` abre as relações de um símbolo.
 _ESCRITA = """\
 ## 5. Para manter o índice honesto
 
-`refresh` — chame no INÍCIO de uma tarefa. Reindexa só o que mudou; quando
-nada mudou, custa quase nada. É a diferença entre raciocinar sobre o código de
-agora e sobre o código de ontem.
+`refresh` — chame no INÍCIO de uma tarefa. Reindexa só o que mudou (incremental:
+~1 s quando nada mudou) e NÃO regrava `knowledge/` nem refaz grafo e dicionário;
+consolidar é o `sync`. É a diferença entre raciocinar sobre o código de agora e
+sobre o código de ontem.
 
 `reindex` — varredura explícita. `full=true` só quando o chunker ou o modelo de
 embedding mudou; a incremental resolve o resto.

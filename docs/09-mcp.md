@@ -61,7 +61,7 @@ Habilitadas por padrão em `ragx mcp serve`; `--read-only` as desliga. Ver
 
 | Ferramenta | Entrada | Efeito | Custo |
 |------------|---------|--------|-------|
-| `refresh` | — | aplica ao índice o que mudou no disco | barato quando nada mudou |
+| `refresh` | — | reindexa o que mudou no disco (só o índice: não consolida nem toca em `knowledge/`) | ~0,6 s sem mudança, ~1,2 s com 4 arquivos; consolidar é `sync` |
 | `reindex` | `full?`, `embed?` | varredura do projeto | médio |
 | `sync` | `full?`, `write_knowledge?` | reidrata, reindexa, grafo, dicionário, `knowledge/` | **caro** |
 | `rebuild_graph` | — | reconstrói entidades e relações | médio |

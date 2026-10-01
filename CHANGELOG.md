@@ -18,6 +18,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **`refresh` do MCP é incremental de verdade.** A descrição, o playbook e o hint diziam
+  "barato quando nada mudou", mas ele rodava `sync` completo: reidratava o projeto
+  inteiro só para um relatório descartado, refazia grafo, dicionário e federação e
+  regravava todo `knowledge/` (medir `refresh` chegou a sujar 577 arquivos a 779). Agora
+  só reindexa: **22,1 s → 0,56 s** sem mudança e **34 s → 1,23 s** com 4 arquivos
+  mudados, com o `knowledge/` byte a byte intacto. No `sync`, a reidratação virou
+  opt-in (`ragx sync --rehydrate`; `--report` a implica), o grafo é refeito **antes** de
+  `knowledge/` ser regravado (antes `entities` e `relations` saíam um `sync` atrás) e
+  a regravação é pulada quando nada mudou desde o último `sync` completo. `ragx sync`
+  sem mudança: ~4-7 s, contra 28 s com a reidratação (RAGX-0131).
+
 - **`load_index` vetorizado e cacheado por geração: `search_hybrid` quente de 100 ms
   para 18 ms.** A matriz de vetores era reconstruída a cada busca, linha a linha em
   laço Python, e a documentação prometia um cache que não existia. Agora é uma

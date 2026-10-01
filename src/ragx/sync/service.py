@@ -10,6 +10,7 @@ Detecção de delta em duas vias (docs/12-git-sync.md):
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 import time
 from dataclasses import dataclass, field
@@ -19,8 +20,9 @@ from ragx.config import Config
 from ragx.indexing.pipeline import index_project
 from ragx.procs import run_quiet
 from ragx.storage.db import get_meta, open_db, set_meta
+from ragx.sync import rehydrate as rehydrate_module
 from ragx.sync import serialize
-from ragx.sync.rehydrate import RehydrateReport, rehydrate
+from ragx.sync.rehydrate import RehydrateReport
 
 
 @dataclass
@@ -76,12 +78,38 @@ def detect_delta(cfg: Config, from_commit: str | None = None) -> tuple[str, list
     return "git", changed, last, head
 
 
+_TOKEN_KEY = "knowledge_token"
+
+
+def _knowledge_token(cfg: Config, out_dir: str) -> str:
+    """Resume "o que `knowledge/` deveria refletir" sem reler nada do disco.
+
+    Entra: a última indexação TERMINADA e sem erro que mudou alguma coisa
+    (indexou, removeu, bloqueou ou embutiu), a geração dos vetores (RAGX-0134,
+    cobre embeddings que mudam sem run) e a configuração que decide o formato do
+    que é serializado. Igual ao do último `sync` completo: não há o que regravar.
+    """
+    with open_db(cfg.db_path, read_only=True) as conn:
+        row = conn.execute(
+            "SELECT MAX(id) FROM index_runs WHERE finished_at IS NOT NULL AND error IS NULL "
+            "AND (indexed > 0 OR removed > 0 OR embedded > 0 OR blocked > 0)"
+        ).fetchone()
+        gen = get_meta(conn, "vec_gen", "0")
+    partes = [
+        out_dir, str(row[0] or 0), str(gen),
+        cfg.graph.model_dump_json(), cfg.size.model_dump_json(),
+        str(cfg.embedding.versioned_dim), cfg.embedding.versioned_quant,
+    ]
+    return hashlib.sha256("|".join(partes).encode("utf-8")).hexdigest()
+
+
 def sync(
     cfg: Config,
     from_commit: str | None = None,
     full: bool = False,
     out_dir: str = "knowledge",
     write_knowledge: bool = True,
+    rehydrate: bool = False,
 ) -> SyncReport:
     report = SyncReport()
     t0 = time.perf_counter()
@@ -90,9 +118,11 @@ def sync(
         cfg, from_commit
     )
 
-    # [1] Reidrata o que já está versionado — antes do delta.
-    if serialize.read_manifest(cfg, out_dir) is not None:
-        _hydrated, report.rehydrate = rehydrate(cfg, out_dir)
+    # [1] Reidrata o que já está versionado — antes do delta. SÓ sob pedido: relê,
+    #     passa pelo gate e rechunka o projeto inteiro (13,7 s no repo do RAGX) para
+    #     produzir um relatório; o `sync` do dia a dia não precisa dele (RAGX-0131).
+    if rehydrate and serialize.read_manifest(cfg, out_dir) is not None:
+        _hydrated, report.rehydrate = rehydrate_module.rehydrate(cfg, out_dir)
         if report.rehydrate.missing:
             report.warnings.append(
                 f"{report.rehydrate.missing} chunk(s) apontam para arquivos que não "
@@ -114,15 +144,12 @@ def sync(
     if indexed.embed_error:
         report.warnings.append(f"embeddings incompletos: {indexed.embed_error.splitlines()[0]}")
 
-    # [3] Regrava os artefatos versionados.
-    if write_knowledge:
-        report.serialized = serialize.serialize(cfg, out_dir)
-        report.warnings.extend(report.serialized.warnings)
-
-    # [4] Grafo ANTES do dicionário: `technologies`, `services`, `entrypoints` e
-    #     `data_stores` derivam de entidades. Regenerar o dicionário com o grafo
-    #     desatualizado produz um arquivo vazio — e ele é a primeira coisa que o
-    #     agente lê.
+    # [3] Grafo ANTES de regravar `knowledge/` e do dicionário: `serialize` lê
+    #     entidades e relações do banco (se o grafo fosse refeito depois,
+    #     `knowledge/entities` e `knowledge/relations` saíam um `sync` atrás), e
+    #     `technologies`, `services`, `entrypoints` e `data_stores` do dicionário
+    #     derivam de entidades. Regenerar o dicionário com o grafo desatualizado
+    #     produz um arquivo vazio — e ele é a primeira coisa que o agente lê.
     if cfg.graph.enabled and (cfg.sync.auto_dictionary or cfg.sync.auto_federation):
         try:
             from ragx.graph.service import rebuild as rebuild_graph
@@ -132,6 +159,22 @@ def sync(
             report.relations = g.stats.relations
         except Exception as exc:  # grafo é derivado; não derruba o sync
             report.warnings.append(f"grafo não reconstruído: {exc}")
+
+    # [4] Regrava os artefatos versionados, a menos que nada tenha mudado desde o
+    #     último `sync` completo (mesmo token): regravar 4 mil arquivos para
+    #     deixá-los iguais só suja o `git status`.
+    token = _knowledge_token(cfg, out_dir) if write_knowledge else ""
+    if write_knowledge:
+        with open_db(cfg.db_path, read_only=True) as conn:
+            guardado = get_meta(conn, _TOKEN_KEY)
+        em_dia = (
+            not full
+            and guardado == token
+            and serialize.read_manifest(cfg, out_dir) is not None
+        )
+        if not em_dia:
+            report.serialized = serialize.serialize(cfg, out_dir)
+            report.warnings.extend(report.serialized.warnings)
 
     if cfg.sync.auto_dictionary:
         try:
@@ -180,9 +223,14 @@ def sync(
         except Exception as exc:
             report.warnings.append(f"board de tarefas nao sincronizado: {exc}")
 
-    if report.to_commit:
+    if report.to_commit or (write_knowledge and not report.warnings):
         with open_db(cfg.db_path) as conn:
-            set_meta(conn, "last_sync_commit", report.to_commit)
+            if report.to_commit:
+                set_meta(conn, "last_sync_commit", report.to_commit)
+            # O token só vale depois de um `sync` limpo: com aviso, a próxima
+            # rodada tenta de novo em vez de achar que `knowledge/` está em dia.
+            if write_knowledge and not report.warnings:
+                set_meta(conn, _TOKEN_KEY, token)
             conn.commit()
 
     report.duration_ms = int((time.perf_counter() - t0) * 1000)

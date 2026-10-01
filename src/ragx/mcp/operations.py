@@ -194,10 +194,11 @@ class WriteAPI:
 
     # ── watcher ─────────────────────────────────────────────────────────
     def refresh(self) -> dict[str, Any]:
-        """Uma passada do watcher: aplica o que mudou desde a última vez.
+        """Uma passada do watcher: reindexa o que mudou desde a última vez.
 
         É o que o agente chama ANTES de uma tarefa, para não raciocinar em
-        cima de um índice velho. Barato quando nada mudou.
+        cima de um índice velho. SÓ reindexa (incremental, ~1 s quando nada
+        mudou): não consolida nem regrava `knowledge/`. Consolidar é `sync`.
         """
         blocked = self._check()
         if blocked:
@@ -207,7 +208,7 @@ class WriteAPI:
             from ragx.watch.monitor import WatchState, apply_changes
 
             st = WatchState()
-            apply_changes(self.cfg, st, consolidate=True, source="mcp:refresh")
+            apply_changes(self.cfg, st, consolidate=False, source="mcp:refresh")
             return {
                 "operation": "refresh",
                 "indexed": st.indexed,

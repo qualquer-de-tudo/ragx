@@ -723,7 +723,7 @@ def build_server(
     # Registradas SEMPRE, mesmo em modo leitura. Uma ferramenta ausente faz o
     # agente concluir que a operação não existe; uma ferramenta que responde
     # `write_disabled` diz a verdade — existe, está desligada, eis como ligar.
-    @server.tool(description="Aplica ao índice o que mudou no disco desde a última vez. Chame no INÍCIO de uma tarefa; é barato quando nada mudou.")
+    @server.tool(description="Reindexa o que mudou no disco desde a última vez (incremental, ~1 s quando nada mudou). Chame no INÍCIO de uma tarefa. Só reindexa: não regrava knowledge/ (isso é sync).")
     def refresh() -> dict[str, Any]:
         return _guarded(lambda: ops.refresh(), "refresh", cfg)
 
