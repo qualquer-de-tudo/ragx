@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "072e1e3d8ffc978c8e623d5ebbb82548110d5d2c94973ad2cc08b153189c6aa8",
+  "content_hash": "d59d50db760306a2d109621b0679f14c61866461c891f8266cc1826ef9d77969",
   "doc_kind": "code",
   "id": "7eef4d54cad1daa50386da4485ae0ee7",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/mcp/server.py",
-  "size_bytes": 31308,
+  "size_bytes": 36015,
   "title": "Servidor MCP — casca fina sobre a API interna (ADR-0006).\n\n    PERMITIDO                      PROIBIDO\n    MCP -> KnowledgeAPI -> Store   MCP -> open(path)\n                                   MCP -> subprocess\n                                   MCP -> requests.get(url)\n\nSe um agente pedir \"leia o .env\", não existe caminho de código que atenda: a\núnica coisa que este módulo sabe fazer é consultar o store — e o store, por\nconstrução, não tem segredo dentro."
 }

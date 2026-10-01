@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "97edbf5c9610df25d1dae3c07919c18e46c93c3be9121555fa4bac2cb9eb4573",
+  "doc_kind": "code",
+  "id": "f12a13554d2457b958fea2ae5530754a",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/security/test_walker_links.py",
+  "size_bytes": 4177,
+  "title": "O walker não lê fora da raiz do projeto: nem por symlink, nem por junction.\n\nAmeaça A8 (docs/02-seguranca.md). No Windows, uma junction (`mklink /J`, o que o\npnpm cria, e que não exige privilégio) não é symlink para o Python: passava na\nguarda do walker e a pasta de fora era percorrida e indexada. O conteúdo ainda\npassava pelo Security Gate, mas era leitura fora da raiz.\n\nVer `task/fase-19-velocidade-e-frescor/RAGX-0149-*.md`."
+}

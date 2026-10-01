@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "1261239f485d125f5c50266ed4a23efce917adc42dfce3d8912dc1de614560ea",
+  "doc_kind": "code",
+  "id": "59c2243a32959171daf49064c3f346b8",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/integration/test_refresh_incremental.py",
+  "size_bytes": 7219,
+  "title": "`refresh` é incremental de verdade, e `sync` só faz o que precisa.\n\nA descrição, o playbook e o hint diziam que `refresh` era \"barato quando nada\nmudou\", mas ele rodava `sync` completo: reidratava o projeto inteiro só para um\nrelatório descartado (13,7 s), regravava todo `knowledge/` e levava de 26 s (em\nprocesso) a 91 s (via MCP sob carga). Medir `refresh` chegou a sujar 155 arquivos\nrastreados e a criar 422.\n\nVer `task/fase-19-velocidade-e-frescor/RAGX-0131-*.md`."
+}

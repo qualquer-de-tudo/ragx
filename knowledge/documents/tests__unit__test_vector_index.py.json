@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c0a541ce952ca4087438abdd7391a02de149ce6b2b1f8dc4eaa7626c27fa133d",
+  "doc_kind": "code",
+  "id": "a97752b0d8cd2f33351a7fa4dbc42017",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/unit/test_vector_index.py",
+  "size_bytes": 6942,
+  "title": "`load_index`: vetorizado, idêntico ao laço por linha, e cacheado por geração.\n\nAntes: `dequantize` e `l2_normalize` linha a linha em laço Python, a cada busca\n(69-80 ms, ~75% do `search_hybrid` quente), e uma docstring prometendo um cache\nque não existia. O cache é invalidado por `meta('vec_gen')`, mantido por gatilhos\nem `embeddings`, e não por `mtime`, que não é confiável sob WAL.\n\nVer `task/fase-19-velocidade-e-frescor/RAGX-0134-*.md`."
+}

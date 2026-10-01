@@ -28,6 +28,21 @@ def header(index: int, path: str, start_line: int, end_line: int, name: str | No
     return f"## [{index}] {label(path, start_line, end_line, name)}{marca}"
 
 
+#: Quantos caracteres do id o fio traz (o mesmo `WIRE_ID_LEN` de `ragx.mcp.tools`, conferido por teste).
+REFERENCE_ID_CHARS = 12
+
+
+def references_line(refs: Sequence[tuple[str, str, int, int]]) -> str:
+    """"Já entregues nesta sessão": `(chunk_id, caminho, linha inicial, linha final)` -> uma linha.
+
+    Sem conteúdo: o agente reabre qualquer um com `get_chunk(id)`.
+    """
+    itens = ", ".join(
+        f"`{path}:{start}-{end} [{cid[:REFERENCE_ID_CHARS]}]`" for cid, path, start, end in refs
+    )
+    return f"Já entregues nesta sessão (reabra com get_chunk): {itens}"
+
+
 def footer(n_sources: int, estimated_tokens: int, budget: int, n_dropped: int) -> str:
     extra = f" · {n_dropped} candidatos descartados" if n_dropped else ""
     return f"{n_sources} fonte(s) · ~{estimated_tokens} / {budget} tokens{extra}"
@@ -40,11 +55,14 @@ def markdown(
     budget: int,
     n_dropped: int,
     title: str | None = None,
+    references: Sequence[tuple[str, str, int, int]] = (),
 ) -> str:
     """`parts` é uma lista de `(cabeçalho, conteúdo)`; `title` só a CLI usa."""
     lines: list[str] = [f"# Contexto — {title}", ""] if title is not None else []
     for head, content in parts:
         lines.extend([head, "", content, ""])
+    if references:
+        lines.extend([references_line(references), ""])
     lines.append("---")
     lines.append(footer(n_sources, estimated_tokens, budget, n_dropped))
     return "\n".join(lines)

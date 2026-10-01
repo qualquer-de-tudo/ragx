@@ -4,7 +4,7 @@
       "AGENTS.md",
       "README.md"
     ],
-    "seen": 133,
+    "seen": 244,
     "term": "RAGX"
   },
   {
@@ -12,31 +12,31 @@
       "docs/adr/ADR-0001-python-e-toolchain.md",
       "docs/adr/ADR-0002-sqlite-como-store-unico.md"
     ],
-    "seen": 46,
+    "seen": 48,
     "term": "ADR"
-  },
-  {
-    "evidence": [
-      "docs/14-cli.md",
-      "src/ragx/cli/__init__.py"
-    ],
-    "seen": 20,
-    "term": "CLI"
   },
   {
     "evidence": [
       "docs/09-mcp.md",
       "docs/adr/ADR-0006-mcp-casca-fina.md"
     ],
-    "seen": 20,
+    "seen": 39,
     "term": "MCP"
+  },
+  {
+    "evidence": [
+      "docs/14-cli.md",
+      "src/app/src/components/shell/LivePill.tsx"
+    ],
+    "seen": 26,
+    "term": "CLI"
   },
   {
     "evidence": [
       "src/ragx/agents/profile.py",
       "src/ragx/base/source.py"
     ],
-    "seen": 9,
+    "seen": 11,
     "term": "NÃO"
   },
   {
@@ -49,18 +49,18 @@
   },
   {
     "evidence": [
-      "src/ragx/agents/evaluator.py",
-      "src/ragx/cli/commands/search_cmd.py"
+      "scripts/versao.py",
+      "task/fase-00-fundacao-seguranca/RAGX-0011-pipeline-de-ci-em-linux-e-windows.md"
     ],
     "seen": 5,
-    "term": "MVP"
+    "term": "CI"
   },
   {
     "evidence": [
-      "src/ragx/indexing/parsers/structured.py",
-      "src/ragx/search/service.py"
+      "src/ragx/clients/claude_hint.py",
+      "src/ragx/clients/registry.py"
     ],
     "seen": 5,
-    "term": "SQL"
+    "term": "JSON"
   }
 ]

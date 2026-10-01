@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "a22f4682e106b7bc8dedf31ec07c1cb18e39d17311c3f86a6bdd8e5878597c83",
+  "doc_kind": "code",
+  "id": "7ecf97d3f68f2f32725ac4d0f2961f03",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/clients/registry.py",
+  "size_bytes": 26249,
+  "title": "Onde cada cliente MCP guarda sua configuração, e como alterá-la sem estragar.\n\nA regra que governa este módulo: **a configuração é da pessoa, não nossa.**\nO arquivo pode ter dez servidores MCP, comentários e ajustes que nada têm a ver\ncom o RAGX. Um instalador que reescreve o arquivo inteiro destrói tudo isso — e\ndescobrir que foi o instalador é quase impossível depois do fato.\n\nDaí as quatro regras de cada gravação:\n\n1. **Alteração mínima.** Mexe-se numa chave: o servidor `ragx`. O resto do\n   documento é preservado como está.\n2. **Idempotência.** Se a entrada já é exatamente a que escreveríamos, nada é\n   escrito e nada é salvo em backup. Rodar de novo não duplica nem suja.\n3. **Backup antes de mudar.** Só quando algo vai mudar de verdade.\n4. **Configuração inválida não é sobrescrita.** JSON quebrado pode ser o\n   arquivo que a pessoa está editando agora. Recusar e explicar é melhor do que\n   apagar."
+}

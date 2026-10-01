@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "bb6dba452a535f6f2099a69c3174331f31798f8a30fda97a334ed0428f7ee407",
+  "doc_kind": "code",
+  "id": "2913d52eabdda7d53cb90471c720c66f",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/status_file.py",
+  "size_bytes": 3837,
+  "title": "`.ragx/status.json`: o estado do índice num arquivo que qualquer um lê.\n\nO painel e outras ferramentas leem este arquivo em vez de abrir o SQLite.\nEscrita atômica (temporário + os.replace) para ninguém ler JSON pela metade.\nSó contagens e metadados: nenhum caminho de arquivo do projeto."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "3e3797e347745a5b636dd09fccc53b82d2b010d6606e846ea0345956abd7da41",
+  "doc_kind": "code",
+  "id": "5e29c2433b275bc3b7edac5259f236e4",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/versao.py",
+  "size_bytes": 7387,
+  "title": "Prepara uma versão nova do RAGX: número, CHANGELOG e tag, num comando.\n\n    uv run python scripts/versao.py 1.0.0-beta.4          # só edita os arquivos\n    uv run python scripts/versao.py 1.0.0-beta.4 --tag    # edita, commita e cria a tag\n\nDepois, o push da tag dispara o `release.yml` no GitHub, que testa, gera o\nwheel, a extensão e o instalador do painel (`RAGX-Painel-Setup-<versão>.exe`) e\npublica a release:\n\n    git push origin main v1.0.0-beta.4\n\nA versão mora em cinco arquivos, e a release confere que a tag bate com eles.\nEditar à mão é como o painel ficou em `0.0.0` enquanto o produto já estava na\nbeta 3 — e o instalador sairia com o número errado no nome.\n\nCommit comum não dispara nada além do CI: só a tag gera instalador."
+}

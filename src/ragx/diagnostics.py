@@ -58,6 +58,10 @@ def mcp_entry(tool: str, ms: float, project: str, result: Any, text: str) -> dic
         erro = result.get("error") if isinstance(result, dict) else None
         codigo = erro.get("code") if isinstance(erro, dict) else None
         entry["err_code"] = str(codigo) if codigo else "unknown"
+    dados = result.get("data") if isinstance(result, dict) else None
+    if isinstance(dados, dict) and dados.get("dedupe_refs"):
+        entry["dedupe_refs"] = int(dados["dedupe_refs"])
+        entry["dedupe_saved_tokens"] = int(dados.get("dedupe_saved_tokens") or 0)
     entry["resp_chars"] = len(text)
     entry["resp_tokens"] = count_tokens(text)
     return entry

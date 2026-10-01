@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "27076fab69d5685d6d8af341512afc26e345b6aeb69e8fd6d659750e7713ec52",
+  "doc_kind": "code",
+  "id": "014d19a8bba431f9d9af9e36ef6827df",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/integration/test_mcp_install.py",
+  "size_bytes": 16913,
+  "title": "Registro do RAGX nos clientes MCP.\n\nO que torna este código perigoso não é a complexidade: é o que ele toca. O\narquivo de configuração do Claude Desktop pode conter dez servidores MCP que a\npessoa levou meses ajustando. Um instalador que reescreve o arquivo apaga tudo\nisso, e ninguém liga o sumiço ao instalador que rodou semana passada.\n\nPor isso a maior parte desta suíte não verifica que o RAGX foi registrado —\nverifica que **o resto continuou lá**."
+}

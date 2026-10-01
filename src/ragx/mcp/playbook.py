@@ -144,6 +144,9 @@ _ORDEM = {
     ),
 }
 
+#: Fecha o laço do dedupe de sessão (RAGX-0159): o que o `build_context` listou como já entregue.
+_JA_ENTREGUE = "Chunk listado como já entregue: abra com get_chunk(id)."
+
 #: Teto do texto de `instructions`: o Claude Code trunca em ~2 KB (RAGX-0158).
 INSTRUCTIONS_MAX_BYTES = 2048
 
@@ -174,4 +177,4 @@ def short_instructions(write_enabled: bool, profile: str = "full") -> str:
                 "sincronizar o índice. Chame refresh no início de uma tarefa; "
                 "sync só depois de mudanças estruturais."
             )
-    return base + " " + _ORDEM["slim" if slim else "full"]
+    return base + " " + _ORDEM["slim" if slim else "full"] + " " + _JA_ENTREGUE

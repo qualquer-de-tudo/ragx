@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c5c73f2c63e35198dbe78f8c2234fec52953751b1912806ec89a29d4ea0b9077",
+  "doc_kind": "code",
+  "id": "e301ecc12ae9b3bdcb9ac6d72bcd548d",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/federation/context.py",
+  "size_bytes": 3340,
+  "title": "`build_context` de OUTRO projeto do hub (`scope=\"project:<nome>\"`).\n\nO servidor MCP só valida e serializa; resolver o projeto, aplicar a visibilidade\ne montar o pack com a configuração DELE é daqui. As regras são as de\n`federation/search.py`:\n\n- projeto `private` ou inexistente: indistinguíveis de propósito (mesmo erro,\n  e nenhum banco é aberto antes de recusar);\n- a visibilidade que vale é a do `ragx.toml` LIVE do outro projeto, não a que o\n  hub guardou no passado;\n- projeto sem clone local (só federação) só tem contratos: não há índice para\n  montar contexto.\n\n`scope=\"all\"` não é suportado: modelos de embedding diferentes não se combinam\nnum mesmo pack, e fingir que combinam produziria ranking com aparência de\nresultado.\n\nVer docs/17-multiprojeto-e-federacao.md."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "4f02360d55e8637ac7e33b192afe45afd7049c8fe7189e0e1cea8a117a2a9702",
+  "doc_kind": "code",
+  "id": "12d29fc0cbf2ceeb427e9ff1c449d072",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/e2e/test_cli_sync_busy.py",
+  "size_bytes": 2637,
+  "title": "`ragx sync` ocupado: a mensagem não pode prometer mais do que a trava cobre.\n\n`IndexBusyError.__str__` (genérica, usada por `ragx index`) diz \"este pedido\nficou agendado\" — verdade para `index_project`, mas enganoso para `sync`: só a\nreindexação incremental reroda sozinha quando a trava libera, nunca\nknowledge/, grafo, dicionário ou federação. Ver ruling da revisão final de\nbranch em .superpowers/sdd/2026-09-23-indice-acompanha-branch/progress.md."
+}

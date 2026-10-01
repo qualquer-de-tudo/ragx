@@ -15,7 +15,7 @@ import os
 import re
 import sqlite3
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -55,6 +55,17 @@ class ContextFragment:
     chunk_id: str = ""
 
 
+@dataclass(frozen=True, slots=True)
+class ContextReference:
+    """Um chunk já entregue nesta sessão: só a referência, nunca o conteúdo (RAGX-0159)."""
+
+    chunk_id: str
+    document_path: str
+    start_line: int
+    end_line: int
+    tokens: int
+
+
 @dataclass
 class ContextPack:
     query: str
@@ -66,6 +77,8 @@ class ContextPack:
     intent: str = "general"
     stats: dict[str, Any] = field(default_factory=dict)
     cached: bool = False
+    #: preenchido por `apply_session`, DEPOIS do cache: o cache guarda o pack completo
+    references: tuple[ContextReference, ...] = ()
 
 
 @lru_cache(maxsize=1)
@@ -205,11 +218,12 @@ def _rendered_tokens(pack: ContextPack) -> int:
                         f.heading_path or f.symbol, f.compressed), f.content)
         for i, f in enumerate(pack.fragments, start=1)
     ]
+    refs = _reference_tuples(pack)
     estimado = pack.budget
     n = estimado
     for _ in range(4):
         n = count_tokens(fmt_mod.markdown(
-            parts, len(pack.sources), estimado, pack.budget, len(pack.dropped)
+            parts, len(pack.sources), estimado, pack.budget, len(pack.dropped), references=refs
         ))
         if n == estimado:
             break
@@ -541,3 +555,48 @@ def _cache_evict(cfg: Config) -> None:
 
 def _asdict(f: ContextFragment) -> dict[str, Any]:
     return {s: getattr(f, s) for s in ContextFragment.__slots__}
+
+
+def _reference_tuples(pack: ContextPack) -> tuple[tuple[str, str, int, int], ...]:
+    return tuple((r.chunk_id, r.document_path, r.start_line, r.end_line) for r in pack.references)
+
+
+def apply_session(pack: ContextPack, ledger: Any) -> ContextPack:
+    """Troca por referência o que a sessão já recebeu, e registra o que está saindo agora.
+
+    Pós-processamento do pack (o cache guarda o completo; o dedupe é da sessão): o fragmento cujo
+    `chunk_id` o livro-razão viu, dentro do TTL, vira `ContextReference`; os outros ficam e passam a
+    constar como entregues. Só encurta: se as referências custarem tanto quanto o conteúdo que
+    substituem (um chunk minúsculo), o pack segue completo. `ledger=None` devolve o pack como veio.
+    O pack recebido não é alterado.
+    """
+    if ledger is None or not pack.fragments:
+        return pack
+    novos: list[ContextFragment] = []
+    refs: list[ContextReference] = []
+    for f in pack.fragments:
+        visto = ledger.seen(f.chunk_id) if f.chunk_id else None
+        if visto is not None:
+            refs.append(ContextReference(f.chunk_id, f.document_path, f.start_line, f.end_line, f.tokens))
+        else:
+            novos.append(f)
+    if refs:
+        candidato = replace(
+            pack, fragments=tuple(novos), references=tuple(refs),
+            sources=tuple(dict.fromkeys(f.document_path for f in novos)) or pack.sources,
+            stats=dict(pack.stats),
+        )
+        antes, depois = _rendered_tokens(pack), _rendered_tokens(candidato)
+        if depois < antes:
+            candidato.estimated_tokens = depois
+            candidato.stats.update({
+                "kept": len(novos),
+                "content_tokens": sum(f.tokens for f in novos),
+                "overhead_tokens": depois - sum(f.tokens for f in novos),
+                "dedupe_refs": len(refs),
+                "dedupe_saved_tokens": antes - depois,
+            })
+            pack = candidato
+    for f in pack.fragments:
+        ledger.mark(f.chunk_id, f.document_path, f.start_line, f.end_line, f.tokens)
+    return pack

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "b87c9a9d384bd26734917787e66e41b4d895a7bb796b8d75d001d745d02629e6",
+  "doc_kind": "code",
+  "id": "f6a879e050857eb5e1c308e71ff09d2f",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/unit/test_ollama_url.py",
+  "size_bytes": 4192,
+  "title": "`localhost` vira `127.0.0.1` em toda requisição ao Ollama.\n\nNo Windows, `localhost` resolve para `::1` antes de `127.0.0.1` e o Ollama\nescuta só em IPv4: cada requisição esperava ~2 s até cair no endereço certo.\nMedido nesta máquina: 2,04-2,11 s com `localhost`, 3-17 ms com `127.0.0.1`.\n\nVer `task/fase-19-velocidade-e-frescor/RAGX-0132-*.md`."
+}

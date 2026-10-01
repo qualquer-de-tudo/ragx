@@ -135,6 +135,11 @@ class ContextCfg(BaseModel):
     compress: bool = True
     reserve_ratio: float = 0.05
     min_sources: int = 3
+    # Dedupe de sessão (RAGX-0159): chunk já entregue volta como referência em vez de conteúdo.
+    # O servidor não sabe quando o cliente compacta o contexto: por isso o TTL é curto.
+    session_dedupe: bool = True
+    session_ttl_minutes: int = 45
+    session_max_chunks: int = 2000
 
 
 class SizeCfg(BaseModel):

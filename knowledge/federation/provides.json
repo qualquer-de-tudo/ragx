@@ -5,6 +5,33 @@
       "contract": null,
       "detected_by": "reference",
       "handler": null,
+      "normalized": "close",
+      "raw": "close",
+      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:12"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "data",
+      "raw": "data",
+      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:12"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "error",
+      "raw": "error",
+      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:118"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
       "normalized": "messageevent",
       "raw": "MessageEvent",
       "source": "vscode-plugin/tests/webview/app.test.tsx:79"
@@ -275,6 +302,15 @@
       "normalized": "sync_state",
       "raw": "sync_state",
       "source": "docs/03-modelo-de-dados.md"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "t",
+      "raw": "t",
+      "source": "tests/unit/test_db_fts5_probe.py"
     },
     {
       "confidence": 1.0,

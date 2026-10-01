@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "39a6e50de77fbad172c53ccce77b4dc8560e335287f1dda2533198d3c0b38cc1",
+  "doc_kind": "code",
+  "id": "6f6df864c0908712239d707e343b05d8",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/security/links.py",
+  "size_bytes": 1442,
+  "title": "Symlink ou junction: o que o walker não segue para fora da raiz (ameaça A8).\n\nNo Windows, uma junction (`mklink /J`, o que o pnpm cria, e que não exige\nprivilégio) NÃO é symlink para o Python: `Path.is_symlink()` devolve falso e o\nwalker descia nela, indexando uma pasta de fora do projeto. Este módulo é só\nstdlib, para que `walk.py` e `ignore_engine.py` o usem sem ciclo.\n\nSó `IO_REPARSE_TAG_MOUNT_POINT` conta. Outros reparse points (OneDrive com\narquivos sob demanda, `AppExecLink`) NÃO são junctions e continuam sendo\npercorridos normalmente."
+}

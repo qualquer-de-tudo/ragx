@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "1f8dad3cdb387f7df6e7016c84a1dcf74b23f2b0452b877a3daabd667baafefa",
+  "doc_kind": "code",
+  "id": "857268f8997abc7566c982ef824c9f83",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/lock.py",
+  "size_bytes": 7915,
+  "title": "Trava entre processos para indexação.\n\nHooks de git, watcher, MCP, painel e CLI podem disparar indexação ao mesmo\ntempo; dois escritores no mesmo banco já produziram `FOREIGN KEY constraint\nfailed`. Uma trava de arquivo resolve sem dependência nova, mas as duas\noperações perigosas (criar e assumir uma trava morta) precisam ser atômicas\nde ponta a ponta, senão dois processos podem concluir que são donos ao mesmo\ntempo:\n\n- Criar: escrever o conteúdo direto no caminho final com `O_EXCL` deixa uma\n  janela em que o arquivo existe mas está vazio (`write` ainda não voltou).\n  Um `holder()` concorrente nessa janela vê um arquivo ilegível, conclui\n  \"trava corrompida\" e assume por cima. Por isso a publicação escreve num\n  arquivo temporário único e só então cria um link físico (`os.link`) no\n  caminho final: o link falha com `FileExistsError` se a trava já existe, e\n  o caminho final nunca é observável vazio.\n- Assumir uma trava de dono morto: se dois processos leem o mesmo pid morto,\n  os dois decidem assumir; se ambos apagam-e-criam, o segundo apaga a trava\n  nova do primeiro. Por isso a troca usa `rename` atômico para \"arrancar\" a\n  trava do caminho antes de decidir o que fazer com ela — só um processo\n  consegue mover o arquivo original por vez. Depois de mover, confere se o\n  conteúdo movido é mesmo do pid que motivou a tentativa; se não for (outro\n  processo já havia substituído a trava), devolve o arquivo ao lugar.\n\nQuem chega com a trava ocupada deixa um pedido em `index.pending`; quem segura\na trava roda de novo ao terminar. Assim nenhum commit fica sem reindexação."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "11d061d35dafac4cf4e64b9c6e29297513f6db6c3f870e4f86e5adc57c38b718",
+  "doc_kind": "code",
+  "id": "3c9fc4f5df0ca4e0d4c05e55abcf5fd6",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/clients/__init__.py",
+  "size_bytes": 948,
+  "title": "Registro do RAGX como servidor MCP nos clientes instalados na máquina.\n\nFica FORA de `ragx.mcp` de propósito: aquele pacote não pode tocar em\nfilesystem (ADR-0006, verificado por `tests/security/test_architecture.py`).\nRegistrar um servidor é tarefa de instalação, não de servir MCP.\n\nTambém fica fora dos instaladores de shell. `install.sh` embutia um script\nPython entre aspas e `install.ps1` reimplementava a mesma lógica em\nPowerShell — duas implementações, nenhuma testada, e só uma delas sabia fazer\nbackup. Agora as duas chamam `ragx mcp install`."
+}

@@ -7,7 +7,7 @@
 | **Estimativa** | 1,5d |
 | **Depende de** | RAGX-0154, RAGX-0157 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (7.2 #1) · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-T5, princípio 2) · [07-context-engine.md](../../docs/07-context-engine.md) · [09-mcp.md](../../docs/09-mcp.md) |
-| **Status** | `todo` |
+| **Status** | `doing` |
 
 ## Objetivo
 

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "d821e63e6dcd5c79cc58d40090c9616efaf4a63a7466f659b0f36e198564ab4a",
+  "doc_kind": "code",
+  "id": "8c1f430f940686c0e8b858c6d02a1c7d",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/app/scripts/brand.py",
+  "size_bytes": 8891,
+  "title": "Gera os ativos de marca do RAGX a partir de uma única geometria.\n\nO símbolo é um \"X\" de duas barras a 45° cuja cruz tem uma abertura em\nlosango (o foco: só o contexto relevante passa), com um losango menor no\ncentro (o trecho recuperado). A geometria é calculada aqui, não desenhada à\nmão, para que SVG, PNG e .ico saiam idênticos e simétricos.\n\nDuas versões de desenho:\n- \"full\" (>= 48 px): X, abertura e núcleo.\n- \"small\" (<= 32 px): barras mais grossas, abertura menor e sem núcleo; a\n  versão full encolhida fecha a abertura e vira borrão nesses tamanhos.\n\nUso (só Pillow): python scripts/brand.py"
+}

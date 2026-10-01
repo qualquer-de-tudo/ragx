@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "4ff341442f6aad952fb54431b2e1fcff9a9b021c336677781aa1b5fc41ad15a6",
+  "doc_kind": "code",
+  "id": "3b60969ff9d58f19abd2bae7d61346bf",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/procs.py",
+  "size_bytes": 1132,
+  "title": "Processos filhos que nunca abrem janela de terminal.\n\nNo Windows, um programa de console lançado por um processo SEM console ganha uma\njanela nova. É o caso do `git` chamado pela indexação que o hook de commit dispara\ndestacada: cada `git rev-parse` piscava um terminal na cara de quem só commitou.\n\n`CREATE_NO_WINDOW` dá ao filho um console oculto, que os netos herdam. Todo\n`subprocess.run` do pacote passa por aqui (há teste cobrando)."
+}

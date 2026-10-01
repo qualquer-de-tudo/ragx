@@ -1,6 +1,6 @@
 [
   {
-    "chunk_id": null,
+    "chunk_id": "68a67b22537a0890c0c575833c8d9d16",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "0167c39c3973b3feede20a0f341ca57e",
@@ -22,6 +22,17 @@
     "type": "class"
   },
   {
+    "chunk_id": "dbc0de57add3d4fe359be898240d3bd3",
+    "confidence": 1.0,
+    "document_id": "014d19a8bba431f9d9af9e36ef6827df",
+    "id": "04f50bac77fc5c894e73288b42495d6f",
+    "name": "test_codex_e_idempotente",
+    "qualified_name": "tests/integration/test_mcp_install.py::test_codex_e_idempotente",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "5ba9c68d0bb5ae2de4af90d8086822ce",
     "confidence": 1.0,
     "document_id": "941f6b614648b28ab6a935c0edef8f71",
@@ -31,6 +42,50 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "0dab166151d19dc29d503d6d602f14e5",
+    "confidence": 1.0,
+    "document_id": "b17db1655f03e599bccaf44cd9320979",
+    "id": "0d4ac36c1cebfdecacb3eb897ea8eecf",
+    "name": "test_build_context_logs_baseline_from_index",
+    "qualified_name": "tests/integration/test_mcp_telemetry.py::test_build_context_logs_baseline_from_index",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3c5ed0397dfeb57eccec8fce32d71fe8",
+    "confidence": 1.0,
+    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
+    "id": "0df8ef5cc5a38f1436ce5f70f8108057",
+    "name": "_ler",
+    "qualified_name": "src/ragx/clients/claude_hint.py::_ler",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "f64863a205868a71366a33725d403d60",
+    "id": "0e4bbabcaed591dbca31fea82d3d501f",
+    "name": "navigation.test.ts",
+    "qualified_name": "src/app/electron/__tests__/navigation.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "d84466b665c2ceeeea36497abb285395",
+    "id": "0e528c7c9f0f4f08b7b42c204537f7dc",
+    "name": "graph-confidence.test.ts",
+    "qualified_name": "vscode-plugin/tests/unit/graph-confidence.test.ts",
+    "source": "structural",
+    "summary": "/**",
+    "type": "file"
   },
   {
     "chunk_id": "10bbee1f1959f24f1bb4ad0b8b612bba",
@@ -50,6 +105,17 @@
     "id": "1121fa2ce4cbe633fb10b37adf87d659",
     "name": "extract#part-1",
     "qualified_name": "src/ragx/graph/extractors/reference.py::extract#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "fe382fd48fe78c37ff55e0f2e21e66d5",
+    "confidence": 1.0,
+    "document_id": "db6d3f3e5c2da1a7de936b8a1eba65a2",
+    "id": "112ee3ec98e828d3bf526cd4d19677d9",
+    "name": "_cfg_tmp",
+    "qualified_name": "tests/unit/test_context_units.py::_cfg_tmp",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -101,6 +167,17 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "897cedaf065a867c7510a8aa12670b05",
+    "id": "1f78694ca9e81d123c8ec20d7aa781a4",
+    "name": "RAGX-0103-trocar-o-modelo-de-embedding-para-retrieval-assimetrico.md",
+    "qualified_name": "task/fase-14-evolucao-do-rag/RAGX-0103-trocar-o-modelo-de-embedding-para-retrieval-assimetrico.md",
+    "source": "structural",
+    "summary": "RAGX-0103 — Trocar o modelo de embedding para retrieval assimétrico",
+    "type": "file"
+  },
+  {
+    "chunk_id": "b61804f4f4996d9702ff8c090000d979",
+    "confidence": 1.0,
     "document_id": "50ff9683032b8f22cb4d05c68259b0d1",
     "id": "2054cc2cedebcf0b89630a843d4db73a",
     "name": "SearchFilters",
@@ -143,7 +220,7 @@
     "type": "file"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "0b336e435336c710c0c1284ce1ebe38f",
     "confidence": 1.0,
     "document_id": "992e360eb49883748047effbfda22510",
     "id": "23c600fc59602957e4692ffde990c7a6",
@@ -156,12 +233,45 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "de5407d49474e72ab76254aaf8d37f26",
+    "id": "2408154c29092edd08c3cd7df1306025",
+    "name": "RAGX-0120-release-publica-o-instalador-do-painel.md",
+    "qualified_name": "task/fase-17-distribuicao-multiplataforma/RAGX-0120-release-publica-o-instalador-do-painel.md",
+    "source": "structural",
+    "summary": "RAGX-0120: A release publica o instalador do painel de ponta a ponta",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "89ed454114d0872b1f47e4be4810fc35",
     "id": "273e0f7c1f527bcb6d6085f95aedc3c3",
     "name": "release.py",
     "qualified_name": "scripts/release.py",
     "source": "structural",
     "summary": "Gera todos os artefatos instaláveis, num comando.\n\n    python scripts/release.py\n\nProduz em `release/`:\n\n    ragx-<versão>-py3-none-any.whl      pacote Python (Windows, Linux, macOS)\n    ragx-<versão>.tar.gz                fonte\n    ragx-knowledge-explorer-<v>.vsix    extensão do VS Code\n    install.sh / install.ps1            instaladores, copiados\n    SHA256SUMS.txt                      para conferir o download\n\nPor que Python e não Makefile: o RAGX já exige Python, e um Makefile não roda\nno Windows sem mais uma dependência. Este script funciona nos três sistemas\ncom o que já está instalado.",
+    "type": "file"
+  },
+  {
+    "chunk_id": "ecb20155f4f6c0f02c623ffcb50f5275",
+    "confidence": 1.0,
+    "document_id": "9efa09d8230443f3d74eee77c9fe73ce",
+    "id": "27a3552c30d126df910c15e17199529f",
+    "name": "test_grafo_vazio_devolve_lista_vazia",
+    "qualified_name": "tests/unit/test_contrato_grafo.py::test_grafo_vazio_devolve_lista_vazia",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "65249e98a089947b1c491517adcc64c5",
+    "id": "29c03e5c29297ddc33ae87c661e10d4c",
+    "name": "test_index_lock_pipeline.py",
+    "qualified_name": "tests/integration/test_index_lock_pipeline.py",
+    "source": "structural",
+    "summary": null,
     "type": "file"
   },
   {
@@ -220,7 +330,7 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "f996ba866284a0f9da41db480a601619",
     "confidence": 1.0,
     "document_id": "0435e4d4b8393c81fcbe6cf8497d7e92",
     "id": "2f7452bc34144aece0ac825f54e66202",
@@ -264,7 +374,7 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "14b765df3ab34fdfd81091b105ed1c03",
     "confidence": 1.0,
     "document_id": "0435e4d4b8393c81fcbe6cf8497d7e92",
     "id": "384d793cb99ce641e87156d245cad83b",
@@ -297,12 +407,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "54a9124e7df3ac82c3cdf998eb7d8794",
+    "confidence": 1.0,
+    "document_id": "aea1e39b563b5dde41459f9f98f7ce3a",
+    "id": "3c38b12c2e9f5adf4f57197ac9010f0f",
+    "name": "test_package_lock_troca_as_duas_versoes_do_pacote",
+    "qualified_name": "tests/unit/test_script_versao.py::test_package_lock_troca_as_duas_versoes_do_pacote",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "a6a626e0a14c1abaa2fb5e207ed7b4ca",
     "confidence": 1.0,
     "document_id": "add9e69383ed03a7acacbe1f82b1451a",
     "id": "3cb1bf0c5c47644b2cb316b3098be8e7",
     "name": "test_hashing_distingue_textos",
     "qualified_name": "tests/unit/test_embeddings.py::test_hashing_distingue_textos",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "8f7b83ad45282bed49e96564e01ddff8",
+    "confidence": 1.0,
+    "document_id": "5e0a5668a95c581b68294d4c48c41236",
+    "id": "3cdf4fec3acf6fce5cbd8d9f606bf577",
+    "name": "test_pausa_longa_e_ociosidade",
+    "qualified_name": "tests/unit/test_perf.py::test_pausa_longa_e_ociosidade",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -319,7 +451,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "2dda33454ac19a2e5190d289e3ac4cc5",
+    "chunk_id": "9d5bb9805b1a3da5a40b51b02c2e4d73",
+    "confidence": 1.0,
+    "document_id": "857268f8997abc7566c982ef824c9f83",
+    "id": "40188adc33b29a67d7db203ec24e8e7d",
+    "name": "release",
+    "qualified_name": "src/ragx/indexing/lock.py::release",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "33485bb047ff1cee679309a6572a1ae5",
     "confidence": 1.0,
     "document_id": "a894e82a8c485c0385b53e6537820c19",
     "id": "417840ac0161561480c943345d2f3018",
@@ -374,6 +517,28 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "3b60969ff9d58f19abd2bae7d61346bf",
+    "id": "47fb35fc72e68bfe6c9ea5713bbbf6aa",
+    "name": "procs.py",
+    "qualified_name": "src/ragx/procs.py",
+    "source": "structural",
+    "summary": "Processos filhos que nunca abrem janela de terminal.\n\nNo Windows, um programa de console lançado por um processo SEM console ganha uma\njanela nova. É o caso do `git` chamado pela indexação que o hook de commit dispara\ndestacada: cada `git rev-parse` piscava um terminal na cara de quem só commitou.\n\n`CREATE_NO_WINDOW` dá ao filho um console oculto, que os netos herdam. Todo\n`subprocess.run` do pacote passa por aqui (há teste cobrando).",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "87f36f1d6c32dd8dde2c50aee6277e24",
+    "id": "48d73d9caa25560b075a4a4d39b4925a",
+    "name": "choose-start.test.ts",
+    "qualified_name": "src/app/electron/ollama/__tests__/choose-start.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
     "chunk_id": "c1eec95f0314de40e60c531100fc1716",
     "confidence": 1.0,
     "document_id": "974afbee75cfc59961546eff615cdaa8",
@@ -385,7 +550,18 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "668e300bd6f49c11b801e34680f7ddfd",
+    "confidence": 1.0,
+    "document_id": "4b477ae2dcbd1086c4de6d9e68d20f73",
+    "id": "49f3dd7c0556ccba27bc8a13624c6a57",
+    "name": "test_perfil_desconhecido_e_recusado",
+    "qualified_name": "tests/unit/test_claude_profiles_hint.py::test_perfil_desconhecido_e_recusado",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "46c4b03f8ea397f7027a84231a2de38e",
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "4a4abe3c7192546acbb24e861427c76f",
@@ -416,6 +592,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "62c14606550591a4a13c563ce9f912e0",
+    "id": "50fb78ac31db32b45ca7173e040dfd0f",
+    "name": "AddProjectFlow.tsx",
+    "qualified_name": "src/app/src/components/project/AddProjectFlow.tsx",
+    "source": "structural",
+    "summary": "import { useEffect, useMemo, useRef, useState } from 'react'",
+    "type": "file"
   },
   {
     "chunk_id": "871eb98f7974e9e3f69061e5920b4ad7",
@@ -462,6 +649,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "f71cf0ec14d0c04736f455021bb397f4",
+    "confidence": 1.0,
+    "document_id": "65249e98a089947b1c491517adcc64c5",
+    "id": "5752151c23f1dcbc9ce3d2e05c66d99e",
+    "name": "_sources",
+    "qualified_name": "tests/integration/test_index_lock_pipeline.py::_sources",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "2438c26a93339d0123329570feac8781",
@@ -473,7 +671,7 @@
     "type": "file"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "d3864d221ffbc64253eeed14de8c7334",
     "confidence": 1.0,
     "document_id": "0ce646015253852e65eb356246450659",
     "id": "60f2294c4f7359e0798bf3db0a4a4f01",
@@ -484,12 +682,56 @@
     "type": "function"
   },
   {
+    "chunk_id": "25f914ccab54b530fc62edf1ff1a4df8",
+    "confidence": 1.0,
+    "document_id": "4b477ae2dcbd1086c4de6d9e68d20f73",
+    "id": "611c315c819f605867fafcdc5bbd4d14",
+    "name": "test_pasta_adicionada_entra_na_lista_e_liga_so_ela",
+    "qualified_name": "tests/unit/test_claude_profiles_hint.py::test_pasta_adicionada_entra_na_lista_e_liga_so_ela",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "5def752c3e4529d4d486cc93acc7febc",
+    "id": "628705bc8b4144021029c2d19faee469",
+    "name": "RAGX-0171-pausar-pollers-com-a-janela-oculta-instancia-unica.md",
+    "qualified_name": "task/fase-22-painel-v2/RAGX-0171-pausar-pollers-com-a-janela-oculta-instancia-unica.md",
+    "source": "structural",
+    "summary": "RAGX-0171 — Pausar pollers com a janela oculta; instância única",
+    "type": "file"
+  },
+  {
     "chunk_id": "d55a4f9d166a33eec373cf919cc2fbed",
     "confidence": 1.0,
     "document_id": "f2521afe7e0713a6108d67135869ece3",
     "id": "6294b67c3a74f6ddb3876f31c46b01d6",
     "name": "serialize#part-2",
     "qualified_name": "src/ragx/tasks/serialize.py::serialize#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "eba45e24e547a2334cb8db077234c4e4",
+    "id": "641864ec70746d549623bf02e061c2bd",
+    "name": "discovery.test.ts",
+    "qualified_name": "src/app/electron/projects/__tests__/discovery.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "109054368a58f7f426b905c156d13ce4",
+    "confidence": 1.0,
+    "document_id": "014d19a8bba431f9d9af9e36ef6827df",
+    "id": "64be146c3dc292afe824c7dac0597a2f",
+    "name": "test_a_lista_cobre_os_clientes_que_o_readme_promete",
+    "qualified_name": "tests/integration/test_mcp_install.py::test_a_lista_cobre_os_clientes_que_o_readme_promete",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -517,7 +759,7 @@
     "type": "class"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "3049c5ce8efc439356869c5ae5084ce7",
     "confidence": 1.0,
     "document_id": "a40e9825fc54867198fc505320b4a350",
     "id": "68a4047cd3bf5969cfdef014b4c7dea6",
@@ -550,12 +792,23 @@
     "type": "technology"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "d8de84a671015305b52023320d5fd714",
     "confidence": 1.0,
     "document_id": "371b2713f1004985da268f6bd6a25582",
     "id": "6ba2e49cabf42beb032815eaa9ad5313",
     "name": "graph_cmd",
     "qualified_name": "src/ragx/cli/commands/task_cmd.py::graph_cmd",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e9f335ab81333a18418c279b9e902e34",
+    "confidence": 1.0,
+    "document_id": "59c2243a32959171daf49064c3f346b8",
+    "id": "6d10dc9ce7e7295fbbaebc704d7752f1",
+    "name": "test_segredo_novo_nao_chega_ao_banco_nem_a_knowledge_pelo_refresh",
+    "qualified_name": "tests/integration/test_refresh_incremental.py::test_segredo_novo_nao_chega_ao_banco_nem_a_knowledge_pelo_refresh",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -572,7 +825,7 @@
     "type": "method"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "d577b8c3a1607d62152f186ee288f143",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "71b610dc30511e9f912288c079e6a5d1",
@@ -581,6 +834,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "71a06c56bc63331a5404541ca559d908",
+    "id": "7281472c1c70f3c2053a7f25367a05b2",
+    "name": "RAGX-0180-toasts-toda-falha-de-acao-aparece.md",
+    "qualified_name": "task/fase-22-painel-v2/RAGX-0180-toasts-toda-falha-de-acao-aparece.md",
+    "source": "structural",
+    "summary": "RAGX-0180 — Toasts: toda falha de ação aparece",
+    "type": "file"
   },
   {
     "chunk_id": "99ab1fcdfedf4a6b2dddf91942df5bbf",
@@ -594,12 +858,34 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "dca5db3672f93df3c62371efad8057b8",
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "73fc9f7cf99b9c98095092f66ebc3b77",
     "name": "test_get_document_nao_le_do_disco",
     "qualified_name": "tests/integration/test_mcp.py::test_get_document_nao_le_do_disco",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "db709999d35732c7d5d04ac4d25ee73a",
+    "id": "7576986c0d2552dddce507097d7e38b6",
+    "name": "catalog.ts",
+    "qualified_name": "src/app/electron/jobs/catalog.ts",
+    "source": "structural",
+    "summary": "import path from 'node:path'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "544799cf0c55aedc2267a0b65877bc5f",
+    "confidence": 1.0,
+    "document_id": "49ae69f7f150965fb4b0bc8489adfc88",
+    "id": "76479e4cf7e927a5bb2459e0a31d7a6e",
+    "name": "projeto",
+    "qualified_name": "tests/unit/test_registro_atividade.py::projeto",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -682,7 +968,18 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "2eb1fb401157707927bb81691babd819",
+    "confidence": 1.0,
+    "document_id": "470636e040bae66473f3cd088c9ab2c9",
+    "id": "80d52d7c59abd504ca73e5852699db8e",
+    "name": "GitState",
+    "qualified_name": "src/ragx/gitinfo.py::GitState",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
+    "chunk_id": "911259250d183ac6d29abf4f460184ac",
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "887454dceba0195f8ed24a8ff26e4f85",
@@ -710,6 +1007,28 @@
     "id": "8a74963c96ac4d981de0b79f7a1c7ccd",
     "name": "relation_id",
     "qualified_name": "src/ragx/core/ids.py::relation_id",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "76a3fa3745a309f11296e52f55c6fab8",
+    "id": "8aa6574c0623c6a7a44b8fb8aa43e22c",
+    "name": "24-auditoria-v2.md",
+    "qualified_name": "docs/24-auditoria-v2.md",
+    "source": "structural",
+    "summary": "24 — Auditoria para a v2: velocidade, tokens, frescor e painel",
+    "type": "file"
+  },
+  {
+    "chunk_id": "78aa9903f82bb4519f63a2396dbddf97",
+    "confidence": 1.0,
+    "document_id": "3683c78ff38e1648cc77b6d22b325b9f",
+    "id": "8b01b2ecde51cf5c292f89b989b64d5f",
+    "name": "_rede",
+    "qualified_name": "tests/unit/test_doctor_ollama_processador.py::_rede",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -759,7 +1078,29 @@
     "type": "function"
   },
   {
+    "chunk_id": "cc05010fac94e2297bcf19585a495501",
+    "confidence": 1.0,
+    "document_id": "49ae69f7f150965fb4b0bc8489adfc88",
+    "id": "8ea2052cac87860d30bf5096eca38557",
+    "name": "test_comando_do_painel_e_de_manutencao_nao_entram",
+    "qualified_name": "tests/unit/test_registro_atividade.py::test_comando_do_painel_e_de_manutencao_nao_entram",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "c24c58591e697de809fbc6e4b9f350fd",
+    "id": "8f51973c132acc28ddae17eb73faa435",
+    "name": "path-user.ts",
+    "qualified_name": "src/app/electron/bootstrap/path-user.ts",
+    "source": "structural",
+    "summary": "import { execFile } from 'node:child_process'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "51961816cf9f81f3762f3c6b6f9aff3f",
     "confidence": 1.0,
     "document_id": "0435e4d4b8393c81fcbe6cf8497d7e92",
     "id": "90dd391ccb1877b2bbd408801eb0e681",
@@ -792,7 +1133,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "d1703a022e544964f24592ce3aa954f5",
+    "chunk_id": "731100934e675c88335185e755762ccb",
     "confidence": 1.0,
     "document_id": "7a150d1b0f0f80b583916bd159598f81",
     "id": "92760f4ca3393d61c3bbe22792c83b7a",
@@ -803,12 +1144,34 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "c257b4a6e6aeebd7828bb82dd40ea9b0",
+    "confidence": 1.0,
+    "document_id": "f3e4546b2d84bb7c5a7b5faa8acef79b",
+    "id": "94ff30fcd6782edecf5b528af96a918a",
+    "name": "test_embed_only_nao_mascara_troca_de_branch",
+    "qualified_name": "tests/integration/test_freshness.py::test_embed_only_nao_mascara_troca_de_branch",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "b9e0dd96b6ec6dc418578430d1d706fa",
     "confidence": 1.0,
     "document_id": "957280ba9f49e1f9aee96e2eeb397bdb",
     "id": "9581e99c754585bb8a253e3dfacb3aac",
     "name": "_first_hit_rank",
     "qualified_name": "src/ragx/search/evaluation.py::_first_hit_rank",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3ff6dac466f8446e315d2ee04a9f013c",
+    "confidence": 1.0,
+    "document_id": "0ce646015253852e65eb356246450659",
+    "id": "95f9be3c56760e40b9a254864d33b381",
+    "name": "uninstall#part-2",
+    "qualified_name": "src/ragx/cli/commands/mcp_cmd.py::uninstall#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -825,12 +1188,56 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "fd834b01f8c63cbbf5699967d807b3a4",
+    "id": "a181354ce2a35f136a45645a1998f2c7",
+    "name": "RAGX-0121-bundle-e-bootstrap-multiplataforma.md",
+    "qualified_name": "task/fase-17-distribuicao-multiplataforma/RAGX-0121-bundle-e-bootstrap-multiplataforma.md",
+    "source": "structural",
+    "summary": "RAGX-0121: Bundle (`uv`) e bootstrap da CLI por plataforma",
+    "type": "file"
+  },
+  {
+    "chunk_id": "34d4ebb857853824e5c2f089a53d8dd5",
+    "confidence": 1.0,
+    "document_id": "20372e90447466afb2e560dec9ef2010",
+    "id": "a235c8ac312a2ec7f150bc454b20c0ed",
+    "name": "reset_embedder_cache",
+    "qualified_name": "src/ragx/embeddings/__init__.py::reset_embedder_cache",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "003b9d90dfe7836e07a41652668d7c51",
+    "id": "a3a5661c02326d43e2ba39c566039c8f",
+    "name": "RAGX-0182-skeletons-e-primeira-pintura-com-o-ultimo-snapshot.md",
+    "qualified_name": "task/fase-22-painel-v2/RAGX-0182-skeletons-e-primeira-pintura-com-o-ultimo-snapshot.md",
+    "source": "structural",
+    "summary": "RAGX-0182 — Skeletons e primeira pintura com o último snapshot",
+    "type": "file"
+  },
+  {
     "chunk_id": "4bd905396aa43126ad1bb43ce4d07372",
     "confidence": 1.0,
     "document_id": "9163d6eeeadb24c6f4a959ed9cdc8063",
     "id": "a3abbdac659e8272837b70bf81cecf86",
     "name": "test_dicionario_de_workspace",
     "qualified_name": "tests/integration/test_federation.py::test_dicionario_de_workspace",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e50999ee4387037a64e529f3fca78d2f",
+    "confidence": 1.0,
+    "document_id": "f368f2fa4735e9f9a421a02a19566240",
+    "id": "a5f52b2c9ec374be4cd7e291101544e5",
+    "name": "test_trial_human_output_prints_honesty_caveat",
+    "qualified_name": "tests/e2e/test_cli_trial.py::test_trial_human_output_prints_honesty_caveat",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -869,12 +1276,34 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "4eed5a63f4d5afdc3cc71170a0708c58",
     "confidence": 1.0,
     "document_id": "1fa2a1b1a089e44bb42055ed57e074f6",
     "id": "ab6bbfec978b74a6393ae38bdfe3083d",
     "name": "_version_text",
     "qualified_name": "src/ragx/cli/main.py::_version_text",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "b699c7196bdcf2b73ba9e509f053d2cd",
+    "id": "ad05967cb4f3a0e91fd467f58853ac38",
+    "name": "ProjectPage.tsx",
+    "qualified_name": "src/app/src/pages/ProjectPage.tsx",
+    "source": "structural",
+    "summary": "import { useEffect, useId, useMemo, useState } from 'react'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "3adbaf0c301a2bc044a5489b71d56d58",
+    "confidence": 1.0,
+    "document_id": "be3cfbc14ffd5a60e68753895e6c3fcd",
+    "id": "ad2b390c9a4097374f94c2fed681c138",
+    "name": "_read",
+    "qualified_name": "src/ragx/perf.py::_read",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -902,7 +1331,18 @@
     "type": "file"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "c5019f92267a9655ff8975cf06c83510",
+    "confidence": 1.0,
+    "document_id": "5a8e0dc676714163c55ccce677517219",
+    "id": "b5e9ff6c83fbeaf93d044827401bf175",
+    "name": "_refresh_status",
+    "qualified_name": "src/ragx/githooks.py::_refresh_status",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "138fbe4261a76119c51ce6161f5c3637",
     "confidence": 1.0,
     "document_id": "73f312f9ccb49f2fbad7b3b3fb9bbeeb",
     "id": "b6a1b58cd28a74c606f4f99addc9b3cf",
@@ -924,6 +1364,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "9ce17733ac1dd26427feb482305eb383",
+    "confidence": 1.0,
+    "document_id": "3683c78ff38e1648cc77b6d22b325b9f",
+    "id": "ba85c2ec8952efb372740b7c634bd8a0",
+    "name": "test_gpu",
+    "qualified_name": "tests/unit/test_doctor_ollama_processador.py::test_gpu",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "73bfb122118032f65969783fcc7d1a4b",
     "confidence": 1.0,
     "document_id": "f19bf83cddf9d0c2a2e7e23a444ba08d",
@@ -933,6 +1384,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": "7fc57dcac904d3ab56c6f3edf752db6d",
+    "confidence": 1.0,
+    "document_id": "5a8e0dc676714163c55ccce677517219",
+    "id": "bb8d528c2bc06517bbe2d7dfd261a91c",
+    "name": "_key",
+    "qualified_name": "src/ragx/githooks.py::_key",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "92888fa63eab24c1b93b2889f8edc52c",
@@ -957,7 +1419,7 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "4c1d6604198c6c194889aef933c5a3c2",
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
     "id": "c0bbab2cb47e44a5b6141cb1dcc85014",
@@ -1012,6 +1474,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "ce68fdfb2588694751b5614a709b9b0a",
+    "confidence": 1.0,
+    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
+    "id": "c5be66ac8905bd403f44b3e35efe3379",
+    "name": "hint_text",
+    "qualified_name": "src/ragx/clients/claude_hint.py::hint_text",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e76911c557a6f899811a739cb1a00d62",
+    "confidence": 1.0,
+    "document_id": "0ce646015253852e65eb356246450659",
+    "id": "c69d2f4ccc832bc85116c497ee7ded42",
+    "name": "install#part-2",
+    "qualified_name": "src/ragx/cli/commands/mcp_cmd.py::install#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "676810109037dbceb1c1d51d0f62b3be",
@@ -1021,6 +1505,17 @@
     "source": "structural",
     "summary": "20 — Task Analyzer",
     "type": "file"
+  },
+  {
+    "chunk_id": "8fcc53af6359247d659dd765eeaf513c",
+    "confidence": 1.0,
+    "document_id": "f3e4546b2d84bb7c5a7b5faa8acef79b",
+    "id": "c995943cb9340226889f6d37924480d3",
+    "name": "test_arquivo_alterado_sem_commit_conta_so_se_mais_novo",
+    "qualified_name": "tests/integration/test_freshness.py::test_arquivo_alterado_sem_commit_conta_so_se_mais_novo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "9b2aef63f20bf7b57bf784a129a14e3b",
@@ -1045,12 +1540,45 @@
     "type": "file"
   },
   {
+    "chunk_id": "7e6a4e59676810bba72a06e97cee3b8f",
+    "confidence": 1.0,
+    "document_id": "49ae69f7f150965fb4b0bc8489adfc88",
+    "id": "cd93b0bc9095866bef42423b3e1d0ab0",
+    "name": "test_chamada_mcp_grava_perfil_e_sessao",
+    "qualified_name": "tests/unit/test_registro_atividade.py::test_chamada_mcp_grava_perfil_e_sessao",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "124102ee11bcacdea785b216ba8e9efa",
+    "id": "ce27d6bcfda50a1c241635bc9c8e7086",
+    "name": "route.ts",
+    "qualified_name": "src/app/src/route.ts",
+    "source": "structural",
+    "summary": "/** Página que o painel mostra. Estado em memória: não há URL nem histórico. */",
+    "type": "file"
+  },
+  {
     "chunk_id": "418a10f84a57007aec21a8a23f09a37a",
     "confidence": 1.0,
     "document_id": "c0b2ca25ea28f604ebc05b6de8596220",
     "id": "cf9585cc6b2a61f0f2eec8aa0e2ab591",
     "name": "_skeleton",
     "qualified_name": "src/ragx/tasks/planner.py::_skeleton",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "beccd93c496cebc3dd5218c70cf1c30b",
+    "confidence": 1.0,
+    "document_id": "3e6bc1e02fd1d881a7dd5ada75d39d32",
+    "id": "cfec9a7c4bf9ff9554bab39e7b3f50e3",
+    "name": "test_nunca_passa_de_um",
+    "qualified_name": "tests/unit/test_metricas_avaliacao.py::test_nunca_passa_de_um",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1089,7 +1617,18 @@
     "type": "class"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "46150115c750c80554132c8972fcf140",
+    "confidence": 1.0,
+    "document_id": "4aff66fb25e9471fdc309f55c4782952",
+    "id": "d380aa4c7bc380cf72b3f748f9bdc0d4",
+    "name": "test_indexacao_do_hook_nao_e_detached_no_windows",
+    "qualified_name": "tests/unit/test_procs.py::test_indexacao_do_hook_nao_e_detached_no_windows",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "562c741d58eb19b55469b821d2ec3cfa",
     "confidence": 1.0,
     "document_id": "992e360eb49883748047effbfda22510",
     "id": "d570a1bc8aef9dc0ad1ce7e16ff96771",
@@ -1100,7 +1639,40 @@
     "type": "function"
   },
   {
+    "chunk_id": "4ead83e09732d4f1bcf0b04607253e06",
+    "confidence": 1.0,
+    "document_id": "4b477ae2dcbd1086c4de6d9e68d20f73",
+    "id": "d5a2bfec9b05c4074734081864d336f3",
+    "name": "test_off_tira_o_bloco_hooks_que_so_tinha_a_dica",
+    "qualified_name": "tests/unit/test_claude_profiles_hint.py::test_off_tira_o_bloco_hooks_que_so_tinha_a_dica",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "49019775ec43544c3073f3ae4ae2903a",
+    "confidence": 1.0,
+    "document_id": "5a8e0dc676714163c55ccce677517219",
+    "id": "d5a2d52c101194cd08cab22f8e2a43a1",
+    "name": "_insert_block",
+    "qualified_name": "src/ragx/githooks.py::_insert_block",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "301e4a63528844cd0e8f620ed371bd47",
+    "id": "d6517aecf32452ddad70deea1cda7b5a",
+    "name": "format.test.ts",
+    "qualified_name": "src/app/src/__tests__/format.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "e764c46978d10f64949c1ad3a97b59f1",
     "confidence": 1.0,
     "document_id": "d6a9a6e35d636a8080f0fbe59d403a7a",
     "id": "d81aa24c69a391dcc461f543a10a994e",
@@ -1155,7 +1727,18 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "6753a8a1a010e77b88454831773d643f",
+    "confidence": 1.0,
+    "document_id": "b4cd3410b52e596a9c55e0aa62cf2f48",
+    "id": "df36fbbc5338a0505f314b8cb085ed22",
+    "name": "_indexando",
+    "qualified_name": "src/ragx/context/engine.py::_indexando",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "840a0fd76fcff8a1cb24d3bcfafdcbaa",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "df57761cfaeb2ea578c457028959651a",
@@ -1190,6 +1773,39 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "51cbb7ac5439d5366a2ec1e418fcbb31",
+    "id": "e553dbfca41a1b3978353675b5e10cc5",
+    "name": "RAGX-0099-ampliar-o-conjunto-de-avaliacao-para-150-consultas.md",
+    "qualified_name": "task/fase-14-evolucao-do-rag/RAGX-0099-ampliar-o-conjunto-de-avaliacao-para-150-consultas.md",
+    "source": "structural",
+    "summary": "RAGX-0099 — Ampliar o conjunto de avaliação para 150 consultas",
+    "type": "file"
+  },
+  {
+    "chunk_id": "15a6d537db252613bae6e9721e304c58",
+    "confidence": 1.0,
+    "document_id": "b9df1c32a3bc92c3edf03a32a0bfcde7",
+    "id": "e6dec13c1f09b11cfb540290ebeba534",
+    "name": "test_respeita_core_hookspath",
+    "qualified_name": "tests/unit/test_githooks.py::test_respeita_core_hookspath",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "9536ce3c0a8ca328fce6f30b810cfa94",
+    "confidence": 1.0,
+    "document_id": "aea1e39b563b5dde41459f9f98f7ce3a",
+    "id": "e73437acc9d831978af175b3d339503c",
+    "name": "test_changelog_abre_a_secao_da_versao_e_deixa_nao_lancado_vazio",
+    "qualified_name": "tests/unit/test_script_versao.py::test_changelog_abre_a_secao_da_versao_e_deixa_nao_lancado_vazio",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "ddf5e08322e4c51a5605eab6d6871cea",
+    "confidence": 1.0,
     "document_id": "1fa2a1b1a089e44bb42055ed57e074f6",
     "id": "e87d016ca2dd389fd9e532d89c14fd4c",
     "name": "version",
@@ -1205,6 +1821,17 @@
     "id": "ea6f723cc10bdf850e32f43961497d32",
     "name": "_confidence",
     "qualified_name": "src/ragx/tasks/analyzer.py::_confidence",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "4f5ed6b81ea745553d968aaae05a488b",
+    "confidence": 1.0,
+    "document_id": "5d24340903cbd056590de46d2378dd04",
+    "id": "ec89d03ca5a87a0b3e03ff3a56b3ba04",
+    "name": "_processador_do_ollama",
+    "qualified_name": "src/ragx/cli/commands/doctor.py::_processador_do_ollama",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1232,7 +1859,7 @@
     "type": "function"
   },
   {
-    "chunk_id": null,
+    "chunk_id": "5bcd70000737e75fcc269d9957c145c6",
     "confidence": 1.0,
     "document_id": "e3d77d547627295328d4707262b99bb1",
     "id": "f482deecea4923a7e1df13e027664fec",
@@ -1276,6 +1903,28 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "2913d52eabdda7d53cb90471c720c66f",
+    "id": "fb4a620cc29e45c462b4f36d39cf9ef1",
+    "name": "status_file.py",
+    "qualified_name": "src/ragx/indexing/status_file.py",
+    "source": "structural",
+    "summary": "`.ragx/status.json`: o estado do índice num arquivo que qualquer um lê.\n\nO painel e outras ferramentas leem este arquivo em vez de abrir o SQLite.\nEscrita atômica (temporário + os.replace) para ninguém ler JSON pela metade.\nSó contagens e metadados: nenhum caminho de arquivo do projeto.",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "80953581cca810d80e1a334479445fee",
+    "id": "fb6602dcc2f67189ffc757cef2fb4ada",
+    "name": "no-em-dash.test.ts",
+    "qualified_name": "src/app/src/__tests__/no-em-dash.test.ts",
+    "source": "structural",
+    "summary": "/// <reference types=\"node\" />",
+    "type": "file"
+  },
+  {
     "chunk_id": "921f40be7a6dc037e2a9a73916b7eec6",
     "confidence": 1.0,
     "document_id": "c89a310054cdd2282225c43049c146cd",
@@ -1296,5 +1945,16 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "48db904459fd878381bff29fd943755f",
+    "id": "ffdcc88c8146b903eb09f9a7a5e21450",
+    "name": "benchmark.test.ts",
+    "qualified_name": "src/app/electron/ollama/__tests__/benchmark.test.ts",
+    "source": "structural",
+    "summary": "import http from 'node:http'",
+    "type": "file"
   }
 ]

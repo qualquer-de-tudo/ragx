@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "deccd926af2702dba84315f1b2cb60dfd62bd83cc83bd1ea8e3f912d8883f4f3",
+  "doc_kind": "code",
+  "id": "5e4f1c20438e22c74d80f54db5751059",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/cli/commands/claude_cmd.py",
+  "size_bytes": 10165,
+  "title": "`ragx claude on|off|status|hint|profiles` — liga e desliga o RAGX no Claude Code, para todos os projetos.\n\n\"Claude Code\" aqui é cada perfil dele na máquina: o padrão (`~/.claude.json`),\nos separados por `CLAUDE_CONFIG_DIR` (ex.: `~/.claude-empresa`) e as pastas\nadicionadas à mão (`ragx claude profiles add`). Ligar em um só deixava a outra\nconta sem o RAGX, sem aviso; `--profile` age num perfil só."
+}

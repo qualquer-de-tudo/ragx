@@ -37,6 +37,7 @@ def _markdown(pack: ContextPack, title: bool = True) -> str:
     return fmt_mod.markdown(
         parts, len(pack.sources), pack.estimated_tokens, pack.budget, len(pack.dropped),
         title=safe_echo(pack.query) if title else None,
+        references=tuple((r.chunk_id, r.document_path, r.start_line, r.end_line) for r in pack.references),
     )
 
 

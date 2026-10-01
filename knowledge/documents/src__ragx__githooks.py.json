@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "047db715b6ab84a9c00c02e469cc3f8b1a68d8d7d8df1dd8dd53981808528abb",
+  "doc_kind": "code",
+  "id": "5a8e0dc676714163c55ccce677517219",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/githooks.py",
+  "size_bytes": 8826,
+  "title": "Hooks de git que mantêm o índice na branch em que você está.\n\nCada hook ganha um bloco marcado por raiz de projeto, então convive com hooks\nde outras ferramentas e com mais de um projeto RAGX no mesmo repositório. O\nbloco chama `ragx hook-run`, que dispara a indexação destacada e devolve o\nterminal na hora. Opt-out por RAGX_SKIP_HOOK=1."
+}

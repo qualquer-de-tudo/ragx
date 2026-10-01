@@ -21,6 +21,7 @@ from pydantic import ValidationError
 
 from ragx.config import Config, load_config
 from ragx.context.baseline import whole_files_tokens
+from ragx.context.session import from_config as session_from_config
 from ragx.diagnostics import log_exception, log_mcp_call, mcp_entry
 from ragx.dictionary import builder as dictionary_builder
 from ragx.mcp.operations import WriteAPI
@@ -215,6 +216,8 @@ class KnowledgeAPI:
         self.cfg = cfg
         # Drenar a fila de edições ESCREVE no índice: só um servidor com escrita habilitada o faz.
         self.can_drain = can_drain
+        # O livro-razão vive em `ragx.context`; o servidor só segura a referência ao objeto.
+        self.ledger = session_from_config(cfg)
         self.limiter = RateLimiter(cfg.mcp.rate_per_min)
         self.project = cfg.project.name or "current"
 
@@ -438,6 +441,9 @@ class KnowledgeAPI:
                 )
             if row is None:
                 return err("not_found", f"chunk não encontrado: {safe_echo(chunk_id)}")
+        if self.ledger is not None:  # abrir um chunk o torna "entregue", mas aqui o conteúdo vai SEMPRE inteiro
+            self.ledger.mark(row["id"], row["rel_path"], row["start_line"], row["end_line"],
+                             int(row["token_count"] or 0))
         return ok(
             {
                 "project": self.project,
@@ -570,6 +576,10 @@ class KnowledgeAPI:
             pack = run(
                 self.cfg, req.query, budget=budget, include_graph=req.include_graph
             )
+            # chunk já entregue nesta sessão volta como referência (RAGX-0159)
+            from ragx.context.engine import apply_session
+
+            pack = apply_session(pack, self.ledger)
         payload: dict[str, Any] = {
             "project": project,
             "estimated_tokens": pack.estimated_tokens,
@@ -582,7 +592,16 @@ class KnowledgeAPI:
         # UMA representação do conteúdo, nunca duas: o markdown e os fragmentos
         # carregavam o mesmo texto, e um pedido de 3.000 tokens chegava a ~8.000
         # (RAGX-0154). `estimated_tokens` conta o markdown que sai, sem o título.
+        if pack.references:
+            payload["dedupe_refs"] = len(pack.references)
+            payload["dedupe_saved_tokens"] = pack.stats.get("dedupe_saved_tokens", 0)
         if req.format == "json":
+            if pack.references:
+                payload["references"] = [
+                    {"chunk_id": wire_id(r.chunk_id), "document_path": r.document_path,
+                     "lines": [r.start_line, r.end_line]}
+                    for r in pack.references
+                ]
             payload["fragments"] = [
                 {
                     "project": project if req.scope != "current" else f.project,
