@@ -143,3 +143,9 @@ export function reasonText(r: StaleReason): string {
 
 export const UNKNOWN_FRESHNESS_TEXT =
   'Não dá para saber: o projeto não está num repositório git ou ainda não foi indexado com esta versão.'
+
+/** Estado de `ragx status --json` na tela: carregando, com erro ou com a resposta. */
+export type StatusView =
+  | { phase: 'loading' }
+  | { phase: 'error'; message: string }
+  | { phase: 'ok'; status: ProjectStatus }

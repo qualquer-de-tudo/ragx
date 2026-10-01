@@ -11,7 +11,7 @@ import {
   STATE_TONE,
 } from '../state'
 import { formatNumber, formatPercent } from '../format'
-import { parseProjectStatus, reasonText, UNKNOWN_FRESHNESS_TEXT, type ProjectStatus } from '../projectStatus'
+import { parseProjectStatus, reasonText, UNKNOWN_FRESHNESS_TEXT, type StatusView } from '../projectStatus'
 import { enqueue } from '../jobs'
 import { Badge } from '../components/shell/Badge'
 import { Section, Stat } from '../components/shell/Card'
@@ -19,6 +19,7 @@ import { LivePill } from '../components/shell/LivePill'
 import { ConfirmButton } from '../components/project/ConfirmButton'
 import { JobButton } from '../components/project/JobButton'
 import { MaintenancePanel } from '../components/project/MaintenancePanel'
+import { ProjectGlance } from '../components/project/ProjectGlance'
 import { Timeline } from '../components/project/Timeline'
 import { TokenSavings } from '../components/project/TokenSavings'
 import { SecurityPanel } from '../components/SecurityPanel'
@@ -30,11 +31,6 @@ import { SkeletonRegion, SkeletonText } from '../components/ui/Skeleton'
 import { Tooltip } from '../components/ui/Tooltip'
 import { TabPanel, Tabs, type TabItem } from '../components/shell/Tabs'
 import { lastProjectTab, rememberProjectTab, type ProjectTab } from '../projectTab'
-
-type StatusView =
-  | { phase: 'loading' }
-  | { phase: 'error'; message: string }
-  | { phase: 'ok'; status: ProjectStatus }
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -410,12 +406,21 @@ export function ProjectPage({
         </p>
       </header>
 
+      <ProjectGlance
+        project={project}
+        state={state}
+        status={status}
+        live={live}
+        jobs={jobs}
+        onSeeSavings={() => chooseTab('economia')}
+      />
+
       <Tabs label="Detalhe do projeto" tabs={PROJECT_TABS} active={tab} onChange={chooseTab} idPrefix={tabsId} />
 
       <TabPanel id="geral" idPrefix={tabsId} active={tab === 'geral'}>
         <div className="detail-grid detail-grid-top">
-          <IndexSection project={project} jobs={jobs} />
           <FreshnessSection project={project} view={status} />
+          <IndexSection project={project} jobs={jobs} />
         </div>
         <UsageSection telemetry={project.telemetry} />
       </TabPanel>

@@ -23,9 +23,15 @@ instalado no sistema. Tema sempre escuro; título da janela "RAGX Painel".
   painel estiver aberto. "Adicionar
   projeto" pede uma pasta, lista os projetos do RAGX encontrados dentro
   dela e instala os hooks de git por padrão.
-- **Detalhe do projeto**: quatro abas. **Visão geral**: os números do
-  índice com a cobertura de embeddings, "o índice está em dia?" com os
-  motivos exatos de `ragx status --json` e o uso pelos agentes nas últimas
+- **Detalhe do projeto**: no topo, antes das abas e em todas elas, a faixa
+  "de relance" com as três perguntas de quem abre o projeto (RAGX-0184):
+  "Está em dia?" (a resposta de `ragx status --json` em uma linha, com o
+  primeiro motivo e o botão da ação), "Economia (14 dias)" (com "Ver gráfico",
+  que abre a aba Economia; sem medição diz "Sem medição ainda", nunca 0%) e
+  "Agente usando?" (em uso agora, a última chamada ou "nenhuma chamada
+  registrada"). Quatro abas. **Visão geral**: "o índice está em dia?" com os
+  motivos exatos de `ragx status --json` (agora o primeiro bloco), os números
+  do índice com a cobertura de embeddings e o uso pelos agentes nas últimas
   24 horas. **Economia de tokens**: o uso real dos últimos 14 dias e a
   simulação sob demanda (`ragx trial`). **Histórico**: a linha do tempo das
   indexações (quando, quem disparou, o modo, a branch e o commit), com

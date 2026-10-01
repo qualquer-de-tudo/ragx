@@ -7,7 +7,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | RAGX-0179 |
 | **Documentação** | [24-auditoria-v2.md §6](../../docs/24-auditoria-v2.md#6-painel-u-) (U-13) · [25-spec-v2.md §5.4](../../docs/25-spec-v2.md#54-painel--fase-22) (R-P10) · [src/app/README.md](../../src/app/README.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,14 +15,14 @@ O dono abre o detalhe de um projeto para saber três coisas: o índice está em 
 
 ## Entregáveis
 
-- [ ] `src/components/project/ProjectGlance.tsx`: faixa de três blocos entre o cabeçalho (`detail-head`) e as abas, visível em todas as abas, a partir de `ProjectSnapshot` e do estado de `useProjectStatus` (já existe, `ProjectPage.tsx:43-81`):
+- [x] `src/components/project/ProjectGlance.tsx`: faixa de três blocos entre o cabeçalho (`detail-head`) e as abas, visível em todas as abas, a partir de `ProjectSnapshot` e do estado de `useProjectStatus` (já existe, `ProjectPage.tsx:43-81`):
   - **Está em dia?**: `STATE_LABEL`/`STATE_TONE` (`state.ts`), uma linha com o primeiro motivo (`reasonText`, `projectStatus.ts`) e o botão do estado (`STATE_ACTION`; reaproveita `ProjectActionButton`, `ProjectBits.tsx:11`). Enquanto `status` carrega: "Verificando…".
   - **Economia (14 dias)**: `savingsRatio` e `tokensSaved` (`projectMetrics.ts`) e o botão "Ver gráfico" que abre a aba Economia (`chooseTab`). Sem medição: "sem medição ainda", nunca "0%".
   - **Agente usando?**: `live` ("Em uso agora"), senão `telemetry.lastCallAt` ("Última chamada há 3 h") com as chamadas de 24 h (`totalCalls`); sem nada: "Nenhuma chamada registrada. Confira em Conexões se o RAGX está ligado no Claude Code."
-- [ ] Ordem da aba Visão geral (`ProjectPage.tsx:424-427`): `FreshnessSection` antes de `IndexSection`, e as colunas de `.detail-grid-top` (`App.css:1974-1977`) invertidas para `minmax(280px,1fr) minmax(0,2fr)`.
-- [ ] Cada bloco é uma entrada de um array (`id`, `title`, `body`), para a RAGX-0186 (moeda no bloco de economia) e a RAGX-0189 (saúde do índice) acrescentarem sem reescrever o componente.
-- [ ] O selo do cabeçalho (`Badge`) e o `LivePill` permanecem; a faixa não os substitui.
-- [ ] `src/app/README.md`: atualizar a descrição do "Detalhe do projeto" (a faixa e a nova ordem).
+- [x] Ordem da aba Visão geral (`ProjectPage.tsx:424-427`): `FreshnessSection` antes de `IndexSection`, e as colunas de `.detail-grid-top` (`App.css:1974-1977`) invertidas para `minmax(280px,1fr) minmax(0,2fr)`.
+- [x] Cada bloco é uma entrada de um array (`id`, `title`, `body`), para a RAGX-0186 (moeda no bloco de economia) e a RAGX-0189 (saúde do índice) acrescentarem sem reescrever o componente.
+- [x] O selo do cabeçalho (`Badge`) e o `LivePill` permanecem; a faixa não os substitui.
+- [x] `src/app/README.md`: atualizar a descrição do "Detalhe do projeto" (a faixa e a nova ordem).
 
 ## Fora de escopo
 
@@ -32,19 +32,19 @@ O dono abre o detalhe de um projeto para saber três coisas: o índice está em 
 
 ## Critérios de aceite
 
-- [ ] A 900 px de largura e 600 de altura, as três respostas estão visíveis sem rolar (captura via harness da RAGX-0181 ou Playwright com bridge simulado; registrar a captura em Andamento).
-- [ ] No DOM, a faixa vem antes das abas e "Está em dia?" é o primeiro bloco da aba Visão geral (teste de ordem por `compareDocumentPosition`).
-- [ ] Os quatro casos de cada bloco têm teste: em dia / defasado / verificando / erro; com economia / sem medição; em uso agora / última chamada / nenhuma chamada.
-- [ ] Estado nunca só por cor: cada bloco diz o estado em texto (conferido no teste por `getByText`).
-- [ ] 480, 900 e 1280 px sem estouro horizontal e sem texto cortado (harness da RAGX-0181 ou captura manual).
-- [ ] `ProjectPage.test.tsx` (769 linhas) segue verde; só mudam asserts que dependiam da ordem antiga.
-- [ ] Bundle (hoje JS 306.822 B, gzip -9 91.745 B): registrar antes e depois.
+- [x] A 900 px de largura e 600 de altura, as três respostas estão visíveis sem rolar (captura via harness da RAGX-0181 ou Playwright com bridge simulado; registrar a captura em Andamento).
+- [x] No DOM, a faixa vem antes das abas e "Está em dia?" é o primeiro bloco da aba Visão geral (teste de ordem por `compareDocumentPosition`).
+- [x] Os quatro casos de cada bloco têm teste: em dia / defasado / verificando / erro; com economia / sem medição; em uso agora / última chamada / nenhuma chamada.
+- [x] Estado nunca só por cor: cada bloco diz o estado em texto (conferido no teste por `getByText`).
+- [x] 480, 900 e 1280 px sem estouro horizontal e sem texto cortado (harness da RAGX-0181 ou captura manual).
+- [x] `ProjectPage.test.tsx` (769 linhas) segue verde; só mudam asserts que dependiam da ordem antiga.
+- [x] Bundle (hoje JS 306.822 B, gzip -9 91.745 B): registrar antes e depois.
 
 ## Testes
 
-- [ ] `src/pages/__tests__/ProjectPage.test.tsx` (existente): novo `describe('ProjectPage: de relance')` com os casos acima.
-- [ ] `src/components/project/__tests__/ProjectGlance.test.tsx` (novo): cada bloco isolado, com `snap()` de `src/test/snap.ts`.
-- [ ] `src/__tests__/state.test.ts` (existente): sem mudança de lógica, só rodar.
+- [x] `src/pages/__tests__/ProjectPage.test.tsx` (existente): novo `describe('ProjectPage: de relance')` (ordem, faixa em todas as abas, `getProjectStatus` uma vez); os quatro casos de cada bloco ficaram em `ProjectGlance.test.tsx`.
+- [x] `src/components/project/__tests__/ProjectGlance.test.tsx` (novo): cada bloco isolado, com `snap()` de `src/test/snap.ts`.
+- [x] `src/__tests__/state.test.ts` (existente): sem mudança de lógica, só rodar.
 
 ## Notas
 
@@ -55,15 +55,19 @@ O dono abre o detalhe de um projeto para saber três coisas: o índice está em 
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes
-- [ ] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
-- [ ] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
-- [ ] Tamanho do bundle do renderer registrado antes/depois (hoje 307 kB JS / 93 kB gzip)
-- [ ] CHANGELOG atualizado na MESMA alteração
-- [ ] Documentação (`src/app/README.md`) confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0184)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [x] Testes escritos e verdes
+- [x] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
+- [x] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
+- [x] Tamanho do bundle do renderer registrado antes/depois (hoje 307 kB JS / 93 kB gzip)
+- [x] CHANGELOG atualizado na MESMA alteração
+- [x] Documentação (`src/app/README.md`) confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0184)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — Implementado: `components/project/ProjectGlance.tsx` (blocos como entradas de lista `{ id, title, body }`: `freshness`, `savings`, `agent`; `glanceBlocks` interno, para o lint de fast refresh), `StatusView` movido para `projectStatus.ts`, a faixa entre o cabeçalho e as abas em `ProjectPage`, `FreshnessSection` antes de `IndexSection` e `.detail-grid-top` invertido (`minmax(280px,1fr) minmax(0,2fr)`). O `useProjectStatus` já morava na página: a faixa recebe o mesmo resultado (um só `getProjectStatus`, conferido por teste).
+- **Medido** (harness da 0181 com `--height 600`, que ganhou a coluna "faixa de relance"): a faixa termina em y=297 (480 px), **y=366 (900 px)** e y=346 (1280 px), todos dentro dos 600 px de altura: as três respostas aparecem sem rolar. Capturas de 900 px vista: Está em dia / Economia / Agente usando lado a lado, acima das abas. Harness em 450, 900 e 1280 px: 36 medições, 0 problema.
+- Decisões fora do roteiro, por causa dos testes existentes: o texto da faixa não repete o do `FreshnessSection` nem o do selo (`getByText` os acharia em duplicata): "Índice em dia." contra "Em dia com o que está no disco"; erro e desconhecido têm texto próprio que manda ver o motivo na Visão geral; o botão da ação diz "Atualizar" (não "Atualizar agora", que já é o da aba Manutenção); a ação "open" não vira botão (já se está no detalhe). `.glance-main` é `div` porque o skeleton de "Verificando…" é um bloco.
+- Testes novos: `ProjectGlance.test.tsx` (11: em dia / defasado / verificando / erro / desconhecido, o botão que enfileira e o que fica "Na fila", economia com e sem medição, em uso agora / última chamada / nenhuma) e 3 casos em `ProjectPage.test.tsx` (faixa antes das abas e "Está em dia?" antes de "Índice" por `compareDocumentPosition`; faixa em todas as abas e "Ver gráfico"; selo e `getProjectStatus` uma vez). Painel: 1276 testes verdes, `lint` e `tsc` limpos.
+- Bundle: JS 320.606 → **322.519 B** (gzip 96.336 → 96.859); CSS 40.832 → **41.196 B** (gzip 8.149 → 8.217).

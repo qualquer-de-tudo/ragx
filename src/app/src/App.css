@@ -695,6 +695,33 @@ kbd {
   font: var(--fs-sm) var(--mono);
 }
 
+/* Faixa "de relance" do detalhe (ui: ProjectGlance): três respostas antes das abas. */
+.glance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-12);
+  margin-bottom: var(--sp-16);
+}
+
+.glance-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--sp-8);
+  min-width: 0;
+}
+
+.glance-title {
+  color: var(--ink-3);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.glance-main {
+  font-size: var(--fs-md);
+  overflow-wrap: anywhere;
+}
+
 /* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
 .skeleton {
   display: block;
@@ -2228,9 +2255,9 @@ kbd {
 
 /* ── detalhe do projeto: composição ─────────────────────────────────── */
 
-/* Números do índice ocupam mais; "Está em dia?" é a coluna estreita. */
+/* "Está em dia?" vem primeiro (coluna estreita); o índice, com os números, ocupa o resto. */
 .detail-grid-top {
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
   align-items: stretch;
 }
 

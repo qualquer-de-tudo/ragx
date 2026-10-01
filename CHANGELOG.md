@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Detalhe do projeto responde as três perguntas no topo.** "O índice está em dia?" era a segunda coisa da página, a
+  economia ficava noutra aba e o uso pelo agente vinha embaixo. Agora uma faixa antes das abas, em todas elas, diz em
+  texto se está em dia (com o primeiro motivo e o botão da ação), quanto economizou nos últimos 14 dias (com "Ver
+  gráfico") e se o agente está usando (em uso agora, a última chamada ou nenhuma chamada). Medido a 900 x 600 px: as
+  três respostas aparecem sem rolar (RAGX-0184).
 - **Paleta de comandos (Ctrl K) e atalhos no painel.** Ir de um projeto a outro ou disparar "Atualizar" exigia vários
   cliques. Agora `Ctrl K` abre uma paleta (sem acento nem maiúscula) que navega e enfileira só `update` e `embed`,
   `/` foca a busca, `?` mostra a ajuda e `Ctrl 1` a `Ctrl 4` trocam de tela. Nada destrutivo passa pela paleta, e

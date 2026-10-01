@@ -30,7 +30,7 @@ const only = opt('--screens', '')
 const shotsDir = opt('--shots', null)
 const asJson = args.includes('--json')
 const PORT = Number(opt('--port', '4173'))
-const HEIGHT = 800
+const HEIGHT = Number(opt('--height', '800'))
 
 function fail(code, message) {
   console.error(`visual-check: ${message}`)
@@ -130,7 +130,9 @@ function measure() {
   const bar = document.querySelector('.topbar-inner') || document.querySelector('.topbar')
   const body = document.querySelector('.content-inner')
   const align = bar && body ? { bar: [Math.round(bar.getBoundingClientRect().left), Math.round(bar.getBoundingClientRect().right)], body: [Math.round(body.getBoundingClientRect().left), Math.round(body.getBoundingClientRect().right)] } : null
-  return { over: outer, scroll, align }
+  const glance = document.querySelector('.glance')
+  const glanceBottom = glance ? Math.round(glance.getBoundingClientRect().bottom) : null
+  return { over: outer, scroll, align, glanceBottom }
 }
 
 const SCREENS = [
@@ -201,6 +203,7 @@ if (asJson) {
     for (const s of r.scroll) console.log(`      rola: ${s.el} scrollWidth ${s.scrollWidth} > clientWidth ${s.clientWidth}`)
     for (const e of r.errors) console.log(`      erro: ${e}`)
   }
+  for (const r of report.filter((x) => x.glanceBottom !== null && x.screen === 'detalhe-geral')) console.log(`faixa de relance a ${r.width} px: termina em y=${r.glanceBottom} (altura da janela ${HEIGHT})`)
   const wide = report.filter((r) => r.width >= 2000 && r.align)
   for (const r of wide) {
     const d = Math.max(Math.abs(r.align.bar[0] - r.align.body[0]), Math.abs(r.align.bar[1] - r.align.body[1]))

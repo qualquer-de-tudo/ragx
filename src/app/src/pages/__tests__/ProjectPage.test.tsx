@@ -802,3 +802,33 @@ describe('ProjectPage: projeto sem status.json (RAGX-0176)', () => {
     expect(screen.getByText(/Sem \.ragx\/status\.json: reindexe este projeto/)).toBeInTheDocument()
   })
 })
+
+describe('ProjectPage: de relance (RAGX-0184)', () => {
+  it('a faixa vem antes das abas e "Está em dia?" é o primeiro bloco da Visão geral', async () => {
+    renderPage()
+    await screen.findByText('Em dia com o que está no disco')
+    const glance = screen.getByRole('region', { name: 'De relance' })
+    const tabs = screen.getByRole('tablist')
+    expect(glance.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const emDia = screen.getByRole('region', { name: 'Está em dia?' })
+    const indice = screen.getByRole('region', { name: 'Índice' })
+    expect(emDia.compareDocumentPosition(indice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('a faixa fica em todas as abas e "Ver gráfico" abre Economia', async () => {
+    renderPage()
+    await screen.findByText('Em dia com o que está no disco')
+    abrirAba('Manutenção')
+    expect(screen.getByRole('region', { name: 'De relance' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ver gráfico' }))
+    expect(screen.getByRole('tab', { name: 'Economia de tokens' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('o selo do cabeçalho e o "em uso agora" continuam, e a faixa só chama o status uma vez', async () => {
+    const { bridge } = renderPage({ project: snap({ name: 'Juriflux' }) })
+    await screen.findByText('Em dia com o que está no disco')
+    expect(screen.getByRole('heading', { level: 1, name: 'Juriflux' })).toBeInTheDocument()
+    expect(screen.getByText('Atualizado').closest('.badge')).toBeInTheDocument()
+    expect(bridge.getProjectStatus).toHaveBeenCalledTimes(1)
+  })
+})
