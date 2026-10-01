@@ -154,6 +154,21 @@ Cache de embeddings: `.ragx/cache/emb/<model_id>/<content_hash>.f32`. Chunk que 
 mudou de lugar (arquivo renomeado, função movida) reaproveita o vetor — é o que faz
 a reindexação ficar barata.
 
+**Reindexação por caminho** (`index_paths`, `ragx index --only <caminho>`). Quando só se sabe
+QUAIS arquivos mudaram (uma edição feita no meio de uma sessão), a varredura do projeto inteiro e
+o git são trabalho jogado fora: `index_paths` reindexa só os arquivos pedidos, numa transação, e
+grava uma run `mode='paths'` (branch e commit copiados da última run completa, `git_dirty = 1`,
+sem chamar o git). Medido neste repositório, com 1 arquivo alterado e o processo quente:
+**703 ms (`index_project`) → 107 ms**; num processo novo o custo dominante passa a ser a partida da
+CLI. **O que dispensa:** a varredura, o git e a leitura dos hooks. **O que NÃO dispensa:** o
+Security Gate (é o mesmo `_examinar` da varredura, antes de qualquer byte), a poda de pastas
+(`can_prune` dos ancestrais), a guarda de links para fora da raiz (A8), a recusa de caminho
+absoluto, com `..` ou do conhecimento base, a trava de indexação (ocupada: pedido pendente e
+`IndexBusyError`) e a regra de arquivo ilegível. Cai no incremental completo quando há mais de
+`watch.max_batch` caminhos ou um arquivo de regra (`.gitignore`, `.dockerignore`, `.ragignore`,
+`ragx.toml`), que muda o que é visitado. Uma run `paths` não conta como "a última indexação" para
+o veredito de frescor: ela só olhou o que lhe pediram.
+
 **Chunk com o mesmo id sobrevive à edição.** O `chunk.id` é hash de (caminho, conteúdo
 normalizado, versão do chunker), então "mesmo id" quer dizer "mesmo conteúdo".
 `ChunkRepo.replace_for_document` compara os ids antigos com os novos: os que ficam não são

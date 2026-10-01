@@ -9,7 +9,7 @@ lotes já confirmados. Ver docs/04-indexacao.md.
 from __future__ import annotations
 
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -26,11 +26,11 @@ from ragx.indexing.embed import embed_pending
 from ragx.security.gate import SecurityGate
 from ragx.storage.db import open_db, set_meta
 from ragx.storage.repositories import ChunkRepo, DocumentRepo, RunRepo, SecurityEventRepo
-from ragx.walk import WalkedFile, iter_files
+from ragx.walk import WalkedFile, iter_files, iter_paths, normalizar_caminho
 
 VALID_SOURCES = frozenset({
     "cli", "panel", "watch", "sync", "mcp:refresh", "mcp:index",
-    "hook:post-checkout", "hook:post-commit", "hook:post-merge",
+    "hook:post-checkout", "hook:post-commit", "hook:post-merge", "paths",
 })
 
 
@@ -119,6 +119,165 @@ def index_project(
     return report
 
 
+# Arquivos que mudam O QUE é visitado: mexer neles invalida a reindexação por caminho.
+_ARQUIVOS_DE_REGRA = frozenset({".gitignore", ".dockerignore", ".ragignore", "ragx.toml"})
+
+
+def index_paths(
+    cfg: Config,
+    paths: Sequence[str],
+    *,
+    embed: bool = True,
+    source: str = "paths",
+    wait_s: float = 0.0,
+    on_event: Callable[[dict[str, Any]], None] | None = None,
+) -> IndexReport:
+    """Reindexa SÓ os arquivos pedidos: sem varrer a árvore e sem chamar o git.
+
+    É o que uma edição feita no meio de uma sessão precisa (RAGX-0140): o custo do arquivo, e
+    não o do projeto. O Security Gate é o mesmo e roda antes de qualquer byte (`iter_paths`
+    delega ao mesmo `_examinar` da varredura); o que se dispensa é a enumeração e o git, e as
+    recusas da varredura (caminho absoluto, `..`, pasta podada, link para fora) são repetidas.
+
+    Cai no `index_project` incremental completo quando o pedido não cabe no atalho: mais de
+    `watch.max_batch` caminhos, ou um arquivo de regra (`.gitignore`, `.dockerignore`,
+    `.ragignore`, `ragx.toml`), que muda o que é visitado.
+    """
+    if source not in VALID_SOURCES:
+        raise UsageError(f"origem desconhecida: {source}")
+    vistos: dict[str, None] = {}
+    for bruto in paths:
+        rel = normalizar_caminho(bruto)
+        if rel is not None:
+            vistos[rel] = None
+    rels = list(vistos)
+    if not rels:
+        return IndexReport()
+    if len(rels) > cfg.watch.max_batch or any(r.rsplit("/", 1)[-1] in _ARQUIVOS_DE_REGRA for r in rels):
+        return index_project(cfg, source=source, embed=embed, wait_s=wait_s, on_event=on_event)
+
+    state_dir = cfg.state_dir
+    deadline = time.monotonic() + max(wait_s, 0.0)
+    while not lock.try_acquire(state_dir, "index", source):
+        if time.monotonic() >= deadline:
+            current = lock.holder(state_dir)
+            lock.mark_pending(state_dir, source)
+            if not lock.try_acquire(state_dir, "index", source):
+                raise IndexBusyError(current)
+            break
+        time.sleep(0.5)
+
+    budget = MAX_PENDING_RERUNS
+    try:
+        report = _index_paths_once(cfg, rels, embed, source, on_event)
+        budget = _drain_pending(cfg, state_dir, budget)
+    finally:
+        lock.release(state_dir)
+        # uma vez, no fim, sem perguntar os hooks ao git (uma edição não os muda)
+        status_file.write_status(cfg, probe_hooks=False)
+    return report
+
+
+def _index_paths_once(
+    cfg: Config,
+    rels: list[str],
+    embed: bool,
+    source: str,
+    on_event: Callable[[dict[str, Any]], None] | None,
+) -> IndexReport:
+    gate = SecurityGate(
+        cfg.root,
+        policy=cfg.security.policy,
+        scan_content=cfg.security.scan_content,
+        min_entropy=cfg.security.min_entropy,
+        extra_exclude=cfg.index.exclude,
+        extra_include=cfg.index.include,
+    )
+    opts = ChunkOptions(max_tokens=cfg.chunk.max_tokens, min_tokens=cfg.chunk.min_tokens)
+    report = IndexReport()
+    started = time.perf_counter()
+    skip_reasons: dict[str, int] = {}
+
+    with open_db(cfg.db_path) as conn:
+        docs = DocumentRepo(conn)
+        chunks = ChunkRepo(conn)
+        events = SecurityEventRepo(conn)
+        runs = RunRepo(conn)
+
+        pedidos = set(rels)
+        known = {p: v for p, v in docs.fingerprints().items() if p in pedidos}
+        seen_paths: set[str] = set()
+        # branch e commit vêm da última run COMPLETA, sem chamar o git; `dirty = 1` porque
+        # indexar por caminho é, por definição, olhar arquivos que mudaram depois dela.
+        ultima = conn.execute(
+            "SELECT git_branch, git_commit FROM index_runs WHERE finished_at IS NOT NULL "
+            "AND mode NOT IN ('embed-only', 'paths') AND error IS NULL ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        git = (
+            gitinfo.GitState(branch=ultima[0], commit=ultima[1], dirty=True)
+            if ultima is not None and ultima[1] else None
+        )
+        run_id = runs.start("paths", source, git)
+        run_error: str | None = None
+        ctx = _Ctx(
+            cfg=cfg, conn=conn, opts=opts, report=report, skip_reasons=skip_reasons,
+            docs=docs, chunks=chunks, events=events, run_id=run_id, known=known,
+            seen_paths=seen_paths, full=False, dry_run=False, on_event=on_event,
+        )
+        try:
+            fingerprints = {
+                p: (size, mtime) for p, (_h, size, mtime, cv) in known.items() if cv == CHUNKER_VERSION
+            }
+            for walked in iter_paths(
+                cfg.root, gate, rels, max_bytes=cfg.index.max_file_bytes,
+                follow_symlinks=cfg.index.follow_symlinks, fingerprints=fingerprints,
+            ):
+                report.stats = _bump(report.stats, files_seen=1)
+                _handle(ctx, walked)
+
+            # Pedidos que sumiram do disco (ou que a varredura também não alcançaria).
+            gone = [p for p in known if p not in seen_paths and p not in report.blocked_paths]
+            if gone:
+                docs.delete_many(gone)
+            report.stats = _bump(report.stats, removed=len(gone))
+            conn.commit()
+
+            if embed:
+                er = embed_pending(cfg, conn, progress=_embed_cb(on_event))
+                report.embed_error = er.error
+                report.stats = _bump(report.stats, embedded=er.embedded)
+                conn.commit()
+        except KeyboardInterrupt:
+            report.interrupted = True
+            run_error = "interrupted"
+            conn.commit()
+            raise
+        except Exception as exc:
+            run_error = str(exc)
+            raise
+        finally:
+            elapsed = int((time.perf_counter() - started) * 1000)
+            report.stats = _bump(report.stats, duration_ms=elapsed)
+            object.__setattr__(report.stats, "skip_reasons", skip_reasons)
+            runs.finish(
+                run_id,
+                {
+                    "files_seen": report.stats.files_seen,
+                    "indexed": report.stats.indexed,
+                    "skipped": report.stats.skipped,
+                    "blocked": report.stats.blocked,
+                    "removed": report.stats.removed,
+                    "chunks": chunks.count(),
+                    "embedded": report.stats.embedded,
+                    "duration_ms": elapsed,
+                },
+                error=run_error,
+            )
+            set_meta(conn, "chunker_version", CHUNKER_VERSION)
+            conn.commit()
+    return report
+
+
 def _drain_pending(cfg: Config, state_dir: Path, budget: int) -> int:
     """Roda pedidos pendentes em modo incremental, sem estourar o orçamento."""
     while budget > 0:
@@ -165,7 +324,6 @@ def _index_once(
         unreadable_dirs: set[str] = set()
         mode = "embed-only" if embed_only else ("full" if full else "incremental")
         run_id = None if dry_run else runs.start(mode, source, gitinfo.read_state(cfg.root))
-        batch = 0
         run_error: str | None = None
 
         try:
@@ -181,6 +339,11 @@ def _index_once(
                 else {p: (size, mtime) for p, (_h, size, mtime, cv) in known.items()
                       if cv == CHUNKER_VERSION}
             )
+            ctx = _Ctx(
+                cfg=cfg, conn=conn, opts=opts, report=report, skip_reasons=skip_reasons,
+                docs=docs, chunks=chunks, events=events, run_id=run_id, known=known,
+                seen_paths=seen_paths, full=full, dry_run=dry_run, on_event=on_event,
+            )
             for walked in _all_sources(cfg, gate, fingerprints, unreadable_dirs):
                 report.stats = _bump(report.stats, files_seen=1)
                 if on_event:
@@ -188,102 +351,7 @@ def _index_once(
                 if progress:
                     progress(report.stats.files_seen, walked.rel_path)
 
-                if walked.unchanged:
-                    seen_paths.add(walked.rel_path)
-                    report.stats = _bump(report.stats, unchanged=1)
-                    continue
-
-                if walked.unreadable:
-                    # Existe, mas está travado agora (antivírus, editor logo após
-                    # o save). Não é "removido": nada é regravado e o documento,
-                    # os chunks e os vetores ficam como estavam (RAGX-0133).
-                    seen_paths.add(walked.rel_path)
-                    report.unreadable += 1
-                    skip_reasons["unreadable"] = skip_reasons.get("unreadable", 0) + 1
-                    report.stats = _bump(report.stats, skipped=1)
-                    continue
-
-                d = walked.decision
-                if d.verdict is Verdict.SKIP:
-                    reason = d.rule_id or "ignore"
-                    skip_reasons[reason] = skip_reasons.get(reason, 0) + 1
-                    report.stats = _bump(report.stats, skipped=1)
-                    continue
-
-                if d.verdict is Verdict.BLOCK:
-                    report.stats = _bump(report.stats, blocked=1)
-                    report.blocked_paths.append(walked.rel_path)
-                    if not dry_run:
-                        # Arquivo que virou sensível some do índice.
-                        docs.delete_many([walked.rel_path])
-                        events.clear_for(walked.rel_path)
-                        events.record(run_id, d.findings)
-                        batch += 1
-                    continue
-
-                seen_paths.add(walked.rel_path)
-                text = d.content or ""
-                chash = content_hash(text)
-                prior = known.get(walked.rel_path)
-
-                if (
-                    not full
-                    and prior
-                    and prior[0] == chash
-                    and prior[3] == CHUNKER_VERSION
-                ):
-                    report.stats = _bump(report.stats, unchanged=1)
-                    continue
-
-                parsed = parsers.parse(
-                    walked.rel_path, text, include_unknown=cfg.index.include_unknown
-                )
-                if parsed is None:
-                    skip_reasons["unsupported"] = skip_reasons.get("unsupported", 0) + 1
-                    report.stats = _bump(report.stats, skipped=1)
-                    seen_paths.discard(walked.rel_path)
-                    continue
-                if parsed.degraded:
-                    report.degraded += 1
-
-                produced = chunk_document(walked.rel_path, text, parsed, opts)
-                report.stats = _bump(report.stats, indexed=1, chunks=len(produced))
-                if on_event:
-                    on_event({"phase": "chunk", "done": report.stats.indexed, "total": None})
-                report.new_chunks += len(produced)
-                if prior:
-                    report.modified_documents += 1
-                else:
-                    report.new_documents += 1
-                if d.verdict is Verdict.ALLOW_REDACTED:
-                    report.stats = _bump(report.stats, redacted=1)
-
-                if dry_run:
-                    continue
-
-                doc = Document(
-                    id=document_id(walked.rel_path),
-                    rel_path=walked.rel_path,
-                    doc_kind=parsed.doc_kind,
-                    size_bytes=walked.size_bytes,
-                    mtime_ns=walked.mtime_ns,
-                    content_hash=chash,
-                    chunker_version=CHUNKER_VERSION,
-                    lang=parsed.lang,
-                    title=parsed.title,
-                    redacted=d.verdict is Verdict.ALLOW_REDACTED,
-                )
-                docs.upsert(doc)
-                trocou = chunks.replace_for_document(doc.id, produced)
-                report.chunks_kept += trocou.kept
-                report.chunks_removed += trocou.removed
-                events.clear_for(walked.rel_path)
-                events.record(run_id, d.findings)
-
-                batch += 1
-                if batch >= cfg.index.batch_size:
-                    conn.commit()
-                    batch = 0
+                _handle(ctx, walked)
 
             # Documentos que sumiram do disco.
             gone = [
@@ -346,6 +414,131 @@ def _index_once(
                 conn.commit()
 
     return report
+
+
+@dataclass
+class _Ctx:
+    """O que o tratamento de UM arquivo precisa, para a varredura e para a reindexação por caminho."""
+
+    cfg: Config
+    conn: Any
+    opts: ChunkOptions
+    report: IndexReport
+    skip_reasons: dict[str, int]
+    docs: DocumentRepo
+    chunks: ChunkRepo
+    events: SecurityEventRepo
+    run_id: int | None
+    known: dict[str, Any]
+    seen_paths: set[str]
+    full: bool
+    dry_run: bool
+    on_event: Callable[[dict[str, Any]], None] | None = None
+    batch: int = 0
+
+
+def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
+    """Trata UM arquivo entregue pelo walker: BLOCK, parse, chunk, upsert, eventos."""
+    cfg, report, skip_reasons = ctx.cfg, ctx.report, ctx.skip_reasons
+    docs, chunks, events = ctx.docs, ctx.chunks, ctx.events
+    known, seen_paths = ctx.known, ctx.seen_paths
+    full, dry_run, run_id, opts, on_event = ctx.full, ctx.dry_run, ctx.run_id, ctx.opts, ctx.on_event
+    if walked.unchanged:
+        seen_paths.add(walked.rel_path)
+        report.stats = _bump(report.stats, unchanged=1)
+        return
+
+    if walked.unreadable:
+        # Existe, mas está travado agora (antivírus, editor logo após
+        # o save). Não é "removido": nada é regravado e o documento,
+        # os chunks e os vetores ficam como estavam (RAGX-0133).
+        seen_paths.add(walked.rel_path)
+        report.unreadable += 1
+        skip_reasons["unreadable"] = skip_reasons.get("unreadable", 0) + 1
+        report.stats = _bump(report.stats, skipped=1)
+        return
+
+    d = walked.decision
+    if d.verdict is Verdict.SKIP:
+        reason = d.rule_id or "ignore"
+        skip_reasons[reason] = skip_reasons.get(reason, 0) + 1
+        report.stats = _bump(report.stats, skipped=1)
+        return
+
+    if d.verdict is Verdict.BLOCK:
+        report.stats = _bump(report.stats, blocked=1)
+        report.blocked_paths.append(walked.rel_path)
+        if not dry_run:
+            # Arquivo que virou sensível some do índice.
+            docs.delete_many([walked.rel_path])
+            events.clear_for(walked.rel_path)
+            events.record(run_id, d.findings)
+            ctx.batch += 1
+        return
+
+    seen_paths.add(walked.rel_path)
+    text = d.content or ""
+    chash = content_hash(text)
+    prior = known.get(walked.rel_path)
+
+    if (
+        not full
+        and prior
+        and prior[0] == chash
+        and prior[3] == CHUNKER_VERSION
+    ):
+        report.stats = _bump(report.stats, unchanged=1)
+        return
+
+    parsed = parsers.parse(
+        walked.rel_path, text, include_unknown=cfg.index.include_unknown
+    )
+    if parsed is None:
+        skip_reasons["unsupported"] = skip_reasons.get("unsupported", 0) + 1
+        report.stats = _bump(report.stats, skipped=1)
+        seen_paths.discard(walked.rel_path)
+        return
+    if parsed.degraded:
+        report.degraded += 1
+
+    produced = chunk_document(walked.rel_path, text, parsed, opts)
+    report.stats = _bump(report.stats, indexed=1, chunks=len(produced))
+    if on_event:
+        on_event({"phase": "chunk", "done": report.stats.indexed, "total": None})
+    report.new_chunks += len(produced)
+    if prior:
+        report.modified_documents += 1
+    else:
+        report.new_documents += 1
+    if d.verdict is Verdict.ALLOW_REDACTED:
+        report.stats = _bump(report.stats, redacted=1)
+
+    if dry_run:
+        return
+
+    doc = Document(
+        id=document_id(walked.rel_path),
+        rel_path=walked.rel_path,
+        doc_kind=parsed.doc_kind,
+        size_bytes=walked.size_bytes,
+        mtime_ns=walked.mtime_ns,
+        content_hash=chash,
+        chunker_version=CHUNKER_VERSION,
+        lang=parsed.lang,
+        title=parsed.title,
+        redacted=d.verdict is Verdict.ALLOW_REDACTED,
+    )
+    docs.upsert(doc)
+    trocou = chunks.replace_for_document(doc.id, produced)
+    report.chunks_kept += trocou.kept
+    report.chunks_removed += trocou.removed
+    events.clear_for(walked.rel_path)
+    events.record(run_id, d.findings)
+
+    ctx.batch += 1
+    if ctx.batch >= cfg.index.batch_size:
+        ctx.conn.commit()
+        ctx.batch = 0
 
 
 def _sob_pasta_ilegivel(rel_path: str, pastas: set[str]) -> bool:
@@ -441,7 +634,7 @@ def status(cfg: Config) -> dict[str, object]:
         ).fetchone()
         last_done = conn.execute(
             "SELECT * FROM index_runs WHERE finished_at IS NOT NULL "
-            "AND mode != 'embed-only' AND error IS NULL ORDER BY id DESC LIMIT 1"
+            "AND mode NOT IN ('embed-only', 'paths') AND error IS NULL ORDER BY id DESC LIMIT 1"
         ).fetchone()
         fresh = freshness.compute(cfg, conn, dict(last_done) if last_done else None)
         return {

@@ -33,18 +33,21 @@ hooks_installed_probe: Callable[[Path], bool | None] = _default_probe
 
 
 def _last_finished(conn: Any) -> dict[str, Any] | None:
-    # `embed-only` não toca proveniência de git de forma útil, e uma corrida
+    # `embed-only` não toca proveniência de git de forma útil, `paths` (RAGX-0140) só olhou os
+    # arquivos que lhe pediram, e uma corrida
     # com `error` gravado não terminou de verdade: nenhuma das duas pode
     # contar como "a última indexação que refletiu a árvore de verdade" —
     # senão o painel mostra "em dia" com o conteúdo de uma branch antiga.
     row = conn.execute(
         "SELECT * FROM index_runs WHERE finished_at IS NOT NULL "
-        "AND mode != 'embed-only' AND error IS NULL ORDER BY id DESC LIMIT 1"
+        "AND mode NOT IN ('embed-only', 'paths') AND error IS NULL ORDER BY id DESC LIMIT 1"
     ).fetchone()
     return dict(row) if row else None
 
 
-def _build(cfg: Config, conn: Any, last_error: str | None) -> dict[str, Any]:
+def _build(
+    cfg: Config, conn: Any, last_error: str | None, hooks: bool | str | None = "probe"
+) -> dict[str, Any]:
     run = _last_finished(conn)
     documents = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
     chunks = conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
@@ -78,19 +81,33 @@ def _build(cfg: Config, conn: Any, last_error: str | None) -> dict[str, Any]:
             "pending_embeddings": max(chunks - embeddings, 0),
         },
         "embedding": {"provider": cfg.embedding.provider, "model": cfg.embedding.model},
-        "hooks": {"installed": hooks_installed_probe(cfg.root)},
+        "hooks": {"installed": hooks_installed_probe(cfg.root) if hooks == "probe" else hooks},
         "running": running,
         "pending": lock.is_pending(cfg.state_dir),
         "last_error": last_error if last_error is not None else (run or {}).get("error"),
     }
 
 
-def write_status(cfg: Config, *, last_error: str | None = None) -> Path | None:
+def _hooks_do_status_anterior(cfg: Config) -> bool | str | None:
+    """O `hooks.installed` do status que já está gravado, ou "probe" se não houver."""
+    try:
+        antigo = json.loads((cfg.state_dir / STATUS_NAME).read_text(encoding="utf-8"))
+        return antigo["hooks"]["installed"]  # type: ignore[no-any-return]
+    except Exception:
+        return "probe"
+
+
+def write_status(
+    cfg: Config, *, last_error: str | None = None, probe_hooks: bool = True
+) -> Path | None:
+    """`probe_hooks=False` reaproveita o estado dos hooks do status anterior: perguntar ao git
+    (`rev-parse --git-path hooks`) custa um processo, e uma edição de arquivo não muda os hooks."""
     if not Path(cfg.db_path).exists():
         return None
     try:
         with open_db(cfg.db_path, read_only=True) as conn:
-            data = _build(cfg, conn, last_error)
+            hooks = "probe" if probe_hooks else _hooks_do_status_anterior(cfg)
+            data = _build(cfg, conn, last_error, hooks)
         target = cfg.state_dir / STATUS_NAME
         tmp = cfg.state_dir / f"{STATUS_NAME}.{os.getpid()}.tmp"
         tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")

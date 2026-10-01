@@ -50,9 +50,16 @@ def index(
     quiet: Annotated[bool, typer.Option("--quiet")] = False,
     source: Annotated[str, typer.Option("--source", help="Quem disparou (registrado no histórico).")] = "cli",
     progress_json: Annotated[bool, typer.Option("--progress", help="Progresso em linhas JSON no stdout.")] = False,
+    only: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--only",
+            help="Reindexa SÓ este caminho, sem varrer o projeto nem chamar o git (repetível).",
+        ),
+    ] = None,
 ) -> None:
     """Indexa o projeto (incremental por padrão)."""
-    from ragx.indexing.pipeline import index_project
+    from ragx.indexing.pipeline import index_paths, index_project
     from ragx.indexing.pipeline import status as get_status
 
     cfg = load_config(path)
@@ -62,14 +69,25 @@ def index(
         cfg.index.include = [*cfg.index.include, *include]
 
     wait_s = 30.0 if source == "cli" else 0.0
+
+    def _rodar(**kw: Any) -> Any:
+        """`--only` troca a varredura pela reindexação por caminho (RAGX-0140)."""
+        if only:
+            return index_paths(
+                cfg, only, embed=kw.get("embed", True),
+                source="paths" if kw["source"] == "cli" else kw["source"],
+                wait_s=kw.get("wait_s", 0.0), on_event=kw.get("on_event"),
+            )
+        return index_project(cfg, **kw)
+
     mode = "completa" if full else "incremental"
     if not quiet and not as_json and not progress_json:
         console.print(f"\n[bold]Indexando[/] {cfg.root}  ([cyan]{mode}[/])\n")
 
     try:
         if progress_json:
-            report = index_project(
-                cfg, full=full, dry_run=dry_run, embed=not no_embed, embed_only=embed_only,
+            report = _rodar(
+                full=full, dry_run=dry_run, embed=not no_embed, embed_only=embed_only,
                 source=source, wait_s=wait_s, on_event=_Throttle(),
             )
             s = report.stats
@@ -81,8 +99,8 @@ def index(
             })
             return
         if quiet or as_json:
-            report = index_project(
-                cfg, full=full, dry_run=dry_run, embed=not no_embed, embed_only=embed_only,
+            report = _rodar(
+                full=full, dry_run=dry_run, embed=not no_embed, embed_only=embed_only,
                 source=source, wait_s=wait_s,
             )
         else:
@@ -98,8 +116,8 @@ def index(
                 def tick(n: int, rel: str) -> None:
                     bar.update(task, completed=n, description=rel[-46:])
 
-                report = index_project(
-                    cfg, full=full, dry_run=dry_run, progress=tick,
+                report = _rodar(
+                    full=full, dry_run=dry_run, progress=tick,
                     embed=not no_embed, embed_only=embed_only,
                     source=source, wait_s=wait_s,
                 )

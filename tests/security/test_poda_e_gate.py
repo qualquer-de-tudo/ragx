@@ -204,3 +204,103 @@ def test_arquivo_que_ganha_segredo_e_removido_sem_sobrar_chunk_nem_vetor(tmp_pat
             assert "wJalrXUtnFEMI" not in conteudo
     finally:
         conn.close()
+
+
+# ── RAGX-0140: index_paths é o MESMO Gate, só que sem a varredura ───────
+def _projeto_paths(raiz: Path) -> Path:
+    raiz.mkdir(parents=True, exist_ok=True)
+    (raiz / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    (raiz / ".gitignore").write_text("ignorada/\n", encoding="utf-8")
+    (raiz / "ok.py").write_text("def ok():\n    return 1\n", encoding="utf-8")
+    return raiz
+
+
+def _caminhos_indexados(cfg) -> set[str]:  # type: ignore[no-untyped-def]
+    import sqlite3
+
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        return {r[0] for r in conn.execute("SELECT rel_path FROM documents")}
+    finally:
+        conn.close()
+
+
+def test_index_paths_recusa_env_caminho_perigoso_e_pasta_podada(tmp_path: Path) -> None:
+    from ragx.config import load_config
+    from ragx.indexing.pipeline import index_paths, index_project
+
+    raiz = _projeto_paths(tmp_path / "p")
+    fora = tmp_path / "fora.py"
+    fora.write_text("def vazou():\n    return 'fora da raiz'\n", encoding="utf-8")
+    cfg = load_config(raiz)
+    index_project(cfg)
+
+    (raiz / ".env").write_text(_SEGREDO, encoding="utf-8")
+    (raiz / "node_modules" / "pkg").mkdir(parents=True)
+    (raiz / "node_modules" / "pkg" / "index.js").write_text("module.exports = 1\n", encoding="utf-8")
+    (raiz / "ignorada").mkdir()
+    (raiz / "ignorada" / "x.py").write_text("def x():\n    return 0\n", encoding="utf-8")
+
+    index_paths(cfg, [
+        ".env", "..\fora.py", "../fora.py", str(fora), "node_modules/pkg/index.js",
+        "ignorada/x.py", "@base/x/a.md", "", "./", "C:/windows/system.ini",
+    ])
+
+    caminhos = _caminhos_indexados(cfg)
+    assert caminhos == {"ok.py", "ragx.toml"}, caminhos
+
+
+def test_index_paths_symlink_ou_junction_para_fora_nao_entra(tmp_path: Path) -> None:
+    import sys
+
+    from ragx.config import load_config
+    from ragx.indexing.pipeline import index_paths, index_project
+
+    raiz = _projeto_paths(tmp_path / "p")
+    fora = tmp_path / "fora"
+    fora.mkdir()
+    (fora / "segredo.py").write_text("def s():\n    return 'fora'\n", encoding="utf-8")
+    cfg = load_config(raiz)
+    index_project(cfg)
+
+    if sys.platform == "win32":
+        import _winapi
+
+        _winapi.CreateJunction(str(fora), str(raiz / "linkout"))
+    else:
+        try:
+            (raiz / "linkout").symlink_to(fora, target_is_directory=True)
+        except OSError:
+            pytest.skip("sem permissão para criar symlink")
+    index_paths(cfg, ["linkout/segredo.py"])
+    assert not any(c.startswith("linkout/") for c in _caminhos_indexados(cfg))
+
+
+def test_index_paths_segredo_novo_em_arquivo_permitido_e_bloqueado_e_removido(tmp_path: Path) -> None:
+    import sqlite3
+
+    from ragx.config import load_config
+    from ragx.indexing.pipeline import index_paths, index_project
+
+    raiz = _projeto_paths(tmp_path / "p")
+    cfg = load_config(raiz)
+    index_project(cfg)
+    assert "ok.py" in _caminhos_indexados(cfg)
+
+    (raiz / "ok.py").write_text(
+        "def ok():\n    aws_secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'\n", encoding="utf-8"
+    )
+    r = index_paths(cfg, ["ok.py"])
+
+    assert r.stats.blocked == 1
+    assert "ok.py" not in _caminhos_indexados(cfg)
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        for tabela, coluna in (("chunks", "content"), ("chunks_fts", "content")):
+            for (valor,) in conn.execute(f"SELECT {coluna} FROM {tabela}"):
+                assert "wJalrXUtnFEMI" not in (valor or "")
+    finally:
+        conn.close()

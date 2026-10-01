@@ -199,3 +199,24 @@ def test_recent_runs_no_status(tmp_path: Path) -> None:
     runs = status(cfg)["recent_runs"]
     assert len(runs) == 10
     assert runs[0]["git_branch"] == "main"
+
+
+def test_index_paths_nao_faz_o_veredito_virar_fresh_por_engano(tmp_path: Path) -> None:
+    """RAGX-0140: uma rodada por caminho só olhou os arquivos que lhe pediram. Se o
+    `finished_at` dela fosse tomado por "a última indexação", arquivos alterados que
+    ninguém varreu passariam por em dia."""
+    from ragx.indexing.pipeline import index_paths
+
+    proj = _repo(tmp_path)
+    cfg = load_config(proj)
+    index_project(cfg)
+    (proj / "a.py").write_text("def f():\n    return 2\n", encoding="utf-8")
+    (proj / "b.py").write_text("def g():\n    return 3\n", encoding="utf-8")  # novo, ninguém pediu
+    _touch_future(proj / "a.py")
+    _touch_future(proj / "b.py")
+
+    index_paths(cfg, ["a.py"])  # só o a.py foi reindexado
+
+    fr = status(cfg)["freshness"]
+    assert fr["state"] == "stale"
+    assert _kinds(fr)["uncommitted_changes"]["count"] >= 1

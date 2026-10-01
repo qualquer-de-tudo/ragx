@@ -7,13 +7,13 @@ Ver docs/04-indexacao.md e ADR-0008.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, replace
 from pathlib import Path
 
 from ragx.core.models import GateDecision, Verdict
 from ragx.security.gate import SecurityGate
-from ragx.security.links import is_junction
+from ragx.security.links import is_junction, is_link
 
 _BINARY_PROBE = 8192
 
@@ -65,82 +65,178 @@ def iter_files(
             unreadable_dirs.add((prefix + ("" if rel_dir == "." else rel_dir)).rstrip("/"))
 
     for path in _walk(root, follow_symlinks, visited, gate.ignore.can_prune, _pasta_ilegivel):
-        inner = path.relative_to(root).as_posix()
-        rel = prefix + inner
+        rel = prefix + path.relative_to(root).as_posix()
         if only is not None and rel not in only:
             continue
+        yield from _examinar(path, root, gate, max_bytes, fingerprints, prefix)
+
+
+def iter_paths(
+    root: Path,
+    gate: SecurityGate,
+    rels: Iterable[str],
+    max_bytes: int = 1_048_576,
+    follow_symlinks: bool = False,
+    fingerprints: dict[str, tuple[int, int]] | None = None,
+) -> Iterator[WalkedFile]:
+    """Como `iter_files`, mas só para os caminhos pedidos e SEM percorrer a árvore.
+
+    É a base da reindexação por caminho (RAGX-0140): quem acabou de editar um arquivo
+    não precisa pagar a varredura do projeto inteiro. O Gate é o MESMO e roda antes de
+    qualquer byte sair daqui (`_examinar`); o que muda é como se CHEGA ao arquivo, e por isso
+    `iter_paths` repete as recusas que a varredura faria por construção:
+
+    - caminho absoluto, com `..`, vazio ou do conhecimento base (`@base/`): recusado;
+    - algum ancestral é link (symlink, ou junction no Windows) e `follow_symlinks` é falso,
+      ou o ancestral é uma pasta que a varredura PODA (`IgnoreEngine.can_prune`): a varredura
+      nunca chegaria ali, então aqui também não;
+    - o caminho resolvido sai da raiz (ameaça A8): recusado;
+    - arquivo que não existe: não é emitido (o chamador trata como removido); outro `OSError` vira
+      `unreadable`, como na varredura (RAGX-0133).
+    """
+    root = Path(root).resolve()
+    for bruto in rels:
+        inner = normalizar_caminho(bruto)
+        if inner is None:
+            continue
+        path = root / inner
+        if not _alcancavel(root, inner, gate, follow_symlinks):
+            continue
         try:
-            st = path.stat()
-        except OSError as exc:
-            if _sumiu(exc):
+            if not path.is_file():
                 continue
-            decision = _decisao_sem_ler(gate, inner, rel)
-            yield WalkedFile(
-                rel, 0, 0, decision, unreadable=decision.rule_id == _UNREADABLE
-            )
+        except OSError:
             continue
+        yield from _examinar(path, root, gate, max_bytes, fingerprints, "")
 
-        # Ignore antes de ler: o arquivo grande ignorado não custa I/O.
-        ignored, source = gate.ignore.should_ignore(inner)
-        if ignored:
-            yield WalkedFile(
-                rel, st.st_size, st.st_mtime_ns,
-                GateDecision(Verdict.SKIP, rel, rule_id=source, reason="ignore"),
-            )
-            continue
 
-        # Atalho: size+mtime idênticos ao registrado -> nem abre o arquivo.
-        # É o que faz a reindexação sem mudanças ser barata (docs/04-indexacao.md).
-        if fingerprints is not None:
-            fp = fingerprints.get(rel)
-            if fp is not None and fp == (st.st_size, st.st_mtime_ns):
-                yield WalkedFile(
-                    rel, st.st_size, st.st_mtime_ns,
-                    GateDecision(Verdict.ALLOW, rel, reason="unchanged"),
-                    unchanged=True,
-                )
-                continue
+def normalizar_caminho(bruto: str) -> str | None:
+    """Caminho relativo POSIX, ou `None` se não for um caminho que este módulo aceite."""
+    texto = bruto.replace("\\", "/").strip()
+    while texto.startswith("./"):
+        texto = texto[2:]
+    if not texto or texto.startswith("/") or (len(texto) > 1 and texto[1] == ":"):
+        return None
+    partes = texto.split("/")
+    if ".." in partes or "" in partes or texto.startswith("@base/"):
+        return None
+    return "/".join(partes)
 
-        if st.st_size > max_bytes:
-            yield WalkedFile(
-                rel, st.st_size, st.st_mtime_ns,
-                GateDecision(Verdict.SKIP, rel, rule_id="too_large", reason="too_large"),
-            )
-            continue
 
-        # Deny-list de nome ANTES de abrir o arquivo.
-        hit = gate.scanner.scan_filename(inner)
-        if hit is not None:
-            yield WalkedFile(
-                rel, st.st_size, st.st_mtime_ns,
-                GateDecision(Verdict.BLOCK, rel, rule_id=hit.rule_id, findings=(hit,),
-                             reason=hit.rule_id),
-            )
-            continue
-
+def _alcancavel(root: Path, inner: str, gate: SecurityGate, follow_symlinks: bool) -> bool:
+    """A varredura chegaria a este arquivo? Mesmas regras de `_walk`, sem varrer."""
+    partes = inner.split("/")
+    ancestral = root
+    for i, parte in enumerate(partes[:-1]):
+        ancestral = ancestral / parte
+        rel_dir = "/".join(partes[: i + 1])
         try:
-            raw = path.read_bytes()
-        except OSError as exc:
-            if _sumiu(exc):
-                continue
+            if is_link(ancestral):
+                if not follow_symlinks:
+                    return False
+                if not ancestral.resolve().is_relative_to(root):
+                    return False
+            if not ancestral.is_dir():
+                return False
+        except OSError:
+            return False
+        if gate.ignore.can_prune(rel_dir):
+            return False
+    try:
+        # o próprio arquivo pode ser um symlink para fora, e o caminho final tem de ficar na raiz
+        return (root / inner).resolve().is_relative_to(root) and (
+            follow_symlinks or not (root / inner).is_symlink()
+        )
+    except OSError:
+        return False
+
+
+def _examinar(
+    path: Path,
+    root: Path,
+    gate: SecurityGate,
+    max_bytes: int,
+    fingerprints: dict[str, tuple[int, int]] | None,
+    prefix: str,
+) -> Iterator[WalkedFile]:
+    """Decide UM arquivo: ignore, atalho, tamanho, nome, leitura, binário e Gate.
+
+    É o único lugar onde bytes de arquivo do projeto são lidos e entregues, para a
+    varredura e para a reindexação por caminho. Todo `yield` constrói um `WalkedFile`
+    com uma `GateDecision`, e o conteúdo só sai depois de `gate.admit`.
+    """
+    inner = path.relative_to(root).as_posix()
+    rel = prefix + inner
+    try:
+        st = path.stat()
+    except OSError as exc:
+        if _sumiu(exc):
+            return
+        decision = _decisao_sem_ler(gate, inner, rel)
+        yield WalkedFile(rel, 0, 0, decision, unreadable=decision.rule_id == _UNREADABLE)
+        return
+
+    # Ignore antes de ler: o arquivo grande ignorado não custa I/O.
+    ignored, source = gate.ignore.should_ignore(inner)
+    if ignored:
+        yield WalkedFile(
+            rel, st.st_size, st.st_mtime_ns,
+            GateDecision(Verdict.SKIP, rel, rule_id=source, reason="ignore"),
+        )
+        return
+
+    # Atalho: size+mtime idênticos ao registrado -> nem abre o arquivo.
+    # É o que faz a reindexação sem mudanças ser barata (docs/04-indexacao.md).
+    if fingerprints is not None:
+        fp = fingerprints.get(rel)
+        if fp is not None and fp == (st.st_size, st.st_mtime_ns):
             yield WalkedFile(
                 rel, st.st_size, st.st_mtime_ns,
-                GateDecision(Verdict.SKIP, rel, rule_id=_UNREADABLE, reason=_UNREADABLE),
-                unreadable=True,
+                GateDecision(Verdict.ALLOW, rel, reason="unchanged"),
+                unchanged=True,
             )
-            continue
+            return
 
-        if b"\x00" in raw[:_BINARY_PROBE]:
-            yield WalkedFile(
-                rel, st.st_size, st.st_mtime_ns,
-                GateDecision(Verdict.SKIP, rel, rule_id="binary", reason="binary"),
-            )
-            continue
+    if st.st_size > max_bytes:
+        yield WalkedFile(
+            rel, st.st_size, st.st_mtime_ns,
+            GateDecision(Verdict.SKIP, rel, rule_id="too_large", reason="too_large"),
+        )
+        return
 
-        decision = gate.admit(inner, raw)
-        if prefix:
-            decision = replace(decision, path=rel)
-        yield WalkedFile(rel, st.st_size, st.st_mtime_ns, decision)
+    # Deny-list de nome ANTES de abrir o arquivo.
+    hit = gate.scanner.scan_filename(inner)
+    if hit is not None:
+        yield WalkedFile(
+            rel, st.st_size, st.st_mtime_ns,
+            GateDecision(Verdict.BLOCK, rel, rule_id=hit.rule_id, findings=(hit,),
+                         reason=hit.rule_id),
+        )
+        return
+
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        if _sumiu(exc):
+            return
+        yield WalkedFile(
+            rel, st.st_size, st.st_mtime_ns,
+            GateDecision(Verdict.SKIP, rel, rule_id=_UNREADABLE, reason=_UNREADABLE),
+            unreadable=True,
+        )
+        return
+
+    if b"\x00" in raw[:_BINARY_PROBE]:
+        yield WalkedFile(
+            rel, st.st_size, st.st_mtime_ns,
+            GateDecision(Verdict.SKIP, rel, rule_id="binary", reason="binary"),
+        )
+        return
+
+    decision = gate.admit(inner, raw)
+    if prefix:
+        decision = replace(decision, path=rel)
+    yield WalkedFile(rel, st.st_size, st.st_mtime_ns, decision)
 
 
 _UNREADABLE = "unreadable"

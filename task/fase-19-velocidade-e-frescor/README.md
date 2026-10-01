@@ -19,7 +19,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 | [RAGX-0137](RAGX-0137-scope-do-mcp-honrado-ou-recusado-nunca-ignorado.md) | `scope` do MCP honrado ou recusado, nunca ignorado | P1 | 0,5d | `done` |
 | [RAGX-0138](RAGX-0138-replace-for-document-por-diff-de-chunk-embeddings-e-grafo-sobrevivem-a-uma-edicao.md) | `replace_for_document` por diff de chunk: embeddings e grafo sobrevivem a uma edição | P1 | 1d | `done` |
 | [RAGX-0139](RAGX-0139-veredito-de-arquivo-nao-indexavel-guardado-file-verdicts.md) | Veredito de arquivo não indexável guardado (`file_verdicts`) | P1 | 0,5d | `todo` |
-| [RAGX-0140](RAGX-0140-index-paths-reindexar-so-os-arquivos-tocados.md) | `index_paths`: reindexar só os arquivos tocados | P0 | 1d | `todo` |
+| [RAGX-0140](RAGX-0140-index-paths-reindexar-so-os-arquivos-tocados.md) | `index_paths`: reindexar só os arquivos tocados | P0 | 1d | `done` |
 | [RAGX-0141](RAGX-0141-fila-de-toque-hook-posttooluse-e-stale-paths-na-busca.md) | Fila de toque, hook `PostToolUse` e `stale_paths` na busca | P0 | 1,5d | `todo` |
 | [RAGX-0142](RAGX-0142-aquecer-embedder-e-contador-no-servidor-mcp.md) | Aquecer embedder e contador no servidor MCP | P1 | 0,5d | `todo` |
 | [RAGX-0143](RAGX-0143-entrada-leve-para-claude-hint-e-hook-run-guarda-no-post-checkout.md) | Entrada leve para `claude hint` e `hook-run`; guarda no `post-checkout` | P1 | 1d | `todo` |

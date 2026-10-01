@@ -348,3 +348,23 @@ def test_context_formato_invalido_e_erro_de_uso(projeto: Path) -> None:
     runner.invoke(app, ["index", "."])
     r = runner.invoke(app, ["context", "x", "--format", "pdf"])
     assert r.exit_code != 0
+
+
+def test_index_only_reindexa_so_os_caminhos_pedidos(projeto: Path) -> None:
+    """RAGX-0140: `ragx index --only` reindexa os arquivos pedidos, sem varrer o projeto."""
+    import json
+    import re
+
+    runner.invoke(app, ["init", "."])
+    runner.invoke(app, ["index", "."])
+    (projeto / "novo_a.py").write_text("def a():\n    return 1\n", encoding="utf-8")
+    (projeto / "novo_b.py").write_text("def b():\n    return 2\n", encoding="utf-8")
+    (projeto / "novo_c.py").write_text("def c():\n    return 3\n", encoding="utf-8")  # NÃO pedido
+
+    r = runner.invoke(app, ["index", ".", "--only", "novo_a.py", "--only", "novo_b.py", "--json"])
+    assert r.exit_code == 0, r.output
+    payload = json.loads(re.sub(r"\x1b\[[0-9;]*m", "", r.output))
+    assert payload["new_documents"] == 2
+
+    docs = runner.invoke(app, ["documents", "--json"]).output
+    assert "novo_a.py" in docs and "novo_b.py" in docs and "novo_c.py" not in docs

@@ -189,24 +189,40 @@ def test_conhecimento_base_fica_fora_do_git() -> None:
 
 
 def test_walker_passa_pelo_gate_antes_de_entregar_bytes() -> None:
-    """Nenhum caminho de `iter_files` devolve conteúdo sem um GateDecision.
+    """Nenhum caminho do walker devolve conteúdo sem um GateDecision.
 
-    O helper `_walk` fica de fora de propósito: ele só enumera caminhos, nunca
-    entrega bytes. Quem entrega conteúdo é o gerador público.
+    Desde a RAGX-0140 há dois pontos de entrada (`iter_files`, a varredura, e `iter_paths`,
+    a reindexação por caminho) e UM só lugar que lê e entrega bytes, `_examinar`: os dois
+    delegam a ele com `yield from`, e é nele que todo `yield` constrói um `WalkedFile`. O
+    helper `_walk` fica de fora de propósito: só enumera caminhos, nunca entrega bytes.
     """
     fonte = (SRC / "walk.py").read_text(encoding="utf-8")
     assert "gate.admit(" in fonte, "walker precisa chamar o gate"
 
     tree = ast.parse(fonte)
-    iter_files = next(
-        n for n in ast.walk(tree)
-        if isinstance(n, ast.FunctionDef) and n.name == "iter_files"
-    )
-    yields = [n for n in ast.walk(iter_files) if isinstance(n, ast.Yield) and n.value]
-    assert yields, "iter_files precisa ser um gerador"
+    funcoes = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    for nome in ("iter_files", "iter_paths", "_examinar"):
+        assert nome in funcoes, f"{nome} sumiu"
+
+    # os pontos de entrada NÃO entregam nada por conta própria: só delegam
+    for nome in ("iter_files", "iter_paths"):
+        brutos = [n for n in ast.walk(funcoes[nome]) if isinstance(n, ast.Yield)]
+        assert not brutos, f"{nome} entrega direto, sem passar por _examinar"
+        delega = [n for n in ast.walk(funcoes[nome]) if isinstance(n, ast.YieldFrom)]
+        assert delega and all("_examinar" in ast.dump(d) for d in delega), (
+            f"{nome} precisa delegar a _examinar"
+        )
+
+    # e `_examinar` é um gerador em que todo `yield` constrói um WalkedFile (com decisão)
+    yields = [n for n in ast.walk(funcoes["_examinar"]) if isinstance(n, ast.Yield) and n.value]
+    assert yields, "_examinar precisa ser um gerador"
     for node in yields:
         trecho = ast.dump(node)
         assert "WalkedFile" in trecho, f"yield sem GateDecision: {trecho[:140]}"
+    # a leitura de bytes e o `gate.admit` ficam SÓ em `_examinar`
+    for nome in ("iter_files", "iter_paths"):
+        texto = ast.dump(funcoes[nome])
+        assert "read_bytes" not in texto and "'admit'" not in texto, f"{nome} lê ou admite por fora"
 
 
 # ── domínio não conhece infraestrutura ──────────────────────────────────

@@ -11,6 +11,18 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Reindexação por caminho: `index_paths` e `ragx index --only`.** Reindexar um arquivo editado
+  pagava a varredura do projeto, o git e a leitura dos hooks (703 ms mesmo depois da poda e do
+  embedder preguiçoso). `index_paths` reindexa só os arquivos pedidos, com o mesmo Security
+  Gate (a leitura de bytes vive num só lugar, `_examinar`, que a varredura e `iter_paths`
+  compartilham): **703 ms → 107 ms** (p50, processo quente, 1 arquivo alterado, 15 chunks mantidos
+  e 1 trocado). Recusa caminho absoluto, `..`, `@base/`, pasta podada e link para fora da raiz,
+  respeita a trava e o arquivo ilegível, e equivale a `index_project` em 12 rodadas sorteadas
+  (`.gitignore`, pasta ignorada, arquivo grande, binário, `.env`). Grava uma run `mode='paths'` que não
+  vira "a última indexação" do veredito de frescor. Cai no incremental completo com mais de
+  `watch.max_batch` caminhos ou com um arquivo de regra. É a base do hook de edição (RAGX-0141)
+  (RAGX-0140).
+
 - **Guia de uso do RAGX** (`docs/GUIA-DE-USO.md`): do instalador ao agente
   consultando o índice — instalação e SmartScreen, configuração inicial, telas
   do painel, as três conexões, MCP, comandos do terminal, problemas comuns e
