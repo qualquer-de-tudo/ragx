@@ -43,7 +43,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 0130 ──> 0146 ──> 0152
 0132 ──> 0142
 0133 ──┐
-0138 ──┴──> 0140 ──> 0141 (também depende de 0134)
+0138 ──┴──> 0140 ──> 0141 (0140 também depende de 0129; 0141 de 0134)
              0140 ──> 0147
 0138 ──> 0151
 0134 ──> 0135

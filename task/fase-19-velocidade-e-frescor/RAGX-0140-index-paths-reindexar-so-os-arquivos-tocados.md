@@ -5,7 +5,7 @@
 | **Fase** | 19 — Velocidade e frescor |
 | **Prioridade** | P0 — bloqueante |
 | **Estimativa** | 1d |
-| **Depende de** | RAGX-0133, RAGX-0138 |
+| **Depende de** | RAGX-0129, RAGX-0133, RAGX-0138 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (I-02; "Desenho proposto para o frescor") · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-V11, S6) · [04-indexacao.md](../../docs/04-indexacao.md) · [02-seguranca.md](../../docs/02-seguranca.md) · [19-watch-e-autonomia-do-agente.md](../../docs/19-watch-e-autonomia-do-agente.md) |
 | **Status** | `todo` |
 

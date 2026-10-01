@@ -28,7 +28,7 @@ alta · **P2** média · **P3** baixa. `Est.` em dias de um desenvolvedor.
 | RAGX-0137 | `scope` do MCP honrado ou recusado, nunca ignorado | P1 | 0,5d | — | C-05 |
 | RAGX-0138 | `replace_for_document` por diff de chunk: embeddings e grafo sobrevivem a uma edição | P1 | 1d | — | C-06, I-07 |
 | RAGX-0139 | Veredito de arquivo não indexável guardado (`file_verdicts`) | P1 | 0,5d | 0129 | I-05 |
-| RAGX-0140 | `index_paths`: reindexar só os arquivos tocados | P0 | 1d | 0133, 0138 | I-02 |
+| RAGX-0140 | `index_paths`: reindexar só os arquivos tocados | P0 | 1d | 0129, 0133, 0138 | I-02 |
 | RAGX-0141 | Fila de toque, hook `PostToolUse` e `stale_paths` na busca | P0 | 1,5d | 0140, 0134 | I-02, M-10 |
 | RAGX-0142 | Aquecer embedder e contador no servidor MCP | P1 | 0,5d | 0132 | M-06, C-08 |
 | RAGX-0143 | Entrada leve para `claude hint` e `hook-run`; guarda no `post-checkout` | P1 | 1d | — | M-08, M-09 |
