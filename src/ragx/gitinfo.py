@@ -53,21 +53,57 @@ def git(root: Path, *args: str) -> str | None:
 
 
 def read_state(root: Path) -> GitState | None:
-    commit = git(root, "rev-parse", "HEAD")
-    if not commit:
+    """Commit, branch e se o working tree está sujo, numa chamada só.
+
+    `git status --porcelain=v2 --branch` traz tudo: `# branch.oid` (o commit, ou
+    `(initial)` num repositório sem commit), `# branch.head` (a branch, ou
+    `(detached)`) e, depois dos cabeçalhos, uma linha por arquivo alterado. Eram
+    três processos (`rev-parse`, `symbolic-ref`, `status`) a cada indexação.
+    """
+    out = git(root, "status", "--porcelain=v2", "--branch", "--untracked-files=normal", "--", ".")
+    if out is None:
         return None
-    branch = git(root, "symbolic-ref", "--quiet", "--short", "HEAD")
-    porcelain = git(root, "status", "--porcelain", "--untracked-files=normal", "--", ".")
-    return GitState(branch=branch or None, commit=commit, dirty=bool(porcelain))
+    commit = ""
+    branch: str | None = None
+    dirty = False
+    for linha in out.splitlines():
+        if linha.startswith("# branch.oid "):
+            commit = linha[len("# branch.oid "):]
+        elif linha.startswith("# branch.head "):
+            nome = linha[len("# branch.head "):]
+            branch = None if nome == "(detached)" else nome
+        elif linha and not linha.startswith("#"):
+            dirty = True
+    if not commit or commit == "(initial)":
+        return None
+    return GitState(branch=branch, commit=commit, dirty=dirty)
+
+
+_HOOKS_DIR: dict[str, Path] = {}
 
 
 def hooks_dir(root: Path) -> Path | None:
-    """Pasta de hooks do repositório, respeitando `core.hooksPath`."""
+    """Pasta de hooks do repositório, respeitando `core.hooksPath`.
+
+    Memoizado por processo e por raiz: `write_status` pergunta duas vezes por
+    indexação. `None` nunca é guardado, para que um `git init` na mesma sessão
+    seja visto; `hooks_dir_cache_clear` é chamado quando os hooks mudam.
+    """
+    chave = str(root)
+    achado = _HOOKS_DIR.get(chave)
+    if achado is not None:
+        return achado
     out = git(root, "rev-parse", "--git-path", "hooks")
     if not out:
         return None
     p = Path(out)
-    return p if p.is_absolute() else (root / p).resolve()
+    resolvido = p if p.is_absolute() else (root / p).resolve()
+    _HOOKS_DIR[chave] = resolvido
+    return resolvido
+
+
+def hooks_dir_cache_clear() -> None:
+    _HOOKS_DIR.clear()
 
 
 def commits_between(root: Path, old: str, new: str) -> int | None:

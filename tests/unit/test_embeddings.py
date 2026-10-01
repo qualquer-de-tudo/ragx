@@ -108,3 +108,27 @@ def test_ollama_sem_prefixo_para_outro_modelo() -> None:
     )[1]
     e.embed_query("y")
     assert enviados[-1]["input"][0] == "y"
+
+
+@pytest.mark.parametrize(
+    "provider", ["hashing", "ollama", "fastembed"]
+)
+def test_embedder_id_nao_diverge_do_embedder_construido(provider: str) -> None:
+    """`embedder_id` responde sem construir o modelo (RAGX-0130); se divergisse
+    do `id` do provider, os vetores seriam gravados sob um nome e procurados
+    sob outro."""
+    from ragx.config import Config
+    from ragx.embeddings import build_embedder, embedder_id, reset_embedder_cache
+
+    if provider == "fastembed":
+        pytest.importorskip("fastembed")
+    cfg = Config()
+    cfg.embedding.provider = provider
+    cfg.embedding.dim = 384 if provider == "fastembed" else 64
+    reset_embedder_cache()
+    try:
+        emb = build_embedder(cfg)
+        assert embedder_id(cfg) == emb.id
+        assert cfg.embedding.dim == emb.dim
+    finally:
+        reset_embedder_cache()

@@ -149,6 +149,14 @@ Cache de embeddings: `.ragx/cache/emb/<model_id>/<content_hash>.f32`. Chunk que 
 mudou de lugar (arquivo renomeado, função movida) reaproveita o vetor — é o que faz
 a reindexação ficar barata.
 
+Indexação **sem mudança não carrega o modelo de embedding**: o nome e a dimensão do
+modelo saem da configuração (`embedder_id`), os chunks sem vetor são contados primeiro
+e o embedder só é construído (e o Ollama só é sondado) se houver pendência. Com
+`fastembed` isso evita ~2,85 s; com Ollama fora do ar e nada pendente, não há erro.
+O estado do git (`commit`, `branch`, `dirty`) vem de um único
+`git status --porcelain=v2 --branch`, e a pasta de hooks é consultada uma vez por
+processo.
+
 ## Transacionalidade
 
 Um `index run` = uma transação por **lote de arquivos** (padrão 200), não uma

@@ -77,3 +77,27 @@ def test_git_sempre_passa_no_optional_locks(
     assert argv.index("--no-optional-locks") == 1, (
         "a flag precisa vir logo após 'git', antes do subcomando"
     )
+
+
+def test_read_state_usa_uma_unica_chamada_ao_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _repo(tmp_path)
+    chamadas: list[tuple[str, ...]] = []
+    original = gitinfo.run_quiet
+
+    def espia(cmd, *a, **k):  # type: ignore[no-untyped-def]
+        chamadas.append(tuple(cmd))
+        return original(cmd, *a, **k)
+
+    monkeypatch.setattr(gitinfo, "run_quiet", espia)
+    st = gitinfo.read_state(root)
+    assert st is not None and st.branch == "main" and len(st.commit) == 40
+    assert len(chamadas) == 1, chamadas
+
+
+def test_read_state_sujo_com_arquivo_novo_nao_rastreado(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    (root / "novo.txt").write_text("n\n", encoding="utf-8")
+    st = gitinfo.read_state(root)
+    assert st is not None and st.dirty is True and st.branch == "main"

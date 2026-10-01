@@ -173,3 +173,92 @@ def test_acentuacao_casa_no_fts(proj: Path) -> None:
     ).fetchone()[0]
     conn.close()
     assert n > 0, "remove_diacritics não está ativo"
+
+
+# ── RAGX-0130: indexação sem mudança é barata ───────────────────────────
+def _git_repo(raiz: Path) -> None:
+    import subprocess
+
+    if subprocess.run(["git", "init", "-q", "-b", "main"], cwd=raiz).returncode != 0:
+        pytest.skip("git indisponível")
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=raiz, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=raiz, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=raiz, check=True)
+    subprocess.run(["git", "commit", "-qm", "c1"], cwd=raiz, check=True)
+
+
+def test_indexacao_sem_mudanca_nao_constroi_o_embedder(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ragx.embeddings as emb
+
+    cfg = load_config(proj)
+    index_project(cfg)
+    emb.reset_embedder_cache()
+    construcoes: list[str] = []
+    original = emb._construir
+
+    def espia(c):  # type: ignore[no-untyped-def]
+        construcoes.append(c.embedding.provider)
+        return original(c)
+
+    monkeypatch.setattr(emb, "_construir", espia)
+    r = index_project(cfg)
+    assert r.new_chunks == 0
+    assert construcoes == []
+    assert r.embed_error is None
+    emb.reset_embedder_cache()
+
+
+def test_nada_pendente_nao_falha_com_embedder_indisponivel(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ollama fora do ar e nenhum chunk pendente: não é erro (antes era)."""
+    import ragx.embeddings as emb
+
+    cfg = load_config(proj)
+    index_project(cfg)
+    emb.reset_embedder_cache()
+
+    def quebra(c):  # type: ignore[no-untyped-def]
+        raise RuntimeError("daemon fora do ar")
+
+    monkeypatch.setattr(emb, "_construir", quebra)
+    assert index_project(cfg).embed_error is None
+    emb.reset_embedder_cache()
+
+
+def test_com_chunk_pendente_e_embedder_fora_do_ar_o_erro_continua(proj: Path) -> None:
+    import ragx.embeddings as emb
+
+    emb.reset_embedder_cache()
+    toml = (proj / "ragx.toml").read_text(encoding="utf-8").replace(
+        'provider = "hashing"', 'provider = "ollama"\nbase_url = "http://127.0.0.1:9"'
+    )
+    (proj / "ragx.toml").write_text(toml, encoding="utf-8")
+    r = index_project(load_config(proj))
+    assert r.new_chunks > 0
+    assert r.embed_error and "indispon" in r.embed_error
+    emb.reset_embedder_cache()
+
+
+def test_indexacao_sem_mudanca_chama_o_git_no_maximo_duas_vezes(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ragx.gitinfo as gi
+    from ragx import githooks
+
+    _git_repo(proj)
+    cfg = load_config(proj)
+    index_project(cfg)
+    chamadas: list[tuple[str, ...]] = []
+    original = gi.run_quiet
+
+    def espia(cmd, *a, **k):  # type: ignore[no-untyped-def]
+        chamadas.append(tuple(cmd))
+        return original(cmd, *a, **k)
+
+    monkeypatch.setattr(gi, "run_quiet", espia)
+    index_project(cfg)
+    assert len(chamadas) <= 2, chamadas
+    assert githooks  # a importação é parte do caminho medido

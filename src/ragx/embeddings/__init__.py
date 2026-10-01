@@ -55,6 +55,35 @@ def build_embedder(cfg: Config) -> Embedder:
     return embedder
 
 
+def _modelo_fastembed(cfg: Config) -> str:
+    from ragx.embeddings.fastembed_provider import DEFAULT_MODEL
+
+    # o modelo default do bloco [embedding] é do Ollama; se o usuário só
+    # trocou o provider, usa o default do fastembed em vez de falhar
+    model = cfg.embedding.model
+    return DEFAULT_MODEL if model in ("nomic-embed-text", "", None) else model
+
+
+def embedder_id(cfg: Config) -> str:
+    """O `id` que `build_embedder(cfg)` teria, SEM construir o provider.
+
+    Construir o `FastEmbedEmbedder` carrega o modelo ONNX (~2,85 s) e o
+    `OllamaEmbedder` sonda o daemon (até 2 s). Quem só precisa do nome do modelo,
+    como a indexação sem mudança, que descobre que não há chunk pendente, não
+    deve pagar nada disso. A paridade com `Embedder.id` é protegida por teste.
+    """
+    p = cfg.embedding.provider
+    if p == "hashing":
+        return f"hashing:{cfg.embedding.dim}"
+    if p == "ollama":
+        return f"ollama:{cfg.embedding.model}"
+    if p == "fastembed":
+        return f"fastembed:{_modelo_fastembed(cfg)}"
+    raise UsageError(
+        f"provider de embedding desconhecido: {p!r} (use ollama | fastembed | hashing)"
+    )
+
+
 def _construir(cfg: Config) -> Embedder:
     p = cfg.embedding.provider
     if p == "hashing":
@@ -68,15 +97,10 @@ def _construir(cfg: Config) -> Embedder:
             timeout_s=cfg.embedding.timeout_s,
         )
     if p == "fastembed":
-        from ragx.embeddings.fastembed_provider import DEFAULT_MODEL, FastEmbedEmbedder
+        from ragx.embeddings.fastembed_provider import FastEmbedEmbedder
 
-        # o modelo default do bloco [embedding] é do Ollama; se o usuário só
-        # trocou o provider, usa o default do fastembed em vez de falhar
-        model = cfg.embedding.model
-        if model in ("nomic-embed-text", "", None):
-            model = DEFAULT_MODEL
         return FastEmbedEmbedder(
-            model=model,
+            model=_modelo_fastembed(cfg),
             dim=cfg.embedding.dim,
             cache_dir=cfg.state_dir / "cache" / "models",
             batch=cfg.embedding.batch,
@@ -91,5 +115,6 @@ __all__ = [
     "HashingEmbedder",
     "OllamaEmbedder",
     "build_embedder",
+    "embedder_id",
     "reset_embedder_cache",
 ]

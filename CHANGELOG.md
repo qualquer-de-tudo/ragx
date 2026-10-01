@@ -18,6 +18,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **Indexação sem mudança não carrega o modelo de embedding nem chama o `git` 7
+  vezes.** `embed_pending` construía o embedder (e sondava o Ollama) antes de saber
+  se havia chunk pendente; agora o nome e a dimensão do modelo vêm da configuração
+  (`embedder_id`) e o embedder só é construído com pendência. O estado do git
+  (`read_state`) passou de 3 processos para 1 (`status --porcelain=v2 --branch`), e
+  `hooks_dir` é memoizado por processo. Neste repositório, `ragx index .` sem
+  mudança: **~3,5 s → 302–308 ms** (inclui o efeito da RAGX-0129) e **7 → 2**
+  chamadas ao `git`. Com o Ollama fora do ar e nada pendente, a indexação deixa de
+  reportar erro de embedder (RAGX-0130).
+
 - **A poda de pasta ignorada voltou a funcionar com negação em `.gitignore`
   aninhado.** `!src/app/build/` na raiz fazia o `IgnoreEngine` guardar o pai do
   alvo (`src/app`), e a regra "ancestral do alvo não se poda" passava a valer

@@ -113,6 +113,7 @@ def _dir_or_error(root: Path) -> Path:
 
 
 def install(root: Path, prefix: str | None = None) -> list[Path]:
+    gitinfo.hooks_dir_cache_clear()  # core.hooksPath pode ter mudado desde a última consulta
     key = _key(root)
     _recusar_se_perigoso(
         key,
@@ -146,6 +147,7 @@ def install(root: Path, prefix: str | None = None) -> list[Path]:
 
 
 def uninstall(root: Path) -> list[Path]:
+    gitinfo.hooks_dir_cache_clear()
     d = _dir_or_error(root)
     touched: list[Path] = []
     for event in EVENTS:
@@ -187,9 +189,10 @@ def state(root: Path) -> dict[str, Any]:
 
 
 def installed(root: Path) -> bool | None:
-    if gitinfo.hooks_dir(root) is None:
+    estado = state(root)
+    if estado["hooks_dir"] is None:
         return None
-    return bool(state(root)["installed"])
+    return bool(estado["installed"])
 
 
 def should_run(event: str, args: list[str]) -> bool:

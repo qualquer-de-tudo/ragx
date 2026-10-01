@@ -14,7 +14,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ragx.config import Config
-from ragx.embeddings import build_embedder
+from ragx.embeddings import build_embedder, embedder_id
 from ragx.embeddings.base import EmbeddingCache
 from ragx.indexing.chunkers import context_prefix
 from ragx.storage.vectors import (
@@ -42,6 +42,42 @@ def embed_pending(
     progress: Callable[[int, int], None] | None = None,
 ) -> EmbedReport:
     report = EmbedReport()
+    # Nome e dimensão saem da configuração: a indexação sem mudança não precisa
+    # carregar o modelo (~2,85 s no fastembed) nem sondar o daemon (até 2 s no
+    # Ollama) só para descobrir que não há chunk pendente (RAGX-0130).
+    try:
+        model_id = embedder_id(cfg)
+    except Exception as exc:
+        report.error = str(exc)
+        return report
+    dim = cfg.embedding.dim
+    report.model_id = model_id
+    vdim = min(cfg.embedding.versioned_dim or dim, dim)
+    register_model(conn, model_id, dim, vdim, cfg.embedding.versioned_quant)
+
+    # Vetores de modelo anterior ficam órfãos e INCOMPARÁVEIS com os novos.
+    # Deixá-los no banco fez `dedupe_near` comparar 384 com 256 dimensões.
+    stale = [
+        r["id"]
+        for r in conn.execute(
+            "SELECT id FROM embedding_models WHERE id != ?", (model_id,)
+        )
+    ]
+    if stale:
+        ph = ",".join("?" * len(stale))
+        n = conn.execute(
+            f"DELETE FROM embeddings WHERE model_id IN ({ph})", stale
+        ).rowcount
+        conn.execute(f"DELETE FROM embedding_models WHERE id IN ({ph})", stale)
+        conn.commit()
+        report.replaced_model = n or 0
+
+    pending = missing_chunk_ids(conn, model_id)
+    report.pending = len(pending)
+    if not pending:
+        report.total = embedding_count(conn)
+        return report
+
     try:
         embedder = build_embedder(cfg)
     except Exception as exc:
@@ -58,33 +94,6 @@ def embed_pending(
             "  → inicie o daemon: ollama serve\n"
             "  → ou use: ragx config set embedding.provider hashing"
         )
-        return report
-
-    report.model_id = embedder.id
-    vdim = min(cfg.embedding.versioned_dim or embedder.dim, embedder.dim)
-    register_model(conn, embedder.id, embedder.dim, vdim, cfg.embedding.versioned_quant)
-
-    # Vetores de modelo anterior ficam órfãos e INCOMPARÁVEIS com os novos.
-    # Deixá-los no banco fez `dedupe_near` comparar 384 com 256 dimensões.
-    stale = [
-        r["id"]
-        for r in conn.execute(
-            "SELECT id FROM embedding_models WHERE id != ?", (embedder.id,)
-        )
-    ]
-    if stale:
-        ph = ",".join("?" * len(stale))
-        n = conn.execute(
-            f"DELETE FROM embeddings WHERE model_id IN ({ph})", stale
-        ).rowcount
-        conn.execute(f"DELETE FROM embedding_models WHERE id IN ({ph})", stale)
-        conn.commit()
-        report.replaced_model = n or 0
-
-    pending = missing_chunk_ids(conn, embedder.id)
-    report.pending = len(pending)
-    if not pending:
-        report.total = embedding_count(conn)
         return report
 
     cache = EmbeddingCache(cfg.state_dir / "cache", embedder.id, cfg.embedding.cache)
