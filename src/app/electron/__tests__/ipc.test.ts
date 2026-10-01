@@ -1031,3 +1031,26 @@ describe('createHandlers - autoUpdate como preferência (RAGX-0192)', () => {
     expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, autoUpdate: true }) })).getSettings()).toStrictEqual({ onboardingDone: true, autoUpdate: true })
   })
 })
+
+describe('createHandlers - setTheme (RAGX-0193)', () => {
+  it('grava light e system sem apagar os outros campos; dark apaga o campo', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true, ollamaMode: 'native', theme: 'system' }) }))
+    handlers.setTheme('light')
+    expect(writeSettings).toHaveBeenLastCalledWith({ onboardingDone: true, ollamaMode: 'native', theme: 'light' })
+    handlers.setTheme('dark')
+    expect(writeSettings).toHaveBeenLastCalledWith({ onboardingDone: true, ollamaMode: 'native' })
+  })
+
+  it.each([['roxo'], [3], [null], [undefined], [{ theme: 'light' }]])('recusa %j e não grava', (bad) => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings }))
+    expect(() => handlers.setTheme(bad)).toThrow(/pedido recusado/)
+    expect(writeSettings).not.toHaveBeenCalled()
+  })
+
+  it('getSettings devolve o tema só quando não é o padrão', () => {
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, theme: 'light' }) })).getSettings()).toStrictEqual({ onboardingDone: true, theme: 'light' })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
+  })
+})

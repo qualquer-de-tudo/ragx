@@ -11,6 +11,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Tema claro no painel, como preferência.** O painel era só escuro. Agora Preferências tem "Tema": Escuro (o
+  padrão, intocado), Claro e Seguir o sistema, com troca na hora e sem reiniciar. Todos os tokens de cor foram
+  redefinidos para o claro, com contraste AA conferido por teste nos dois temas, e a janela e o `nativeTheme` do
+  Electron acompanham o tema salvo (RAGX-0193).
 - **Atualização do painel pelo GitHub Releases, desligada por padrão.** Atualizar era baixar o instalador novo e rodá-lo
   por cima, sem aviso de que existe uma versão nova. Agora Preferências tem "Verificar atualizações do painel"
   (`electron-updater`): desligado não faz nenhuma chamada de rede, ligado confere ao abrir e quando você pede, e só

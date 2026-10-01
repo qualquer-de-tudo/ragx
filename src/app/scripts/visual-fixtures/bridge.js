@@ -152,10 +152,19 @@
     cancelJob: async () => true,
     pickFolder: async () => null,
     discover: async () => ({ items: [], truncated: false }),
-    getSettings: async () => ({ onboardingDone: !window.__VISUAL_ONBOARDING__ }),
+    getSettings: async () => {
+      const theme = localStorage.getItem('ragx.theme')
+      return { onboardingDone: !window.__VISUAL_ONBOARDING__, ...(theme === 'light' || theme === 'system' ? { theme } : {}) }
+    },
     setOnboardingDone: async () => {},
     setPricing: async () => {},
     setPreference: async () => {},
+    setTheme: async () => {},
+    getUpdateState: async () => ({ status: 'idle', currentVersion: '1.0.0-beta.5', version: null, progress: null, error: null }),
+    checkForUpdates: async () => ({ status: 'idle', currentVersion: '1.0.0-beta.5', version: null, progress: null, error: null }),
+    downloadUpdate: async () => ({ status: 'idle', currentVersion: '1.0.0-beta.5', version: null, progress: null, error: null }),
+    installUpdate: async () => {},
+    onUpdate: none,
     onOpenProject: none,
     previewContext: async () => ({ intent: 'implementar', estimatedTokens: 1200, budget: 3000, fragments: [{ project: 'p', documentPath: 'src/pedido.py', lines: [10, 30], symbol: 'criar_pedido', headingPath: null, score: 0.9, tokens: 400, compressed: false, strategy: 'full', reason: 'semantico' }], dropped: [{ why: 'orcamento', count: 3 }] }),
     getAdoption: async () => ({ since: new Date(now - 6 * 86_400_000).toISOString(), sessions: 38, withCalls: 3, withoutCalls: 35, unidentified: 4, callsWithoutStart: 1, byProject: projects.slice(0, 4).map((p, i) => ({ projectId: p.id, projectName: p.name, sessions: 10 - i, withCalls: i })) }),

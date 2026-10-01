@@ -142,3 +142,17 @@ describe('autoUpdate (RAGX-0192)', () => {
     expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, autoUpdate: true })
   })
 })
+
+describe('theme (RAGX-0193)', () => {
+  it('padrão escuro: o campo some; só light e system ficam; valor inválido volta ao padrão', () => {
+    const dir = mkTmp()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true })
+    for (const bad of ['dark', 'roxo', 3, null]) {
+      fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, theme: bad }))
+      expect(readSettings(dir).theme).toBeUndefined()
+    }
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, ollamaMode: 'native', theme: 'light' }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, ollamaMode: 'native', theme: 'light' })
+  })
+})

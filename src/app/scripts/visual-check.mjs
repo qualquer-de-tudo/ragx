@@ -28,6 +28,7 @@ const only = opt('--screens', '')
   .split(',')
   .filter(Boolean)
 const shotsDir = opt('--shots', null)
+const theme = opt('--theme', 'dark') // dark | light | system (RAGX-0193)
 const asJson = args.includes('--json')
 const PORT = Number(opt('--port', '4173'))
 const HEIGHT = Number(opt('--height', '800'))
@@ -196,6 +197,7 @@ if (shotsDir) fs.mkdirSync(shotsDir, { recursive: true })
 for (const width of widths) {
   const context = await browser.newContext({ viewport: { width, height: HEIGHT } })
   await context.addInitScript({ content: bridgeSource })
+  await context.addInitScript({ content: `try { localStorage.setItem('ragx.theme', ${JSON.stringify(theme)}) } catch {}` })
   for (const screen of screens) {
     const page = await context.newPage()
     const errors = []
@@ -207,7 +209,7 @@ for (const width of widths) {
       await page.waitForTimeout(350)
       const result = await page.evaluate(measure)
       report.push({ width, screen: screen.id, ...result, errors })
-      if (shotsDir) await page.screenshot({ path: path.join(shotsDir, `${screen.id}-${width}.png`) })
+      if (shotsDir) await page.screenshot({ path: path.join(shotsDir, `${screen.id}-${width}${theme === 'dark' ? '' : '-' + theme}.png`) })
     } catch (err) {
       report.push({ width, screen: screen.id, over: [], scroll: [], align: null, small: [], errors: [...errors, `falha ao percorrer a tela: ${err.message.split('\n')[0]}`] })
     }

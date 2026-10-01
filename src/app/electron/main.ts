@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, powerMonitor, Tray } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, nativeTheme, Notification, powerMonitor, Tray } from 'electron'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -192,6 +192,19 @@ function applyPreferences(): void {
   }
   if (prefs.notifyStale !== true) staleNotifier.reset()
   snapshotPoller?.setBackgroundInterval(prefs.notifyStale === true ? BACKGROUND_SNAPSHOT_MS : null)
+}
+
+// -- tema (RAGX-0193) ------------------------------------------------------
+
+/** Fundo da janela antes de o renderer pintar: acompanha o tema salvo (escuro por padrão). */
+function windowBackground(): string {
+  const light = nativeTheme.shouldUseDarkColors === false
+  return light ? '#f4f4f7' : '#000000'
+}
+
+/** `nativeTheme.themeSource` recebe a preferência: barras de rolagem, diálogos nativos e menu acompanham. */
+function applyNativeTheme(): void {
+  nativeTheme.themeSource = readSettings(userDataDir()).theme ?? 'dark'
 }
 
 // -- atualização do painel (RAGX-0192) -------------------------------------
@@ -445,6 +458,10 @@ handleIpc('ragx:setPreference', (key: unknown, value: unknown) => {
   // ligar a atualização confere na hora; desligar não faz nada (e nunca chama a rede)
   if (key === 'autoUpdate' && value === true) void updater.check()
 })
+handleIpc('ragx:setTheme', (theme: unknown) => {
+  handlers.setTheme(theme)
+  applyNativeTheme()
+})
 handleIpc('ragx:getUpdateState', () => updater.getState())
 handleIpc('ragx:checkForUpdates', () => updater.check())
 handleIpc('ragx:downloadUpdate', () => updater.download())
@@ -665,7 +682,7 @@ function createWindow(): void {
     // dev o processo é o electron.exe, então o ícone vem do arquivo.
     ...(isDev ? { icon: path.join(__dirname, '..', 'build', 'icon.ico') } : {}),
     autoHideMenuBar: true,
-    backgroundColor: '#000000',
+    backgroundColor: windowBackground(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -761,6 +778,7 @@ app.whenReady().then(async () => {
   // O Windows mostra este nome nas notificações (também em dev): é o `appId` de electron-builder.yml.
   app.setAppUserModelId('com.ragx.painel')
   updater.init()
+  applyNativeTheme() // antes de criar a janela: o fundo e o `themeSource` já valem o tema salvo
   if (HEADLESS) {
     const code = BOOTSTRAP ? await runBootstrapHeadless() : await runUninstallHeadless()
     app.exit(code)

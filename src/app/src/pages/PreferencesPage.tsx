@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { UpdateState } from '../types/ragx-bridge'
 import { Section } from '../components/shell/Card'
+import { Segmented } from '../components/ui/Segmented'
+import { currentTheme, setTheme, type ThemePref } from '../theme'
 import { Switch } from '../components/ui/Switch'
 import { ipcErrorMessage } from '../ipcError'
 import { notify } from '../toast'
@@ -16,6 +18,7 @@ type Key = keyof Prefs
 export function PreferencesPage() {
   const [prefs, setPrefs] = useState<Prefs | null>(null)
   const [update, setUpdate] = useState<UpdateState | null>(null)
+  const [theme, setThemeState] = useState<ThemePref>(currentTheme)
 
   useEffect(() => {
     let cancelled = false
@@ -65,6 +68,17 @@ export function PreferencesPage() {
     )
   }
 
+  const changeTheme = (next: ThemePref) => {
+    const before = theme
+    setThemeState(next) // troca na hora, sem reiniciar
+    setTheme(next).catch((err: unknown) => {
+      console.error('setTheme() falhou:', err)
+      setThemeState(before)
+      void setTheme(before, false)
+      notify.error(`Não foi possível salvar o tema: ${ipcErrorMessage(err)}`)
+    })
+  }
+
   const change = (key: Key, value: boolean) => {
     window.ragx.setPreference(key, value).then(
       () => setPrefs((p) => (p ? { ...p, [key]: value } : p)),
@@ -80,6 +94,26 @@ export function PreferencesPage() {
       <header className="page-head">
         <h1 className="page-title">Preferências</h1>
       </header>
+      <Section title="Aparência">
+        <div className="pref-row">
+          <div>
+            <p className="pref-title" id="pref-theme">
+              Tema
+            </p>
+            <p className="hint">Escuro é o padrão. "Seguir o sistema" acompanha o modo claro ou escuro do Windows.</p>
+          </div>
+          <Segmented
+            label="Tema"
+            value={theme}
+            options={[
+              { value: 'dark', label: 'Escuro' },
+              { value: 'light', label: 'Claro' },
+              { value: 'system', label: 'Seguir o sistema' },
+            ]}
+            onChange={changeTheme}
+          />
+        </div>
+      </Section>
       <Section title="Bandeja e avisos">
         <div className="pref-row">
           <div>

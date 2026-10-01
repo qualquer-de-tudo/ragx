@@ -3,7 +3,7 @@ import type { BundleInfo } from './bootstrap/bundle'
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
 import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
-import { PREFERENCE_KEYS, parsePricing, type PanelSettings, type PreferenceKey, type RendererSettings } from './settings'
+import { PREFERENCE_KEYS, THEMES, parsePricing, type PanelSettings, type PreferenceKey, type RendererSettings } from './settings'
 import { parseContextPreview } from './data/context-preview'
 import type { ContextPreview } from './data/types'
 import type {
@@ -472,14 +472,25 @@ export function createHandlers(deps: HandlerDeps) {
 
     /** Só `onboardingDone` sai para o renderer; o resto das configurações fica aqui. */
     getSettings(): RendererSettings {
-      const { onboardingDone, pricing, tray, notifyStale, autoUpdate } = deps.readSettings()
+      const { onboardingDone, pricing, tray, notifyStale, autoUpdate, theme } = deps.readSettings()
       return {
         onboardingDone,
         ...(pricing === undefined ? {} : { pricing }),
+        ...(theme === undefined ? {} : { theme }),
         ...(tray === true ? { tray } : {}),
         ...(notifyStale === true ? { notifyStale } : {}),
         ...(autoUpdate === true ? { autoUpdate } : {}),
       }
+    },
+
+    /** Tema do painel (RAGX-0193): lista fechada de três literais; `dark` (o padrão) apaga o campo. */
+    setTheme(themeUnknown: unknown): void {
+      if (typeof themeUnknown !== 'string' || !(THEMES as readonly string[]).includes(themeUnknown)) {
+        throw rejected('tema desconhecido')
+      }
+      const { theme: _old, ...rest } = deps.readSettings()
+      void _old
+      deps.writeSettings(themeUnknown === 'dark' ? rest : { ...rest, theme: themeUnknown as 'light' | 'system' })
     },
 
     /**

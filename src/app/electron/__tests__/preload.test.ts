@@ -61,6 +61,7 @@ describe('preload', () => {
         'setPricing',
         'setPreference',
         'onOpenProject',
+        'setTheme',
         'getUpdateState',
         'checkForUpdates',
         'downloadUpdate',

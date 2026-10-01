@@ -17,7 +17,7 @@ function tokens(selector: string): Record<string, string> {
   return out
 }
 
-const THEMES: Record<string, string> = { escuro: ':root' }
+const THEMES: Record<string, string> = { escuro: ':root', claro: ":root[data-theme='light']" }
 
 const SURFACES = ['--bg', '--surface', '--surface-2', '--surface-3'] as const
 

@@ -28,6 +28,7 @@ function bridge(over: Partial<RagxBridge> = {}): RagxBridge {
     setPricing: vi.fn(),
     setPreference: vi.fn().mockResolvedValue(undefined),
     onOpenProject: vi.fn(() => () => {}),
+    setTheme: vi.fn().mockResolvedValue(undefined),
     getUpdateState: vi.fn().mockResolvedValue({ status: 'idle', currentVersion: '1.0.0', version: null, progress: null, error: null }),
     checkForUpdates: vi.fn().mockResolvedValue({ status: 'idle', currentVersion: '1.0.0', version: null, progress: null, error: null }),
     downloadUpdate: vi.fn().mockResolvedValue({ status: 'idle', currentVersion: '1.0.0', version: null, progress: null, error: null }),

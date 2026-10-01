@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { PreferencesPage } from '../PreferencesPage'
 import { Toaster } from '../../components/ui/Toaster'
 import { installBridge } from '../../test/snap'
@@ -109,5 +109,42 @@ describe('PreferencesPage: Atualizações (RAGX-0192)', () => {
     installBridge({ getUpdateState: vi.fn().mockResolvedValue(state({ status: 'error', error: 'Não foi possível falar com o servidor de atualizações. Confira a conexão e tente de novo.' })) })
     render(<PreferencesPage />)
     expect(await screen.findByText(/Não foi possível falar com o servidor de atualizações/)).toBeInTheDocument()
+  })
+})
+
+describe('PreferencesPage: Tema (RAGX-0193)', () => {
+  it('o seletor reflete o tema, troca na hora e grava pela ponte', async () => {
+    const b = installBridge()
+    render(<PreferencesPage />)
+    const group = screen.getByRole('radiogroup', { name: 'Tema' })
+    expect(within(group).getAllByRole('radio').map((r) => r.textContent)).toEqual(['Escuro', 'Claro', 'Seguir o sistema'])
+    expect(within(group).getByRole('radio', { name: 'Escuro' })).toHaveAttribute('aria-checked', 'true')
+    await act(async () => {
+      fireEvent.click(within(group).getByRole('radio', { name: 'Claro' }))
+    })
+    expect(b.setTheme).toHaveBeenCalledWith('light')
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(within(group).getByRole('radio', { name: 'Claro' })).toHaveAttribute('aria-checked', 'true')
+    await act(async () => {
+      fireEvent.click(within(group).getByRole('radio', { name: 'Escuro' }))
+    })
+  })
+
+  it('falha ao gravar volta ao tema anterior e avisa', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    installBridge({ setTheme: vi.fn().mockRejectedValue(new Error('disco cheio')) })
+    render(
+      <>
+        <PreferencesPage />
+        <Toaster />
+      </>,
+    )
+    const group = screen.getByRole('radiogroup', { name: 'Tema' })
+    await act(async () => {
+      fireEvent.click(within(group).getByRole('radio', { name: 'Claro' }))
+    })
+    expect(screen.getByText(/Não foi possível salvar o tema: disco cheio/)).toBeInTheDocument()
+    expect(within(group).getByRole('radio', { name: 'Escuro' })).toHaveAttribute('aria-checked', 'true')
+    expect(document.documentElement.dataset.theme).toBe('dark')
   })
 })

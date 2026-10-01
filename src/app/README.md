@@ -5,7 +5,7 @@ Painel desktop (Electron) para o RAGX. Mostra os projetos registrados no hub
 andamento e o estado das três conexões de que o RAGX depende (CLI, Claude
 Code, Ollama). Roda 100% local: sem login, sem telemetria enviada para fora
 da máquina, só leitura de arquivos locais e execução do CLI `ragx` já
-instalado no sistema. Tema sempre escuro; título da janela "RAGX Painel".
+instalado no sistema. Tema escuro por padrão, com claro e "seguir o sistema" como preferência; título da janela "RAGX Painel".
 
 ## Telas
 
@@ -277,6 +277,20 @@ oferece repositórios git sem `ragx.toml`, marcados "novo"); nenhum conteúdo
 de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
+
+## Tema claro
+
+O padrão é o tema **escuro**; "Claro" e "Seguir o sistema" são preferência (Preferências, "Tema", RAGX-0193). O renderer
+aplica `data-theme` (`dark` ou `light`, o tema resolvido) em `<html>`; `system` resolve por
+`matchMedia('(prefers-color-scheme: light)')` com ouvinte de mudança (`src/theme.ts`). Sem `<script>` inline (a CSP de
+produção o proíbe): `main.tsx` chama `initTheme()` antes de `createRoot`, com a preferência lida de `localStorage` (em
+`try/catch`) para não piscar, e confirma depois por `getSettings`. `index.css` tem o `:root` escuro e o
+`:root[data-theme='light']`, que redefine todos os tokens de cor; `contrast.test.ts` confere AA nos dois temas e
+`no-hardcoded-color.test.ts` impede cor literal fora dos blocos de token. O processo principal grava `theme` em
+`settings.json` (só `light` e `system` ficam; escuro é a ausência do campo) por `ragx:setTheme` (lista fechada de três
+literais), usa o tema salvo no `backgroundColor` da janela e em `nativeTheme.themeSource` (barras de rolagem, diálogos
+nativos e menu acompanham). Trocar o tema vale na hora, sem reiniciar. `node scripts/visual-check.mjs --theme light`
+mede e captura o painel no tema claro.
 
 ## Atualização do painel
 

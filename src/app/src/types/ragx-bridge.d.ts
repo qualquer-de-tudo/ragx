@@ -281,6 +281,8 @@ export interface RagxBridge {
   setPricing: (pricing: Pricing | null) => Promise<void>
   /** Liga ou desliga a bandeja ou a notificação de defasagem (RAGX-0191): chave de lista fechada, valor booleano. */
   setPreference: (key: 'tray' | 'notifyStale' | 'autoUpdate', value: boolean) => Promise<void>
+  /** Tema do painel (RAGX-0193): `dark` (padrão), `light` ou `system`. */
+  setTheme: (theme: 'dark' | 'light' | 'system') => Promise<void>
   /** Atualização do painel (RAGX-0192): estado, verificar, baixar e instalar. Sem argumentos; desligada = zero rede. */
   getUpdateState: () => Promise<UpdateState>
   checkForUpdates: () => Promise<UpdateState>

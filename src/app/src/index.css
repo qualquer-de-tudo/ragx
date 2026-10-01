@@ -1,5 +1,5 @@
-/* Só tema escuro: fundo preto, superfícies quase pretas separadas por borda
-   de 1px, azul para seleção e ações. Cor de estado sempre acompanha texto. */
+/* Tema escuro por padrão (fundo preto, superfícies quase pretas separadas por borda de 1px, azul para seleção e
+   ações) e tema claro como preferência (`:root[data-theme='light']`, abaixo). Cor de estado sempre acompanha texto. */
 :root {
   color-scheme: dark;
   --bg: #000000;
@@ -68,6 +68,42 @@
   --sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
   --mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+}
+
+/* Tema claro (RAGX-0193): preferência, nunca o padrão. Redefine TODOS os tokens de cor do `:root` escuro; espaço,
+   tipografia, camadas e movimento são os mesmos. Contraste AA conferido por `contrast.test.ts` nos dois temas. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f4f7;
+  --surface: #ffffff;
+  --surface-2: #f0f0f4;
+  --surface-3: #e6e6ec;
+  --line: #dcdce3;
+  --line-strong: #c4c4cd;
+  --ink: #16161a;
+  --ink-2: #4a4a54;
+  --ink-3: #5f5f6a;
+  --accent: #2563eb;
+  --accent-ink: #ffffff;
+  --accent-solid: #2563eb;
+  --accent-text: #1d4ed8;
+  --accent-wash: rgba(37, 99, 235, 0.1);
+  --accent-line: rgba(37, 99, 235, 0.35);
+  --good: #166534;
+  --good-wash: rgba(22, 101, 52, 0.1);
+  --good-line: rgba(22, 101, 52, 0.4);
+  --warning: #92400e;
+  --warning-wash: rgba(146, 64, 14, 0.1);
+  --warning-line: rgba(146, 64, 14, 0.4);
+  --critical: #b91c1c;
+  --critical-solid: #b91c1c;
+  --critical-text: #a51919;
+  --critical-wash: rgba(185, 28, 28, 0.08);
+  --critical-line: rgba(185, 28, 28, 0.4);
+  --scrim: rgba(22, 22, 26, 0.5);
+  --line-control: #8a8a95;
+  --series-delivered: #2563eb;
+  --series-baseline: #c2410c;
 }
 
 *,

@@ -13,6 +13,10 @@ export interface Pricing {
 
 export const MAX_PRICE = 10_000
 
+/** Tema do painel (RAGX-0193): o padrão é escuro; claro e "seguir o sistema" são preferência. */
+export const THEMES = ['dark', 'light', 'system'] as const
+export type ThemePref = (typeof THEMES)[number]
+
 /** Moeda do conjunto, preço finito e `0 < preço <= 10000`. Qualquer outra coisa é `null`. */
 export function parsePricing(raw: unknown): Pricing | null {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
@@ -27,6 +31,8 @@ export interface RendererSettings {
   onboardingDone: boolean
   /** Ausente por padrão: sem preço, nenhuma tela mostra valor em dinheiro. */
   pricing?: Pricing
+  /** Só `light` ou `system` ficam guardados; ausente = `dark` (o padrão). */
+  theme?: Exclude<ThemePref, 'dark'>
   /** Ícone na bandeja com o estado geral (RAGX-0191). Ausente = desligado. */
   tray?: boolean
   /** Notificação do sistema quando um índice continua defasado (RAGX-0191). Ausente = desligado. */
@@ -65,6 +71,8 @@ export function readSettings(dir: string): PanelSettings {
     const mode = parsed?.ollamaMode
     if (mode === 'docker' || mode === 'native') settings.ollamaMode = mode
     const pricing = parsePricing(parsed?.pricing)
+    const theme = (parsed as Record<string, unknown> | null)?.theme
+    if (theme === 'light' || theme === 'system') settings.theme = theme
     if (pricing !== null) settings.pricing = pricing
     // só `true` fica: ausente e qualquer outro valor são `false` (desligado por padrão)
     for (const key of PREFERENCE_KEYS) if ((parsed as Record<string, unknown> | null)?.[key] === true) settings[key] = true
