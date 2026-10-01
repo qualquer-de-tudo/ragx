@@ -325,8 +325,19 @@ diretório que não é um projeto RAGX) não gera log nem cria `.ragx/` só por
 causa de uma chamada:
 
 ```json
-{"ts":"2026-09-15T12:31:02Z","tool":"build_context","ms":84,"project":"ragx","tokens_delivered":3847,"baseline_tokens":26290,"client":"claude-code","profile":"empresa","session":"0c1f9a2e"}
+{"v":2,"ts":"2026-10-01T12:31:02Z","tool":"build_context","ms":84,"project":"ragx","proc":"ec301f6f","ok":true,"resp_chars":9583,"resp_tokens":2947,"tokens_delivered":2601,"baseline_tokens":26290,"client":"claude-code","profile":"empresa","session":"0c1f9a2e"}
+{"v":2,"ts":"2026-10-01T12:31:09Z","tool":"get_chunk","ms":3,"project":"ragx","proc":"ec301f6f","ok":false,"err_code":"not_found","resp_chars":88,"resp_tokens":24}
 ```
+
+Formato **v2** (RAGX-0156). Campos de toda linha: `v` (versão do formato), `ts`, `tool`, `ms`,
+`project`, `ok` (a chamada deu certo?), `resp_chars` e `resp_tokens` (o texto **exato** que o cliente
+recebeu, em caracteres e em tokens estimados), e `proc` (8 hex por processo do servidor: agrupa as
+linhas quando não há `session`, e cada sessão sobe o seu servidor). Com `ok: false` entra
+`err_code` (`not_found`, `invalid_argument`, `rate_limited`, `internal`...), nunca a mensagem, que
+pode ecoar o argumento. `tokens_delivered` (só `build_context`) é o **conteúdo** que o contexto
+entregou (os tokens do markdown); `resp_tokens` é a **resposta inteira**, envelope incluso. Linha
+antiga (v1, sem `v` nem `ok`) continua legível e é tratada como resultado "desconhecido": não conta
+como erro. `ragx perf` mostra `n` e a taxa de erro por ferramenta.
 
 Cada linha registra `ts` (timestamp), `tool` (ferramenta chamada), `ms` (latência em
 milissegundos), `project` (projeto), e para `build_context` (quando bem-sucedido)

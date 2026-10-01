@@ -57,6 +57,12 @@ def test_successful_call_logs_tool_and_ms(proj: Path) -> None:
     assert lines[0]["ms"] >= 0
     assert "project" in lines[0]
     assert "tokens_delivered" not in lines[0]
+    # RAGX-0156: o registro diz se deu certo e quanto saiu no fio
+    assert lines[0]["v"] == 2
+    assert lines[0]["ok"] is True
+    assert lines[0]["resp_chars"] > 0 and lines[0]["resp_tokens"] > 0
+    assert len(lines[0]["proc"]) == 8
+    assert "err_code" not in lines[0]
 
 
 def test_build_context_logs_tokens_delivered(proj: Path) -> None:
@@ -98,6 +104,9 @@ def test_failed_call_still_logs(proj: Path) -> None:
     lines = _log_lines(proj)
     assert len(lines) == 1
     assert lines[0]["tool"] == "get_chunk"
+    # antes: gravada como sucesso, sem `ok`; a taxa de erro não era calculável
+    assert lines[0]["ok"] is False
+    assert lines[0]["err_code"] == "invalid_id"
 
 
 def test_validation_error_still_logs(proj: Path) -> None:
@@ -113,6 +122,8 @@ def test_validation_error_still_logs(proj: Path) -> None:
     lines = _log_lines(proj)
     assert len(lines) == 1
     assert lines[0]["tool"] == "search_hybrid"
+    assert lines[0]["ok"] is False
+    assert lines[0]["err_code"] == "invalid_argument"
 
 
 def test_chamada_sem_indice_nao_cria_pasta_ragx(tmp_path: Path) -> None:
@@ -127,3 +138,43 @@ def test_chamada_sem_indice_nao_cria_pasta_ragx(tmp_path: Path) -> None:
     asyncio.run(_call_tool(cfg, "get_playbook"))
 
     assert not (tmp_path / ".ragx").exists(), "chamada MCP sem indice nao deve criar .ragx/"
+
+
+def test_resp_chars_e_o_tamanho_exato_do_texto_devolvido(proj: Path) -> None:
+    """O registro usa o texto que o cliente recebe, não uma estimativa do dict."""
+    import asyncio
+
+    cfg = load_config(proj)
+    casos = [
+        ("get_dictionary", {}),
+        ("get_chunk", {"chunk_id": "0" * 12}),         # not_found
+        ("search_hybrid", {"query": ""}),              # invalid_argument
+        ("build_context", {"query": "login sso", "tokens": 500}),
+    ]
+    for nome, args in casos:
+        resp = asyncio.run(_call_tool(cfg, nome, **args))
+        texto = "".join(b.text for b in resp.content)
+        entrada = [e for e in _log_lines(proj) if e["tool"] == nome][-1]
+        assert entrada["resp_chars"] == len(texto), nome
+
+
+def test_chamada_limitada_pelo_rate_limit_grava_rate_limited(proj: Path) -> None:
+    import asyncio
+
+    cfg = load_config(proj)
+    cfg.mcp.rate_per_min = 1
+    server = build_server(cfg, allow_write=False)
+    asyncio.run(server.call_tool("get_dictionary", {}))
+    asyncio.run(server.call_tool("get_dictionary", {}))
+    ultimas = [e for e in _log_lines(proj) if e["tool"] == "get_dictionary"]
+    assert ultimas[-1]["ok"] is False and ultimas[-1]["err_code"] == "rate_limited"
+
+
+def test_a_linha_nunca_traz_a_consulta_nem_a_mensagem_de_erro(proj: Path) -> None:
+    import asyncio
+
+    cfg = load_config(proj)
+    asyncio.run(_call_tool(cfg, "search_hybrid", query="login sso"))
+    asyncio.run(_call_tool(cfg, "get_chunk", chunk_id="nao-existe-segredo"))
+    bruto = (proj / ".ragx" / "logs" / "mcp.jsonl").read_text(encoding="utf-8")
+    assert "login sso" not in bruto and "nao-existe-segredo" not in bruto

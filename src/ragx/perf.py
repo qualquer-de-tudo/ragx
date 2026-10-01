@@ -59,6 +59,14 @@ class ToolStats:
     n: int
     p50: float
     p95: float
+    #: chamadas cujo resultado se conhece (log v2, com `ok`) e quantas deram erro. Linha
+    #: antiga, sem `ok`, é "desconhecida": não conta como erro nem como acerto.
+    known: int = 0
+    errors: int = 0
+
+    @property
+    def error_rate(self) -> float | None:
+        return self.errors / self.known if self.known else None
 
 
 def _parse_ts(raw: Any) -> datetime | None:
@@ -199,15 +207,25 @@ def server_stats(path: Path) -> dict[str, ToolStats]:
     if not path.is_file():
         return {}
     by_tool: dict[str, list[float]] = {}
+    known: dict[str, int] = {}
+    errors: dict[str, int] = {}
     with path.open(encoding="utf-8", errors="replace") as fh:
         for line in fh:
             try:
                 e = json.loads(line)
-                by_tool.setdefault(str(e["tool"]), []).append(float(e["ms"]))
+                tool = str(e["tool"])
+                by_tool.setdefault(tool, []).append(float(e["ms"]))
             except (ValueError, KeyError, TypeError):
                 continue
+            if isinstance(e.get("ok"), bool):
+                known[tool] = known.get(tool, 0) + 1
+                if not e["ok"]:
+                    errors[tool] = errors.get(tool, 0) + 1
     return {
-        t: ToolStats(len(v), statistics.median(v), _percentile(v, 0.95))
+        t: ToolStats(
+            len(v), statistics.median(v), _percentile(v, 0.95),
+            known.get(t, 0), errors.get(t, 0),
+        )
         for t, v in by_tool.items()
     }
 

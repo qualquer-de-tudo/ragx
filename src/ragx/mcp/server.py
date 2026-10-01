@@ -20,7 +20,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from ragx.config import Config, load_config
-from ragx.diagnostics import log_exception, log_mcp_call
+from ragx.diagnostics import log_exception, log_mcp_call, mcp_entry
 from ragx.dictionary import builder as dictionary_builder
 from ragx.mcp.operations import WriteAPI
 from ragx.mcp.orchestration import OrchestrationAPI
@@ -38,7 +38,6 @@ from ragx.mcp.tools import (
     validate_path,
     wire_id,
 )
-from ragx.storage.db import utcnow
 
 
 def _explain(exc: ValidationError) -> str:
@@ -78,9 +77,10 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
         # caçar num log de traceback o que a própria mensagem já sabe dizer:
         # qual campo, qual limite, qual valor veio. Quem recebe "ValidationError.
         # Detalhe em .ragx/logs/errors.log" não tem como corrigir a chamada.
+        resposta = err("invalid_argument", f"{tool}: {_explain(exc)}")
         if indexado:
-            _log_call(cfg, tool, inicio, None)
-        return err("invalid_argument", f"{tool}: {_explain(exc)}")
+            _log_call(cfg, tool, inicio, resposta)
+        return resposta
     except Exception as exc:
         # "Ainda não há índice aqui" NÃO é falha interna: é o estado normal de
         # toda pasta que não é um projeto RAGX. Com o servidor registrado
@@ -95,12 +95,13 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
                 f"sessão dentro de um projeto já indexado.",
             )
         log_exception(cfg.state_dir, tool, exc)
-        _log_call(cfg, tool, inicio, None)
-        return err(
+        resposta = err(
             "internal",
             f"{tool} falhou: {type(exc).__name__}. "
             "Detalhe em .ragx/logs/errors.log",
         )
+        _log_call(cfg, tool, inicio, resposta)
+        return resposta
 
 
 def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
@@ -111,12 +112,12 @@ def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
     """
     try:
         ms = round((time.monotonic() - started_at) * 1000, 1)
-        entry: dict[str, Any] = {
-            "ts": utcnow(),
-            "tool": tool,
-            "ms": ms,
-            "project": cfg.project.name,
-        }
+        # O resultado entra SEMPRE (sucesso, `ok: false`, argumento inválido, erro
+        # interno), e o tamanho é o do texto que o cliente recebe, o mesmo que o
+        # wrapper de `build_server` serializa (RAGX-0156).
+        entry: dict[str, Any] = mcp_entry(
+            tool, ms, cfg.project.name, result, dump(compact(result))
+        )
         if tool == "build_context" and isinstance(result, dict) and result.get("ok"):
             data = result.get("data") or {}
             tokens = data.get("estimated_tokens")

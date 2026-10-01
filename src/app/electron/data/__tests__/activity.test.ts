@@ -44,6 +44,18 @@ describe('ActivityTail', () => {
     expect(t.recent()).toHaveLength(3)
   })
 
+  it('lê os campos do log v2 (erro e tamanho da resposta) e aceita a linha antiga sem eles', () => {
+    const f = fakeFs()
+    f.set(
+      MCP,
+      mcp('2026-09-29T19:00:00Z', 'get_chunk', { v: 2, ok: false, err_code: 'not_found', resp_chars: 120, resp_tokens: 40 }) +
+        mcp('2026-09-29T19:05:00Z', 'search_hybrid'),
+    )
+    const [novo, antigo] = tail(f).poll([SOURCE])
+    expect(novo).toMatchObject({ ok: false, errCode: 'not_found', respChars: 120, respTokens: 40 })
+    expect(antigo).toMatchObject({ ok: null, errCode: null, respChars: null, respTokens: null })
+  })
+
   it('linha no meio de uma escrita espera terminar', () => {
     const f = fakeFs()
     f.set(MCP, mcp('2026-09-29T19:00:00Z'))

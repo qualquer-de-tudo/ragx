@@ -110,3 +110,22 @@ def test_inicio_de_sessao_do_claude_vira_evento(projeto: Path, monkeypatch: pyte
     record_session_start()
     (linha,) = _cli(projeto)
     assert linha["command"] == "session_start" and linha["profile"] == "empresa"
+
+
+def test_proc_agrupa_por_servidor_com_e_sem_claude_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`session` só existe dentro do Claude Code; `proc` existe SEMPRE (RAGX-0156)."""
+    import json
+
+    from ragx.diagnostics import log_mcp_call, mcp_entry
+
+    for claude in (True, False):
+        for var in ("CLAUDECODE", "CLAUDE_CODE_SESSION_ID"):
+            monkeypatch.delenv(var, raising=False)
+        if claude:
+            monkeypatch.setenv("CLAUDECODE", "1")
+            monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "sess-1")
+        pasta = tmp_path / ("c" if claude else "f")
+        log_mcp_call(pasta, mcp_entry("t", 1.0, "p", {"ok": True}, "{}"))
+        linha = json.loads((pasta / "logs" / "mcp.jsonl").read_text(encoding="utf-8").splitlines()[0])
+        assert len(linha["proc"]) == 8 and linha["v"] == 2 and linha["ok"] is True
+        assert ("session" in linha) is claude

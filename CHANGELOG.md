@@ -18,6 +18,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **A telemetria do MCP diz se a chamada deu certo e quanto saiu.** A linha de `mcp.jsonl` não
+  tinha `ok`, `err_code` nem tamanho: uma chamada que devolvia `ok: false` (`not_found`,
+  `rate_limited`) era gravada como sucesso, as que falhavam por argumento inválido ou erro
+  interno saíam sem resultado, e a taxa de erro não era calculável (55 linhas no log deste
+  repositório, 19 sem `session` nem nenhum agrupador). Agora toda linha leva `v: 2`, `ok`,
+  `resp_chars` e `resp_tokens` (o texto exato que o cliente recebe; contar tokens de 30 KB custa
+  ~1,2 ms), `proc` (8 hex por servidor, que agrupa quando não há `session`) e, com `ok: false`,
+  `err_code` (nunca a mensagem nem a consulta). `ragx perf` mostra `n` e a taxa de erro por
+  ferramenta, tratando linha antiga como "desconhecida", e o parser do painel lê os campos novos
+  (a tela é da 0188/0190). Aditivo: o log já gravado segue legível (RAGX-0156).
+
 - **Respostas MCP compactas: sem indentação, sem duplicar em `structuredContent`, sem
   `outputSchema`, sem repetição.** Toda resposta saía com `indent=2` (o SDK reindentava o
   `dict`), era repetida em `structuredContent` (o JSON ia duas vezes no fio) e cada uma das 33

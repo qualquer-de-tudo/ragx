@@ -62,6 +62,11 @@ export interface ActivityEvent {
   ok: boolean | null
   tokensDelivered: number | null
   baselineTokens: number | null
+  /** Código do erro quando a chamada falhou (`not_found`, `rate_limited`...); `null` em sucesso ou em linha antiga. */
+  errCode: string | null
+  /** Tamanho da resposta no fio, em caracteres, e em tokens estimados (log v2 do servidor MCP). */
+  respChars: number | null
+  respTokens: number | null
   /** `claude-code` quando quem chamou foi o Claude Code; `null` quando não dá para saber. */
   client: string | null
   /** Perfil do Claude Code (`padrão`, `empresa`...). */

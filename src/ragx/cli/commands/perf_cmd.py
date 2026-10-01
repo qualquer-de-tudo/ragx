@@ -92,6 +92,13 @@ def perf(
             "server_p50_ms": server[t.removeprefix(p.RAGX_PREFIX)].p50
             if t.removeprefix(p.RAGX_PREFIX) in server
             else None,
+            # Do log do servidor (v2). `None` quando só há linhas antigas, sem `ok`.
+            "server_n": server[t.removeprefix(p.RAGX_PREFIX)].n
+            if t.removeprefix(p.RAGX_PREFIX) in server
+            else None,
+            "error_rate": server[t.removeprefix(p.RAGX_PREFIX)].error_rate
+            if t.removeprefix(p.RAGX_PREFIX) in server
+            else None,
         }
         for t, s in sorted(wall.items(), key=lambda kv: -kv[1].n)
     ]
@@ -115,7 +122,7 @@ def perf(
     )
 
     table = Table(title="Por ferramenta", title_justify="left")
-    for col in ("ferramenta", "chamadas", "espera p50", "espera p95", "servidor p50"):
+    for col in ("ferramenta", "chamadas", "espera p50", "espera p95", "servidor p50", "erros"):
         table.add_column(col, justify="left" if col == "ferramenta" else "right")
     for row in tools:
         table.add_row(
@@ -124,6 +131,7 @@ def perf(
             _fmt(row["wall_p50_ms"]),
             _fmt(row["wall_p95_ms"]),
             _fmt(row["server_p50_ms"]) if row["server_p50_ms"] is not None else "—",
+            f"{row['error_rate'] * 100:.0f}%" if row["error_rate"] is not None else "—",
         )
     console.print(table)
     console.print(

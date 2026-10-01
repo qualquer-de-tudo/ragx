@@ -9,6 +9,12 @@ interface LogLine {
   project: string
   tokens_delivered?: number
   baseline_tokens?: number
+  // Log v2 do servidor MCP (RAGX-0156). Linha antiga não os tem, e continua válida.
+  v?: number
+  ok?: boolean
+  err_code?: string
+  resp_chars?: number
+  resp_tokens?: number
 }
 
 /** Dias no gráfico de economia do detalhe do projeto. */

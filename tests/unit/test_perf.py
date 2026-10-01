@@ -186,3 +186,21 @@ def test_cli_perf_json(tmp_path: Path) -> None:
     assert dados["summary"]["calls"] == 1
     assert dados["summary"]["overhead_ms"] == 6000
     assert dados["tools"][0]["tool"] == "mcp__ragx__refresh"
+
+
+def test_server_stats_calcula_taxa_de_erro_e_trata_linha_antiga_como_desconhecida(tmp_path: Path) -> None:
+    """Linha v1 (sem `ok`) não é erro: é "desconhecida" e fica fora da taxa (RAGX-0156)."""
+    p = tmp_path / "mcp.jsonl"
+    linhas = [
+        {"tool": "get_chunk", "ms": 5},                                        # v1
+        {"tool": "get_chunk", "ms": 6, "v": 2, "ok": True},
+        {"tool": "get_chunk", "ms": 7, "v": 2, "ok": False, "err_code": "not_found"},
+        {"tool": "get_chunk", "ms": 8, "v": 2, "ok": False, "err_code": "not_found"},
+        {"tool": "refresh", "ms": 9},                                           # só v1
+    ]
+    p.write_text("\n".join(json.dumps(x) for x in linhas) + "\n", encoding="utf-8")
+    st = server_stats(p)
+    assert st["get_chunk"].n == 4
+    assert st["get_chunk"].known == 3 and st["get_chunk"].errors == 2
+    assert st["get_chunk"].error_rate == pytest.approx(2 / 3)
+    assert st["refresh"].known == 0 and st["refresh"].error_rate is None

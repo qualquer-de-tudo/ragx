@@ -13,12 +13,48 @@ from __future__ import annotations
 
 import json
 import traceback
+import uuid
 from pathlib import Path
 from typing import Any
 
 from ragx.storage.db import utcnow
 
 MAX_BYTES = 2 * 1024 * 1024
+
+#: Um por processo do servidor. Agrupa as linhas quando não há `session` (versões do
+#: Claude Code sem a variável de ambiente): cada sessão sobe o seu servidor, então o
+#: `proc` é, na prática, uma sessão (RAGX-0156).
+_PROC = uuid.uuid4().hex[:8]
+LOG_VERSION = 2
+
+
+def mcp_entry(tool: str, ms: float, project: str, result: Any, text: str) -> dict[str, Any]:
+    """A linha de telemetria de UMA chamada MCP (formato v2).
+
+    A lógica fica aqui, fora de `ragx.mcp`, que não pode ler ambiente nem falar com o
+    filesystem (ADR-0006). `text` é o texto EXATO que o cliente recebe. Nunca entram a
+    consulta, os argumentos nem a mensagem de erro, que pode ecoar o argumento: só o
+    `err_code`, que vem de um conjunto fixo.
+    """
+    from ragx.tokens import count_tokens
+
+    entry: dict[str, Any] = {
+        "v": LOG_VERSION,
+        "ts": utcnow(),
+        "tool": tool,
+        "ms": ms,
+        "project": project,
+        "proc": _PROC,
+    }
+    ok = isinstance(result, dict) and result.get("ok") is True
+    entry["ok"] = ok
+    if not ok:
+        erro = result.get("error") if isinstance(result, dict) else None
+        codigo = erro.get("code") if isinstance(erro, dict) else None
+        entry["err_code"] = str(codigo) if codigo else "unknown"
+    entry["resp_chars"] = len(text)
+    entry["resp_tokens"] = count_tokens(text)
+    return entry
 
 
 def log_exception(state_dir: Path, scope: str, exc: BaseException) -> None:
