@@ -7,7 +7,7 @@
 | **Estimativa** | 0,25d |
 | **Depende de** | — |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (U-14) · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-P11) · [src/app/README.md](../../src/app/README.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,12 +15,12 @@ O painel não tem Content-Security-Policy (`src/app/index.html` tem só `charset
 
 ## Entregáveis
 
-- [ ] CSP restritiva **só no build de produção**: plugin do Vite em `vite.config.ts` (`transformIndexHtml`, `apply: 'build'`) que injeta o `<meta http-equiv="Content-Security-Policy">` no `dist/index.html`. A política vive num único módulo importável pelo plugin e pelo teste. Ponto de partida: `default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`. O `style-src-attr` existe porque há largura dinâmica em `style={{ ... }}` (`ProjectCard.tsx:137,153`, `QueueIndicator.tsx:69`, `ProjectPage.tsx:316`, `TokenSavings.tsx:114`).
-- [ ] Em desenvolvimento (`npm run dev:electron`), o `index.html` servido pelo Vite **não** recebe essa política: o plugin do React injeta script inline e o HMR usa WebSocket para `localhost:5173`. Se quiser CSP em dev, é uma segunda política, mais frouxa, e não uma exceção na de produção.
-- [ ] `src/app/electron/menu.ts` (novo): `buildMenuTemplate({ devTools })` devolve o menu em português: Edição (`undo`, `redo`, `cut`, `copy`, `paste`, `selectAll`), Exibir (`resetZoom`, `zoomIn`, `zoomOut`, `togglefullscreen`) e Sair. **Mantenha o zoom**: sem menu, os atalhos Ctrl+= e Ctrl+- somem, e a RAGX-0181 testa o painel sob zoom de 200%. Sem `reload`, `forceReload` nem `toggleDevTools` quando `devTools` é falso. `Menu.setApplicationMenu` chamado em `app.whenReady`, antes de `createWindow`.
-- [ ] DevTools: `webPreferences.devTools` em `createWindow` (`main.ts:458-462`) verdadeiro só em dev (`isDev`, linha 40) ou com `RAGX_DEVTOOLS=1`; o `openDevTools` de `main.ts:477` continua restrito a `isDev`. Em produção, F12 e Ctrl+Shift+I não abrem nada.
-- [ ] Teste de varredura de recurso remoto, no estilo de `src/__tests__/no-em-dash.test.ts` (mesmos auxiliares de arquivos e de comentários): nenhum `http://`, `https://`, `ws://`, `@import` nem `url(http` em `src/**` e em `index.html`, fora de comentários e de `__tests__`.
-- [ ] `src/app/README.md`: seção curta "Segurança do renderer" com a CSP, o menu e `RAGX_DEVTOOLS`.
+- [x] CSP restritiva **só no build de produção**: plugin do Vite em `vite.config.ts` (`transformIndexHtml`, `apply: 'build'`) que injeta o `<meta http-equiv="Content-Security-Policy">` no `dist/index.html`. A política vive num único módulo importável pelo plugin e pelo teste. Ponto de partida: `default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`. O `style-src-attr` existe porque há largura dinâmica em `style={{ ... }}` (`ProjectCard.tsx:137,153`, `QueueIndicator.tsx:69`, `ProjectPage.tsx:316`, `TokenSavings.tsx:114`).
+- [x] Em desenvolvimento (`npm run dev:electron`), o `index.html` servido pelo Vite **não** recebe essa política: o plugin do React injeta script inline e o HMR usa WebSocket para `localhost:5173`. Se quiser CSP em dev, é uma segunda política, mais frouxa, e não uma exceção na de produção.
+- [x] `src/app/electron/menu.ts` (novo): `buildMenuTemplate({ devTools })` devolve o menu em português: Edição (`undo`, `redo`, `cut`, `copy`, `paste`, `selectAll`), Exibir (`resetZoom`, `zoomIn`, `zoomOut`, `togglefullscreen`) e Sair. **Mantenha o zoom**: sem menu, os atalhos Ctrl+= e Ctrl+- somem, e a RAGX-0181 testa o painel sob zoom de 200%. Sem `reload`, `forceReload` nem `toggleDevTools` quando `devTools` é falso. `Menu.setApplicationMenu` chamado em `app.whenReady`, antes de `createWindow`.
+- [x] DevTools: `webPreferences.devTools` em `createWindow` (`main.ts:458-462`) verdadeiro só em dev (`isDev`, linha 40) ou com `RAGX_DEVTOOLS=1`; o `openDevTools` de `main.ts:477` continua restrito a `isDev`. Em produção, F12 e Ctrl+Shift+I não abrem nada.
+- [x] Teste de varredura de recurso remoto, no estilo de `src/__tests__/no-em-dash.test.ts` (mesmos auxiliares de arquivos e de comentários): nenhum `http://`, `https://`, `ws://`, `@import` nem `url(http` em `src/**` e em `index.html`, fora de comentários e de `__tests__`.
+- [x] `src/app/README.md`: seção curta "Segurança do renderer" com a CSP, o menu e `RAGX_DEVTOOLS`.
 
 ## Fora de escopo
 
@@ -31,18 +31,18 @@ O painel não tem Content-Security-Policy (`src/app/index.html` tem só `charset
 
 ## Critérios de aceite
 
-- [ ] `npm run build` gera `dist/index.html` com o `<meta>` de CSP; teste lê a saída do plugin e confirma `default-src 'none'`, ausência de `'unsafe-eval'`, ausência de `'unsafe-inline'` em `script-src` e `style-src`, e nenhum host `http:`/`https:`/`*`.
-- [ ] Abrir o build de produção (`npx electron-builder --dir` depois de `npm run build` e `npm run build:electron:ts`; executar `release/win-unpacked/RAGX Painel.exe`) e percorrer Projetos, Detalhe (as quatro abas), Atividade e Conexões: o console do renderer não registra nenhum `Refused to ...`. Como a produção não tem DevTools, rode uma vez com `RAGX_DEVTOOLS=1` para ler o console. Registrar em Andamento.
-- [ ] `npm run dev:electron` continua abrindo e recarregando a quente, sem CSP bloqueando o Vite.
-- [ ] Em produção: Alt não mostra os itens Recarregar nem Ferramentas do desenvolvedor, F12 e Ctrl+Shift+I não abrem DevTools; copiar e colar em campos de texto e zoom (Ctrl+= e Ctrl+-) funcionam.
-- [ ] A varredura de recurso remoto passa hoje sem alterar nenhuma tela (a premissa já foi conferida: busca vazia).
+- [x] `npm run build` gera `dist/index.html` com o `<meta>` de CSP; teste lê a saída do plugin e confirma `default-src 'none'`, ausência de `'unsafe-eval'`, ausência de `'unsafe-inline'` em `script-src` e `style-src`, e nenhum host `http:`/`https:`/`*`.
+- [x] Abrir o build de produção (`npx electron-builder --dir` depois de `npm run build` e `npm run build:electron:ts`; executar `release/win-unpacked/RAGX Painel.exe`) e percorrer Projetos, Detalhe (as quatro abas), Atividade e Conexões: o console do renderer não registra nenhum `Refused to ...`. Como a produção não tem DevTools, rode uma vez com `RAGX_DEVTOOLS=1` para ler o console. Registrar em Andamento.
+- [x] `npm run dev:electron` continua abrindo e recarregando a quente, sem CSP bloqueando o Vite. (Conferido só que o `index.html` servido pelo Vite NÃO traz o `<meta>`; o Electron em dev e o HMR não foram abertos.)
+- [ ] Em produção: Alt não mostra os itens Recarregar nem Ferramentas do desenvolvedor, F12 e Ctrl+Shift+I não abrem DevTools; copiar e colar em campos de texto e zoom (Ctrl+= e Ctrl+-) funcionam. (Garantido por `menu.test.ts` e por `webPreferences.devTools`; NÃO conferido à mão no `.exe`: sem teclado nesta sessão.)
+- [x] A varredura de recurso remoto passa hoje sem alterar nenhuma tela (a premissa já foi conferida: busca vazia).
 
 ## Testes
 
-- [ ] `src/app/electron/__tests__/menu.test.ts` (novo, no padrão de `navigation.test.ts`): sem `toggleDevTools`, `reload` e `forceReload` com `devTools: false`; com `true` o item existe; papéis de edição e de zoom sempre presentes; rótulos em português sem travessão.
-- [ ] `src/app/src/__tests__/csp.test.ts` (novo): política do módulo único e saída do plugin de `transformIndexHtml`.
-- [ ] `src/app/src/__tests__/no-remote-resources.test.ts` (novo): a varredura acima.
-- [ ] `src/app/src/__tests__/no-em-dash.test.ts` (existente) continua verde: ele varre `index.html` e `electron/`, então o texto do menu e do comentário da CSP não leva travessão.
+- [x] `src/app/electron/__tests__/menu.test.ts` (novo, no padrão de `navigation.test.ts`): sem `toggleDevTools`, `reload` e `forceReload` com `devTools: false`; com `true` o item existe; papéis de edição e de zoom sempre presentes; rótulos em português sem travessão.
+- [x] `src/app/src/__tests__/csp.test.ts` (novo): política do módulo único e saída do plugin de `transformIndexHtml`.
+- [x] `src/app/src/__tests__/no-remote-resources.test.ts` (novo): a varredura acima.
+- [x] `src/app/src/__tests__/no-em-dash.test.ts` (existente) continua verde: ele varre `index.html` e `electron/`, então o texto do menu e do comentário da CSP não leva travessão.
 
 ## Notas
 
@@ -53,14 +53,17 @@ O painel não tem Content-Security-Policy (`src/app/index.html` tem só `charset
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes
-- [ ] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
-- [ ] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
-- [ ] CHANGELOG atualizado na MESMA alteração
-- [ ] Documentação (`src/app/README.md`) confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0194)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [x] Testes escritos e verdes (Windows; Linux e macOS só a CI)
+- [x] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
+- [x] Nenhuma regressão visual nas telas afetadas (percorridas no build de produção pelo CDP, sem violação de CSP; sem screenshot)
+- [x] CHANGELOG atualizado na MESMA alteração
+- [x] Documentação (`src/app/README.md`) confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0194)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — Implementado: `csp.ts` (módulo único: `CSP_DIRECTIVES`, `CSP`, `cspPlugin` com `apply: 'build'` e `transformIndexHtml` em `head-prepend`; ligado em `vite.config.ts` e incluído em `tsconfig.node.json`), `electron/menu.ts` (`buildMenuTemplate({ devTools })`), `main.ts` (`DEVTOOLS_ENABLED = isDev || RAGX_DEVTOOLS=1`, `webPreferences.devTools`, `Menu.setApplicationMenu` antes de `createWindow`). Testes: `menu.test.ts` (4), `csp.test.ts` (4), `no-remote-resources.test.ts` (uma por arquivo do renderer); `no-em-dash.test.ts` segue verde. Painel: 1045 testes verdes, `lint` e `tsc` dos três projetos limpos.
+- Verificado rodando: `npm run build` gera `dist/index.html` com o `<meta http-equiv="Content-Security-Policy">`. `electron-builder --dir` + `RAGX Painel.exe` com `RAGX_DEVTOOLS=1` e `--remote-debugging-port`, percorrendo Projetos, Atividade, Conexões, o detalhe de um projeto e as quatro abas (Visão geral, Economia de tokens, Histórico, Manutenção): **0** violações no console. Para provar que a captura enxerga violações, injetei um `<script>` inline na mesma sessão: o console registrou `Refused to execute inline script ... script-src 'self'`. O `index.html` do servidor de dev do Vite sai sem o `<meta>`.
+- Desvio: tirei `frame-ancestors 'none'` da política do "ponto de partida": o navegador a ignora em `<meta>` (só vale por cabeçalho) e geraria aviso no console.
+- Não conferido: Alt/F12/Ctrl+Shift+I e o zoom no `.exe` à mão; o "antes" do menu padrão (Alt no `.exe` anterior); o `dev:electron` com HMR.

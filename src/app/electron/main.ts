@@ -1,10 +1,11 @@
-import { app, BrowserWindow, dialog, ipcMain, powerMonitor } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, powerMonitor } from 'electron'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { buildSnapshot } from './data/snapshot'
 import { createSnapshotGate } from './data/snapshot-gate'
+import { buildMenuTemplate } from './menu'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
 import { checkAll, defaultCheckDeps, resetRagxVersionCache } from './connections/checks'
@@ -46,6 +47,8 @@ import type { ConnectionCheck, JobView, Snapshot } from '../src/types/ragx-bridg
 // (`dist/index.html`, sem DevTools), mesmo rodando sem empacotar.
 const METRICS_FILE = metricsFileFromEnv(process.env)
 const isDev = !app.isPackaged && METRICS_FILE === null
+// DevTools, F12 e os itens de recarregar do menu so em dev ou com RAGX_DEVTOOLS=1 (RAGX-0194).
+const DEVTOOLS_ENABLED = isDev || process.env.RAGX_DEVTOOLS === '1'
 
 // Modos sem janela, chamados pelo instalador NSIS (`build/installer.nsh`).
 const BOOTSTRAP = process.argv.includes('--bootstrap')
@@ -565,6 +568,7 @@ function createWindow(): void {
       nodeIntegration: false,
       // RAGX-0171: o Chromium reduz o trabalho do renderer com a janela fora da vista (explícito, não o padrão implícito)
       backgroundThrottling: true,
+      devTools: DEVTOOLS_ENABLED,
     },
   })
   mainWindow = win
@@ -655,6 +659,7 @@ app.whenReady().then(async () => {
     return
   }
 
+  Menu.setApplicationMenu(Menu.buildFromTemplate(buildMenuTemplate({ devTools: DEVTOOLS_ENABLED })))
   createWindow()
 
   app.on('activate', () => {

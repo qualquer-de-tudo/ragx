@@ -272,6 +272,21 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Segurança do renderer
+
+O painel não carrega nada de fora (um teste, `no-remote-resources.test.ts`, falha se aparecer `http(s)://`, `ws://`
+ou `@import` no código do renderer). Por isso o build de **produção** leva uma Content-Security-Policy restritiva,
+injetada em `dist/index.html` como `<meta>` pelo plugin de `csp.ts` (cabeçalho HTTP não vale em `file://`):
+`default-src 'none'`, `script-src 'self'`, `style-src 'self'`, `img-src 'self' data:`, `connect-src 'self'`,
+`base-uri 'none'`, `form-action 'none'`, e `style-src-attr 'unsafe-inline'` só para a largura dinâmica das barras
+(`style={{ ... }}`). Sem `'unsafe-eval'` e sem `'unsafe-inline'` em script ou estilo. `frame-ancestors` fica de fora:
+o navegador o ignora em `<meta>`. Em desenvolvimento (`npm run dev:electron`) o Vite serve o `index.html` **sem**
+essa política, porque o plugin do React injeta script inline e o HMR usa WebSocket.
+
+O menu da aplicação é mínimo (`electron/menu.ts`): Edição (copiar e colar), Exibir (só o zoom e a tela cheia) e
+Sair. As DevTools, o F12 e os itens de recarregar só existem em desenvolvimento ou com `RAGX_DEVTOOLS=1`
+(`webPreferences.devTools`); empacotado e sem a variável, não abrem.
+
 ## A regra de IPC
 
 O renderer nunca manda caminho de disco nem argumento livre para o processo

@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **CSP restritiva, menu mínimo e DevTools desligadas no painel de produção.** O renderer não tinha
+  Content-Security-Policy e o Electron usava o menu padrão (Alt abria Recarregar e Ferramentas do desenvolvedor).
+  Agora o build de produção injeta uma política `default-src 'none'` (sem `unsafe-eval`, sem `unsafe-inline` em script
+  nem estilo, sem host remoto), o menu fica em Edição, Exibir (zoom) e Sair, e as DevTools só abrem em
+  desenvolvimento ou com `RAGX_DEVTOOLS=1`. Percorridas as telas do build de produção: 0 violações (RAGX-0194).
 - **O painel não lê mais o `knowledge.db` e perdeu o `sql.js`.** Sem `.ragx/status.json`, o painel carregava o banco
   inteiro na memória a cada 5 s só para três `COUNT(*)`. Agora o projeto sem `status.json` aparece como "Defasado",
   com o motivo e o botão "Atualizar agora" (que gera o arquivo), e a dependência saiu: `app.asar` de **30,3 para
