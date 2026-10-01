@@ -325,6 +325,13 @@ ragx sync
     --full                      equivalente a ragx index --full + regenerar knowledge/
 ```
 
+Num clone novo (sem `.ragx/`), `ragx sync` cria o índice e importa os embeddings versionados em vez de
+recalculá-los; os importados ficam só grosseiros até `ragx index --embed-only`. Sem banco mas com
+`knowledge/`, os comandos de consulta mandam rodar `ragx sync`.
+
+```bash
+```
+
 ## Fase 10 — manutenção
 
 ```bash

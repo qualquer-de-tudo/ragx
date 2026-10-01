@@ -36,7 +36,12 @@ def connect(path: Path, read_only: bool = False) -> sqlite3.Connection:
     path = Path(path)
     if read_only:
         if not path.exists():
-            raise EnvError(f"banco não encontrado: {path}")
+            # `<raiz>/.ragx/knowledge.db`: se `<raiz>/knowledge/manifest.json` existe, é um clone
+            # novo e o caminho é `ragx sync`, que reconstrói o índice a partir do que está versionado
+            dica = ""
+            if (path.parent.parent / "knowledge" / "manifest.json").is_file():
+                dica = "; este projeto tem `knowledge/` versionado: rode `ragx sync` para criar o índice"
+            raise EnvError(f"banco não encontrado: {path}{dica}")
         conn = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
     else:
         path.parent.mkdir(parents=True, exist_ok=True)

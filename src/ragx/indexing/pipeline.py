@@ -61,6 +61,10 @@ class IndexReport:
     #: chunks de documentos modificados que sobreviveram à edição (mesmo id) e os que saíram
     chunks_kept: int = 0
     chunks_removed: int = 0
+    #: vetores int8 importados de `knowledge/embeddings` e os que seguem só grosseiros (RAGX-0144)
+    imported_embeddings: int = 0
+    coarse_only: int = 0
+    embed_warning: str | None = None
 
 
 MAX_PENDING_RERUNS = 3
@@ -76,11 +80,20 @@ def index_project(
     source: str = "cli",
     wait_s: float = 0.0,
     on_event: Callable[[dict[str, Any]], None] | None = None,
+    upgrade_coarse: bool | None = None,
 ) -> IndexReport:
+    """`upgrade_coarse`: completar o float32 de vetores só grosseiros (os importados de `knowledge/`).
+
+    `None` (padrão): só quando a pessoa pede (`--embed-only`) ou roda `ragx index` / o painel. Hooks,
+    `watch`, `touch` e o `refresh` do agente NÃO o fazem: reembutir milhares de chunks em segundo
+    plano, depois de um `ragx sync` que os deixou de propósito grosseiros, seria uma surpresa.
+    """
     if source not in VALID_SOURCES:
         raise UsageError(f"origem desconhecida: {source}")
+    if upgrade_coarse is None:
+        upgrade_coarse = embed_only or source in ("cli", "panel")
     if dry_run:
-        return _index_once(cfg, full, dry_run, progress, embed, embed_only, source, on_event)
+        return _index_once(cfg, full, dry_run, progress, embed, embed_only, source, on_event, upgrade_coarse)
 
     state_dir = cfg.state_dir
     deadline = time.monotonic() + max(wait_s, 0.0)
@@ -100,7 +113,9 @@ def index_project(
     status_file.write_status(cfg)  # depois do while da trava: mostra "running"
     budget = MAX_PENDING_RERUNS
     try:
-        report = _index_once(cfg, full, dry_run, progress, embed, embed_only, source, on_event)
+        report = _index_once(
+            cfg, full, dry_run, progress, embed, embed_only, source, on_event, upgrade_coarse
+        )
         budget = _drain_pending(cfg, state_dir, budget)
     finally:
         lock.release(state_dir)
@@ -255,8 +270,11 @@ def _index_paths_once(
             conn.commit()
 
             if embed:
-                er = embed_pending(cfg, conn, progress=_embed_cb(on_event))
+                er = embed_pending(cfg, conn, progress=_embed_cb(on_event), upgrade_coarse=False)
                 report.embed_error = er.error
+                report.imported_embeddings += er.imported
+                report.coarse_only = er.coarse_only
+                report.embed_warning = er.import_warning or report.embed_warning
                 report.stats = _bump(report.stats, embedded=er.embedded)
                 conn.commit()
         except KeyboardInterrupt:
@@ -311,6 +329,7 @@ def _index_once(
     embed_only: bool = False,
     source: str = "cli",
     on_event: Callable[[dict[str, Any]], None] | None = None,
+    upgrade_coarse: bool = True,
 ) -> IndexReport:
     gate = SecurityGate(
         cfg.root,
@@ -340,8 +359,11 @@ def _index_once(
 
         try:
             if embed_only:
-                er = embed_pending(cfg, conn, progress=_embed_cb(on_event))
+                er = embed_pending(cfg, conn, progress=_embed_cb(on_event), upgrade_coarse=upgrade_coarse)
                 report.embed_error = er.error
+                report.imported_embeddings += er.imported
+                report.coarse_only = er.coarse_only
+                report.embed_warning = er.import_warning or report.embed_warning
                 report.stats = _bump(report.stats, embedded=er.embedded)
                 conn.commit()
                 raise _EmbedOnlyDoneError
@@ -389,8 +411,11 @@ def _index_once(
             # Embedder fora do ar NÃO derruba a indexação: os chunks já estão
             # gravados e `ragx index --embed-only` completa depois (ADR-0004).
             if embed and not dry_run:
-                er = embed_pending(cfg, conn, progress=_embed_cb(on_event))
+                er = embed_pending(cfg, conn, progress=_embed_cb(on_event), upgrade_coarse=upgrade_coarse)
                 report.embed_error = er.error
+                report.imported_embeddings += er.imported
+                report.coarse_only = er.coarse_only
+                report.embed_warning = er.import_warning or report.embed_warning
                 report.stats = _bump(report.stats, embedded=er.embedded)
                 conn.commit()
 

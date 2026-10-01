@@ -18,7 +18,10 @@ from ragx.embeddings import build_embedder, embedder_id
 from ragx.embeddings.base import EmbeddingCache
 from ragx.indexing.chunkers import context_prefix
 from ragx.storage.vectors import (
+    coarse_only_chunks,
+    coarse_only_count,
     embedding_count,
+    has_vectors,
     missing_chunk_ids,
     register_model,
     store_vectors,
@@ -34,13 +37,25 @@ class EmbedReport:
     total: int = 0
     replaced_model: int = 0
     error: str | None = None
+    #: vetores int8 trazidos de `knowledge/embeddings` (RAGX-0144) e quantos ainda estão só grosseiros
+    imported: int = 0
+    coarse_only: int = 0
+    import_warning: str | None = None
 
 
 def embed_pending(
     cfg: Config,
     conn: sqlite3.Connection,
     progress: Callable[[int, int], None] | None = None,
+    upgrade_coarse: bool = True,
 ) -> EmbedReport:
+    """Embute o que falta. `upgrade_coarse` completa o float32 das linhas só-grosseiras.
+
+    Num banco novo (o modelo ainda não tem vetor nenhum), traz ANTES os vetores versionados de
+    `knowledge/embeddings` (RAGX-0144): só o que de fato falta é embutido. O `sync` passa
+    `upgrade_coarse=False`: embute o arquivo novo ou editado e deixa os importados grosseiros;
+    `ragx index --embed-only` completa depois.
+    """
     report = EmbedReport()
     # Nome e dimensão saem da configuração: a indexação sem mudança não precisa
     # carregar o modelo (~2,85 s no fastembed) nem sondar o daemon (até 2 s no
@@ -72,10 +87,23 @@ def embed_pending(
         conn.commit()
         report.replaced_model = n or 0
 
+    if not has_vectors(conn, model_id):
+        try:
+            from ragx.sync.embeddings_import import import_embeddings
+
+            imp = import_embeddings(cfg, conn)
+            report.imported = imp.imported
+            report.import_warning = imp.warning
+        except Exception as exc:  # o import é um atalho: falhar nele nunca impede o caminho normal
+            report.import_warning = f"embeddings versionados não importados: {exc}"
+
     pending = missing_chunk_ids(conn, model_id)
+    if upgrade_coarse:
+        pending += coarse_only_chunks(conn, model_id)
     report.pending = len(pending)
     if not pending:
         report.total = embedding_count(conn)
+        report.coarse_only = coarse_only_count(conn, model_id)
         return report
 
     try:
@@ -131,6 +159,7 @@ def embed_pending(
     if ready:
         report.embedded = store_vectors(conn, embedder.id, ready, vdim)
     report.total = embedding_count(conn)
+    report.coarse_only = coarse_only_count(conn, model_id)
     return report
 
 

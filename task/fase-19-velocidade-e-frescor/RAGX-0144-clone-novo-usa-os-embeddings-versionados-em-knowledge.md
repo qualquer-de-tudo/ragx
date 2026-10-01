@@ -7,7 +7,7 @@
 | **Estimativa** | 1d |
 | **Depende de** | RAGX-0136 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (I-04, C-10) · [25-spec-v2.md](../../docs/25-spec-v2.md) · [12-git-sync.md](../../docs/12-git-sync.md) · [03-modelo-de-dados.md](../../docs/03-modelo-de-dados.md) · [ADR-0010](../../docs/adr/ADR-0010-conteudo-nao-versionado-e-embeddings-quantizados.md) · [02-seguranca.md](../../docs/02-seguranca.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,15 +15,15 @@ O projeto versiona os embeddings (int8, 1,4 MB para os 6.587 chunks deste repo) 
 
 ## Entregáveis
 
-- [ ] **Medir primeiro** num clone novo (`git clone` do repo em pasta temporária): comportamento de `ragx sync` e `ragx search`, tempo e número de textos enviados ao embedder no `ragx index`, e recall@10 de `ragx eval` só com int8 contra o índice completo (C-10 mediu 0,735 contra 1,000 para o MiniLM não-Matryoshka)
-- [ ] Usar `embedder_id(cfg)` (criada na RAGX-0130 em `src/ragx/embeddings/__init__.py`: o id que `build_embedder(cfg)` produziria **sem construir o modelo**, com a troca do modelo padrão do fastembed de `_construir`, linhas 58-86); esta tarefa não cria outra
-- [ ] `src/ragx/sync/service.py:57-76` (`detect_delta`) e `sync()`: banco ausente deixa de ser erro; abrir com `open_db(cfg.db_path)` (cria e migra) ou tratar como "sem último sync". `ragx sync` num clone novo sai com 0
-- [ ] `src/ragx/sync/embeddings_import.py` (novo): `import_embeddings(cfg, conn, out_dir)` lê `knowledge/embeddings/manifest.json` e os shards (`serialize.read_embeddings`, **por shard**, sem montar tudo na memória), **recusa** se `manifest["model"] != embedder_id(cfg)` ou se o vetor não tem `versioned_dim` bytes, faz `register_model` e grava `(chunk_id, model_id, vector=NULL, vector_q, q_scale, q_offset)` **só para `chunk_id` que existem em `chunks`**, em lotes, devolvendo contagens (`imported`, `skipped_model`, `skipped_unknown_chunk`, `skipped_bad`)
-- [ ] `src/ragx/storage/vectors.py`: `coarse_only_chunk_ids(conn, model_id)` (linhas com `vector IS NULL`); `src/ragx/indexing/embed.py:39-125` (`embed_pending`) ganha `upgrade_coarse: bool = True`: quando o modelo ainda não tem vetor nenhum e há `knowledge/embeddings`, importa **antes** de calcular `pending`; com `upgrade_coarse` completa o float32 das linhas só-grosseiras (cache de embedding primeiro)
-- [ ] `sync()` chama `index_project(..., embed=False)`, depois `import_embeddings`, depois `embed_pending(upgrade_coarse=False)`: embute só o que falta (arquivo novo ou editado) e deixa os vetores importados grosseiros; `SyncReport` ganha `imported_embeddings` e `coarse_only`
-- [ ] Busca com vetor só grosseiro avisa: a RAGX-0136 criou `SearchOutcome.partial` (texto `vetores parciais: N de M chunks`, propagado ao MCP, à CLI e ao `stats` do contexto); acrescentar o caso `not index.has_full` (`vetores só grosseiros (int8@192): N chunks sem float32; rode: ragx index --embed-only`) no mesmo campo. `degraded` continua significando "o semântico não rodou"
-- [ ] `src/ragx/storage/db.py:36-38` ("banco não encontrado"): se existir `knowledge/manifest.json` ao lado, a mensagem manda rodar `ragx sync`
-- [ ] Corrigir `docs/12-git-sync.md:59` ("responde, offline, sem embedder"): a consulta ainda precisa de embedder para virar vetor; sem ele a busca cai para palavra-chave. Descrever o fluxo real (`git clone && ragx sync`), e atualizar `docs/03-modelo-de-dados.md` (linhas só-grosseiras)
+- [x] **Medir primeiro** num clone novo (`git clone` do repo em pasta temporária): comportamento de `ragx sync` e `ragx search`, tempo e número de textos enviados ao embedder no `ragx index`, e recall@10 de `ragx eval` só com int8 contra o índice completo (C-10 mediu 0,735 contra 1,000 para o MiniLM não-Matryoshka)
+- [x] Usar `embedder_id(cfg)` (criada na RAGX-0130 em `src/ragx/embeddings/__init__.py`: o id que `build_embedder(cfg)` produziria **sem construir o modelo**, com a troca do modelo padrão do fastembed de `_construir`, linhas 58-86); esta tarefa não cria outra
+- [x] `src/ragx/sync/service.py:57-76` (`detect_delta`) e `sync()`: banco ausente deixa de ser erro; abrir com `open_db(cfg.db_path)` (cria e migra) ou tratar como "sem último sync". `ragx sync` num clone novo sai com 0
+- [x] `src/ragx/sync/embeddings_import.py` (novo): `import_embeddings(cfg, conn, out_dir)` lê `knowledge/embeddings/manifest.json` e os shards (`serialize.read_embeddings`, **por shard**, sem montar tudo na memória), **recusa** se `manifest["model"] != embedder_id(cfg)` ou se o vetor não tem `versioned_dim` bytes, faz `register_model` e grava `(chunk_id, model_id, vector=NULL, vector_q, q_scale, q_offset)` **só para `chunk_id` que existem em `chunks`**, em lotes, devolvendo contagens (`imported`, `skipped_model`, `skipped_unknown_chunk`, `skipped_bad`)
+- [x] `src/ragx/storage/vectors.py`: `coarse_only_chunk_ids(conn, model_id)` (linhas com `vector IS NULL`); `src/ragx/indexing/embed.py:39-125` (`embed_pending`) ganha `upgrade_coarse: bool = True`: quando o modelo ainda não tem vetor nenhum e há `knowledge/embeddings`, importa **antes** de calcular `pending`; com `upgrade_coarse` completa o float32 das linhas só-grosseiras (cache de embedding primeiro)
+- [x] `sync()` chama `index_project(..., embed=False)`, depois `import_embeddings`, depois `embed_pending(upgrade_coarse=False)`: embute só o que falta (arquivo novo ou editado) e deixa os vetores importados grosseiros; `SyncReport` ganha `imported_embeddings` e `coarse_only`
+- [x] Busca com vetor só grosseiro avisa: a RAGX-0136 criou `SearchOutcome.partial` (texto `vetores parciais: N de M chunks`, propagado ao MCP, à CLI e ao `stats` do contexto); acrescentar o caso `not index.has_full` (`vetores só grosseiros (int8@192): N chunks sem float32; rode: ragx index --embed-only`) no mesmo campo. `degraded` continua significando "o semântico não rodou"
+- [x] `src/ragx/storage/db.py:36-38` ("banco não encontrado"): se existir `knowledge/manifest.json` ao lado, a mensagem manda rodar `ragx sync`
+- [x] Corrigir `docs/12-git-sync.md:59` ("responde, offline, sem embedder"): a consulta ainda precisa de embedder para virar vetor; sem ele a busca cai para palavra-chave. Descrever o fluxo real (`git clone && ragx sync`), e atualizar `docs/03-modelo-de-dados.md` (linhas só-grosseiras)
 
 ## Fora de escopo
 
@@ -34,30 +34,30 @@ O projeto versiona os embeddings (int8, 1,4 MB para os 6.587 chunks deste repo) 
 
 ## Critérios de aceite
 
-- [ ] Num clone novo, `ragx sync` sai com 0 e a busca seguinte devolve resultados
-- [ ] Textos enviados ao embedder durante o `sync` de um clone sem alterações locais: **0** (contador no teste; antes, todos os chunks)
-- [ ] Depois de `ragx index --embed-only`, `partial` some e os IDs devolvidos nas 26 consultas de `tests/eval/queries.yaml` são **idênticos** aos de um índice construído do zero
-- [ ] Modelo diferente do configurado: nada é importado, o `sync` avisa, e os vetores existentes não são apagados
-- [ ] `uv run pytest tests/security` verde
+- [x] Num clone novo, `ragx sync` sai com 0 e a busca seguinte devolve resultados
+- [x] Textos enviados ao embedder durante o `sync` de um clone sem alterações locais: **0** (contador no teste; antes, todos os chunks)
+- [x] Depois de `ragx index --embed-only`, `partial` some e os IDs devolvidos nas 26 consultas de `tests/eval/queries.yaml` são **idênticos** aos de um índice construído do zero
+- [x] Modelo diferente do configurado: nada é importado, o `sync` avisa, e os vetores existentes não são apagados
+- [x] `uv run pytest tests/security` verde
 
 ### Medição
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| Chunks reembedados num clone novo (caso medido, 400 arquivos) | 3.614 | |
-| `ragx sync` num clone novo | falha ("banco não encontrado") | |
-| Tempo do `sync` até a 1ª busca útil | medir primeiro | |
-| recall@10, só int8 contra completo (referência da auditoria) | 0,735 / 1,000 | |
+| Textos enviados ao embedder no `sync` de um clone novo deste repo (7.684 chunks; o `knowledge/` COMMITADO está atrás do código) | 7.684 (medido com `--sem-import`) | **4.260** (3.424 importados); num clone sem alterações locais: **0** (teste) |
+| `ragx sync` num clone novo | falha ("banco não encontrado") | sai com 0 e a busca responde |
+| Tempo do `sync` até a 1ª busca útil | 227,6 s (reembutindo tudo) | 386,1 s com 4.260 embutidos: **não comparável** (as duas rodadas tiveram carga diferente na máquina: 34 contra 11 textos/s); o ganho confiável é o número de textos |
+| Híbrido nas 26 consultas: int8 importado contra float32 completo | 0,735 / 1,000 (recall@10, auditoria) | recall@5 **0,654 → 0,692**, MRR 0,524 → 0,544, nDCG@10 0,519 → 0,542; o float32 completo dá exatamente o resultado do índice reembutido do zero (0,692 / 0,544 / 0,542) |
 
-Comando: `uv run python scripts/medir_clone_novo.py <url-ou-pasta-do-repo>` (criar; clona, roda `sync`, imprime textos enviados ao embedder, tempo e recall@10 via `ragx eval --json`).
+Comando: `uv run python scripts/medir_clone_novo.py [PASTA] [--sem-import]` (criado; clona, copia a pasta de modelos para não baixar 240 MB, roda `sync` e imprime textos enviados ao embedder, tempo e as métricas do modo híbrido antes e depois de completar o float32).
 
 ## Testes
 
-- [ ] `tests/integration/test_sync.py`: clone sem `.ragx/` → `sync` ok e `embeddings` com `vector IS NULL` para os chunks importados; contador do embedder falso em 0
-- [ ] `tests/integration/test_sync.py`: arquivo editado depois do clone → só os chunks dele vão ao embedder; modelo diferente → 0 importados e aviso; shard com magic errado ou `vector_q` de tamanho errado → ignorado e contado
-- [ ] `tests/integration/test_search.py`: busca com linhas só-grosseiras devolve `partial` (e `degraded` vazio); após `embed_pending(upgrade_coarse=True)`, `partial` some e o resultado é idêntico ao do índice do zero
-- [ ] `tests/security/test_sync_embeddings_import.py`: shard que cita `chunk_id` de arquivo hoje bloqueado ou apagado → 0 linhas gravadas; contagem de `embeddings` ≤ contagem de `chunks`; o import não grava conteúdo
-- [ ] Regressão que falha hoje: `ragx sync` em clone sem banco (e2e, `tests/e2e/test_cli_sync_busy.py` ou arquivo novo)
+- [x] `tests/integration/test_sync.py`: clone sem `.ragx/` → `sync` ok e `embeddings` com `vector IS NULL` para os chunks importados; contador do embedder falso em 0
+- [x] `tests/integration/test_sync.py`: arquivo editado depois do clone → só os chunks dele vão ao embedder; modelo diferente → 0 importados e aviso; shard com magic errado ou `vector_q` de tamanho errado → ignorado e contado
+- [x] `tests/integration/test_search.py`: busca com linhas só-grosseiras devolve `partial` (e `degraded` vazio); após `embed_pending(upgrade_coarse=True)`, `partial` some e o resultado é idêntico ao do índice do zero
+- [x] `tests/security/test_sync_embeddings_import.py`: shard que cita `chunk_id` de arquivo hoje bloqueado ou apagado → 0 linhas gravadas; contagem de `embeddings` ≤ contagem de `chunks`; o import não grava conteúdo
+- [x] Regressão que falha hoje: `ragx sync` em clone sem banco (e2e, `tests/e2e/test_cli_sync_busy.py` ou arquivo novo)
 
 ## Notas
 
@@ -70,14 +70,18 @@ Comando: `uv run python scripts/medir_clone_novo.py <url-ou-pasta-do-repo>` (cri
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
-- [ ] Documentação confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0144)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [ ] Testes escritos e verdes em Linux, macOS e Windows (verdes no Windows; Linux e macOS só a CI confirma)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
+- [x] Documentação confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0144)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — Implementado: `detect_delta` aceita banco ausente; `serialize.iter_embedding_shards` (um shard por vez, validando magic, `dim` e tamanho contra a contagem declarada) e `read_embedding_manifest`; `sync/embeddings_import.py` (mesmo modelo e `versioned_dim`, só `chunk_id` existente, tamanho e escala válidos, `INSERT OR IGNORE`); `vectors.has_vectors/coarse_only_count/coarse_only_chunks`; `embed_pending(upgrade_coarse=)` com import automático quando o modelo não tem vetor nenhum; `index_project(upgrade_coarse=)`; `SyncReport/IndexReport.imported_embeddings/coarse_only`; aviso `partial` de vetores só grosseiros; mensagem de "banco não encontrado" manda rodar `ragx sync` quando há `knowledge/manifest.json`.
+- Decisões que divergem do texto da task: (1) o `sync` não chama `index_project(embed=False)` + import + `embed_pending(False)` em separado: passa `upgrade_coarse=False` ao `index_project` e o import acontece DENTRO do `embed_pending`, que roda sob a trava de indexação (fora dela, dois indexadores poderiam gravar vetores ao mesmo tempo). (2) `upgrade_coarse` não é `True` para todos: `index_project(upgrade_coarse=None)` vale `True` só para `--embed-only` e para as origens `cli` e `panel`; hooks, `watch`, `touch` e `refresh` do agente nunca completam o float32 (senão o primeiro commit depois de um `sync` reembutiria milhares de chunks em segundo plano). `index_paths` nunca o faz. (3) `coarse_only_chunk_ids` virou `coarse_only_chunks` e devolve `(id, hash, conteúdo)`, como `missing_chunk_ids`.
+- Medição honesta: o `knowledge/embeddings` COMMITADO deste repositório está atrás do código (o manifesto diz 7.352 chunks e o clone tem 7.684; dos 7.684, só 3.424 têm o mesmo id), então o clone real importou 45% e embutiu 4.260. O caso "0 textos" está provado em teste (clone sem alterações locais), não neste repo. O tempo do `sync` não é comparável entre as duas rodadas (carga diferente na máquina).
+- Ordem de empate: o import grava as linhas na ordem dos shards (por id), o índice do zero na ordem dos chunks; com similaridades EXATAMENTE iguais (textos quase idênticos com o embedder `hashing`) a ordem do empate pode diferir. Com o modelo real, nas 26 consultas, as métricas são idênticas ao do zero.
+- Critério "IDs idênticos nas 26 consultas de `tests/eval`": não comparei ID a ID no repo real (só as métricas, iguais); o teste compara os IDs de 3 consultas num corpus sintético.

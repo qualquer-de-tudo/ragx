@@ -159,11 +159,20 @@ def _semantic(
     mask = _filter_mask(conn, index.ids, filters)
     hits = index.search(qvec, k, mask=mask, rescore=cfg.embedding.rescore)
     total = int(conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0])
-    partial = (
-        f"vetores parciais: {index.size} de {total} chunks — rode: ragx index --embed-only"
-        if index.size < total else None
-    )
-    return hits, None, partial
+    avisos = []
+    if index.size < total:
+        avisos.append(f"vetores parciais: {index.size} de {total} chunks — rode: ragx index --embed-only")
+    if not index.has_full:
+        # só o int8 versionado (um clone depois de `ragx sync`): a busca roda, com menos precisão
+        sem_float = int(conn.execute(
+            "SELECT COUNT(*) FROM embeddings WHERE model_id = ? AND vector IS NULL", (wanted,)
+        ).fetchone()[0])
+        if sem_float:
+            avisos.append(
+                f"vetores só grosseiros (int8@{index.versioned_dim}): {sem_float} chunks sem float32 "
+                "— rode: ragx index --embed-only"
+            )
+    return hits, None, "; ".join(avisos) or None
 
 
 def _filter_mask(

@@ -56,8 +56,22 @@ int8 @ 256d o custo cai para **24 MB por 100k chunks**, e passa a valer a pena:
 | float32 @ 768d | 293 MB | não — fica em `.ragx/` |
 | **int8 @ 256d** | **24 MB** | **sim** |
 
-Resultado: `git clone && ragx search` já responde, offline, sem embedder.
-`[embedding] versioned_dim = 0` desliga, para quem preferir sempre regerar.
+Resultado: depois de `git clone && ragx sync` a busca responde **sem recalcular os vetores** dos chunks
+que já estão em `knowledge/embeddings/`. A consulta ainda precisa de um embedder para virar vetor; sem
+ele a busca cai para palavra-chave (`degraded`). `[embedding] versioned_dim = 0` desliga, para quem
+preferir sempre regerar.
+
+**O fluxo de um clone novo (RAGX-0144).** `ragx sync` não exige banco prévio: indexa o working tree
+(que já existe), **importa** o int8 versionado para os chunks que continuam iguais
+(`sync/embeddings_import.py`) e embute só o que falta (arquivo novo ou editado depois do commit).
+Os vetores importados ficam **só grosseiros** (`vector` nulo, busca em int8@`versioned_dim`); a busca
+avisa em `partial` ("vetores só grosseiros (int8@192): N chunks sem float32") e
+`ragx index --embed-only` completa o float32. O import é seguro por construção: só o **mesmo modelo**
+(o manifesto precisa citar `embedder_id` e a mesma `versioned_dim`; senão nada é importado, e o `sync`
+avisa), só `chunk_id` que existe em `chunks` (já passou pelo Security Gate), só vetor com o tamanho
+certo e escala finita, shard com magic ou tamanho incoerente é descartado e contado, e nunca
+sobrescreve um vetor completo. Hooks, `watch`, `touch` e o `refresh` do agente não completam o float32
+em segundo plano; só `ragx index` (e `--embed-only`) o fazem.
 
 ## Layout dos artefatos versionados
 

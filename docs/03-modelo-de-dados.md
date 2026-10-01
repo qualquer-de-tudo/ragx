@@ -257,8 +257,11 @@ Duas representações por chunk, por decisão de orçamento
 | `vector` | float32 @ 768d | 3.072 | só `.ragx/` | rescoring exato |
 | `vector_q` | int8 @ 256d | 256 | vai para `knowledge/` | busca grosseira |
 
-`vector` é `NULL` logo após um `git clone` — a busca funciona só com `vector_q`,
-com qualidade um pouco menor, e `ragx sync` preenche quando houver embedder.
+`vector` é `NULL` logo após um `git clone && ragx sync`: o sync importa o `vector_q` de
+`knowledge/embeddings/` e a busca funciona só com ele, com qualidade um pouco menor (a resposta traz
+`partial`). `ragx index --embed-only` completa o `vector` (float32) dessas linhas só-grosseiras. Uma linha
+só-grosseira tem `vector IS NULL`; o `INSERT OR IGNORE` do import nunca sobrescreve uma linha com
+`vector`. Ver [12-git-sync.md](12-git-sync.md).
 
 Vetores são gravados **já normalizados** (norma L2 = 1), então similaridade de
 cosseno vira produto escalar. Ver [ADR-0003](adr/ADR-0003-busca-vetorial.md).

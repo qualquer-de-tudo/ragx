@@ -37,6 +37,10 @@ class SyncReport:
     removed: int = 0
     chunks: int = 0
     embedded: int = 0
+    #: vetores int8 trazidos de `knowledge/embeddings` (em vez de recalculados) e os que seguem só
+    #: grosseiros até um `ragx index --embed-only` (RAGX-0144)
+    imported_embeddings: int = 0
+    coarse_only: int = 0
     entities: int = 0
     relations: int = 0
     serialized: serialize.SerializeReport | None = None
@@ -62,8 +66,10 @@ def detect_delta(cfg: Config, from_commit: str | None = None) -> tuple[str, list
     if head is None:
         return "hash", [], None, None
 
-    with open_db(cfg.db_path, read_only=True) as conn:
-        last = from_commit or get_meta(conn, "last_sync_commit")
+    last = from_commit
+    if cfg.db_path.exists():  # clone novo: ainda não há banco, e isso não é erro
+        with open_db(cfg.db_path, read_only=True) as conn:
+            last = from_commit or get_meta(conn, "last_sync_commit")
 
     if not last:
         return "hash", [], None, head
@@ -135,14 +141,20 @@ def sync(
             )
 
     # [2] Aplica o delta reindexando (incremental por content_hash).
-    indexed = index_project(cfg, full=full, source="sync", wait_s=30)
+    # `upgrade_coarse=False`: os vetores importados de `knowledge/` ficam grosseiros (int8) e só o
+    # que falta (arquivo novo ou editado) é embutido; `ragx index --embed-only` completa o float32.
+    indexed = index_project(cfg, full=full, source="sync", wait_s=30, upgrade_coarse=False)
     report.indexed = indexed.stats.indexed
     report.unchanged = indexed.stats.unchanged
     report.removed = indexed.stats.removed
     report.chunks = indexed.new_chunks
     report.embedded = indexed.stats.embedded
+    report.imported_embeddings = indexed.imported_embeddings
+    report.coarse_only = indexed.coarse_only
     if indexed.embed_error:
         report.warnings.append(f"embeddings incompletos: {indexed.embed_error.splitlines()[0]}")
+    if indexed.embed_warning:
+        report.warnings.append(indexed.embed_warning)
 
     # [3] Grafo ANTES de regravar `knowledge/` e do dicionário: `serialize` lê
     #     entidades e relações do banco (se o grafo fosse refeito depois,

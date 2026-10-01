@@ -11,6 +11,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Clone novo usa os embeddings versionados.** O projeto versiona os vetores int8 em `knowledge/embeddings/`
+  para que um clone não recalcule nada, mas `serialize.read_embeddings` não tinha chamador: num clone
+  `ragx sync` falhava com "banco não encontrado" e o primeiro `ragx index` reembedava todos os chunks.
+  Agora `ragx sync` funciona sem banco prévio, importa o int8 versionado dos chunks que continuam iguais
+  (só do mesmo modelo, só chunk que existe, só vetor válido, nunca sobrescreve um float32) e embute apenas
+  o que falta; os importados ficam só grosseiros e a busca avisa em `partial` até `ragx index
+  --embed-only` completar o float32. Num clone sem alterações locais, **0 textos** vão ao embedder (antes,
+  todos). Sem banco mas com `knowledge/`, os comandos de consulta mandam rodar `ragx sync`. Hooks, `watch`
+  e `touch` não completam o float32 em segundo plano (RAGX-0144).
 - **Expansão do grafo: semeadura pelo topo, filtros honrados e grau só dos visitados.** A expansão
   semeava todas as entidades dos documentos dos 100 melhores chunks (90 a 304 sementes nas 26 consultas
   do repositório; truncada em 26 de 26, sem andar), ignorava `path_glob`/`lang`/`kind` (130 de 650

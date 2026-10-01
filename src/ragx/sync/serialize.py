@@ -15,8 +15,10 @@ from __future__ import annotations
 import json
 import sqlite3
 import struct
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from ragx.base import source as base_source
 from ragx.config import Config
@@ -366,26 +368,70 @@ def read_chunks(cfg: Config, rel_path: str, out_dir: str = "knowledge") -> list[
     return out
 
 
-def read_embeddings(cfg: Config, out_dir: str = "knowledge") -> dict[str, tuple[bytes, float, float]]:
-    folder = cfg.root / out_dir / "embeddings"
-    manifest = folder / MANIFEST
+@dataclass
+class ShardRead:
+    """Um shard de `knowledge/embeddings/` já validado. `items` vazio + `bad` > 0: shard descartado."""
+
+    name: str
+    items: list[tuple[str, bytes, float, float]] = field(default_factory=list)
+    #: entradas (ou, quando nem a contagem é confiável, 1 por shard) que não puderam ser lidas
+    bad: int = 0
+
+
+def read_embedding_manifest(cfg: Config, out_dir: str = "knowledge") -> dict[str, Any] | None:
+    manifest = cfg.root / out_dir / "embeddings" / MANIFEST
     if not manifest.is_file():
-        return {}
-    meta = json.loads(manifest.read_text(encoding="utf-8"))
+        return None
+    try:
+        meta = json.loads(manifest.read_text(encoding="utf-8"))
+        int(meta["versioned_dim"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return meta if isinstance(meta, dict) else None
+
+
+def iter_embedding_shards(cfg: Config, out_dir: str = "knowledge") -> Iterator[ShardRead]:
+    """Um shard por vez, SEM montar tudo na memória, e sem confiar no que está no disco.
+
+    Um shard com magic errado, `dim` diferente do manifesto ou tamanho incoerente com a contagem
+    declarada vira `bad`, nunca uma exceção nem um vetor de tamanho errado.
+    """
+    meta = read_embedding_manifest(cfg, out_dir)
+    if meta is None:
+        return
+    folder = cfg.root / out_dir / "embeddings"
     dim = int(meta["versioned_dim"])
-    out: dict[str, tuple[bytes, float, float]] = {}
+    entry = 16 + 8 + dim
     for p in sorted(folder.glob("shard-*.i8")):
-        blob = p.read_bytes()
-        if not blob.startswith(_SHARD_MAGIC):
+        out = ShardRead(p.name)
+        try:
+            blob = p.read_bytes()
+        except OSError:
+            out.bad = 1
+            yield out
             continue
-        pos = len(_SHARD_MAGIC)
-        _d, count = struct.unpack_from("<II", blob, pos)
-        pos += 8
-        entry = 16 + 8 + dim
+        head = len(_SHARD_MAGIC) + 8
+        if not blob.startswith(_SHARD_MAGIC) or len(blob) < head:
+            out.bad = 1
+            yield out
+            continue
+        shard_dim, count = struct.unpack_from("<II", blob, len(_SHARD_MAGIC))
+        if shard_dim != dim or len(blob) != head + count * entry:
+            out.bad = max(count, 1) if shard_dim == dim else 1
+            yield out
+            continue
+        pos = head
         for _ in range(count):
             chunk_id = blob[pos : pos + 16].hex()
             scale, offset = struct.unpack_from("<ff", blob, pos + 16)
-            vec = blob[pos + 24 : pos + 24 + dim]
-            out[chunk_id] = (vec, scale, offset)
+            out.items.append((chunk_id, blob[pos + 24 : pos + 24 + dim], scale, offset))
             pos += entry
+        yield out
+
+
+def read_embeddings(cfg: Config, out_dir: str = "knowledge") -> dict[str, tuple[bytes, float, float]]:
+    out: dict[str, tuple[bytes, float, float]] = {}
+    for shard in iter_embedding_shards(cfg, out_dir):
+        for chunk_id, vec, scale, offset in shard.items:
+            out[chunk_id] = (vec, scale, offset)
     return out

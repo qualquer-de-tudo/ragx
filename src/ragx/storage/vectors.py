@@ -254,5 +254,35 @@ def missing_chunk_ids(conn: sqlite3.Connection, model_id: str) -> list[tuple[str
     ]
 
 
+def has_vectors(conn: sqlite3.Connection, model_id: str) -> bool:
+    return conn.execute(
+        "SELECT 1 FROM embeddings WHERE model_id = ? LIMIT 1", (model_id,)
+    ).fetchone() is not None
+
+
+def coarse_only_count(conn: sqlite3.Connection, model_id: str) -> int:
+    """Linhas só com o int8 versionado (`vector IS NULL`), como as que o import de `knowledge/` grava."""
+    return int(conn.execute(
+        "SELECT COUNT(*) FROM embeddings WHERE model_id = ? AND vector IS NULL", (model_id,)
+    ).fetchone()[0])
+
+
+def coarse_only_chunks(conn: sqlite3.Connection, model_id: str) -> list[tuple[str, str, str]]:
+    """(chunk_id, content_hash, content) dos chunks que só têm o vetor grosseiro.
+
+    `missing_chunk_ids` não os vê (eles TÊM linha em `embeddings`), por isso o upgrade para float32
+    precisa de função própria.
+    """
+    return [
+        (r["id"], r["content_hash"], r["content"])
+        for r in conn.execute(
+            """SELECT c.id, c.content_hash, c.content FROM chunks c
+               JOIN embeddings e ON e.chunk_id = c.id AND e.model_id = ?
+               WHERE e.vector IS NULL""",
+            (model_id,),
+        )
+    ]
+
+
 def embedding_count(conn: sqlite3.Connection) -> int:
     return int(conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0])
