@@ -2,14 +2,13 @@ import { useMemo, useState } from 'react'
 import type { ActivityEvent, JobView, ProjectSnapshot } from '../types/ragx-bridge'
 import {
   FILTER_LABEL,
+  ACTIVITY_MAX,
   LIVE_MS,
   filterEvents,
   totals,
-  whatLabel,
-  whoLabel,
   type ActivityFilter,
 } from '../activity'
-import { formatCompact, formatNumber, formatPercent, formatRelative, formatTime } from '../format'
+import { formatCompact, formatNumber, formatPercent, formatRelative } from '../format'
 import { Section, Stat } from '../components/shell/Card'
 import { sourceLabel } from '../indexSource'
 import { useClock } from '../hooks/useClock'
@@ -17,7 +16,14 @@ import { usePricing } from '../hooks/usePricing'
 import { formatMoney, savedMoney } from '../money'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Segmented } from '../components/ui/Segmented'
-import { Tooltip } from '../components/ui/Tooltip'
+import { ActivityRow } from '../components/activity/ActivityRow'
+import { SessionList } from '../components/activity/SessionList'
+import { groupSessions } from '../sessions'
+
+type ActivityView = 'eventos' | 'sessoes'
+
+/** A visão escolhida vale até fechar o painel (como `listPrefs`): o padrão é o feed de sempre. */
+let activityViewPref: ActivityView = 'eventos'
 
 const FILTERS: ActivityFilter[] = ['all', 'mcp', 'cli', 'session']
 
@@ -44,20 +50,6 @@ function runningNow(projects: readonly ProjectSnapshot[], jobs: readonly JobView
   return [...out.values()]
 }
 
-function tokensText(e: ActivityEvent): string | null {
-  if (e.tokensDelivered === null) return null
-  if (e.baselineTokens === null || e.baselineTokens <= 0) return `${formatNumber(e.tokensDelivered)} tokens`
-  const saved = 1 - e.tokensDelivered / e.baselineTokens
-  return `${formatNumber(e.tokensDelivered)} de ${formatNumber(e.baselineTokens)} tokens (${saved >= 0 ? '−' : '+'}${formatPercent(Math.abs(saved))})`
-}
-
-function msText(ms: number | null): string | null {
-  if (ms === null) return null
-  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s`
-}
-
-const KIND_LABEL: Record<ActivityEvent['kind'], string> = { mcp: 'MCP', cli: 'CLI', session: 'Sessão' }
-
 /**
  * O que os agentes e a CLI estão fazendo nos projetos, ao vivo: chamadas MCP,
  * comandos de consulta no terminal, sessões do Claude abertas e indexações em
@@ -81,9 +73,15 @@ export function ActivityPage({
   const now = nowProp ?? clock
   const [kind, setKind] = useState<ActivityFilter>('all')
   const [projectId, setProjectId] = useState<string | null>(null)
+  const [view, setViewState] = useState<ActivityView>(activityViewPref)
+  const setView = (v: ActivityView) => {
+    activityViewPref = v // lembrada enquanto o painel estiver aberto
+    setViewState(v)
+  }
 
   const shown = useMemo(() => filterEvents(events, kind, projectId), [events, kind, projectId])
   const t = useMemo(() => totals(events), [events])
+  const sessions = useMemo(() => (view === 'sessoes' ? groupSessions(shown) : []), [view, shown])
   const running = runningNow(projects, jobs)
   const live = events.length > 0 && now - Date.parse(events[0].ts) <= LIVE_MS
   const withActivity = useMemo(() => {
@@ -141,6 +139,15 @@ export function ActivityPage({
       )}
 
       <Section title="Linha do tempo de uso">
+        <Segmented
+          label="Visão"
+          value={view}
+          options={[
+            { value: 'eventos', label: 'Eventos' },
+            { value: 'sessoes', label: 'Sessões' },
+          ]}
+          onChange={setView}
+        />
         <div className="activity-toolbar">
           <Segmented
             label="Tipo de atividade"
@@ -161,38 +168,24 @@ export function ActivityPage({
           </label>
         </div>
 
+        {events.length >= ACTIVITY_MAX && view === 'sessoes' && (
+          <p className="hint" role="status">
+            Mostrando os {ACTIVITY_MAX} eventos mais recentes; sessões antigas podem estar incompletas.
+          </p>
+        )}
+
         {shown.length === 0 ? (
           <EmptyState className="dim activity-empty">
             {events.length === 0
               ? 'Nenhuma atividade nas últimas 24 h. Ela aparece aqui assim que um agente usar o RAGX por MCP, alguém rodar ragx search ou ragx context no terminal, ou uma sessão do Claude Code abrir num projeto indexado.'
               : 'Nada com esse filtro nas últimas 24 h.'}</EmptyState>
+        ) : view === 'sessoes' ? (
+          <SessionList groups={sessions} />
         ) : (
           <ol className="activity-feed" aria-label="Eventos, do mais novo para o mais antigo">
-            {shown.map((e) => {
-              const fresh = now - Date.parse(e.ts) < 5000
-              const detalhes = [tokensText(e), msText(e.ms), e.ok === false ? 'falhou' : null].filter(Boolean)
-              return (
-                <li key={e.id} className={`activity-item${fresh ? ' activity-item-fresh' : ''}`}>
-                  <Tooltip text={new Date(e.ts).toLocaleString('pt-BR')} focusable>
-                    {(tip) => (
-                      <time className="activity-time mono" dateTime={e.ts} {...tip}>
-                        {formatTime(e.ts)}
-                      </time>
-                    )}
-                  </Tooltip>
-                  <span className={`activity-kind activity-kind-${e.kind}`}>{KIND_LABEL[e.kind]}</span>
-                  <span className="activity-main">
-                    <span className="activity-what mono">{whatLabel(e)}</span>
-                    <span className="dim"> em </span>
-                    <button type="button" className="link-button" onClick={() => onOpen(e.projectId)}>
-                      {e.projectName}
-                    </button>
-                  </span>
-                  <span className="activity-who">{whoLabel(e)}</span>
-                  <span className={`activity-meta dim${e.ok === false ? ' is-critical' : ''}`}>{detalhes.join(' · ')}</span>
-                </li>
-              )
-            })}
+            {shown.map((e) => (
+              <ActivityRow key={e.id} event={e} fresh={now - Date.parse(e.ts) < 5000} onOpen={onOpen} />
+            ))}
           </ol>
         )}
       </Section>

@@ -3,7 +3,9 @@ import type { ActivityEvent } from './types/ragx-bridge'
 /** "Em uso agora": houve evento no último minuto. */
 export const LIVE_MS = 60_000
 const WINDOW_MS = 24 * 60 * 60 * 1000
-const MAX = 500
+/** Teto de eventos que o renderer guarda (a janela de 24 h vem do processo principal). */
+export const ACTIVITY_MAX = 500
+const MAX = ACTIVITY_MAX
 
 const ms = (ts: string) => Date.parse(ts)
 

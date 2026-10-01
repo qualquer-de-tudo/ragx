@@ -803,6 +803,66 @@ kbd {
   overflow-wrap: anywhere;
 }
 
+/* Visão "Sessões" da Atividade (RAGX-0188). */
+.session-list {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.session-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.session-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  width: 100%;
+  padding: var(--sp-12);
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+.session-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.session-summary {
+  font-size: var(--fs-md);
+  overflow-wrap: anywhere;
+}
+
+.session-strip {
+  position: relative;
+  height: 14px;
+  margin-top: var(--sp-4);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.session-tick {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 6px;
+  background: var(--accent-text);
+}
+
+/* Falha: traço mais alto e largo (forma), além do texto "falha(s)" no resumo. */
+.session-tick.is-failure {
+  width: 4px;
+  height: 14px;
+  background: var(--critical-text);
+}
+
+.session-events {
+  padding: 0 var(--sp-12) var(--sp-12);
+}
+
 /* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
 .skeleton {
   display: block;

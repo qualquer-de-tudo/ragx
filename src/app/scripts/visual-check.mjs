@@ -180,6 +180,7 @@ const SCREENS = [
     },
   })),
   { id: 'atividade', run: async (page) => { await page.getByRole('button', { name: 'Atividade' }).first().click() } },
+  { id: 'atividade-sessoes', run: async (page) => { await page.getByRole('button', { name: 'Atividade' }).first().click(); await page.getByRole('radiogroup', { name: 'Visão' }).getByRole('radio', { name: 'Sessões' }).click(); await page.locator('.session-head').first().click() } },
   { id: 'conexoes', run: async (page) => { await page.getByRole('button', { name: 'Conexões' }).first().click() } },
   { id: 'como-funciona', run: async (page) => { await page.getByRole('button', { name: 'Como funciona' }).first().click() } },
   { id: 'paleta', run: async (page) => { await page.keyboard.press('Control+k'); await page.getByRole('combobox', { name: 'Buscar comando' }).waitFor() } },

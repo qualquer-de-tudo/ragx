@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Visão "Sessões" na Atividade do painel.** O feed era plano e misturava as chamadas de conversas diferentes. Agora
+  dá para alternar para uma linha por sessão (quem, projeto, intervalo, chamadas, tokens entregues, se usou o RAGX,
+  inícios de contexto de subagentes e falhas, com "sem dado" quando o log não tem `ok`), que abre os eventos em
+  ordem. Eventos sem sessão ficam em "Sem sessão identificada" e o mesmo id em dois projetos nunca funde
+  (RAGX-0188).
 - **Preview do `build_context` no painel e `ragx context --query-stdin`.** O dono não tinha como ver o que o agente
   receberia para uma pergunta. Agora a aba Economia tem "Pré-visualizar o contexto": trechos, arquivos e linhas,
   tokens do orçamento e descartes, sem mostrar código. A pergunta vai só por stdin (nova opção `--query-stdin`, que

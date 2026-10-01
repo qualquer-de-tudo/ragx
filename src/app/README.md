@@ -278,6 +278,18 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Atividade: Eventos e Sessões
+
+A Atividade tem duas visões (RAGX-0188), escolhidas por "Eventos | Sessões" (o padrão é Eventos; a escolha vale até fechar
+o painel; os filtros de tipo e de projeto valem nas duas). **Sessões** agrupa os eventos por projeto e sessão
+(`src/sessions.ts`, `groupSessions`): cada linha diz quem, o projeto, o id da sessão, o intervalo e a duração, e o resumo
+em texto (chamadas MCP, comandos `ragx`, tokens entregues, se usou o RAGX, "N inícios de contexto (subagentes)" quando
+o `session_start` se repete, e as falhas: "falhas: sem dado" quando o log não traz `ok`, nunca "0 falhas"). O botão abre
+os eventos em ordem cronológica (com o código do erro e o tamanho da resposta quando o log os tem) e uma faixa de tempo
+decorativa marca falha por forma. Evento sem `session` forma "Sem sessão identificada" por projeto; o mesmo id em dois
+projetos nunca funde. O renderer guarda no máximo as 24 h e **500 eventos** mais recentes: com 500, a visão avisa que
+sessões antigas podem estar incompletas.
+
 ## Preview do contexto
 
 Na aba Economia, "Pré-visualizar o contexto" (RAGX-0187) mostra o que o agente receberia para uma pergunta: quantos
