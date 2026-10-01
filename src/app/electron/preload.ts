@@ -58,6 +58,12 @@ const ragx: RagxBridge = {
   getSettings: (): Promise<PanelSettings> => ipcRenderer.invoke('ragx:getSettings'),
   setOnboardingDone: (done: boolean): Promise<void> => ipcRenderer.invoke('ragx:setOnboardingDone', done),
   setPricing: (pricing: Pricing | null): Promise<void> => ipcRenderer.invoke('ragx:setPricing', pricing),
+  setPreference: (key: 'tray' | 'notifyStale', value: boolean): Promise<void> => ipcRenderer.invoke('ragx:setPreference', key, value),
+  onOpenProject: (cb: (projectId: string) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, projectId: string) => cb(projectId)
+    ipcRenderer.on('ragx:openProject', listener)
+    return () => ipcRenderer.removeListener('ragx:openProject', listener)
+  },
   // Sem argumentos de propósito: nada que o renderer passe chega ao processo principal.
   runOllamaBenchmark: (): Promise<OllamaBenchmark> => ipcRenderer.invoke('ragx:run-ollama-benchmark'),
   getClaudeIntegration: (): Promise<ClaudeIntegration> => ipcRenderer.invoke('ragx:getClaudeIntegration'),

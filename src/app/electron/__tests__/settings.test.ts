@@ -112,3 +112,21 @@ describe('pricing (RAGX-0186)', () => {
     expect(readSettings(dir)).toStrictEqual({ onboardingDone: true })
   })
 })
+
+describe('tray e notifyStale (RAGX-0191)', () => {
+  it('padrão desligado: ausentes, e readSettings sem os campos não os inventa', () => {
+    const dir = mkTmp()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true }))
+    const s = readSettings(dir)
+    expect(s.tray).toBeUndefined()
+    expect(s.notifyStale).toBeUndefined()
+  })
+
+  it('valor inválido vira desligado; true sobrevive; os outros campos não somem', () => {
+    const dir = mkTmp()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, ollamaMode: 'docker', tray: 'sim', notifyStale: true }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, ollamaMode: 'docker', notifyStale: true })
+    updateSettings(dir, { tray: true })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, ollamaMode: 'docker', notifyStale: true, tray: true })
+  })
+})

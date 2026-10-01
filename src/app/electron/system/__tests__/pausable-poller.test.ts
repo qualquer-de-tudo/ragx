@@ -131,3 +131,56 @@ describe('createPausablePoller', () => {
     p.stop()
   })
 })
+
+describe('intervalo de fundo (RAGX-0191)', () => {
+  it('sem intervalo de fundo (padrão) inativo continua parado por completo', async () => {
+    const run = vi.fn()
+    const p = createPausablePoller({ intervalMs: 5000, run })
+    p.start()
+    p.setActive(false)
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(run).not.toHaveBeenCalled()
+    p.stop()
+  })
+
+  it('com intervalo de fundo, inativo roda no máximo uma vez por esse intervalo', async () => {
+    const run = vi.fn(async () => undefined)
+    const p = createPausablePoller({ intervalMs: 5000, run })
+    p.start()
+    p.setBackgroundInterval(60_000)
+    p.setActive(false)
+    await vi.advanceTimersByTimeAsync(5 * 60_000)
+    expect(run.mock.calls.length).toBeGreaterThanOrEqual(4)
+    expect(run.mock.calls.length).toBeLessThanOrEqual(5)
+    p.stop()
+  })
+
+  it('ligar o fundo com o poller já inativo agenda; desligar (null) volta à pausa total', async () => {
+    const run = vi.fn(async () => undefined)
+    const p = createPausablePoller({ intervalMs: 5000, run })
+    p.start()
+    p.setActive(false)
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(run).not.toHaveBeenCalled()
+    p.setBackgroundInterval(30_000)
+    await vi.advanceTimersByTimeAsync(31_000)
+    // a última execução foi há mais que o intervalo de fundo: roda na hora e de novo a cada 30 s
+    const comFundo = run.mock.calls.length
+    expect(comFundo).toBeGreaterThanOrEqual(1)
+    expect(comFundo).toBeLessThanOrEqual(2)
+    p.setBackgroundInterval(null)
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(run).toHaveBeenCalledTimes(comFundo)
+    p.stop()
+  })
+
+  it('ativo, o intervalo de fundo não muda nada (continua o normal)', async () => {
+    const run = vi.fn(async () => undefined)
+    const p = createPausablePoller({ intervalMs: 5000, run })
+    p.start()
+    p.setBackgroundInterval(60_000)
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(run).toHaveBeenCalledTimes(4)
+    p.stop()
+  })
+})

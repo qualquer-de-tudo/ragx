@@ -3,7 +3,7 @@ import type { BundleInfo } from './bootstrap/bundle'
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
 import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
-import { parsePricing, type PanelSettings, type RendererSettings } from './settings'
+import { PREFERENCE_KEYS, parsePricing, type PanelSettings, type PreferenceKey, type RendererSettings } from './settings'
 import { parseContextPreview } from './data/context-preview'
 import type { ContextPreview } from './data/types'
 import type {
@@ -472,8 +472,29 @@ export function createHandlers(deps: HandlerDeps) {
 
     /** Só `onboardingDone` sai para o renderer; o resto das configurações fica aqui. */
     getSettings(): RendererSettings {
-      const { onboardingDone, pricing } = deps.readSettings()
-      return pricing === undefined ? { onboardingDone } : { onboardingDone, pricing }
+      const { onboardingDone, pricing, tray, notifyStale } = deps.readSettings()
+      return {
+        onboardingDone,
+        ...(pricing === undefined ? {} : { pricing }),
+        ...(tray === true ? { tray } : {}),
+        ...(notifyStale === true ? { notifyStale } : {}),
+      }
+    },
+
+    /**
+     * Liga ou desliga uma preferência booleana (RAGX-0191). Chave de LISTA FECHADA e valor booleano; `false` apaga o
+     * campo (o padrão é desligado). Não é tarefa da fila nem abre processo.
+     */
+    setPreference(keyUnknown: unknown, valueUnknown: unknown): void {
+      if (typeof keyUnknown !== 'string' || !(PREFERENCE_KEYS as readonly string[]).includes(keyUnknown)) {
+        throw rejected('preferência desconhecida')
+      }
+      if (typeof valueUnknown !== 'boolean') throw rejected('o valor precisa ser booleano')
+      const key = keyUnknown as PreferenceKey
+      const current = deps.readSettings()
+      const { [key]: _old, ...rest } = current
+      void _old
+      deps.writeSettings(valueUnknown ? { ...rest, [key]: true } : rest)
     },
 
     /**

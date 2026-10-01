@@ -27,7 +27,15 @@ export interface RendererSettings {
   onboardingDone: boolean
   /** Ausente por padrão: sem preço, nenhuma tela mostra valor em dinheiro. */
   pricing?: Pricing
+  /** Ícone na bandeja com o estado geral (RAGX-0191). Ausente = desligado. */
+  tray?: boolean
+  /** Notificação do sistema quando um índice continua defasado (RAGX-0191). Ausente = desligado. */
+  notifyStale?: boolean
 }
+
+/** As únicas preferências booleanas que o renderer pode alterar (`ragx:setPreference`). */
+export const PREFERENCE_KEYS = ['tray', 'notifyStale'] as const
+export type PreferenceKey = (typeof PREFERENCE_KEYS)[number]
 
 export interface PanelSettings extends RendererSettings {
   /**
@@ -56,6 +64,8 @@ export function readSettings(dir: string): PanelSettings {
     if (mode === 'docker' || mode === 'native') settings.ollamaMode = mode
     const pricing = parsePricing(parsed?.pricing)
     if (pricing !== null) settings.pricing = pricing
+    // só `true` fica: ausente e qualquer outro valor são `false` (desligado por padrão)
+    for (const key of PREFERENCE_KEYS) if ((parsed as Record<string, unknown> | null)?.[key] === true) settings[key] = true
     return settings
   } catch {
     return { ...DEFAULT_SETTINGS }

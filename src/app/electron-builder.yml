@@ -11,6 +11,9 @@ files:
 extraResources:
   - from: resources/ragx-bundle
     to: ragx-bundle
+  # Ícone da bandeja (RAGX-0191): `process.resourcesPath/icon.png`.
+  - from: build/icon.png
+    to: icon.png
 # Ícone e metadados do .exe: gravados por este hook com o rcedit do npm (ver
 # signAndEditExecutable abaixo).
 afterPack: scripts/after-pack.cjs

@@ -278,6 +278,21 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Bandeja e notificação de defasagem
+
+Duas preferências, **desligadas por padrão**, na página Preferências (RAGX-0191): "Ícone na bandeja do sistema" e
+"Avisar quando um índice ficar defasado". Notificação mal calibrada irrita mais do que ajuda, e depois de cada commit
+com hook o índice fica defasado por 16 a 38 s (p50 e p95 da indexação pós-commit). A bandeja (`electron/tray.ts`) tem
+tooltip em texto ("RAGX: 2 defasados, 10 em dia"), "Abrir painel" e "Sair", e o clique restaura a janela. A notificação
+(`electron/stale-notifier.ts`, `StaleNotifier`) sai **uma vez por projeto por episódio de defasagem**, só depois de
+`STALE_GRACE_MS = 120.000` ms contínuos em `stale` (acima do p95); `indexing` é neutro, qualquer outro estado fecha o
+episódio, e o que já estava defasado no primeiro snapshot do processo não notifica. O clique abre o detalhe do projeto
+(`ragx:openProject` leva só o `projectId`). A regra de estado do processo principal (`electron/project-state.ts`) é a de
+`src/state.ts`, com teste de paridade. Com `notifyStale` ligado e a janela fora da vista, o snapshot roda no máximo uma
+vez por minuto (`setBackgroundInterval` do poller; sem criar processo filho, por conta da RAGX-0172); com a opção
+desligada a pausa da RAGX-0171 continua total. As preferências são gravadas por `ragx:setPreference` (chave de lista
+fechada `tray` ou `notifyStale`, valor booleano) em `settings.json`.
+
 ## Saúde do índice
 
 Na Visão geral do detalhe, logo depois de "Está em dia?" e "Índice", a seção "Saúde do índice" (RAGX-0189) resume em

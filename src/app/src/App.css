@@ -906,6 +906,24 @@ kbd {
   fill: var(--critical-text);
 }
 
+/* Preferências (RAGX-0191). */
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-12) 0;
+  border-top: 1px solid var(--line);
+}
+
+.pref-row:first-of-type {
+  border-top: 0;
+}
+
+.pref-title {
+  font-weight: 600;
+}
+
 /* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
 .skeleton {
   display: block;

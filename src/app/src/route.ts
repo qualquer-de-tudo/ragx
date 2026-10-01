@@ -5,10 +5,11 @@ export type Route =
   | { page: 'activity' }
   | { page: 'connections' }
   | { page: 'how' }
+  | { page: 'preferences' }
   | { page: 'onboarding' }
 
 /** Item da barra lateral que fica ativo para cada rota (`null`: nenhum). */
-export function navSection(route: Route): 'projects' | 'activity' | 'connections' | 'how' | null {
+export function navSection(route: Route): 'projects' | 'activity' | 'connections' | 'how' | 'preferences' | null {
   switch (route.page) {
     case 'projects':
     case 'project':
@@ -19,6 +20,8 @@ export function navSection(route: Route): 'projects' | 'activity' | 'connections
       return 'connections'
     case 'how':
       return 'how'
+    case 'preferences':
+      return 'preferences'
     default:
       return null
   }

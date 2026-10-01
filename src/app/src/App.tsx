@@ -23,6 +23,7 @@ import type { Route } from './route'
 import type { ConnectionCheck } from './types/ragx-bridge'
 import { ConnectionsPage } from './pages/ConnectionsPage'
 import { HowItWorksPage } from './pages/HowItWorksPage'
+import { PreferencesPage } from './pages/PreferencesPage'
 import { Onboarding } from './pages/Onboarding'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectPage } from './pages/ProjectPage'
@@ -134,6 +135,9 @@ function App() {
   )
   useShortcuts(route !== null && route.page !== 'onboarding', onShortcut)
 
+  // O clique numa notificação do sistema (RAGX-0191) pede o detalhe de um projeto; só o `projectId` chega.
+  useEffect(() => window.ragx.onOpenProject((id) => setRoute({ page: 'project', id })), [])
+
   const onCancelJob = useCallback((id: string) => {
     window.ragx.cancelJob(id).catch((err: unknown) => {
       console.error('cancelJob() falhou:', err)
@@ -213,6 +217,9 @@ function App() {
           claude={claude}
         />
       )
+      break
+    case 'preferences':
+      page = <PreferencesPage />
       break
     case 'how':
       page = <HowItWorksPage onRestart={() => setRoute({ page: 'onboarding' })} />

@@ -276,6 +276,10 @@ export interface RagxBridge {
   setOnboardingDone: (done: boolean) => Promise<void>
   /** Preço por milhão de tokens de entrada que a pessoa informa (RAGX-0186); `null` limpa. */
   setPricing: (pricing: Pricing | null) => Promise<void>
+  /** Liga ou desliga a bandeja ou a notificação de defasagem (RAGX-0191): chave de lista fechada, valor booleano. */
+  setPreference: (key: 'tray' | 'notifyStale', value: boolean) => Promise<void>
+  /** O clique numa notificação pede para abrir o detalhe de um projeto (só o `projectId`, nunca caminho). */
+  onOpenProject: (cb: (projectId: string) => void) => () => void
   /** Mede embeddings/s no Ollama em uso; o modelo é escolhido pelo processo principal. Sem argumentos. */
   runOllamaBenchmark: () => Promise<OllamaBenchmark>
   /** Interruptor do RAGX no Claude Code (`ragx claude status|on|off`), para todos os projetos. */

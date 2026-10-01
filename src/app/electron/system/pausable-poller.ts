@@ -20,6 +20,12 @@ export interface PausablePoller {
   setActive: (active: boolean) => void
   /** Roda agora (ex.: fim de tarefa) sem esperar o intervalo; ignorado se já há uma execução em andamento. */
   runNow: () => void
+  /**
+   * Intervalo MAIS LONGO para o estado inativo (RAGX-0191): com `ms`, inativo deixa de ser pausa total e passa a rodar a
+   * cada `ms`; `null` volta à pausa total. Só a notificação de defasagem liga isso, e desligada (padrão) a pausa da
+   * RAGX-0171 continua total.
+   */
+  setBackgroundInterval: (ms: number | null) => void
 }
 
 export interface PausablePollerOptions {
@@ -41,6 +47,9 @@ export function createPausablePoller(opts: PausablePollerOptions): PausablePolle
   let running = false
   let handle: unknown = null
   let lastRunAt = now()
+  let backgroundMs: number | null = null
+
+  const interval = () => (active ? opts.intervalMs : (backgroundMs ?? opts.intervalMs))
 
   function cancel(): void {
     if (handle !== null) {
@@ -51,13 +60,13 @@ export function createPausablePoller(opts: PausablePollerOptions): PausablePolle
 
   function schedule(delay: number): void {
     cancel()
-    if (!started || !active || running) return
+    if (!started || (!active && backgroundMs === null) || running) return
     handle = setTimer(tick, Math.max(0, delay))
   }
 
   function tick(): void {
     handle = null
-    if (!started || !active || running) return
+    if (!started || (!active && backgroundMs === null) || running) return
     running = true
     lastRunAt = now()
     let result: Promise<unknown> | unknown
@@ -71,7 +80,7 @@ export function createPausablePoller(opts: PausablePollerOptions): PausablePolle
       .catch((err: unknown) => opts.onError?.(err))
       .finally(() => {
         running = false
-        schedule(opts.intervalMs)
+        schedule(interval())
       })
   }
 
@@ -90,7 +99,8 @@ export function createPausablePoller(opts: PausablePollerOptions): PausablePolle
       if (next === active) return
       active = next
       if (!active) {
-        cancel()
+        if (backgroundMs === null) cancel()
+        else schedule(Math.max(0, backgroundMs - (now() - lastRunAt)))
         return
       }
       // voltou: executa na hora se já passou o intervalo, senão espera só o que falta
@@ -101,6 +111,12 @@ export function createPausablePoller(opts: PausablePollerOptions): PausablePolle
       if (!started || !active || running) return
       cancel()
       tick()
+    },
+    setBackgroundInterval: (ms) => {
+      backgroundMs = ms
+      if (active || !started) return
+      if (ms === null) cancel()
+      else schedule(Math.max(0, ms - (now() - lastRunAt)))
     },
   }
 }

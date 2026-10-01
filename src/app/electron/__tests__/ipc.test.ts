@@ -992,3 +992,32 @@ describe('createHandlers - previewContext (RAGX-0187)', () => {
     await expect(handlers.previewContext('a', 'de novo')).resolves.toBeDefined()
   })
 })
+
+describe('createHandlers - setPreference (RAGX-0191)', () => {
+  it('liga uma preferência sem apagar os outros campos; false apaga o campo', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true, ollamaMode: 'native', notifyStale: true }) }))
+    handlers.setPreference('tray', true)
+    expect(writeSettings).toHaveBeenLastCalledWith({ onboardingDone: true, ollamaMode: 'native', notifyStale: true, tray: true })
+    handlers.setPreference('notifyStale', false)
+    expect(writeSettings).toHaveBeenLastCalledWith({ onboardingDone: true, ollamaMode: 'native' })
+  })
+
+  it.each([
+    ['chave fora da lista', 'onboardingDone', true],
+    ['chave que não é texto', 42, true],
+    ['valor "true" em texto', 'tray', 'true'],
+    ['valor numérico', 'tray', 1],
+    ['sem valor', 'tray', undefined],
+  ])('recusa %s e não grava', (_n, key, value) => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings }))
+    expect(() => handlers.setPreference(key, value)).toThrow(/pedido recusado/)
+    expect(writeSettings).not.toHaveBeenCalled()
+  })
+
+  it('getSettings devolve tray e notifyStale só quando ligados', () => {
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, tray: true }) })).getSettings()).toStrictEqual({ onboardingDone: true, tray: true })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
+  })
+})

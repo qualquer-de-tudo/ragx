@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, powerMonitor } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, powerMonitor, Tray } from 'electron'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -6,6 +6,9 @@ import path from 'node:path'
 import { buildSnapshot } from './data/snapshot'
 import { createSnapshotGate } from './data/snapshot-gate'
 import { buildMenuTemplate } from './menu'
+import { busyProjectIds, deriveProjectState } from './project-state'
+import { StaleNotifier } from './stale-notifier'
+import { createTray, summarizeStates, type RagxTray } from './tray'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
 import { computeAdoption } from './data/adoption'
@@ -58,6 +61,8 @@ const REMOVE_DATA = process.argv.includes('--remove-data')
 const HEADLESS = BOOTSTRAP || UNINSTALL_CLI
 
 const SNAPSHOT_POLL_MS = 5000
+/** Com `notifyStale` ligado e a janela fora da vista, o snapshot roda no máximo uma vez por minuto (RAGX-0191). */
+const BACKGROUND_SNAPSHOT_MS = 60_000
 const CONNECTIONS_POLL_MS = 30_000
 /** Atividade: só lê o que foi acrescentado aos logs, então dá para ser curto. */
 const ACTIVITY_POLL_MS = 1500
@@ -111,6 +116,7 @@ function refreshSnapshot(): Promise<Snapshot> {
       const s = await buildSnapshot()
       lastSnapshotMs = Date.now() - started
       latestSnapshot = s
+      observeForTrayAndNotifications(s)
       return withConnectionsHealth(s)
     } finally {
       inFlightSnapshot = null
@@ -118,6 +124,72 @@ function refreshSnapshot(): Promise<Snapshot> {
   })()
   inFlightSnapshot = promise
   return promise
+}
+
+// -- bandeja e notificação de defasagem (RAGX-0191) ----------------------
+// As duas entram DESLIGADAS por padrão: com ambas desligadas nada abaixo cria Tray, Notification nem timer.
+
+const staleNotifier = new StaleNotifier()
+let trayHandle: RagxTray | null = null
+
+function trayIconPath(): string {
+  return app.isPackaged ? path.join(process.resourcesPath, 'icon.png') : path.join(__dirname, '..', 'build', 'icon.png')
+}
+
+function showPanel(): void {
+  const win = mainWindow
+  if (!win) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
+/** As preferências em memória: o snapshot roda a cada 5 s e não relê o arquivo toda vez. */
+let prefsCache: ReturnType<typeof readSettings> | null = null
+function currentPrefs(): ReturnType<typeof readSettings> {
+  return (prefsCache ??= readSettings(userDataDir()))
+}
+
+function observeForTrayAndNotifications(snapshot: Snapshot): void {
+  const prefs = currentPrefs()
+  if (prefs.tray !== true && prefs.notifyStale !== true) return
+  const busy = busyProjectIds(queue.list())
+  const observed = snapshot.projects.map((p) => ({ id: p.id, name: p.name, state: deriveProjectState(p, busy) }))
+  trayHandle?.update(summarizeStates(observed.map((o) => o.state)))
+  if (prefs.notifyStale !== true) return
+  for (const n of staleNotifier.observe(observed, Date.now())) {
+    const notification = new Notification({
+      title: n.name,
+      body: `Índice defasado há ${Math.max(1, Math.round(n.staleForMs / 60_000))} min`,
+    })
+    // só o `projectId` viaja (nunca caminho): o renderer abre o detalhe daquele projeto
+    notification.on('click', () => {
+      showPanel()
+      mainWindow?.webContents.send('ragx:openProject', n.projectId)
+    })
+    notification.show()
+  }
+}
+
+/** Liga ou desliga a bandeja, a notificação e o intervalo de fundo do snapshot conforme as preferências. */
+function applyPreferences(): void {
+  prefsCache = readSettings(userDataDir())
+  const prefs = prefsCache
+  if (prefs.tray === true && trayHandle === null && !HEADLESS) {
+    trayHandle = createTray({
+      createTray: (icon) => new Tray(nativeImage.createFromPath(icon).resize({ width: 16, height: 16 })) as never,
+      buildMenu: (template) => Menu.buildFromTemplate(template),
+      iconPath: trayIconPath(),
+      onOpen: showPanel,
+      onQuit: () => app.quit(),
+    })
+    if (latestSnapshot) observeForTrayAndNotifications(latestSnapshot)
+  } else if (prefs.tray !== true && trayHandle !== null) {
+    trayHandle.destroy()
+    trayHandle = null
+  }
+  if (prefs.notifyStale !== true) staleNotifier.reset()
+  snapshotPoller?.setBackgroundInterval(prefs.notifyStale === true ? BACKGROUND_SNAPSHOT_MS : null)
 }
 
 // -- Ollama ------------------------------------------------------------
@@ -354,6 +426,10 @@ handleIpc('ragx:discover', (token: unknown) => handlers.discover(token))
 handleIpc('ragx:getSettings', () => handlers.getSettings())
 handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDone(done))
 handleIpc('ragx:setPricing', (pricing: unknown) => handlers.setPricing(pricing))
+handleIpc('ragx:setPreference', (key: unknown, value: unknown) => {
+  handlers.setPreference(key, value)
+  applyPreferences()
+})
 // Sem argumentos: o que vier do renderer é descartado aqui.
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
 handleIpc('ragx:getClaudeIntegration', () => handlers.getClaudeIntegration())
@@ -455,6 +531,7 @@ function startSnapshotPolling(): void {
     onError: (err) => console.error('polling do snapshot falhou:', err),
   })
   snapshotPoller.start()
+  applyPreferences() // o intervalo de fundo e a bandeja valem desde o início, se a pessoa os ligou
 }
 
 /**
@@ -661,6 +738,8 @@ const GOT_SINGLE_INSTANCE = acquireSingleInstance(app, {
 
 app.whenReady().then(async () => {
   if (!GOT_SINGLE_INSTANCE) return
+  // O Windows mostra este nome nas notificações (também em dev): é o `appId` de electron-builder.yml.
+  app.setAppUserModelId('com.ragx.painel')
   if (HEADLESS) {
     const code = BOOTSTRAP ? await runBootstrapHeadless() : await runUninstallHeadless()
     app.exit(code)

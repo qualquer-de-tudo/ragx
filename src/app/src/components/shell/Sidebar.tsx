@@ -3,13 +3,14 @@ import { RagxMark } from '../brand/RagxMark'
 import { Icon } from '../ui/Icon'
 import type { IconName } from '../ui/icons'
 
-type Section = 'projects' | 'activity' | 'connections' | 'how'
+type Section = 'projects' | 'activity' | 'connections' | 'how' | 'preferences'
 
 const ITEMS: Array<{ section: Section; label: string; route: Route; icon: IconName }> = [
   { section: 'projects', label: 'Projetos', route: { page: 'projects' }, icon: 'projects' },
   { section: 'activity', label: 'Atividade', route: { page: 'activity' }, icon: 'activity' },
   { section: 'connections', label: 'Conexões', route: { page: 'connections' }, icon: 'connections' },
   { section: 'how', label: 'Como funciona', route: { page: 'how' }, icon: 'how' },
+  { section: 'preferences', label: 'Preferências', route: { page: 'preferences' }, icon: 'preferences' },
 ]
 
 export function Sidebar({

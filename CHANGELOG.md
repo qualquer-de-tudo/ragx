@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Bandeja com estado e notificação de defasagem no painel (desligadas por padrão).** O painel só avisava que um
+  índice ficou defasado a quem estivesse olhando. Agora a página Preferências (nova) liga um ícone na bandeja com o
+  estado geral em texto e uma notificação do sistema quando um projeto continua defasado por mais de 2 minutos, uma vez
+  por episódio (depois de um commit com hook o índice fica defasado por alguns segundos e isso não avisa); o clique
+  abre o detalhe do projeto. Com a notificação ligada e a janela fora da vista, o painel confere os projetos no máximo
+  uma vez por minuto, sem abrir processos (RAGX-0191).
 - **Saúde do índice com tendência no detalhe do projeto.** O painel dizia só se o índice está em dia agora. Agora a
   Visão geral tem "Saúde do índice": nível em texto, poucas checagens (embeddings pendentes, última indexação com
   erro, falhas seguidas, hooks ausentes) com a ação que resolve, e a tendência das últimas indexações (mediana de
