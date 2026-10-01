@@ -360,10 +360,11 @@ ragx doctor --json               as mesmas checagens em JSON, saindo com 0
 ragx perf [--days 7] [--project NOME] [--top 5] [--json]
 ragx claude status [--json]      o RAGX está ligado no Claude Code agora? (por perfil)
 ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projetos e perfis
-ragx claude on [--dry-run] [--no-hint] [--no-touch]   põe de volta, com a dica e o aviso de edição
+ragx claude on [--dry-run] [--no-hint] [--no-touch] [--no-nudge]   põe de volta, com a dica, o aviso de edição e o lembrete
 ragx touch [ARQUIVO...] [--stdin-json] [--root R]    avisa o RAGX de arquivos editados (reindexa só eles)
 ragx claude on|off --profile empresa     só num perfil (id ou nome)
 ragx claude hint                 o texto que a dica entrega ao agente nesta pasta
+ragx claude nudge                lembrete do índice no 1º Grep/Glob da sessão (uso do hook PreToolUse)
 ragx claude profiles list [--json]       perfis que o RAGX enxerga, detectados e adicionados
 ragx claude profiles add PASTA [--on]    adiciona uma pasta de perfil (qualquer lugar)
 ragx claude profiles remove PASTA        tira da lista, sem mexer na configuração dela
@@ -420,8 +421,23 @@ na pasta do hub, quando a pasta não tem índice próprio) e, na repetição da 
 nada e não grava o evento `session_start`. Com `source` igual a `clear` ou `compact` (o contexto foi
 perdido) a dica volta e o marcador é renovado. O `session_id` vira nome de arquivo só com
 `[A-Za-z0-9_-]` (até 64): um id hostil não escapa da pasta. Sem `session_id` (uso manual no terminal, stdin
-vazio ou inválido) a dica sai sempre. O stdin nunca bloqueia o hook (espera até 0,5 s). Os marcadores
-não são podados (um arquivo vazio por sessão).
+vazio ou inválido) a dica sai sempre. O stdin nunca bloqueia o hook (espera até 0,5 s). Marcadores
+com mais de 7 dias são apagados ao criar um novo.
+
+**Lembrete no `Grep`/`Glob` (RAGX-0160).** O hint de `SessionStart` é lido uma vez e esquecido, e
+`Grep`/`Glob` já estão carregados: o modelo vai no que está à mão. `on` instala também um hook `PreToolUse`
+com matcher `Grep|Glob` que roda `ragx claude nudge`: no **primeiro** `Grep`/`Glob` da sessão, num projeto
+indexado, ele devolve `hookSpecificOutput.additionalContext` (~50 tokens: o projeto está indexado e
+`mcp__ragx__build_context(query)` devolve trechos com arquivo e linhas). **Sugere, nunca bloqueia** (nem
+nega nem reescreve o `Grep`), e cala em todo o resto: projeto sem índice, sessão já avisada, stdin vazio ou
+inválido, qualquer erro (sempre sai com 0). O projeto vem do `cwd` do stdin; a sessão, de `session_id`,
+com marcador `.ragx/cache/nudge/<session_id>` criado com `O_EXCL` (vários `Grep` em paralelo: só um
+imprime). Não ecoa nem grava o `tool_input` (o padrão buscado pode ser um segredo); cada lembrete mostrado
+vira uma linha `command: "nudge"` em `.ragx/logs/cli.jsonl`, para medir adoção. `--no-nudge` liga o MCP
+sem ele (e tira o que havia); `status --json` mostra `nudge` por perfil. O `PreToolUse` aceita
+`additionalContext` e entrega `agent_id` quando o hook dispara dentro de um subagente (conferido na
+documentação do Claude Code); a chave continua sendo só o `session_id`, então um subagente não repete
+o lembrete.
 
 **Aviso de edição (`ragx touch`, RAGX-0141).** O índice só via uma edição não commitada no
 `refresh` (26 a 91 s) ou no próximo commit. `on` instala também um hook `PostToolUse`

@@ -39,16 +39,19 @@ def _projeto() -> Path:
     return raiz
 
 
-def _medir(entrada: str, args: list[str], raiz: Path, n: int, claude: bool) -> list[float]:
+def _medir(entrada: str, args: list[str], raiz: Path, n: int, claude: bool, stdin: str | None = None) -> list[float]:
     env = dict(os.environ)
     if claude:
         env["CLAUDECODE"] = "1"
     out = []
-    for _ in range(n):
+    for i in range(n):
         t0 = time.perf_counter()
+        # `{i}` no stdin troca o session_id a cada rodada (o caminho que IMPRIME); sem ele, o calado
+        entrada_stdin = stdin.replace("{i}", str(i)) if stdin else None
         subprocess.run(
             [sys.executable, "-m", entrada, *args], cwd=raiz, env=env,
-            stdin=subprocess.DEVNULL, capture_output=True, check=False,
+            input=entrada_stdin.encode("utf-8") if entrada_stdin else None,
+            stdin=None if entrada_stdin else subprocess.DEVNULL, capture_output=True, check=False,
         )
         out.append((time.perf_counter() - t0) * 1000)
     return out
@@ -61,16 +64,20 @@ def main() -> None:
     a = ap.parse_args()
     entradas = a.entrada or ["ragx.cli.main", "ragx.entry"]
     raiz = _projeto()
+    cwd_json = str(raiz).replace(chr(92), "/")
+    nudge = '{"session_id": "%s", "cwd": "' + cwd_json + '", "tool_name": "Grep", "tool_input": {"pattern": "x"}}'
     casos = [
         ("claude hint", ["claude", "hint"], False),
+        ("claude nudge (imprime)", ["claude", "nudge"], False, nudge % "med{i}"),
+        ("claude nudge (calado)", ["claude", "nudge"], False, nudge % "fixa"),
         ("hook-run post-commit", ["hook-run", "post-commit", "--root", str(raiz)], False),
         ("hook-run post-checkout (arquivo)", ["hook-run", "post-checkout", "A", "B", "0", "--root", str(raiz)], False),
     ]
     for entrada in entradas:
         print(f"\n== {entrada}")
-        for nome, args, claude in casos:
+        for nome, args, claude, *resto in casos:
             try:
-                tempos = _medir(entrada, args, raiz, a.n, claude)
+                tempos = _medir(entrada, args, raiz, a.n, claude, resto[0] if resto else None)
             except OSError as exc:
                 print(f"  {nome}: falhou ({exc})")
                 continue

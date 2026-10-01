@@ -36,10 +36,14 @@ EVENT = "SessionStart"
 #: O segundo hook (RAGX-0141): depois de cada edição de arquivo, avisa o RAGX para reindexá-lo.
 TOUCH_EVENT = "PostToolUse"
 TOUCH_MATCHER = "Edit|Write|MultiEdit"
+#: O terceiro (RAGX-0160): no momento do `Grep`/`Glob`, uma vez por sessão, lembra que há índice.
+NUDGE_EVENT = "PreToolUse"
+NUDGE_MATCHER = "Grep|Glob"
 
 #: Reconhece a entrada do RAGX mesmo que o executável gravado mude de lugar.
 _NOSSO = re.compile(r"ragx(\.exe)?\"?\s+claude\s+hint\s*$", re.IGNORECASE)
 _NOSSO_TOUCH = re.compile(r"ragx(\.exe)?\"?\s+touch\s+--stdin-json\s*$", re.IGNORECASE)
+_NOSSO_NUDGE = re.compile(r"ragx(\.exe)?\"?\s+claude\s+nudge\s*$", re.IGNORECASE)
 
 
 def hint_command(command: str) -> str:
@@ -57,6 +61,10 @@ def hint_command(command: str) -> str:
 
 def _eh_nosso(hook: Any) -> bool:
     return isinstance(hook, dict) and bool(_NOSSO.search(str(hook.get("command", ""))))
+
+
+def _eh_nosso_nudge(hook: Any) -> bool:
+    return isinstance(hook, dict) and bool(_NOSSO_NUDGE.search(str(hook.get("command", ""))))
 
 
 def _eh_nosso_touch(hook: Any) -> bool:
@@ -198,65 +206,107 @@ def _entrada_de_toque(command: str) -> dict[str, Any]:
     }
 
 
-def install_touch_hook(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
-    """Põe (ou corrige) o hook `PostToolUse` que avisa o RAGX das edições do agente."""
+def _instalar(
+    client: Client, nova: dict[str, Any], event: str, eh_nosso: Any, rotulo: str, dry_run: bool
+) -> Result:
+    """Põe (ou corrige) a NOSSA entrada em `hooks.<event>`, preservando as da pessoa."""
     path = claude_settings(client)
     try:
         dados, falha = _ler(path, client)
         if falha or dados is None:
             return falha or Result(client, Outcome.FAILED, "configuração ilegível")
-        grupos, falha = _grupos(dados, path, client, TOUCH_EVENT)
+        grupos, falha = _grupos(dados, path, client, event)
         if falha or grupos is None:
             return falha or Result(client, Outcome.FAILED, "configuração ilegível")
 
-        nova = _entrada_de_toque(command)
         atuais = [
             g for g in grupos
-            if isinstance(g, dict) and any(_eh_nosso_touch(h) for h in g.get("hooks") or [])
+            if isinstance(g, dict) and any(eh_nosso(h) for h in g.get("hooks") or [])
         ]
         if atuais == [nova]:
-            return Result(client, Outcome.UNCHANGED, "aviso de edição já instalado")
+            return Result(client, Outcome.UNCHANGED, f"{rotulo} já instalado")
 
-        novos = [*_sem_o_nosso(grupos, _eh_nosso_touch), nova]
+        novos = [*_sem_o_nosso(grupos, eh_nosso), nova]
         existia = path.is_file()
-        backup = None if dry_run else _gravar(path, dados, novos, existia, TOUCH_EVENT)
+        backup = None if dry_run else _gravar(path, dados, novos, existia, event)
         return Result(
             client, Outcome.UPDATED if existia else Outcome.CREATED,
-            f"aviso de edição instalado em {path.name}", backup,
+            f"{rotulo} instalado em {path.name}", backup,
         )
     except OSError as exc:
         return Result(client, Outcome.FAILED, f"não consegui escrever {path}: {exc}")
 
 
-def remove_touch_hook(client: Client, dry_run: bool = False) -> Result:
-    """Tira só o hook de toque do RAGX; os hooks da pessoa (inclusive `PostToolUse`) ficam."""
+def _remover(client: Client, event: str, eh_nosso: Any, rotulo: str, dry_run: bool) -> Result:
+    """Tira só a nossa entrada de `hooks.<event>`; os hooks da pessoa ficam."""
     path = claude_settings(client)
     try:
         dados, falha = _ler(path, client)
         if falha or dados is None:
             return falha or Result(client, Outcome.FAILED, "configuração ilegível")
-        grupos, falha = _grupos(dados, path, client, TOUCH_EVENT)
+        grupos, falha = _grupos(dados, path, client, event)
         if falha or grupos is None:
             return falha or Result(client, Outcome.FAILED, "configuração ilegível")
-        novos = _sem_o_nosso(grupos, _eh_nosso_touch)
+        novos = _sem_o_nosso(grupos, eh_nosso)
         if novos == grupos:
-            return Result(client, Outcome.UNCHANGED, "aviso de edição não estava instalado")
-        backup = None if dry_run else _gravar(path, dados, novos, True, TOUCH_EVENT)
-        return Result(client, Outcome.REMOVED, f"aviso de edição removido de {path.name}", backup)
+            return Result(client, Outcome.UNCHANGED, f"{rotulo} não estava instalado")
+        backup = None if dry_run else _gravar(path, dados, novos, True, event)
+        return Result(client, Outcome.REMOVED, f"{rotulo} removido de {path.name}", backup)
     except OSError as exc:
         return Result(client, Outcome.FAILED, f"não consegui escrever {path}: {exc}")
 
 
-def has_touch_hook(client: Client) -> bool:
+def _tem(client: Client, event: str, eh_nosso: Any) -> bool:
     path = claude_settings(client)
     try:
         dados = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
     except (OSError, ValueError):
         return False
-    grupos = ((dados or {}).get("hooks") or {}).get(TOUCH_EVENT) if isinstance(dados, dict) else None
+    grupos = ((dados or {}).get("hooks") or {}).get(event) if isinstance(dados, dict) else None
     if not isinstance(grupos, list):
         return False
-    return any(_eh_nosso_touch(h) for g in grupos if isinstance(g, dict) for h in g.get("hooks") or [])
+    return any(eh_nosso(h) for g in grupos if isinstance(g, dict) for h in g.get("hooks") or [])
+
+
+def install_touch_hook(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
+    """Põe (ou corrige) o hook `PostToolUse` que avisa o RAGX das edições do agente."""
+    return _instalar(client, _entrada_de_toque(command), TOUCH_EVENT, _eh_nosso_touch, "aviso de edição", dry_run)
+
+
+def remove_touch_hook(client: Client, dry_run: bool = False) -> Result:
+    """Tira só o hook de toque do RAGX; os hooks da pessoa (inclusive `PostToolUse`) ficam."""
+    return _remover(client, TOUCH_EVENT, _eh_nosso_touch, "aviso de edição", dry_run)
+
+
+def has_touch_hook(client: Client) -> bool:
+    return _tem(client, TOUCH_EVENT, _eh_nosso_touch)
+
+
+# ── o lembrete no Grep/Glob (PreToolUse, RAGX-0160) ─────────────────────
+def nudge_command(command: str) -> str:
+    """`ragx claude nudge`, com o mesmo executável (e as mesmas aspas) do hint."""
+    return hint_command(command).replace(" claude hint", " claude nudge")
+
+
+def _entrada_de_lembrete(command: str) -> dict[str, Any]:
+    """Síncrono (o lembrete tem de chegar antes do resultado da busca) e curto: só decide e imprime."""
+    return {
+        "matcher": NUDGE_MATCHER,
+        "hooks": [{"type": "command", "command": nudge_command(command), "timeout": 5}],
+    }
+
+
+def install_nudge_hook(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
+    """Põe (ou corrige) o hook `PreToolUse` em `Grep|Glob` que lembra do índice, uma vez por sessão."""
+    return _instalar(client, _entrada_de_lembrete(command), NUDGE_EVENT, _eh_nosso_nudge, "lembrete de busca", dry_run)
+
+
+def remove_nudge_hook(client: Client, dry_run: bool = False) -> Result:
+    return _remover(client, NUDGE_EVENT, _eh_nosso_nudge, "lembrete de busca", dry_run)
+
+
+def has_nudge_hook(client: Client) -> bool:
+    return _tem(client, NUDGE_EVENT, _eh_nosso_nudge)
 
 
 # ── o texto (uma só fonte: `ragx.hooklight`, que roda sem importar a CLI) ──

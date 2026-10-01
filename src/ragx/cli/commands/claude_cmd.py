@@ -48,7 +48,7 @@ def _nome(c) -> str:
 
 def _estado() -> list[dict[str, object]]:
     from ragx.clients import is_registered
-    from ragx.clients.claude_hint import has_hint, has_touch_hook
+    from ragx.clients.claude_hint import has_hint, has_nudge_hook, has_touch_hook
 
     return [
         {
@@ -61,6 +61,7 @@ def _estado() -> list[dict[str, object]]:
             "enabled": is_registered(c),
             "hint": has_hint(c),
             "touch": has_touch_hook(c),
+            "nudge": has_nudge_hook(c),
             "added": c.added,
         }
         for c in _perfis()
@@ -100,13 +101,14 @@ def off(
 ) -> None:
     """Tira o RAGX do Claude Code, em todos os projetos e perfis (ou só em `--profile`)."""
     from ragx.clients import unregister
-    from ragx.clients.claude_hint import remove_hint, remove_touch_hook
+    from ragx.clients.claude_hint import remove_hint, remove_nudge_hook, remove_touch_hook
 
     results = []
     for c in _perfis(profile):
         results.append(unregister(c, dry_run=dry_run))
         results.append(remove_hint(c, dry_run=dry_run))
         results.append(remove_touch_hook(c, dry_run=dry_run))
+        results.append(remove_nudge_hook(c, dry_run=dry_run))
     _report(results, "RAGX desligado", as_json)
 
 
@@ -129,13 +131,26 @@ def on(
             help="Instala o hook que avisa o RAGX de cada arquivo que o agente edita (reindexa só ele).",
         ),
     ] = True,
+    nudge: Annotated[
+        bool,
+        typer.Option(
+            "--nudge/--no-nudge",
+            help="Instala o lembrete do índice no primeiro Grep/Glob de cada sessão (sugere, nunca bloqueia).",
+        ),
+    ] = True,
     profile: ProfileOpt = None,
     dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Põe o RAGX no Claude Code, em todos os projetos e perfis (ou só em `--profile`)."""
     from ragx.clients import register
-    from ragx.clients.claude_hint import install_hint, install_touch_hook, remove_touch_hook
+    from ragx.clients.claude_hint import (
+        install_hint,
+        install_nudge_hook,
+        install_touch_hook,
+        remove_nudge_hook,
+        remove_touch_hook,
+    )
 
     results = []
     for c in _perfis(profile):
@@ -147,6 +162,10 @@ def on(
             results.append(
                 install_touch_hook(c, command=command, dry_run=dry_run)
                 if touch else remove_touch_hook(c, dry_run=dry_run)
+            )
+            results.append(
+                install_nudge_hook(c, command=command, dry_run=dry_run)
+                if nudge else remove_nudge_hook(c, dry_run=dry_run)
             )
     _report(results, "RAGX ligado", as_json)
 
@@ -195,6 +214,14 @@ def hint() -> None:
     from ragx.hooklight import run_hint
 
     run_hint()
+
+
+@app.command("nudge")
+def nudge() -> None:
+    """Lembrete do `PreToolUse` em `Grep|Glob`: uma vez por sessão, sugere o RAGX. Nunca bloqueia nem falha."""
+    from ragx.hooklight import run_nudge
+
+    run_nudge()
 
 
 # ── perfis adicionados à mão ────────────────────────────────────────────

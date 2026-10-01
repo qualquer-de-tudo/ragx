@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Lembrete do índice no primeiro `Grep`/`Glob` da sessão.** Quase ninguém chamava o RAGX (3 de 38
+  sessões em projetos indexados): o hint de `SessionStart` é lido uma vez e esquecido, e o modelo vai no
+  que já está carregado. `ragx claude on` instala agora um hook `PreToolUse` (`Grep|Glob`) que roda
+  `ragx claude nudge`: na primeira busca da sessão devolve `additionalContext` (~50 tokens) lembrando do
+  `build_context`. Sugere, **nunca bloqueia**, cala fora de projeto indexado e nas repetições (marcador
+  `O_EXCL` por `session_id`, apagado depois de 7 dias), não ecoa o `tool_input`, sai com 0 em qualquer
+  erro e roda pela entrada leve (**~105 ms** imprimindo, **~83 ms** calado; meta 120). `--no-nudge`
+  desliga. Os marcadores da dica de `SessionStart` passam a ser podados do mesmo jeito (RAGX-0160).
 - **Dica de início de sessão enxuta e uma vez por sessão.** `ragx claude hint` custava ~349 tokens
   (tiktoken) e repetia em cada subagente, inflando também a contagem de sessões do painel. O texto agora
   tem **~140 tokens** (a regra, as três ferramentas e a linha de ToolSearch; sai o resumo de documentos,

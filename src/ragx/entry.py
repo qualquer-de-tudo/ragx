@@ -5,6 +5,7 @@ argumento: cerca de 480 ms. Os três comandos que os hooks rodam a cada sessão,
 precisam de nada disso, então este módulo olha `sys.argv` primeiro:
 
 - `ragx claude hint`            -> `ragx.hooklight.run_hint`
+- `ragx claude nudge`           -> `ragx.hooklight.run_nudge`
 - `ragx touch --stdin-json`     -> `ragx.hooklight.run_touch`
 - `ragx hook-run EVENT --root`  -> `ragx.hooklight.run_hook`
 
@@ -23,6 +24,10 @@ def main() -> None:
         from ragx.hooklight import run_hint
 
         raise SystemExit(run_hint())
+    if argv == ["claude", "nudge"]:
+        from ragx.hooklight import run_nudge
+
+        raise SystemExit(run_nudge())
     if argv == ["touch", "--stdin-json"]:
         from ragx.hooklight import run_touch
 

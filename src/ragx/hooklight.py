@@ -217,7 +217,26 @@ def primeira_vez(pasta: Path, sessao: str, source: str | None) -> bool:
     except OSError:
         return True
     os.close(fd)
+    _podar_marcadores(pasta)
     return True
+
+
+#: Marcador de sessão com mais de 7 dias não serve mais a ninguém.
+MARCADOR_TTL_S = 7 * 24 * 3600
+
+
+def _podar_marcadores(pasta: Path) -> None:
+    """Apaga marcadores velhos desta pasta (a NOSSA, de cache: nunca uma pasta do projeto).
+
+    É a única listagem de diretório deste módulo, e só da pasta de marcadores, ao criar um novo.
+    """
+    agora = time.time()
+    with contextlib.suppress(OSError):
+        for nome in os.listdir(pasta):
+            arquivo = pasta / nome
+            with contextlib.suppress(OSError):
+                if agora - arquivo.stat().st_mtime > MARCADOR_TTL_S:
+                    arquivo.unlink()
 
 
 def record_session_start(start: Path | None = None) -> None:
@@ -271,6 +290,58 @@ def run_hint() -> int:
         buffer.flush()
     else:
         sys.stdout.write(texto + "\n")
+    return 0
+
+
+# ── o lembrete no Grep/Glob (`ragx claude nudge`, PreToolUse) ─────────────
+def texto_lembrete() -> str:
+    """O que o agente lê ao fazer o primeiro `Grep`/`Glob` da sessão: sugere, não manda, e é curto.
+
+    Nunca ecoa o `tool_input`: o padrão buscado pode ser um segredo.
+    """
+    return (
+        "RAGX: este projeto está indexado. Para entender ou localizar código, "
+        "mcp__ragx__build_context(query) devolve os trechos relevantes, com arquivo e linhas, "
+        "em geral mais barato do que Grep + Read."
+    )
+
+
+def run_nudge() -> int:
+    """`ragx claude nudge`: no primeiro `Grep`/`Glob` da sessão, num projeto indexado, adiciona contexto.
+
+    Sugere sem bloquear (bloquear `Grep`/`Read` está descartado) e cala em todo o resto: projeto sem
+    índice, sessão que já foi avisada, stdin vazio ou inválido, qualquer erro. O marcador
+    `.ragx/cache/nudge/<session_id>` é criado com `O_EXCL`: com vários `Grep` em paralelo só um imprime.
+    """
+    try:
+        dados = _ler_json()
+        sessao = _sanear_sessao(dados.get("session_id"))
+        cwd = dados.get("cwd")
+        if not sessao or not isinstance(cwd, str) or not cwd:
+            return 0
+        cfg = carregar(Path(cwd))
+        if not cfg.db_path.exists():
+            return 0
+        if not primeira_vez(cfg.state_dir / "cache" / "nudge", sessao, None):
+            return 0
+        from ragx.diagnostics import log_cli_call
+
+        log_cli_call(cfg.state_dir, {
+            "ts": _utcnow(), "command": "nudge", "project": cfg.nome or cfg.root.name,
+        })
+        saida = json.dumps(
+            {"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": texto_lembrete()}},
+            ensure_ascii=False,
+        )
+    except Exception:
+        return 0
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is not None:
+        sys.stdout.flush()
+        buffer.write((saida + "\n").encode("utf-8"))
+        buffer.flush()
+    else:
+        sys.stdout.write(saida + "\n")
     return 0
 
 

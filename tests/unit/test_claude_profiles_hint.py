@@ -119,7 +119,7 @@ def test_off_tira_o_bloco_hooks_que_so_tinha_a_dica(casa: Path) -> None:
 
 
 def test_no_hint_nao_toca_no_settings(casa: Path) -> None:
-    assert runner.invoke(app, ["claude", "on", "--no-hint", "--no-touch"]).exit_code == 0
+    assert runner.invoke(app, ["claude", "on", "--no-hint", "--no-touch", "--no-nudge"]).exit_code == 0
     assert not (casa / ".claude" / "settings.json").exists()
 
 
