@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { Sidebar } from '../Sidebar'
 import { QueueIndicator } from '../QueueIndicator'
 import { Badge } from '../Badge'
@@ -233,7 +233,10 @@ describe('TopBar', () => {
       rerender(<TopBar {...base} health="ok" claude={{ ...claudeOff, error: 'falhou' }} />)
       const sw = screen.getByRole('switch')
       expect(sw).toHaveTextContent('erro')
-      expect(sw).toHaveAttribute('title', 'falhou')
+      // O texto de ajuda é o Tooltip (abre no foco, ligado por aria-describedby), não mais o atributo `title`.
+      act(() => sw.focus())
+      expect(screen.getByRole('tooltip')).toHaveTextContent('falhou')
+      expect(sw).toHaveAttribute('aria-describedby', screen.getByRole('tooltip').id)
     })
   })
 })

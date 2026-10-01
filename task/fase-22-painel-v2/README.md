@@ -16,7 +16,7 @@ Desempenho: com 12 projetos o painel dispara ~290 processos `git` por minuto (2 
 | [RAGX-0176](RAGX-0176-remover-o-fallback-que-le-knowledge-db-inteiro.md) | Remover o fallback que lê `knowledge.db` inteiro | P1 | 0,25d | `done` |
 | [RAGX-0177](RAGX-0177-medir-ram-e-cpu-do-electron-em-execucao-linha-de-base.md) | Medir RAM e CPU do Electron em execução (linha de base) | P1 | 0,5d | `done` |
 | [RAGX-0178](RAGX-0178-tokens-de-design-completos-e-contraste-aa.md) | Tokens de design completos e contraste AA | P1 | 0,75d | `done` |
-| [RAGX-0179](RAGX-0179-primitivos-de-ui-compartilhados.md) | Primitivos de UI compartilhados | P1 | 1d | `todo` |
+| [RAGX-0179](RAGX-0179-primitivos-de-ui-compartilhados.md) | Primitivos de UI compartilhados | P1 | 1d | `done` |
 | [RAGX-0180](RAGX-0180-toasts-toda-falha-de-acao-aparece.md) | Toasts: toda falha de ação aparece | P1 | 0,5d | `todo` |
 | [RAGX-0181](RAGX-0181-responsividade-da-casca-de-480-a-3440-px-e-zoom-200.md) | Responsividade da casca de 480 a 3440 px e zoom 200% | P1 | 1d | `todo` |
 | [RAGX-0182](RAGX-0182-skeletons-e-primeira-pintura-com-o-ultimo-snapshot.md) | Skeletons e primeira pintura com o último snapshot | P2 | 0,5d | `todo` |

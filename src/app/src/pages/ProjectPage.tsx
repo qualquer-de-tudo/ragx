@@ -16,7 +16,6 @@ import { enqueue } from '../jobs'
 import { Badge } from '../components/shell/Badge'
 import { Section, Stat } from '../components/shell/Card'
 import { LivePill } from '../components/shell/LivePill'
-import { BranchIcon } from '../components/project/ProjectCard'
 import { ConfirmButton } from '../components/project/ConfirmButton'
 import { JobButton } from '../components/project/JobButton'
 import { MaintenancePanel } from '../components/project/MaintenancePanel'
@@ -24,6 +23,10 @@ import { Timeline } from '../components/project/Timeline'
 import { TokenSavings } from '../components/project/TokenSavings'
 import { SecurityPanel } from '../components/SecurityPanel'
 import { RelativeTime } from '../components/shell/RelativeTime'
+import { Icon } from '../components/ui/Icon'
+import { IconButton } from '../components/ui/IconButton'
+import { Switch } from '../components/ui/Switch'
+import { Tooltip } from '../components/ui/Tooltip'
 import { TabPanel, Tabs, type TabItem } from '../components/shell/Tabs'
 import { lastProjectTab, rememberProjectTab, type ProjectTab } from '../projectTab'
 
@@ -82,24 +85,7 @@ function useProjectStatus(project: ProjectSnapshot | null): StatusView {
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
-  return (
-    <button type="button" className="btn btn-quiet btn-icon back" aria-label="Voltar para Projetos" onClick={onBack}>
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path d="M15 5l-7 7 7 7" />
-      </svg>
-    </button>
-  )
+  return <IconButton label="Voltar para Projetos" icon="back" className="back" onClick={onBack} />
 }
 
 /** Seção com título `h2` que dá nome à região (leitor de tela e testes). */
@@ -220,17 +206,12 @@ function HooksSection({ project, jobs }: { project: ProjectSnapshot; jobs: reado
         </h2>
         <div className="switch-wrap">
           {hooksJob && <span className="hint">{jobStateLabel(hooksJob)}</span>}
-          <button
-            type="button"
-            role="switch"
-            className="switch"
-            aria-checked={installed}
-            aria-labelledby={titleId}
+          <Switch
+            checked={installed}
+            labelledBy={titleId}
             disabled={!project.exists || noGit || hooksJob !== null}
-            onClick={() => void enqueue(installed ? 'hooks-uninstall' : 'hooks-install', project.id)}
-          >
-            <span className="switch-knob" aria-hidden="true" />
-          </button>
+            onChange={() => void enqueue(installed ? 'hooks-uninstall' : 'hooks-install', project.id)}
+          />
         </div>
       </div>
       <p className="dim">{text}</p>
@@ -312,16 +293,21 @@ function UsageSection({ telemetry }: { telemetry: TelemetrySummary }) {
       </div>
       <ul className="bars" aria-label="Chamadas por ferramenta">
         {tools.map((t) => (
-          <li
+          <Tooltip
             key={t.tool}
-            title={`${t.tool}: ${formatNumber(t.count)} chamadas (${formatPercent(t.count / telemetry.totalCalls)})`}
+            text={`${t.tool}: ${formatNumber(t.count)} chamadas (${formatPercent(t.count / telemetry.totalCalls)})`}
+            focusable
           >
-            <span className="bar-label">{t.tool}</span>
-            <span className="bar-track" aria-hidden="true">
-              <span className="bar-fill" style={{ width: `${Math.max(1.5, (t.count / top) * 100)}%` }} />
-            </span>
-            <span className="bar-value">{formatNumber(t.count)}</span>
-          </li>
+            {(tip) => (
+              <li {...tip}>
+                <span className="bar-label">{t.tool}</span>
+                <span className="bar-track" aria-hidden="true">
+                  <span className="bar-fill" style={{ width: `${Math.max(1.5, (t.count / top) * 100)}%` }} />
+                </span>
+                <span className="bar-value">{formatNumber(t.count)}</span>
+              </li>
+            )}
+          </Tooltip>
         ))}
       </ul>
     </Section>
@@ -418,7 +404,7 @@ export function ProjectPage({
         </div>
         <p className="mono dim">{project.path ?? 'sem dados'}</p>
         <p className="detail-branch">
-          <BranchIcon />
+          <Icon name="branch" size={14} className="project-card-icon" />
           <span className="project-card-branch">{branchText(project.git)}</span>
         </p>
       </header>

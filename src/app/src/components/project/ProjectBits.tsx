@@ -2,6 +2,7 @@ import type { JobKind, JobView, ProjectSnapshot } from '../../types/ragx-bridge'
 import { STATE_ACTION, jobStateLabel, type ProjectState } from '../../state'
 import { formatCompact, formatNumber, formatPercent } from '../../format'
 import { savingsRatio } from '../../projectMetrics'
+import { Tooltip } from '../ui/Tooltip'
 
 /**
  * O botão que faz o que o estado pede (`STATE_ACTION`), igual no card e na
@@ -62,7 +63,9 @@ export function ProjectNumbers({ project }: { project: ProjectSnapshot }) {
     <dl className="project-numbers">
       <div>
         <dt>Economia</dt>
-        <dd title="Menos tokens que ler os arquivos inteiros, nos últimos 14 dias">{ratio === null ? 'sem uso' : formatPercent(ratio)}</dd>
+        <Tooltip text="Menos tokens que ler os arquivos inteiros, nos últimos 14 dias" focusable>
+          {(tip) => <dd {...tip}>{ratio === null ? 'sem uso' : formatPercent(ratio)}</dd>}
+        </Tooltip>
       </div>
       <div>
         <dt>Chamadas 24 h</dt>

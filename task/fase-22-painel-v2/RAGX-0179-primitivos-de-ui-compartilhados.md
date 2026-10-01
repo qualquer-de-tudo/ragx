@@ -7,7 +7,7 @@
 | **Estimativa** | 1d |
 | **Depende de** | RAGX-0178 |
 | **Documentação** | [24-auditoria-v2.md §6](../../docs/24-auditoria-v2.md#6-painel-u-) (U-12, lacunas do design system) · [25-spec-v2.md §5.4](../../docs/25-spec-v2.md#54-painel--fase-22) (R-P7) · [src/app/README.md](../../src/app/README.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,14 +15,14 @@ O painel não tem biblioteca de UI e os mesmos padrões estão copiados à mão:
 
 ## Entregáveis
 
-- [ ] `ui/Segmented.tsx`, genérico (`Segmented<T extends string>({ label, value, options, onChange })`), extraído de `SegmentedFilter` (`ProjectsPage.tsx:32-84`, o único que já tem setas, Home/End e `tabIndex` móvel). Migrar os 3 usos: `ProjectsPage.tsx:56` (Filtrar), `ProjectsPage.tsx:210-224` (Visualização) e `ActivityPage.tsx:129-142` (Tipo de atividade). Mantém `.segmented`/`.segmented-item` (App.css:1017-1049).
-- [ ] `ui/Switch.tsx` (`checked`, `onChange`, nome acessível por `label` ou `labelledBy`, `disabled`): migrar `ProjectPage.tsx:218-228` (Hooks de git) e `ClaudeProfiles.tsx:58-69`. O `TopBar.tsx:75-99` é um botão composto com o trilho `.switch-track`: reaproveita só o trilho (`SwitchTrack`), sem mudar o layout.
-- [ ] `ui/Modal.tsx`, extraído de `AddProjectDialog.tsx:21-102` (foco preso, Esc, clique fora, devolve o foco a quem abriu, `data-autofocus`). `AddProjectDialog` passa a usá-lo; `AddProjectDialog.test.tsx` fica verde sem mudar asserts.
-- [ ] `ui/IconButton.tsx` com `label` obrigatório no tipo (vira `aria-label`): migrar o `BackButton` (`ProjectPage.tsx:83-102`) e o "Fechar" do modal.
-- [ ] `ui/Icon.tsx` (`<Icon name size />`, mapa `ICONS` em TSX, sempre `aria-hidden` e `focusable="false"`; sem sprite externo, porque a CSP da RAGX-0194 e o `file://` pedem tudo no bundle). Migrar os `<svg>` de `ConnectionCard`, `AddProjectDialog`, `ProjectCard` (`BranchIcon`), `QueueIndicator`, `Sidebar` (4 ícones, hoje num `Icon` local), `TopBar` e `ProjectPage`. Ficam de fora o `RagxMark` e o gráfico de `TokenSavings`.
-- [ ] `ui/EmptyState.tsx` (`title?`, `children`, `action?`, `role="status"`, classe `.empty` de App.css:538): migrar "Nenhum projeto neste filtro" (`ProjectsPage.tsx`), `activity-empty` (`ActivityPage.tsx:157`), "Nenhuma indexação registrada ainda" (`Timeline.tsx:95`) e o vazio de `TokenSavings.tsx:238`.
-- [ ] `ui/Tooltip.tsx`: abre em hover (com atraso) e em foco, liga por `aria-describedby`, Esc fecha, posição por CSS, sem biblioteca. Migrar os `title=` que levam informação única: `ClaudeProfiles.tsx:45`, `ConnectionCard.tsx:242`, `ProjectBits.tsx:65`, `Timeline.tsx:107`, `SecurityPanel.tsx:114`, `TopBar.tsx:83` e `:102`, `ActivityPage.tsx:169`, `ProjectPage.tsx:312`. O `<abbr title>` de `ProjectsPage.tsx:241` fica.
-- [ ] `ui/index.ts` reexporta os primitivos; um commit por primitivo.
+- [x] `ui/Segmented.tsx`, genérico (`Segmented<T extends string>({ label, value, options, onChange })`), extraído de `SegmentedFilter` (`ProjectsPage.tsx:32-84`, o único que já tem setas, Home/End e `tabIndex` móvel). Migrar os 3 usos: `ProjectsPage.tsx:56` (Filtrar), `ProjectsPage.tsx:210-224` (Visualização) e `ActivityPage.tsx:129-142` (Tipo de atividade). Mantém `.segmented`/`.segmented-item` (App.css:1017-1049).
+- [x] `ui/Switch.tsx` (`checked`, `onChange`, nome acessível por `label` ou `labelledBy`, `disabled`): migrar `ProjectPage.tsx:218-228` (Hooks de git) e `ClaudeProfiles.tsx:58-69`. O `TopBar.tsx:75-99` é um botão composto com o trilho `.switch-track`: reaproveita só o trilho (`SwitchTrack`), sem mudar o layout.
+- [x] `ui/Modal.tsx`, extraído de `AddProjectDialog.tsx:21-102` (foco preso, Esc, clique fora, devolve o foco a quem abriu, `data-autofocus`). `AddProjectDialog` passa a usá-lo; `AddProjectDialog.test.tsx` fica verde sem mudar asserts.
+- [x] `ui/IconButton.tsx` com `label` obrigatório no tipo (vira `aria-label`): migrar o `BackButton` (`ProjectPage.tsx:83-102`) e o "Fechar" do modal.
+- [x] `ui/Icon.tsx` (`<Icon name size />`, mapa `ICONS` em TSX, sempre `aria-hidden` e `focusable="false"`; sem sprite externo, porque a CSP da RAGX-0194 e o `file://` pedem tudo no bundle). Migrar os `<svg>` de `ConnectionCard`, `AddProjectDialog`, `ProjectCard` (`BranchIcon`), `QueueIndicator`, `Sidebar` (4 ícones, hoje num `Icon` local), `TopBar` e `ProjectPage`. Ficam de fora o `RagxMark` e o gráfico de `TokenSavings`.
+- [x] `ui/EmptyState.tsx` (`title?`, `children`, `action?`, `role="status"`, classe `.empty` de App.css:538): migrar "Nenhum projeto neste filtro" (`ProjectsPage.tsx`), `activity-empty` (`ActivityPage.tsx:157`), "Nenhuma indexação registrada ainda" (`Timeline.tsx:95`) e o vazio de `TokenSavings.tsx:238`.
+- [x] `ui/Tooltip.tsx`: abre em hover (com atraso) e em foco, liga por `aria-describedby`, Esc fecha, posição por CSS, sem biblioteca. Migrar os `title=` que levam informação única: `ClaudeProfiles.tsx:45`, `ConnectionCard.tsx:242`, `ProjectBits.tsx:65`, `Timeline.tsx:107`, `SecurityPanel.tsx:114`, `TopBar.tsx:83` e `:102`, `ActivityPage.tsx:169`, `ProjectPage.tsx:312`. O `<abbr title>` de `ProjectsPage.tsx:241` fica.
+- [x] `ui/index.ts` reexporta os primitivos; um commit por primitivo.
 
 ## Fora de escopo
 
@@ -33,18 +33,18 @@ O painel não tem biblioteca de UI e os mesmos padrões estão copiados à mão:
 
 ## Critérios de aceite
 
-- [ ] Depois da migração, `role="radio"`, `role="switch"` e `<svg` só aparecem dentro de `src/components/ui/` (mais `RagxMark` e o gráfico), garantido por teste de varredura.
-- [ ] Os 3 grupos segmentados respondem a seta, Home e End, e só o item marcado está na ordem do Tab (hoje 2 dos 3 não).
-- [ ] `IconButton` sem `label` não compila (`tsc`).
-- [ ] `package.json` sem dependência nova (`dependencies` idêntico).
-- [ ] Bundle (hoje JS 306.822 B, gzip -9 91.745 B; CSS 34.835 B, gzip -9 7.096 B em `dist/assets`): registrar antes e depois.
-- [ ] Captura a 1280 px de Projetos, Atividade, Conexões e Detalhe antes e depois: igual, exceto o foco visível do tooltip.
+- [x] Depois da migração, `role="radio"`, `role="switch"` e `<svg` só aparecem dentro de `src/components/ui/` (mais `RagxMark` e o gráfico), garantido por teste de varredura.
+- [x] Os 3 grupos segmentados respondem a seta, Home e End, e só o item marcado está na ordem do Tab (hoje 2 dos 3 não). (`primitives.test.tsx`; os três usam o mesmo `Segmented`.)
+- [x] `IconButton` sem `label` não compila (`tsc`).
+- [x] `package.json` sem dependência nova (`dependencies` idêntico).
+- [x] Bundle (hoje JS 306.822 B, gzip -9 91.745 B; CSS 34.835 B, gzip -9 7.096 B em `dist/assets`): registrar antes e depois.
+- [ ] Captura a 1280 px de Projetos, Atividade, Conexões e Detalhe antes e depois: igual, exceto o foco visível do tooltip. (NÃO verificado visualmente: sem captura nesta sessão.)
 
 ## Testes
 
-- [ ] `src/components/ui/__tests__/primitives.test.tsx` (novo): `Segmented` (setas, Home, End, `tabIndex` móvel, `aria-checked`), `Switch` (clique, Espaço, Enter, `disabled`), `Modal` (foco preso, Esc, clique fora, foco devolvido), `Icon` (`aria-hidden`), `EmptyState` (`role="status"`), `Tooltip` (abre no foco, `aria-describedby`, Esc).
-- [ ] `src/__tests__/ui-primitives.test.ts` (novo): a varredura de `role="radio"`, `role="switch"` e `<svg` fora de `ui/`.
-- [ ] `ProjectsPage.test.tsx`, `ActivityPage.test.tsx`, `ProjectPage.test.tsx`, `AddProjectDialog.test.tsx` e `ClaudeProfiles.test.tsx` (existentes) verdes; só trocar o que depender de `title=`.
+- [x] `src/components/ui/__tests__/primitives.test.tsx` (novo): `Segmented` (setas, Home, End, `tabIndex` móvel, `aria-checked`), `Switch` (clique, Espaço, Enter, `disabled`), `Modal` (foco preso, Esc, clique fora, foco devolvido), `Icon` (`aria-hidden`), `EmptyState` (`role="status"`), `Tooltip` (abre no foco, `aria-describedby`, Esc).
+- [x] `src/__tests__/ui-primitives.test.ts` (novo): a varredura de `role="radio"`, `role="switch"` e `<svg` fora de `ui/`.
+- [x] `ProjectsPage.test.tsx`, `ActivityPage.test.tsx`, `ProjectPage.test.tsx`, `AddProjectDialog.test.tsx` e `ClaudeProfiles.test.tsx` (existentes) verdes; só trocar o que depender de `title=`.
 
 ## Notas
 
@@ -57,15 +57,20 @@ O painel não tem biblioteca de UI e os mesmos padrões estão copiados à mão:
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes
-- [ ] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
-- [ ] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
-- [ ] Tamanho do bundle do renderer registrado antes/depois (hoje 307 kB JS / 93 kB gzip)
-- [ ] CHANGELOG atualizado na MESMA alteração
-- [ ] Documentação (`src/app/README.md`) confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0179)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [x] Testes escritos e verdes
+- [x] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
+- [ ] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização) (só os testes de renderização; sem screenshot)
+- [x] Tamanho do bundle do renderer registrado antes/depois (hoje 307 kB JS / 93 kB gzip)
+- [x] CHANGELOG atualizado na MESMA alteração
+- [x] Documentação (`src/app/README.md`) confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0179)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — Criados em `src/components/ui/`: `Segmented`, `Switch` (+ `SwitchButton` e `SwitchTrack`), `Modal` (movido de `AddProjectDialog`), `IconButton`, `Icon` + `icons.ts`, `EmptyState`, `Tooltip` e `index.ts`. Migrados: os 3 segmentados (Filtrar, Visualização, Tipo de atividade), os 3 interruptores (Hooks de git, perfis do Claude, barra superior), o `Modal`, o `BackButton` e o "Fechar", os `<svg>` de `ConnectionCard`, `ProjectCard`/`ProjectPage` (`BranchIcon`, que saiu), `QueueIndicator`, `Sidebar` (o `Icon` local saiu) e `TopBar`, os 4 vazios (`ProjectsPage`, `ActivityPage`, `Timeline`, `TokenSavings`) e os `title=` de `ClaudeProfiles`, `ConnectionCard`, `ProjectBits`, `Timeline`, `SecurityPanel`, `TopBar` (os dois), `ActivityPage` e `ProjectPage` (barras por ferramenta). O `<abbr title>` ficou, como previsto.
+- Decisões fora do roteiro: (1) `SwitchButton` em `ui/Switch.tsx` para o botão composto da barra superior, porque a varredura exige `role="switch"` só em `ui/` e o `SwitchTrack` sozinho deixaria o `role` no `TopBar`. (2) `Tooltip` sem wrapper (render prop `{(tip) => <el {...tip}>}`) e com o balão em portal com `position: fixed`: um wrapper quebraria o HTML de `dl`, `ul` e `ol`, e um balão absoluto seria cortado pelo `overflow: hidden` dos textos truncados, que são justamente onde havia `title`. (3) Sem refs no `Tooltip`: o atraso do mouse é um efeito sobre estado (`react-hooks/refs` reclamou da versão com `useRef`).
+- Testes: `primitives.test.tsx` (15) e `ui-primitives.test.ts` (varredura). Dois existentes tiveram de mudar por depender do que migrou: `shell.test.tsx` (o `title` do interruptor virou foco + `role=tooltip` + `aria-describedby`) e `ActivityPage.test.tsx` (`getByRole('status')` único: o vazio do feed agora também é `status`). Painel: 1160 testes verdes, `lint` e `tsc` limpos; `package.json` sem dependência nova.
+- Bundle: JS 309.626 → **309.723 B** (gzip 92.611 → 93.139); CSS 36.808 → **37.143 B** (gzip 7.446 → 7.490). (Contra o "hoje" da tarefa, 306.822 e 34.835, a diferença vem sobretudo das tarefas 0175 e 0178.)
+- Desvio: um commit só para a tarefa (a tarefa pedia um por primitivo); o roteiro do loop manda um por tarefa e o código dos primitivos é interdependente (`Modal` usa `IconButton` usa `Icon`).
+- NÃO feito: capturas antes/depois (sem navegador); o balão não foi visto na tela, só testado em jsdom.

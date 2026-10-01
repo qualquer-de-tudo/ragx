@@ -6,30 +6,7 @@ import { ProjectActionButton, ProjectNumbers } from './ProjectBits'
 import { Badge } from '../shell/Badge'
 import { LivePill } from '../shell/LivePill'
 import { RelativeTime } from '../shell/RelativeTime'
-
-export function BranchIcon() {
-  return (
-    <svg
-      className="project-card-icon"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="6" cy="5" r="2.2" />
-      <circle cx="6" cy="19" r="2.2" />
-      <circle cx="18" cy="7" r="2.2" />
-      <path d="M6 7.2v9.6" />
-      <path d="M18 9.2c0 5-6 4-11 7.8" />
-    </svg>
-  )
-}
+import { Icon } from '../ui/Icon'
 
 function branchLine(project: ProjectSnapshot): { current: string; indexBranch: string | null } {
   const git = project.git
@@ -122,7 +99,7 @@ export const ProjectCard = memo(function ProjectCard({
       <p className="project-card-where">{hint ?? 'sem dados'}</p>
 
       <p className="project-card-line">
-        <BranchIcon />
+        <Icon name="branch" size={14} className="project-card-icon" />
         <span className="project-card-branch">{current}</span>
         {indexBranch !== null && <span className="is-warning">índice da branch {indexBranch}</span>}
       </p>

@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { Tooltip } from './ui/Tooltip'
 import type { SecurityScanResult } from '../types/ragx-bridge'
 import { readCache, writeScan, type Cached } from '../onDemandCache'
 import { formatNumber, formatTime } from '../format'
@@ -111,16 +112,20 @@ function ScanSummary({ result, at }: { result: SecurityScanResult; at: string })
                 <span className={`sev sev-${sev.tone}`}>
                   <span aria-hidden="true">{sev.icon}</span> {sev.label}
                 </span>
-                <span className="finding-main" title={b.line > 0 ? `${b.path}:${b.line}` : b.path}>
-                  <span className="finding-path">
-                    <span className="finding-file">
-                      {fileName(b.path)}
-                      {b.line > 0 && <span className="finding-line">:{b.line}</span>}
+                <Tooltip text={b.line > 0 ? `${b.path}:${b.line}` : b.path} focusable>
+                  {(tip) => (
+                    <span className="finding-main" {...tip}>
+                      <span className="finding-path">
+                        <span className="finding-file">
+                          {fileName(b.path)}
+                          {b.line > 0 && <span className="finding-line">:{b.line}</span>}
+                        </span>
+                        {dirName(b.path) && <span className="finding-dir">{dirName(b.path)}</span>}
+                      </span>
+                      <span className="finding-rule">{b.rule}</span>
                     </span>
-                    {dirName(b.path) && <span className="finding-dir">{dirName(b.path)}</span>}
-                  </span>
-                  <span className="finding-rule">{b.rule}</span>
-                </span>
+                  )}
+                </Tooltip>
               </li>
             )
           })}

@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Primitivos de UI compartilhados no painel.** O controle segmentado, o interruptor, o modal com foco preso, os
+  ícones em SVG e as telas vazias estavam copiados à mão em vários arquivos (2 dos 3 segmentados não tinham setas), e
+  10 atributos `title` levavam informação que teclado e toque não alcançam. Agora vivem em `src/components/ui/`
+  (`Segmented`, `Switch`, `Modal`, `Icon`, `IconButton`, `EmptyState`, `Tooltip`), os usos foram migrados, os 3 grupos
+  segmentados respondem a seta, Home e End, a dica abre no foco e no mouse, e um teste impede a volta (RAGX-0179).
 - **Tokens de design completos e contraste AA no painel.** O `index.css` só tinha cor, raio e fonte, e 8 pares de
   cor ficavam abaixo de 4,5:1 (texto de apoio, botão primário e perigo, selos azul e vermelho). Agora há tokens de
   espaço, tipografia, camadas, movimento e estado semântico completo, o contraste passa AA (calculado por teste, por

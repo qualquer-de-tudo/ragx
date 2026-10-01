@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { JobKind, JobView, ProjectSnapshot } from '../types/ragx-bridge'
 import {
   STATE_ACTION,
@@ -15,6 +15,8 @@ import { ProjectCard } from '../components/project/ProjectCard'
 import { AddProjectDialog } from '../components/project/AddProjectDialog'
 import { ProjectActionButton } from '../components/project/ProjectBits'
 import { Badge } from '../components/shell/Badge'
+import { EmptyState } from '../components/ui/EmptyState'
+import { Segmented } from '../components/ui/Segmented'
 import { LivePill } from '../components/shell/LivePill'
 import { RelativeTime } from '../components/shell/RelativeTime'
 import { Stat } from '../components/shell/Card'
@@ -28,56 +30,6 @@ const FILTERS: Array<{ id: Filter; label: string; test: (s: ProjectState) => boo
   { id: 'outdated', label: 'Defasados', test: isOutdated },
   { id: 'problem', label: 'Com problema', test: hasProblem },
 ]
-
-/** Controle segmentado com semântica de grupo de rádio: setas mudam a escolha. */
-function SegmentedFilter({
-  value,
-  counts,
-  onChange,
-}: {
-  value: Filter
-  counts: Record<Filter, number>
-  onChange: (f: Filter) => void
-}) {
-  const refs = useRef<Array<HTMLButtonElement | null>>([])
-
-  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    let next: number
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (index + 1) % FILTERS.length
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + FILTERS.length) % FILTERS.length
-    else if (e.key === 'Home') next = 0
-    else if (e.key === 'End') next = FILTERS.length - 1
-    else return
-    e.preventDefault()
-    onChange(FILTERS[next].id)
-    refs.current[next]?.focus()
-  }
-
-  return (
-    <div className="segmented" role="radiogroup" aria-label="Filtrar projetos">
-      {FILTERS.map((f, i) => {
-        const checked = f.id === value
-        return (
-          <button
-            key={f.id}
-            ref={(el) => {
-              refs.current[i] = el
-            }}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            tabIndex={checked ? 0 : -1}
-            className="segmented-item"
-            onClick={() => onChange(f.id)}
-            onKeyDown={(e) => onKeyDown(e, i)}
-          >
-            {f.label} ({counts[f.id]})
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 /** Tarefa ativa do tipo da ação do botão do card (`null` quando a ação só abre o detalhe). */
 function activeAction(jobs: readonly JobView[], projectId: string, state: ProjectState): JobView | null {
@@ -239,7 +191,12 @@ export function ProjectsPage({
     <section className="page">
       <header className="page-head">
         <h1 className="page-title">Projetos</h1>
-        <SegmentedFilter value={filter} counts={counts} onChange={setFilter} />
+        <Segmented
+          label="Filtrar projetos"
+          value={filter}
+          options={FILTERS.map((f) => ({ value: f.id, label: `${f.label} (${counts[f.id]})` }))}
+          onChange={setFilter}
+        />
       </header>
 
       {projects.length > 0 && (
@@ -266,20 +223,15 @@ export function ProjectsPage({
             ))}
           </select>
         </label>
-        <div className="segmented" role="radiogroup" aria-label="Visualização">
-          {(['grade', 'lista'] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={view === v}
-              className="segmented-item"
-              onClick={() => setView(v)}
-            >
-              {v === 'grade' ? 'Grade' : 'Lista'}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Visualização"
+          value={view}
+          options={[
+            { value: 'grade', label: 'Grade' },
+            { value: 'lista', label: 'Lista' },
+          ]}
+          onChange={setView}
+        />
       </div>
 
       {view === 'lista' ? (
@@ -353,9 +305,7 @@ export function ProjectsPage({
       )}
 
       {shown.length === 0 && (
-        <p className="empty" role="status">
-          Nenhum projeto neste filtro.
-        </p>
+        <EmptyState>Nenhum projeto neste filtro.</EmptyState>
       )}
 
       <div className="page-notice" role="status" aria-live="polite">

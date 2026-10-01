@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { SavingsDay, SavingsSeries } from '../../../electron/data/types'
 import { formatNumber, formatPercent } from '../../format'
 import { TrialEstimate } from '../EstimatePanel'
+import { EmptyState } from '../ui/EmptyState'
 
 const HEIGHT = 200
 const PAD = { top: 12, right: 8, bottom: 24, left: 44 }
@@ -237,10 +238,10 @@ export function TokenSavings({
           </p>
         </>
       ) : (
-        <p className="dim">
+        <EmptyState className="dim">
           Ainda sem medições de uso real neste projeto. O gráfico enche sozinho quando um agente usar o build_context
           do RAGX aqui. Enquanto isso, dá para simular abaixo.
-        </p>
+        </EmptyState>
       )}
 
       <TrialEstimate projectId={projectId} projectPath={projectPath} />

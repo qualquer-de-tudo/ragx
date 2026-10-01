@@ -13,6 +13,9 @@ import { formatCompact, formatNumber, formatPercent, formatRelative, formatTime 
 import { Section, Stat } from '../components/shell/Card'
 import { sourceLabel } from '../indexSource'
 import { useClock } from '../hooks/useClock'
+import { EmptyState } from '../components/ui/EmptyState'
+import { Segmented } from '../components/ui/Segmented'
+import { Tooltip } from '../components/ui/Tooltip'
 
 const FILTERS: ActivityFilter[] = ['all', 'mcp', 'cli', 'session']
 
@@ -130,20 +133,12 @@ export function ActivityPage({
 
       <Section title="Linha do tempo de uso">
         <div className="activity-toolbar">
-          <div className="segmented" role="radiogroup" aria-label="Tipo de atividade">
-            {FILTERS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                role="radio"
-                aria-checked={kind === f}
-                className="segmented-item"
-                onClick={() => setKind(f)}
-              >
-                {FILTER_LABEL[f]}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label="Tipo de atividade"
+            value={kind}
+            options={FILTERS.map((f) => ({ value: f, label: FILTER_LABEL[f] }))}
+            onChange={setKind}
+          />
           <label className="activity-project-filter">
             <span className="dim">Projeto</span>
             <select value={projectId ?? ''} onChange={(e) => setProjectId(e.target.value || null)}>
@@ -158,11 +153,10 @@ export function ActivityPage({
         </div>
 
         {shown.length === 0 ? (
-          <p className="dim activity-empty">
+          <EmptyState className="dim activity-empty">
             {events.length === 0
               ? 'Nenhuma atividade nas últimas 24 h. Ela aparece aqui assim que um agente usar o RAGX por MCP, alguém rodar ragx search ou ragx context no terminal, ou uma sessão do Claude Code abrir num projeto indexado.'
-              : 'Nada com esse filtro nas últimas 24 h.'}
-          </p>
+              : 'Nada com esse filtro nas últimas 24 h.'}</EmptyState>
         ) : (
           <ol className="activity-feed" aria-label="Eventos, do mais novo para o mais antigo">
             {shown.map((e) => {
@@ -170,9 +164,13 @@ export function ActivityPage({
               const detalhes = [tokensText(e), msText(e.ms), e.ok === false ? 'falhou' : null].filter(Boolean)
               return (
                 <li key={e.id} className={`activity-item${fresh ? ' activity-item-fresh' : ''}`}>
-                  <time className="activity-time mono" dateTime={e.ts} title={new Date(e.ts).toLocaleString('pt-BR')}>
-                    {formatTime(e.ts)}
-                  </time>
+                  <Tooltip text={new Date(e.ts).toLocaleString('pt-BR')} focusable>
+                    {(tip) => (
+                      <time className="activity-time mono" dateTime={e.ts} {...tip}>
+                        {formatTime(e.ts)}
+                      </time>
+                    )}
+                  </Tooltip>
                   <span className={`activity-kind activity-kind-${e.kind}`}>{KIND_LABEL[e.kind]}</span>
                   <span className="activity-main">
                     <span className="activity-what mono">{whatLabel(e)}</span>

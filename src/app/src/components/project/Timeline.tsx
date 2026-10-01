@@ -2,6 +2,8 @@ import { useId, useState } from 'react'
 import { parseRunsPage, type IndexRun } from '../../projectStatus'
 import { formatNumber } from '../../format'
 import { RelativeTime } from '../shell/RelativeTime'
+import { EmptyState } from '../ui/EmptyState'
+import { Tooltip } from '../ui/Tooltip'
 import { sourceLabel } from '../../indexSource'
 
 /** Tamanho da página: o `ragx status` traz as 10 primeiras, o `ragx runs` o resto. */
@@ -93,7 +95,7 @@ export function Timeline({
       {shown === null ? (
         <p className="dim">{pending}</p>
       ) : shown.length === 0 ? (
-        <p className="dim">Nenhuma indexação registrada ainda.</p>
+        <EmptyState className="dim">Nenhuma indexação registrada ainda.</EmptyState>
       ) : (
         <ol className="timeline">
           {shown.map((run, i) => {
@@ -105,9 +107,13 @@ export function Timeline({
                 <div className="timeline-body">
                   <p className="timeline-head">
                     {at ? (
-                      <time className="timeline-when" dateTime={at} title={absolute(at)}>
-                        <RelativeTime iso={at} />
-                      </time>
+                      <Tooltip text={absolute(at)} focusable>
+                        {(tip) => (
+                          <time className="timeline-when" dateTime={at} {...tip}>
+                            <RelativeTime iso={at} />
+                          </time>
+                        )}
+                      </Tooltip>
                     ) : (
                       <span className="timeline-when">sem dados</span>
                     )}

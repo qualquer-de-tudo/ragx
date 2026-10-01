@@ -540,6 +540,27 @@
   color: var(--ink-2);
 }
 
+.empty-title {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Dica (ui/Tooltip): fixa na janela, calculada ao abrir, para não ser cortada pelo overflow de quem trunca o texto. */
+.tooltip {
+  position: fixed;
+  z-index: var(--z-toast);
+  max-width: 320px;
+  padding: var(--sp-6) var(--sp-8);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
 .hint {
   font-size: var(--fs-md);
   color: var(--ink-3);

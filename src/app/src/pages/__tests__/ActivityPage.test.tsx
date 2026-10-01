@@ -69,7 +69,8 @@ describe('ActivityPage', () => {
   it('sem eventos, explica de onde a atividade vem', () => {
     renderPage([])
     expect(screen.getByText(/Nenhuma atividade nas últimas 24 h/)).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('nada no último minuto')
+    // O vazio da linha do tempo também é `role="status"` (EmptyState): procura o do último minuto entre eles.
+    expect(screen.getAllByRole('status').map((n) => n.textContent).join(' ')).toContain('nada no último minuto')
   })
 
   it('mostra o evento com quem, o quê, onde, tokens e tempo; clicar no projeto abre o projeto', () => {

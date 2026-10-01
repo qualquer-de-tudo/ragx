@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { JobState, JobView } from '../../types/ragx-bridge'
 import { formatEta, formatNumber } from '../../format'
 import { Badge, type Tone } from './Badge'
+import { Icon } from '../ui/Icon'
 
 const STATE: Record<JobState, { label: string; tone: Tone }> = {
   queued: { label: 'Na fila', tone: 'muted' },
@@ -131,20 +132,7 @@ export function QueueIndicator({ jobs, onCancel }: { jobs: JobView[]; onCancel: 
         {running ? (
           <span className="spinner" aria-hidden="true" />
         ) : (
-          <svg
-            className="queue-icon"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path d="M5 7h14M5 12h14M5 17h9" />
-          </svg>
+          <Icon name="queue" className="queue-icon" />
         )}
         {triggerText(active.length)}
       </button>

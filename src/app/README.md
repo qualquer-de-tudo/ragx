@@ -285,6 +285,17 @@ com texto branco (>= 4,5:1); texto colorido usa `--accent-text` e `--critical-te
 `css-ratchet.test.ts` (`gap`/`padding`/`margin` com `px` literal só podem diminuir; baixe o número em
 `css-ratchet.json` ao migrar mais para `--sp-*`). Só o rótulo da logo (`.brand-name`, 10 px) fica fora da escala.
 
+## Primitivos de UI
+
+Os padrões repetidos moram em `src/components/ui/` (reexportados por `ui/index.ts`), sem biblioteca: `Segmented`
+(grupo de rádio com setas, Home e End e só o marcado no Tab), `Switch` e `SwitchButton`/`SwitchTrack` (`role="switch"`),
+`Modal` (foco preso, Esc, clique fora, devolve o foco), `Icon` (mapa `ICONS` em `ui/icons.ts`, sempre `aria-hidden`),
+`IconButton` (`label` obrigatório no tipo), `EmptyState` (`role="status"`) e `Tooltip` (no lugar do atributo
+`title`, que teclado e toque não alcançam: abre no foco e no mouse com atraso, `aria-describedby`, Esc fecha, balão
+fixo na janela por portal, sem wrapper: `{(tip) => <elemento {...tip} />}`). `ui-primitives.test.ts` falha se
+`role="radio"`, `role="switch"` ou `<svg` aparecerem fora de `ui/` (salvo `RagxMark` e o gráfico de `TokenSavings`).
+Só o `<abbr title="Documentos">` da lista continua com `title`.
+
 ## Segurança do renderer
 
 O painel não carrega nada de fora (um teste, `no-remote-resources.test.ts`, falha se aparecer `http(s)://`, `ws://`

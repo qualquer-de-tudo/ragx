@@ -1,6 +1,9 @@
 import type { ClaudeToggle } from '../../hooks/useClaudeIntegration'
 import type { JobView, Snapshot } from '../../types/ragx-bridge'
 import { QueueIndicator } from './QueueIndicator'
+import { Icon } from '../ui/Icon'
+import { SwitchButton, SwitchTrack } from '../ui/Switch'
+import { Tooltip } from '../ui/Tooltip'
 
 export type Health = NonNullable<Snapshot['connectionsHealth']> | null
 
@@ -42,21 +45,7 @@ export function TopBar({
   return (
     <header className="topbar">
       <div className="search">
-        <svg
-          className="search-icon"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="m16 16 4 4" />
-        </svg>
+        <Icon name="search" className="search-icon" />
         <input
           type="search"
           className="search-input"
@@ -72,40 +61,44 @@ export function TopBar({
       <div className="topbar-end">
         {/* Interruptor global: "só o Claude" ou "Claude com RAGX". O estado é
             dito em texto (Ligado/Desligado), não só pela cor do trilho. */}
-        <button
-          type="button"
-          role="switch"
-          className={`topbar-button claude-toggle${claude.enabled ? ' is-on' : ''}${claude.error ? ' has-error' : ''}`}
-          aria-checked={claude.enabled === true}
-          aria-label="RAGX no Claude Code"
-          aria-busy={claude.busy}
-          disabled={claude.enabled === null || claude.busy}
-          title={claudeTitle(claude)}
-          onClick={claude.toggle}
-        >
-          <span className="switch-track" aria-hidden="true">
-            <span className="switch-thumb" />
-          </span>
-          RAGX no Claude
-          <span className="switch-state">
-            {claude.error ? 'erro' : claude.enabled === null ? '…' : claude.enabled ? 'ligado' : 'desligado'}
-          </span>
-          {claude.changed && !claude.error && <span className="switch-hint">próxima sessão</span>}
-        </button>
+        <Tooltip text={claudeTitle(claude)}>
+          {(tip) => (
+            <SwitchButton
+              checked={claude.enabled === true}
+              className={`topbar-button claude-toggle${claude.enabled ? ' is-on' : ''}${claude.error ? ' has-error' : ''}`}
+              aria-label="RAGX no Claude Code"
+              aria-busy={claude.busy}
+              disabled={claude.enabled === null || claude.busy}
+              {...tip}
+              onClick={claude.toggle}
+            >
+              <SwitchTrack />
+              RAGX no Claude
+              <span className="switch-state">
+                {claude.error ? 'erro' : claude.enabled === null ? '…' : claude.enabled ? 'ligado' : 'desligado'}
+              </span>
+              {claude.changed && !claude.error && <span className="switch-hint">próxima sessão</span>}
+            </SwitchButton>
+          )}
+        </Tooltip>
         <QueueIndicator jobs={jobs} onCancel={onCancelJob} />
         {/* O texto visível começa por "Conexões" e diz o estado quando algo
             não está bem, então a cor do ponto nunca é o único sinal. */}
-        <button
-          type="button"
-          className={`topbar-button health health-${key}`}
-          aria-label={h.label}
-          title={h.label}
-          onClick={onOpenConnections}
-        >
-          <span className="health-dot" aria-hidden="true" />
-          Conexões
-          {h.state && <span className="health-state">{h.state}</span>}
-        </button>
+        <Tooltip text={h.label}>
+          {(tip) => (
+            <button
+              type="button"
+              className={`topbar-button health health-${key}`}
+              aria-label={h.label}
+              {...tip}
+              onClick={onOpenConnections}
+            >
+              <span className="health-dot" aria-hidden="true" />
+              Conexões
+              {h.state && <span className="health-state">{h.state}</span>}
+            </button>
+          )}
+        </Tooltip>
       </div>
     </header>
   )

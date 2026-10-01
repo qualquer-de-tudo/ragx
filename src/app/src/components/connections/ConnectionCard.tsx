@@ -5,6 +5,8 @@ import { activeConnectionJob, activeOllamaSwitch, jobStateLabel } from '../../st
 import { enqueueConnectionAction, measureOllama } from '../../jobs'
 import { formatRelative } from '../../format'
 import { useClock } from '../../hooks/useClock'
+import { Icon } from '../ui/Icon'
+import { Tooltip } from '../ui/Tooltip'
 
 const BADGE: Record<ConnectionCheck['state'], { tone: Tone; label: string }> = {
   ok: { tone: 'good', label: 'Conectado' },
@@ -56,26 +58,9 @@ function HelpBlock({ text }: { text: string }) {
 
 /** Ícone de cada serviço, para o olho achar a faixa sem ler o título. */
 function ConnIcon({ id }: { id: ConnectionCheck['id'] | 'pending' }) {
-  const paths: Record<string, ReactNode> = {
-    ragx: (
-      <>
-        <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
-        <path d="m7.5 10 2.5 2-2.5 2M12.5 14.5h4" />
-      </>
-    ),
-    claude: <path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18" />,
-    ollama: (
-      <>
-        <rect x="6" y="6" width="12" height="12" rx="2" />
-        <path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3" />
-      </>
-    ),
-  }
   return (
     <span className={`conn-icon conn-icon-${id}`} aria-hidden="true">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        {paths[id] ?? <circle cx="12" cy="12" r="7" />}
-      </svg>
+      <Icon name={id} size={20} strokeWidth={1.6} />
     </span>
   )
 }
@@ -242,7 +227,9 @@ export const ConnectionCard = memo(function ConnectionCard({
           {facts.map((f) => (
             <div key={f.label} className="conn-fact">
               <dt>{f.label}</dt>
-              <dd title={f.value}>{f.value}</dd>
+              <Tooltip text={f.value} focusable>
+                {(tip) => <dd {...tip}>{f.value}</dd>}
+              </Tooltip>
             </div>
           ))}
         </dl>

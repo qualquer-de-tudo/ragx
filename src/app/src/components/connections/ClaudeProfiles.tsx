@@ -1,6 +1,8 @@
 import { useId } from 'react'
 import type { ClaudeToggle } from '../../hooks/useClaudeIntegration'
 import { ConfirmButton } from '../project/ConfirmButton'
+import { Switch } from '../ui/Switch'
+import { Tooltip } from '../ui/Tooltip'
 
 /**
  * Os perfis do Claude Code, dentro da faixa do Claude em Conexões: uma linha
@@ -42,9 +44,13 @@ export function ClaudeProfiles({ claude }: { claude: ClaudeToggle }) {
                   <span className="profile-origin">{p.added ? 'adicionado' : 'detectado'}</span>
                   {p.enabled && !p.hint && <span className="profile-warn">sem a dica de início de sessão</span>}
                 </p>
-                <p className="mono dim profile-dir" title={p.dir}>
-                  {p.dir}
-                </p>
+                <Tooltip text={p.dir} focusable>
+                  {(tip) => (
+                    <p className="mono dim profile-dir" {...tip}>
+                      {p.dir}
+                    </p>
+                  )}
+                </Tooltip>
               </div>
               <div className="profile-actions">
                 {p.added && (
@@ -55,17 +61,12 @@ export function ClaudeProfiles({ claude }: { claude: ClaudeToggle }) {
                     disabled={busy}
                   />
                 )}
-                <button
-                  type="button"
-                  role="switch"
-                  className="switch"
-                  aria-checked={p.enabled}
-                  aria-label={`RAGX no perfil ${p.name}`}
+                <Switch
+                  checked={p.enabled}
+                  label={`RAGX no perfil ${p.name}`}
                   disabled={busy}
-                  onClick={() => claude.setProfile(p.id, !p.enabled)}
-                >
-                  <span className="switch-knob" aria-hidden="true" />
-                </button>
+                  onChange={(next) => claude.setProfile(p.id, next)}
+                />
               </div>
             </li>
           ))}
