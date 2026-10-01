@@ -24,6 +24,8 @@ correspondente; regras do board em [README.md](README.md); plano geral em
 | | **Total** | | **80** | **~57,75d** |
 
 > Estimativas são ordem de grandeza para um desenvolvedor, não compromisso de prazo.
+>
+> **Este índice detalhado vai até a Fase 14.** As Fases 15 a 18 estão nos `README.md` das próprias pastas, e as Fases 19 a 22 (a v2, RAGX-0129 a 0195) em [ROTEIRO-V2.md](ROTEIRO-V2.md), que traz IDs, dependências e ordem de execução.
 
 ## Fase 0 — Fundação + Security Gate
 

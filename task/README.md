@@ -1,8 +1,8 @@
 # Board de tarefas — RAGX
 
-128 tarefas, 18 fases. As 96 primeiras entregaram o MVP; a Fase 14 vem da
+195 tarefas, 22 fases. As 96 primeiras entregaram o MVP; a Fase 14 vem da
 auditoria de recuperação ([docs/23](../docs/23-auditoria-e-evolucao-do-rag.md)) e a
-Fase 15 do uso real do painel desktop; a Fase 17 é o backlog de distribuição do painel em Windows, Linux e macOS; a Fase 18, atividade ao vivo, lista de projetos e perfis do Claude no painel.
+Fase 15 do uso real do painel desktop; a Fase 17 é o backlog de distribuição do painel em Windows, Linux e macOS; a Fase 18, atividade ao vivo, lista de projetos e perfis do Claude no painel; as Fases 19 a 22 são a **v2**, derivadas da [auditoria 24](../docs/24-auditoria-v2.md) (velocidade e frescor, economia de tokens, recuperação, painel). Ordem de execução e prompt do loop em [ROTEIRO-V2.md](ROTEIRO-V2.md).
 Índice completo em [BACKLOG.md](BACKLOG.md) · plano em [../docs/roadmap.md](../docs/roadmap.md).
 
 ## Estrutura
@@ -30,6 +30,10 @@ task/
 ├── fase-16-instalador-completo.md          1 tarefa  · RAGX-0118
 ├── fase-17-distribuicao-multiplataforma/   6 tarefas · RAGX-0119 .. 0124
 └── fase-18-painel-atividade-e-perfis/      4 tarefas · RAGX-0125 .. 0128
+├── fase-19-velocidade-e-frescor/          25 tarefas · RAGX-0129 .. 0153
+├── fase-20-economia-de-tokens/            12 tarefas · RAGX-0154 .. 0165
+├── fase-21-recuperacao-v2/                 5 tarefas · RAGX-0166 .. 0170
+└── fase-22-painel-v2/                     25 tarefas · RAGX-0171 .. 0195
 ```
 
 Um arquivo por tarefa. ID sequencial e **imutável** — os IDs não são contíguos por
