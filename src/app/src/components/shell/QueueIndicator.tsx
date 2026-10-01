@@ -23,9 +23,15 @@ const FINISHED_SHOWN = 8
 
 const isActive = (j: JobView) => j.state === 'queued' || j.state === 'running'
 
-function triggerText(active: number): string {
-  if (active === 0) return 'Nenhuma tarefa'
-  return active === 1 ? '1 tarefa' : `${active} tarefas`
+/** "Nenhuma tarefa", "1 tarefa", "3 tarefas". Em janela estreita só o número aparece (o resto fica só para leitor de tela). */
+function TriggerText({ active }: { active: number }) {
+  if (active === 0) return <span className="topbar-collapse">Nenhuma tarefa</span>
+  return (
+    <>
+      <span className="queue-count">{active}</span>
+      <span className="topbar-collapse"> {active === 1 ? 'tarefa' : 'tarefas'}</span>
+    </>
+  )
 }
 
 /** Ativas primeiro (na ordem da fila), depois as encerradas mais recentes. */
@@ -134,7 +140,7 @@ export function QueueIndicator({ jobs, onCancel }: { jobs: JobView[]; onCancel: 
         ) : (
           <Icon name="queue" className="queue-icon" />
         )}
-        {triggerText(active.length)}
+        <TriggerText active={active.length} />
       </button>
 
       {open && (

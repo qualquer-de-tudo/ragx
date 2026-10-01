@@ -44,6 +44,7 @@ export function TopBar({
 
   return (
     <header className="topbar">
+      <div className="topbar-inner">
       <div className="search">
         <Icon name="search" className="search-icon" />
         <input
@@ -73,7 +74,7 @@ export function TopBar({
               onClick={claude.toggle}
             >
               <SwitchTrack />
-              RAGX no Claude
+              <span className="topbar-collapse">RAGX no Claude</span>
               <span className="switch-state">
                 {claude.error ? 'erro' : claude.enabled === null ? '…' : claude.enabled ? 'ligado' : 'desligado'}
               </span>
@@ -94,11 +95,12 @@ export function TopBar({
               onClick={onOpenConnections}
             >
               <span className="health-dot" aria-hidden="true" />
-              Conexões
+              <span className="topbar-collapse">Conexões</span>
               {h.state && <span className="health-state">{h.state}</span>}
             </button>
           )}
         </Tooltip>
+      </div>
       </div>
     </header>
   )

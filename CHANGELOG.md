@@ -11,6 +11,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **O painel passa a caber de 450 a 3440 px.** Com zoom de 150% a 200% (600 e 450 px de CSS) a barra superior e o
+  conteúdo estouravam a janela (818 px a 480 px) e, a 3440 px, a barra e o conteúdo tinham bordas diferentes (1084 px
+  de diferença). Agora a barra superior fica compacta até 900 px e em duas linhas até 640 px, o conteúdo e a barra
+  compartilham as mesmas bordas e uma largura máxima que cresce em tela larga, os breakpoints são só 640, 900 e
+  1200, e a economia, o feed e o cartão de projeto reagem ao espaço que têm (`@container`). Um harness
+  (`node scripts/visual-check.mjs`, Edge pelo `playwright-core`) mede 10 telas em 6 larguras: de 96 estouros para 0
+  (RAGX-0181).
 - **Toda falha de ação do painel aparece num aviso.** Enfileirar uma tarefa, cancelar, copiar o texto de ajuda,
   escolher pasta e salvar o fim do assistente só escreviam no console: a pessoa clicava e nada acontecia. Agora um
   aviso (`role="alert"` para erro, `role="status"` para sucesso, no máximo 3, erro some em 8 s e sucesso em 4 s,

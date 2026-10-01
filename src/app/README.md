@@ -272,6 +272,23 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Larguras suportadas
+
+O painel funciona de **450 px** (zoom de 200% numa janela de 900 DIP, o mínimo da janela) a **3440 px** de CSS, e 60
+medições (10 telas x 6 larguras: 450, 480, 600, 900, 1280, 3440) dão 0 elemento fora da janela. Breakpoints, só estes
+(`src/breakpoints.ts`, conferido por `css-breakpoints.test.ts`): **640** (barra superior em duas linhas, barra lateral
+de 56 px), **900** (barra superior compacta: "RAGX no Claude", a fila e "Conexões" ficam só com trilho/contador/ponto,
+o texto continua para o leitor de tela) e **1200** (a largura máxima do conteúdo e da barra superior vira
+`clamp(1200px, 55vw, 1800px)`, e as duas têm as mesmas bordas). A economia, o feed de atividade e o cartão de
+projeto reagem ao espaço que têm (`@container`), não à janela.
+
+Para repetir a medição: `npm run build && node scripts/visual-check.mjs` (usa o Microsoft Edge pelo `playwright-core`,
+sem baixar navegador, com `window.ragx` simulado em `scripts/visual-fixtures/bridge.js`; `--widths`, `--screens`,
+`--shots <pasta>` para salvar capturas, `--json`). Sai com 2 se não achar o Edge ou o `dist/`. Nunca roda no
+`npm test`. `node scripts/visual-probe.mjs --screen atividade --width 450 --selector ".activity-feed"` lista a
+largura de cada ancestral, para achar quem alarga uma coluna (a causa de quase todo estouro foi uma grade sem
+`grid-template-columns: minmax(0, 1fr)`).
+
 ## Tokens de design e contraste
 
 Toda cor, tamanho de fonte, camada e duração do renderer vem de um token em `src/index.css` (`:root`): superfícies e

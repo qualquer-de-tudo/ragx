@@ -1,5 +1,8 @@
-/* Casca do painel: barra lateral de ícones (72px), barra superior (56px) e
-   conteúdo com largura máxima. Sem sombras: o que separa é borda de 1px. */
+/* Casca do painel: barra lateral de ícones (72px, 56px abaixo de 640px), barra superior (56px; duas linhas abaixo de
+   640px) e conteúdo com largura máxima. Sem sombras: o que separa é borda de 1px.
+
+   Breakpoints (os únicos em @media, ver `src/breakpoints.ts`): 640, 900 e 1200. Componentes que dependem do espaço
+   que têm, e não da janela, usam @container. */
 
 .shell {
   display: grid;
@@ -9,18 +12,19 @@
 
 .shell-main {
   display: grid;
-  grid-template-rows: 56px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
 }
 
 .content {
-  overflow-y: auto;
+  overflow-y: scroll; /* a calha fica sempre: a barra superior compensa a mesma largura */
   min-height: 0;
 }
 
 .content-inner {
-  max-width: 1200px;
+  max-width: var(--content-max);
   margin: 0 auto;
   padding: 28px var(--sp-32);
 }
@@ -106,15 +110,23 @@
 /* ── barra superior ────────────────────────────────────────────────── */
 
 .topbar {
+  padding-right: var(--scrollbar-w); /* a mesma calha do .content */
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+/* A mesma largura máxima e as mesmas bordas do .content-inner: em tela larga a barra e o conteúdo se alinham. */
+.topbar-inner {
   display: grid;
   /* As laterais nunca ficam menores que o conteúdo delas: a busca encolhe
      antes de encostar nos botões da direita. */
   grid-template-columns: minmax(max-content, 1fr) minmax(200px, 440px) minmax(max-content, 1fr);
   align-items: center;
   gap: var(--sp-16);
-  padding: 0 var(--sp-20) 0 var(--sp-32);
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
+  min-height: 56px;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 var(--sp-32);
 }
 
 .search {
@@ -300,9 +312,62 @@
   font-size: var(--fs-sm);
 }
 
-@media (max-width: 1000px) {
+/* Texto que some da barra em janela estreita mas continua para o leitor de tela (o nome acessível não muda). */
+@media (max-width: 900px) {
+  .topbar-inner {
+    grid-template-columns: minmax(120px, 1fr) auto;
+    padding: 0 var(--sp-16);
+  }
+
+  .search {
+    grid-column: 1;
+  }
+
+  .topbar-end {
+    grid-column: 2;
+  }
+
+  .topbar-collapse {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .switch-hint {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .topbar-inner {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--sp-8);
+    padding: var(--sp-8) var(--sp-16);
+  }
+
+  .topbar-end {
+    grid-column: 1;
+    justify-self: stretch;
+    justify-content: space-between;
+  }
+
+  .nav-item {
+    width: 52px;
+  }
+
+  .nav-label {
+    max-width: 52px;
+  }
+
+  .content-inner {
+    padding: var(--sp-16);
   }
 }
 
@@ -460,6 +525,7 @@
 
 .page-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
@@ -853,8 +919,10 @@
 }
 
 /* Uma faixa por serviço, na largura toda. */
+/* Uma coluna que pode encolher: sem isto o caminho longo de um fato alargava o cartão além da janela. */
 .conn-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   padding: 18px 20px;
 }
@@ -927,7 +995,7 @@
 
 .conn-fact {
   flex: 0 1 auto;
-  min-width: 150px;
+  min-width: min(150px, 100%);
   max-width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -1081,9 +1149,12 @@
   color: var(--warning);
 }
 
+/* Em janela estreita o grupo rola em vez de estourar a tela. */
 .segmented {
   display: inline-flex;
   flex: none;
+  max-width: 100%;
+  overflow-x: auto;
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--line-control);
@@ -1538,6 +1609,7 @@
 
 .detail-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-content: start;
   min-width: 0;
@@ -2036,7 +2108,7 @@
   align-items: stretch;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 900px) {
   .detail-grid-top {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2066,7 +2138,12 @@
   border-bottom: 1px solid var(--line);
 }
 
-@media (max-width: 760px) {
+/* O cabeçalho da economia reage ao espaço do card, não à janela. */
+.savings {
+  container-type: inline-size;
+}
+
+@container (max-width: 560px) {
   .savings-head {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2370,10 +2447,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
   font-size: var(--fs-md);
 }
 
 .activity-project-filter select {
+  min-width: 0;
+  max-width: 100%;
   padding: 6px 10px;
   border: 1px solid var(--line-control);
   border-radius: var(--radius-sm);
@@ -2468,7 +2548,12 @@
   text-align: right;
 }
 
-@media (max-width: 960px) {
+/* Linha do feed: com o feed estreito (janela ou zoom), quem/meta descem para baixo do texto. */
+.activity-feed {
+  container-type: inline-size;
+}
+
+@container (max-width: 640px) {
   .activity-item {
     grid-template-columns: 64px 56px minmax(0, 1fr);
     row-gap: 2px;
@@ -2494,6 +2579,7 @@
 
 .conn-sub {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
@@ -2531,6 +2617,7 @@
 
 .profile-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
@@ -2672,6 +2759,16 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   margin: 2px 0 0;
+}
+
+.project-grid > li {
+  container-type: inline-size;
+}
+
+@container (max-width: 260px) {
+  .project-numbers {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .project-numbers > div {
