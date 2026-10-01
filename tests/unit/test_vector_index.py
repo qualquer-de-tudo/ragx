@@ -177,3 +177,15 @@ def test_banco_vazio_devolve_indice_vazio(tmp_path: Path) -> None:
     with open_db(tmp_path / "x.db") as conn:
         idx = load_index(conn)
     assert idx.size == 0
+
+
+def test_resolve_model_e_deterministico_com_o_mesmo_created_at(tmp_path: Path) -> None:
+    from ragx.storage.vectors import _resolve_model, register_model
+
+    with open_db(tmp_path / "x.db") as conn:
+        register_model(conn, "a:um", 8, 4)
+        register_model(conn, "b:dois", 8, 4)
+        conn.execute("UPDATE embedding_models SET created_at = '2026-01-01T00:00:00Z'")
+        conn.commit()
+        escolhidos = {_resolve_model(conn, None)["id"] for _ in range(5)}  # type: ignore[index]
+    assert escolhidos == {"b:dois"}  # o inserido por último vence o empate

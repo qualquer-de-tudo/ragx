@@ -74,6 +74,7 @@ class GraphSearchOutcome:
     expansion: Expansion = field(default_factory=Expansion)
     seeds: int = 0
     timings_ms: dict[str, float] = field(default_factory=dict)
+    partial: str | None = None  # vetores parciais da busca base (RAGX-0136)
 
 
 def graph_search(
@@ -90,6 +91,7 @@ def graph_search(
     t0 = time.perf_counter()
     base = search(cfg, query, mode="hybrid", limit=max(limit * 2, 20), filters=filters)
     out.timings_ms["search"] = (time.perf_counter() - t0) * 1000
+    out.partial = base.partial
     if not base.results:
         return out
 

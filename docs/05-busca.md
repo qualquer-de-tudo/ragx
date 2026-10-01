@@ -146,6 +146,25 @@ class SearchResult:
 Todo resultado carrega obrigatoriamente: **source, chunk, score, metadata**.
 Resultado sem `document_path` é bug, não degradação — o agente precisa poder citar.
 
+### Degradação e vetores parciais
+
+A busca semântica usa o modelo **configurado** (`embedder_id(cfg)`), nunca "o mais recente
+do banco". Quando não dá para usá-la, a busca híbrida segue só com keyword e o
+`SearchOutcome.degraded` diz por quê:
+
+| Situação | `degraded` |
+|---|---|
+| Nenhum vetor no banco | `sem embeddings — rode: ragx index --embed-only` |
+| Há vetores, mas de **outro** modelo | `o índice vetorial é de X (N vetores), mas a configuração pede Y` |
+| O embedder devolve menos dimensões que o índice pede | `o embedder devolveu N dimensões e o índice de Y pede M` |
+| Embedder fora do ar | `embedder indisponível (...) — usando só keyword` |
+
+Vetor **parcial** (o embedder caiu no meio de uma indexação) é outra coisa: o semântico
+**roda**, só que sobre parte dos chunks. O resultado é válido e incompleto, então não é
+`degraded`: vem em `SearchOutcome.partial` (`vetores parciais: N de M chunks`), no
+`ragx search --json`, na resposta MCP (só quando existe) e em `stats.partial_vectors` do
+`ContextPack`. A correção é `ragx index --embed-only`.
+
 Saída da CLI:
 
 ```text

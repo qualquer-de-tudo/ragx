@@ -496,3 +496,32 @@ def test_pasta_sem_indice_nao_vira_erro_interno(tmp_path, monkeypatch) -> None:
     # A mensagem precisa dizer o que fazer, e não apontar para um log ausente.
     assert "ragx init" in out["error"]["message"]
     assert "errors.log" not in out["error"]["message"]
+
+
+def test_resposta_de_busca_so_traz_partial_quando_o_indice_e_parcial(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """RAGX-0136: `partial` aparece só quando existe; não acrescenta `null` ao fio."""
+    import sqlite3
+
+    root = tmp_path_factory.mktemp("mcp_partial")
+    (root / "ragx.toml").write_text(
+        '[project]\nname = "demo"\nid = "demo"\n\n'
+        '[embedding]\nprovider = "hashing"\ndim = 128\nversioned_dim = 64\n',
+        encoding="utf-8",
+    )
+    (root / "auth.py").write_text(AUTH, encoding="utf-8")
+    (root / "doc.md").write_text(DOC, encoding="utf-8")
+    cfg = load_config(root)
+    index_project(cfg)
+    api = KnowledgeAPI(cfg)
+
+    completo = api.search(SearchRequest(query="AuthService token", limit=5), mode="hybrid")
+    assert "partial" not in completo["data"]
+
+    conn = sqlite3.connect(cfg.db_path)
+    conn.execute("DELETE FROM embeddings WHERE rowid IN (SELECT MIN(rowid) FROM embeddings)")
+    conn.commit()
+    conn.close()
+    parcial = api.search(SearchRequest(query="AuthService token", limit=5), mode="hybrid")
+    assert "vetores parciais" in parcial["data"]["partial"]

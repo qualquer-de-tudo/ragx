@@ -60,6 +60,7 @@ def search(
                     "query": query,
                     "mode": outcome.mode,
                     "degraded": outcome.degraded,
+                    **({"partial": outcome.partial} if outcome.partial else {}),
                     "timings_ms": {k: round(v, 2) for k, v in outcome.timings_ms.items()},
                     "results": [
                         {
@@ -85,6 +86,8 @@ def search(
 
     if outcome.degraded:
         console.print(f"\n[yellow]![/] {outcome.degraded}")
+    if outcome.partial:
+        console.print(f"\n[yellow]![/] {outcome.partial}")
 
     if not outcome.results:
         console.print(f"\n[dim]nenhum resultado para[/] [bold]{query}[/]\n")

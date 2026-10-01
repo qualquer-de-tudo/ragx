@@ -73,6 +73,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **A busca usa o modelo de embedding configurado, e avisa quando o índice vetorial é
+  parcial.** `load_index` escolhia o modelo mais recente do banco: com outra dimensão a
+  busca estourava `ValueError: matmul`, e com a mesma dimensão devolvia resultado
+  aleatório em silêncio. Agora usa `embedder_id(cfg)`; sem vetores desse modelo, a
+  busca segue só com keyword e `degraded` cita o modelo do banco e o configurado, com o
+  comando que resolve. Vetor parcial (o embedder caiu no meio) vem em `partial`
+  (`vetores parciais: N de M chunks`) na CLI, no MCP (só quando existe) e em
+  `stats.partial_vectors` do contexto. A deduplicação do `build_context` também lê os
+  vetores do modelo configurado, e `_resolve_model` desempata por `rowid` (RAGX-0136).
 - **O cache do `build_context` não devolve mais o pack de outra consulta.** A chave
   não tinha os filtros, os pesos de busca e do grafo, `reserve_ratio`, `min_sources` nem
   `work_paths`, e a versão do índice já contava uma indexação em andamento: `lang=markdown`

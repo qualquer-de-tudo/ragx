@@ -203,6 +203,8 @@ class KnowledgeAPI:
                 {
                     "mode": out.mode,
                     "degraded": out.degraded,
+                    # só aparece quando existe: não acrescenta `null` ao fio
+                    **({"partial": out.partial} if out.partial else {}),
                     "results": [self._hit(r) for r in out.results],
                 }
             ),

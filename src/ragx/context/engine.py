@@ -28,7 +28,7 @@ from ragx.context import compress as compressor
 from ragx.context.budget import allocate
 from ragx.context.dedup import dedupe_literal, dedupe_near, mmr
 from ragx.core.models import SearchResult
-from ragx.embeddings import build_embedder
+from ragx.embeddings import build_embedder, embedder_id
 from ragx.embeddings.base import dequantize, l2_normalize, unpack_f32
 from ragx.search.service import SearchFilters, search
 from ragx.storage.db import open_db
@@ -202,13 +202,19 @@ def _retrieve(
             filters=filters,
         )
         if out.results:
-            return list(out.results), {
+            stats: dict[str, Any] = {
                 "graph_seeds": out.seeds,
                 "graph_nodes": len(out.expansion.scores),
                 "graph_truncated": out.expansion.truncated,
             }
+            if out.partial:
+                stats["partial_vectors"] = out.partial
+            return list(out.results), stats
     res = search(cfg, query, mode="hybrid", limit=want, filters=filters)
-    return list(res.results), {"graph_seeds": 0, "graph_nodes": 0}
+    stats = {"graph_seeds": 0, "graph_nodes": 0}
+    if res.partial:
+        stats["partial_vectors"] = res.partial
+    return list(res.results), stats
 
 
 def _apply_intent(results: list[SearchResult], intent: dict[str, Any]) -> list[SearchResult]:
@@ -278,16 +284,17 @@ def _vectors_for(
         # Vetores de modelos distintos NÃO são comparáveis — e um banco que já
         # trocou de provider guarda os dois. Sem este filtro, o produto escalar
         # recebe dimensões diferentes e estoura.
-        active = conn.execute(
-            "SELECT id FROM embedding_models ORDER BY created_at DESC LIMIT 1"
-        ).fetchone()
-        if active is None:
+        # O modelo CONFIGURADO, não o mais recente do banco (RAGX-0136): sem
+        # vetores dele, a deduplicação por similaridade simplesmente não roda.
+        try:
+            model_id = embedder_id(cfg)
+        except Exception:
             return {}, None
         ph = ",".join("?" * len(chunk_ids))
         for r in conn.execute(
             f"""SELECT chunk_id, vector, vector_q, q_scale, q_offset
                 FROM embeddings WHERE model_id = ? AND chunk_id IN ({ph})""",
-            [active["id"], *chunk_ids],
+            [model_id, *chunk_ids],
         ):
             if r["vector"] is not None:
                 vectors[r["chunk_id"]] = l2_normalize(unpack_f32(r["vector"]))

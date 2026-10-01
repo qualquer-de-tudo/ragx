@@ -197,7 +197,7 @@ def _resolve_model(conn: sqlite3.Connection, model_id: str | None) -> dict | Non
         r = conn.execute("SELECT * FROM embedding_models WHERE id = ?", (model_id,)).fetchone()
     else:
         r = conn.execute(
-            "SELECT * FROM embedding_models ORDER BY created_at DESC LIMIT 1"
+            "SELECT * FROM embedding_models ORDER BY created_at DESC, rowid DESC LIMIT 1"
         ).fetchone()
     return dict(r) if r else None
 

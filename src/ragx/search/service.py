@@ -15,7 +15,7 @@ import numpy as np
 
 from ragx.config import Config
 from ragx.core.models import ChunkKind, SearchResult
-from ragx.embeddings import build_embedder
+from ragx.embeddings import build_embedder, embedder_id
 from ragx.search import keyword
 from ragx.search.hybrid import matched_by, rrf
 from ragx.search.ranking import diversify, rerank
@@ -38,6 +38,9 @@ class SearchOutcome:
     timings_ms: dict[str, float] = field(default_factory=dict)
     mode: str = "hybrid"
     degraded: str | None = None  # motivo, quando o semântico não pôde rodar
+    #: o semântico RODOU, mas nem todo chunk tem vetor (o embedder caiu no meio):
+    #: o resultado é válido e incompleto, que é diferente de `degraded`
+    partial: str | None = None
 
 
 def search(
@@ -70,8 +73,9 @@ def search(
 
         if mode in ("semantic", "hybrid"):
             t0 = time.perf_counter()
-            sem, degraded = _semantic(conn, cfg, query, candidates, filters)
+            sem, degraded, partial = _semantic(conn, cfg, query, candidates, filters)
             out.timings_ms["semantic"] = (time.perf_counter() - t0) * 1000
+            out.partial = partial
             if degraded:
                 out.degraded = degraded
             else:
@@ -114,19 +118,51 @@ def search(
 
 def _semantic(
     conn: sqlite3.Connection, cfg: Config, query: str, k: int, filters: SearchFilters
-) -> tuple[list[tuple[str, float]], str | None]:
-    index = load_index(conn)
+) -> tuple[list[tuple[str, float]], str | None, str | None]:
+    """(hits, degraded, partial). Usa o modelo CONFIGURADO, não o mais recente do banco.
+
+    Antes `load_index(conn)` pegava o último modelo registrado: com outra dimensão
+    estourava `ValueError: matmul` (fora do `try` do embedder) e, com a mesma
+    dimensão, devolvia resultado aleatório em silêncio (RAGX-0136).
+    """
+    try:
+        wanted = embedder_id(cfg)
+    except Exception as exc:
+        return [], f"embedder indisponível ({type(exc).__name__}) — usando só keyword", None
+
+    index = load_index(conn, wanted)
     if index.size == 0:
-        return [], "sem embeddings — rode: ragx index --embed-only"
+        outros = conn.execute(
+            "SELECT model_id, COUNT(*) AS n FROM embeddings GROUP BY model_id"
+        ).fetchall()
+        if not outros:
+            return [], "sem embeddings — rode: ragx index --embed-only", None
+        quais = ", ".join(f"{r['model_id']} ({r['n']} vetores)" for r in outros)
+        return [], (
+            f"o índice vetorial é de {quais}, mas a configuração pede {wanted} — "
+            "usando só keyword; rode: ragx index --embed-only"
+        ), None
     try:
         embedder = build_embedder(cfg)
         qvec = embedder.embed_query(query)
     except Exception as exc:  # embedder fora do ar não derruba a busca
-        return [], f"embedder indisponível ({type(exc).__name__}) — usando só keyword"
+        return [], f"embedder indisponível ({type(exc).__name__}) — usando só keyword", None
+
+    precisa = index.dim if (index.has_full and cfg.embedding.rescore) else index.versioned_dim
+    if qvec.size < precisa:
+        return [], (
+            f"o embedder devolveu {qvec.size} dimensões e o índice de {wanted} pede {precisa} — "
+            "usando só keyword"
+        ), None
 
     mask = _filter_mask(conn, index.ids, filters)
     hits = index.search(qvec, k, mask=mask, rescore=cfg.embedding.rescore)
-    return hits, None
+    total = int(conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0])
+    partial = (
+        f"vetores parciais: {index.size} de {total} chunks — rode: ragx index --embed-only"
+        if index.size < total else None
+    )
+    return hits, None, partial
 
 
 def _filter_mask(

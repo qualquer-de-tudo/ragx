@@ -161,3 +161,104 @@ def test_embedder_fora_do_ar_degrada_para_keyword(proj: Path) -> None:
     out = search(cfg, "autenticacao", mode="hybrid", limit=5)
     assert out.degraded is not None
     assert out.results, "keyword deve continuar respondendo"
+
+
+# ── RAGX-0136: a busca usa o modelo CONFIGURADO e avisa quando o índice é parcial ──
+def _semantic_ids(out) -> list[str]:  # type: ignore[no-untyped-def]
+    return [r.chunk_id for r in out.results if "semantic" in r.matched_by]
+
+
+def test_modelo_configurado_com_dimensao_diferente_nao_estoura(proj: Path) -> None:
+    """Índice 128d (hashing:256), configuração pede hashing dim=64: era
+    `ValueError: matmul` fora do `try` que só cobria o embedder."""
+    cfg = load_config(proj)
+    cfg.embedding.dim = 64
+    cfg.embedding.versioned_dim = 32
+    out = search(cfg, "autenticacao sso", mode="hybrid", limit=5)
+    assert out.degraded is not None
+    assert "hashing:256" in out.degraded and "hashing:64" in out.degraded
+    assert out.results, "a busca por palavra-chave continua respondendo"
+    assert not _semantic_ids(out)
+
+
+def test_dois_modelos_com_a_mesma_dimensao_usa_o_configurado(proj: Path) -> None:
+    import sqlite3
+
+    import numpy as np
+
+    cfg = load_config(proj)
+    antes = _semantic_ids(search(cfg, "autenticacao sso", mode="semantic", limit=5))
+    assert antes
+
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        conn.execute(
+            "INSERT INTO embedding_models(id, dim, versioned_dim, quant, normalized, created_at) "
+            "VALUES ('outro:modelo', 256, 128, 'int8', 1, '2999-01-01T00:00:00Z')"
+        )
+        rng = np.random.default_rng(7)
+        for (cid,) in conn.execute("SELECT chunk_id FROM embeddings").fetchall():
+            v = rng.standard_normal(256).astype(np.float32)
+            v /= np.linalg.norm(v)
+            q = np.clip(np.round((v[:128] - v[:128].min()) / ((v[:128].max() - v[:128].min()) / 255)),
+                        0, 255).astype(np.uint8)
+            conn.execute(
+                "INSERT INTO embeddings(chunk_id, model_id, vector, vector_q, q_scale, q_offset, created_at) "
+                "VALUES (?, 'outro:modelo', ?, ?, ?, ?, '2999-01-01T00:00:00Z')",
+                (cid, v.tobytes(), q.tobytes(), float((v[:128].max() - v[:128].min()) / 255),
+                 float(v[:128].min())),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    depois = _semantic_ids(search(cfg, "autenticacao sso", mode="semantic", limit=5))
+    assert depois == antes, "a busca leu o modelo mais recente do banco, não o configurado"
+
+
+def test_modelo_configurado_sem_vetores_cita_os_dois_e_nao_usa_semantico(proj: Path) -> None:
+    cfg = load_config(proj)
+    cfg.embedding.provider = "ollama"
+    cfg.embedding.model = "outro-modelo"
+    cfg.embedding.base_url = "http://127.0.0.1:9"
+    out = search(cfg, "autenticacao", mode="hybrid", limit=5)
+    assert out.degraded is not None
+    assert "ollama:outro-modelo" in out.degraded and "hashing:256" in out.degraded
+    assert "embed-only" in out.degraded
+    assert not _semantic_ids(out)
+
+
+def test_indice_sem_vetor_nenhum_mantem_a_mensagem_atual(proj: Path) -> None:
+    import sqlite3
+
+    cfg = load_config(proj)
+    conn = sqlite3.connect(cfg.db_path)
+    conn.execute("DELETE FROM embeddings")
+    conn.commit()
+    conn.close()
+    out = search(cfg, "autenticacao", mode="hybrid", limit=5)
+    assert out.degraded and "sem embeddings" in out.degraded
+
+
+def test_indice_parcial_avisa_e_ainda_busca_no_semantico(proj: Path) -> None:
+    import sqlite3
+
+    cfg = load_config(proj)
+    conn = sqlite3.connect(cfg.db_path)
+    total = conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+    conn.execute(
+        "DELETE FROM embeddings WHERE chunk_id IN "
+        "(SELECT chunk_id FROM embeddings ORDER BY rowid LIMIT ?)", (total // 2,)
+    )
+    conn.commit()
+    restantes = conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0]
+    conn.close()
+    out = search(cfg, "autenticacao sso", mode="hybrid", limit=5)
+    assert out.degraded is None, "o semântico RODOU: não é degradação"
+    assert out.partial is not None
+    assert f"{restantes} de {total}" in out.partial
+    assert _semantic_ids(out) or any(r.matched_by for r in out.results)
+
+
+def test_indice_completo_nao_tem_degraded_nem_partial(proj: Path) -> None:
+    out = search(load_config(proj), "autenticacao sso", mode="hybrid", limit=5)
+    assert out.degraded is None and out.partial is None
