@@ -7,7 +7,7 @@
 | **Estimativa** | 1d |
 | **Depende de** | — |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (C-03, seção 2) · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-V12) · [06-grafo.md](../../docs/06-grafo.md) · [07-context-engine.md](../../docs/07-context-engine.md) · [15-configuracao.md](../../docs/15-configuracao.md) |
-| **Status** | `todo` |
+| **Status** | `review` |
 
 ## Objetivo
 
@@ -15,15 +15,15 @@ A expansão do grafo semeia **todas** as entidades dos documentos dos 100 melhor
 
 ## Entregáveis
 
-- [ ] **Medir primeiro**: script que roda `graph_search` em 12 consultas do próprio repo (as de `tests/eval/queries.yaml`) e imprime sementes, `visited`, `truncated`, chunks vindos do grafo, resultados fora do filtro (com `--path`) e o tempo do grafo excluindo a busca base; registrar em Medição
-- [ ] Semeadura pelo topo (`src/ragx/graph/service.py:99-116`): sementes só das entidades cujo `chunk_id` está nos `cfg.graph.seed_top_k` primeiros chunks (padrão 10; ajustar depois de medir) mais, para chunk sem entidade (prosa), **uma** entidade de arquivo por documento. A nota de âncora é a do melhor chunk do documento, não `1.0` (linhas 112-115 dão `1.0` às sementes de documento, mais que ao chunk de topo). `ORDER BY` determinístico: `score DESC, id`
-- [ ] `src/ragx/config.py:87-93`: `GraphCfg.seed_top_k: int = 10`; documentar em `docs/15-configuracao.md` e `docs/06-grafo.md`
-- [ ] `src/ragx/graph/traversal.py:57-83`: as sementes não contam contra `max_nodes`; o teto vale para nós **expandidos**. Desempate das arestas determinístico (`weight DESC, other_id`) em vez da ordem de retorno do SQLite
-- [ ] Grau só dos visitados: `GraphStore.degrees_for(ids)` em `src/ragx/graph/store.py` (consulta agrupada por `src_id`/`dst_id` sobre os índices `idx_relations_src` e `idx_relations_dst`, com memo dentro de `expand`); `degrees()` (linhas 241-248, subconsulta correlacionada sobre **todas** as entidades) deixa de ser chamado em `traversal.py:49`
-- [ ] Filtros honrados: extrair o predicado de `_filter_mask` (`src/ragx/search/service.py:132-150`) para `filter_chunk_ids(conn, ids, filters)`, com a **mesma** semântica de `LIKE` (`*` vira `%`), e aplicá-lo aos chunks vindos do grafo antes de `_hydrate` (`graph/service.py:149-154`) e às sementes
-- [ ] `ragx context --lang/--path` (`src/ragx/cli/commands/context_cmd.py:45`) já entrega `SearchFilters(lang, path_glob)` a `graph_search`: passa a valer também para o que vem do grafo. `ragx graph-search` só tem `--lang` (`graph_cmd.py:149`) e o MCP `search_graph` só repassa `lang` (`server.py:402-405`): os contratos ficam como estão (o do MCP é revisto na RAGX-0157)
-- [ ] `--explain` e `pack.stats` (`src/ragx/context/engine.py:199-203`) passam a mostrar sementes, nós expandidos, truncado e quantos chunks vieram **só** do grafo
-- [ ] `docs/06-grafo.md`: descrever a semeadura e o filtro; corrigir qualquer número de "209 nós de expansão" que sobrar
+- [x] **Medir primeiro**: script que roda `graph_search` em 12 consultas do próprio repo (as de `tests/eval/queries.yaml`) e imprime sementes, `visited`, `truncated`, chunks vindos do grafo, resultados fora do filtro (com `--path`) e o tempo do grafo excluindo a busca base; registrar em Medição
+- [x] Semeadura pelo topo (`src/ragx/graph/service.py:99-116`): sementes só das entidades cujo `chunk_id` está nos `cfg.graph.seed_top_k` primeiros chunks (padrão 10; ajustar depois de medir) mais, para chunk sem entidade (prosa), **uma** entidade de arquivo por documento. A nota de âncora é a do melhor chunk do documento, não `1.0` (linhas 112-115 dão `1.0` às sementes de documento, mais que ao chunk de topo). `ORDER BY` determinístico: `score DESC, id`
+- [x] `src/ragx/config.py:87-93`: `GraphCfg.seed_top_k: int = 10`; documentar em `docs/15-configuracao.md` e `docs/06-grafo.md`
+- [x] `src/ragx/graph/traversal.py:57-83`: as sementes não contam contra `max_nodes`; o teto vale para nós **expandidos**. Desempate das arestas determinístico (`weight DESC, other_id`) em vez da ordem de retorno do SQLite
+- [x] Grau só dos visitados: `GraphStore.degrees_for(ids)` em `src/ragx/graph/store.py` (consulta agrupada por `src_id`/`dst_id` sobre os índices `idx_relations_src` e `idx_relations_dst`, com memo dentro de `expand`); `degrees()` (linhas 241-248, subconsulta correlacionada sobre **todas** as entidades) deixa de ser chamado em `traversal.py:49`
+- [x] Filtros honrados: extrair o predicado de `_filter_mask` (`src/ragx/search/service.py:132-150`) para `filter_chunk_ids(conn, ids, filters)`, com a **mesma** semântica de `LIKE` (`*` vira `%`), e aplicá-lo aos chunks vindos do grafo antes de `_hydrate` (`graph/service.py:149-154`) e às sementes
+- [x] `ragx context --lang/--path` (`src/ragx/cli/commands/context_cmd.py:45`) já entrega `SearchFilters(lang, path_glob)` a `graph_search`: passa a valer também para o que vem do grafo. `ragx graph-search` só tem `--lang` (`graph_cmd.py:149`) e o MCP `search_graph` só repassa `lang` (`server.py:402-405`): os contratos ficam como estão (o do MCP é revisto na RAGX-0157)
+- [x] `--explain` e `pack.stats` (`src/ragx/context/engine.py:199-203`) passam a mostrar sementes, nós expandidos, truncado e quantos chunks vieram **só** do grafo
+- [x] `docs/06-grafo.md`: descrever a semeadura e o filtro; corrigir qualquer número de "209 nós de expansão" que sobrar
 
 ## Fora de escopo
 
@@ -34,33 +34,33 @@ A expansão do grafo semeia **todas** as entidades dos documentos dos 100 melhor
 
 ## Critérios de aceite
 
-- [ ] Nas 12 consultas: `graph_seeds` **≤ 3 × seed_top_k** (antes 158–533) e `truncated` falso em ao menos 10 delas
-- [ ] Com `path_glob`, **0 de 50** resultados fora do filtro (antes 27 de 50); falha hoje, passa depois
+- [x] Nas 12 consultas: `graph_seeds` **≤ 3 × seed_top_k** (antes 158–533) e `truncated` falso em ao menos 10 delas
+- [x] Com `path_glob`, **0 de 50** resultados fora do filtro (antes 27 de 50); falha hoje, passa depois
 - [ ] Custo do grafo (sem a busca base) **menos da metade** do medido (~160 ms); meta provisória, confirmada ou ajustada após "medir primeiro"
 - [ ] `ragx eval` (tests/eval): recall e nDCG **não pioram** frente ao antes, e o número de consultas com chunk vindo só do grafo não cai (antes 3 de 12)
-- [ ] Mesma consulta, mesma ordem de IDs em duas execuções seguidas (determinismo)
+- [x] Mesma consulta, mesma ordem de IDs em duas execuções seguidas (determinismo)
 
 ### Medição
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| Sementes por consulta (12 consultas) | 158–533 | |
-| Nós visitados | ≤ 6 | |
-| Consultas com `truncated` | 12 de 12 | |
-| Chunks acrescentados só pelo grafo | 0 em 9, 1–3 em 3 | |
-| Resultados fora do `path_glob` | 27 de 50 | |
-| Custo do grafo por `build_context` | ~160 ms | |
+| Sementes por consulta (26 consultas) | 90–304 (mediana 160) | **6–10** (mediana 8) |
+| Nós visitados (máx.) | 22 | 110 (a BFS anda) |
+| Consultas com `truncated` | 26 de 26 | **0 de 26** |
+| Chunks do resultado só do grafo | medida diferente da auditoria; ver Andamento | `graph_only` agora em `--explain` |
+| Resultados fora do `path_glob` (`src/ragx/search/*`) | 130 de 650 | **0 de 650** |
+| Custo do grafo (semeadura + BFS, sem a busca base), mediana | 16,8 ms (não reproduz os ~160 ms da auditoria) | 18,6 ms (sem ganho: o custo nunca foi dominante aqui) |
 
-Comando: `uv run python scripts/medir_grafo.py --consultas tests/eval/queries.yaml --n 12` (criar, imprimindo a tabela); recall: `uv run ragx eval`.
+Comando: `uv run python scripts/medir_grafo.py --n 26 [--path GLOB] [--seed-top-k K] [--resumo]` (criado). O `ragx eval` não tem modo `grafo`; o script calcula recall@5 e MRR do `graph_search` contra `relevant_paths`.
 
 ## Testes
 
-- [ ] `tests/integration/test_graph.py`: com projeto de fixture grande o bastante, sementes ≤ `3 × seed_top_k` e a BFS passa de 1 nó visitado; `truncated` só quando os nós **expandidos** estouram `max_nodes`
-- [ ] `tests/integration/test_graph.py`: `path_glob`, `lang` e `kind` valem para os chunks vindos do grafo (regressão que falha hoje)
-- [ ] `tests/unit/test_graph_units.py`: `degrees_for(ids)` igual ao recorte de `degrees()`; empate de peso desempatado por `other_id`; 300 sementes não estouram `max_nodes` no nível 0
-- [ ] `tests/unit/test_search_units.py`: `filter_chunk_ids` tem o mesmo resultado que `_filter_mask` para `*`, `%` e maiúsculas
-- [ ] `tests/integration/test_context.py`: `stats` traz sementes/expandidos/truncado; `--explain` mostra a origem
-- [ ] Não toca leitura de arquivo nem o gate (só lê o banco): sem teste novo em `tests/security`; rodar a suíte inteira mesmo assim
+- [x] `tests/integration/test_graph.py`: com projeto de fixture grande o bastante, sementes ≤ `3 × seed_top_k` e a BFS passa de 1 nó visitado; `truncated` só quando os nós **expandidos** estouram `max_nodes`
+- [x] `tests/integration/test_graph.py`: `path_glob`, `lang` e `kind` valem para os chunks vindos do grafo (regressão que falha hoje)
+- [x] `tests/unit/test_graph_units.py`: `degrees_for(ids)` igual ao recorte de `degrees()`; empate de peso desempatado por `other_id`; 300 sementes não estouram `max_nodes` no nível 0
+- [x] `tests/unit/test_search_units.py`: `filter_chunk_ids` tem o mesmo resultado que `_filter_mask` para `*`, `%` e maiúsculas
+- [x] `tests/integration/test_context.py`: `stats` traz sementes/expandidos/truncado; `--explain` mostra a origem
+- [x] Não toca leitura de arquivo nem o gate (só lê o banco): sem teste novo em `tests/security`; rodar a suíte inteira mesmo assim
 
 ## Notas
 
@@ -73,14 +73,17 @@ Comando: `uv run python scripts/medir_grafo.py --consultas tests/eval/queries.ya
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
-- [ ] Documentação confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0145)` na branch `feat/v2`
+- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo): 2 não atendidos, ver Andamento
+- [ ] Testes escritos e verdes em Linux, macOS e Windows (verdes no Windows; Linux e macOS só a CI confirma)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
+- [x] Documentação confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0145)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — Implementado: `GraphCfg.seed_top_k` (10), `_seeds` em `graph/service.py` (entidades dos primeiros chunks; prosa semeia uma entidade `file` do documento; ordem por nota e id), teto de `max_nodes` só para expandidos, desempate `(-weight, other_id)`, `GraphStore.degrees_for` (consulta agrupada; auto-relação conta uma vez) com memo na expansão, `filter_chunk_ids` (mesmo SQL de `_filter_mask`, em lotes de 400) aplicado aos chunks do grafo, `GraphSearchOutcome.graph_only`, estatísticas e `--explain`, `CACHE_FORMAT` 3. Testes em `tests/integration/test_graph_expansao.py` (20) e um teste antigo ajustado à nova semântica do teto.
+- **Resultado que exige decisão humana (por isso `review`).** Os critérios de sementes, truncamento, filtro e determinismo passam. Mas: (1) **recall/nDCG não pioram: NÃO atendido.** Recall@5 do grafo fica igual (0,731), o MRR cai de 0,593 para 0,381, porque os chunks de arquivos vizinhos que o grafo agora de fato acrescenta passam à frente do arquivo certo em 23 das 26 consultas (ex.: "SecurityGate": o relevante cai da posição 1 para a 5, com builder.py, walk.py e operations.py acima). `seed_top_k` de 1 a 20 dá MRR entre 0,38 e 0,52, nenhum recupera o antigo. Antes o grafo era "neutro" porque a expansão nunca andava. (2) **Custo do grafo menos da metade: NÃO atendido** porque o custo medido (17 a 19 ms) já era baixo; os ~160 ms da auditoria não reproduzem.
+- Como a nota da task manda, não decidi: o peso 0,7 do grafo na fusão RRF está fora do escopo. Opções para uma nova task: baixar o peso, aplicar o grafo só quando a consulta pede relações (intenção), ou desligar `include_graph` por padrão e manter o código corrigido. O MRR é de um conjunto de 26 consultas de localização de arquivo (intervalo largo); um conjunto com tarefas de implementação poderia favorecer os vizinhos. Para voltar ao comportamento antigo na prática, `[graph] enabled = false` ou `seed_top_k = 1`.
+- Contagem de "chunks só do grafo": a auditoria mediu 0 em 9 e 1–3 em 3 de 12 consultas; o script usa outra definição, então não comparei os números.

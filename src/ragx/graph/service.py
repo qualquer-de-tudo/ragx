@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from typing import Any
 
 from ragx.config import Config
 from ragx.core.models import SearchResult
@@ -16,7 +17,7 @@ from ragx.graph.store import GraphStats, GraphStore
 from ragx.graph.traversal import Expansion, TraversalLimits, expand
 from ragx.search.hybrid import rrf
 from ragx.search.ranking import diversify, rerank
-from ragx.search.service import SearchFilters, search
+from ragx.search.service import SearchFilters, filter_chunk_ids, search
 from ragx.storage.db import open_db
 
 
@@ -73,6 +74,8 @@ class GraphSearchOutcome:
     results: list[SearchResult] = field(default_factory=list)
     expansion: Expansion = field(default_factory=Expansion)
     seeds: int = 0
+    #: chunks do resultado que NÃO vieram da busca base: só o grafo os trouxe
+    graph_only: int = 0
     timings_ms: dict[str, float] = field(default_factory=dict)
     partial: str | None = None  # vetores parciais da busca base (RAGX-0136)
 
@@ -102,19 +105,7 @@ def graph_search(
         store = GraphStore(conn)
 
         t0 = time.perf_counter()
-        seeds: dict[str, float] = {}
-        ph = ",".join("?" * len(base_rank))
-        for row in conn.execute(
-            f"""SELECT id, chunk_id, document_id FROM entities
-                WHERE chunk_id IN ({ph}) OR document_id IN (
-                    SELECT document_id FROM chunks WHERE id IN ({ph})
-                )""",
-            base_rank + base_rank,
-        ):
-            anchor_score = 1.0
-            if row["chunk_id"] in by_id:
-                anchor_score = max(by_id[row["chunk_id"]].score, 0.01)
-            seeds[row["id"]] = max(seeds.get(row["id"], 0.0), anchor_score)
+        seeds = _seeds(conn, base_rank[: max(cfg.graph.seed_top_k, 1)], by_id)
         out.seeds = len(seeds)
 
         limits = TraversalLimits(
@@ -139,6 +130,11 @@ def graph_search(
                 if cid not in graph_rank:
                     graph_rank.append(cid)
                     reasons[cid] = out.expansion.reason.get(eid, "graph")
+
+        # O filtro vale também para o que o grafo traz: sem isto, `path_glob`/`lang`/`kind`
+        # só restringiam a busca base e o grafo reintroduzia chunks de fora (RAGX-0145).
+        permitidos = filter_chunk_ids(conn, graph_rank, filters)
+        graph_rank = [cid for cid in graph_rank if cid in permitidos]
 
         t0 = time.perf_counter()
         fused = rrf(
@@ -175,4 +171,41 @@ def graph_search(
 
     results = diversify(rerank(query, results), cfg.search.max_per_document)
     out.results = results[:limit]
+    base_ids = set(base_rank)
+    out.graph_only = sum(1 for r in out.results if r.chunk_id not in base_ids)
     return out
+
+
+def _seeds(conn: Any, top: list[str], by_id: dict[str, SearchResult]) -> dict[str, float]:
+    """Sementes da expansão: as entidades dos primeiros chunks da busca base, e nada além.
+
+    A nota de âncora é a do próprio chunk. Chunk sem entidade (prosa) semeia UMA entidade de
+    arquivo do seu documento, com a nota do melhor chunk daquele documento (antes, toda entidade
+    de todo documento dos 100 melhores entrava com nota 1,0, acima do chunk do topo). A ordem é
+    determinística: nota decrescente, depois id.
+    """
+    if not top:
+        return {}
+    seeds: dict[str, float] = {}
+    com_entidade: set[str] = set()
+    ph = ",".join("?" * len(top))
+    for row in conn.execute(f"SELECT id, chunk_id FROM entities WHERE chunk_id IN ({ph})", top):
+        com_entidade.add(row["chunk_id"])
+        nota = max(by_id[row["chunk_id"]].score, 0.01) if row["chunk_id"] in by_id else 0.01
+        seeds[row["id"]] = max(seeds.get(row["id"], 0.0), nota)
+
+    prosa = [cid for cid in top if cid not in com_entidade]
+    if prosa:
+        ph = ",".join("?" * len(prosa))
+        melhor: dict[str, float] = {}
+        for row in conn.execute(f"SELECT id, document_id FROM chunks WHERE id IN ({ph})", prosa):
+            nota = max(by_id[row["id"]].score, 0.01) if row["id"] in by_id else 0.01
+            melhor[row["document_id"]] = max(melhor.get(row["document_id"], 0.0), nota)
+        for doc_id, nota in melhor.items():
+            achada = conn.execute(
+                "SELECT id FROM entities WHERE document_id = ? AND type = 'file' ORDER BY id LIMIT 1",
+                (doc_id,),
+            ).fetchone()
+            if achada is not None:
+                seeds[achada["id"]] = max(seeds.get(achada["id"], 0.0), nota)
+    return dict(sorted(seeds.items(), key=lambda kv: (-kv[1], kv[0])))

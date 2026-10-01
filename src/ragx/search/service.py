@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sqlite3
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -171,6 +172,13 @@ def _filter_mask(
     """Máscara aplicada ANTES do top-K, não depois."""
     if not (filters.lang or filters.kind or filters.path_glob):
         return None
+    sql, args = _filtro_sql(filters)
+    allowed = {r["id"] for r in conn.execute(sql, args)}
+    return np.fromiter((cid in allowed for cid in ids), dtype=bool, count=len(ids))
+
+
+def _filtro_sql(filters: SearchFilters) -> tuple[str, list[object]]:
+    """O predicado de `SearchFilters` em SQL. Uma só definição: máscara da busca e grafo usam esta."""
     sql = """SELECT c.id FROM chunks c JOIN documents d ON d.id = c.document_id WHERE 1=1"""
     args: list[object] = []
     if filters.lang:
@@ -182,8 +190,27 @@ def _filter_mask(
     if filters.path_glob:
         sql += " AND d.rel_path LIKE ?"
         args.append(filters.path_glob.replace("*", "%"))
-    allowed = {r["id"] for r in conn.execute(sql, args)}
-    return np.fromiter((cid in allowed for cid in ids), dtype=bool, count=len(ids))
+    return sql, args
+
+
+def filter_chunk_ids(
+    conn: sqlite3.Connection, ids: Iterable[str], filters: SearchFilters | None
+) -> set[str]:
+    """Quais dos `ids` passam em `filters`, com a MESMA semântica de `_filter_mask`.
+
+    Reusa o SQL (`LIKE` ignora maiúsculas em ASCII, `fnmatch` do Python não), em vez de
+    reimplementar o filtro em Python. Sem filtro, devolve todos.
+    """
+    pedidos = list(dict.fromkeys(ids))
+    if filters is None or not (filters.lang or filters.kind or filters.path_glob):
+        return set(pedidos)
+    base, args = _filtro_sql(filters)
+    ok: set[str] = set()
+    for inicio in range(0, len(pedidos), 400):  # abaixo do limite de variáveis do SQLite
+        lote = pedidos[inicio : inicio + 400]
+        ph = ",".join("?" * len(lote))
+        ok.update(r["id"] for r in conn.execute(f"{base} AND c.id IN ({ph})", [*args, *lote]))
+    return ok
 
 
 def _hydrate(

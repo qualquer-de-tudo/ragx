@@ -101,6 +101,7 @@ max_depth   = 2
 max_nodes   = 200
 max_fanout  = 25
 decay       = 0.6
+seed_top_k  = 10                # só os N primeiros chunks da busca semeiam a expansão do grafo
 semantic    = false             # camada 3 (LLM)
 
 [context]

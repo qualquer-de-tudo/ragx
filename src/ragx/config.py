@@ -123,6 +123,9 @@ class GraphCfg(BaseModel):
     max_fanout: int = 25
     decay: float = 0.6
     semantic: bool = False
+    # Sementes da expansão: só as entidades dos `seed_top_k` primeiros chunks da busca base
+    # (antes, dos 100 primeiros: 158 a 533 sementes e a BFS nem andava; RAGX-0145).
+    seed_top_k: int = 10
 
 
 class ContextCfg(BaseModel):

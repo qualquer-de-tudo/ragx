@@ -238,6 +238,30 @@ class GraphStore:
             rows = [r for r in rows if r["type"] in relation_types]
         return rows
 
+    def degrees_for(self, ids: Iterable[str]) -> dict[str, int]:
+        """O grau (relações de entrada E de saída) só das entidades pedidas.
+
+        Mesma definição de `degrees()`, que faz uma subconsulta correlacionada sobre TODAS as
+        entidades a cada expansão; esta é uma consulta agrupada pelos índices `idx_relations_src`
+        e `idx_relations_dst`. Uma relação de uma entidade para ela mesma conta uma vez (o `UNION`
+        junta as duas pontas pelo id da relação). Entidade sem relação tem grau 0.
+        """
+        pedidos = list(dict.fromkeys(ids))
+        out = dict.fromkeys(pedidos, 0)
+        for inicio in range(0, len(pedidos), 400):  # abaixo do limite de variáveis do SQLite
+            lote = pedidos[inicio : inicio + 400]
+            ph = ",".join("?" * len(lote))
+            for r in self.conn.execute(
+                f"""SELECT x, COUNT(*) AS d FROM (
+                        SELECT id AS rid, src_id AS x FROM relations WHERE src_id IN ({ph})
+                        UNION
+                        SELECT id AS rid, dst_id AS x FROM relations WHERE dst_id IN ({ph})
+                    ) GROUP BY x""",
+                lote + lote,
+            ):
+                out[r["x"]] = int(r["d"])
+        return out
+
     def degrees(self) -> dict[str, int]:
         out: dict[str, int] = {}
         for r in self.conn.execute(

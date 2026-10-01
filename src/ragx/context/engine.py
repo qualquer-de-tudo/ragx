@@ -239,7 +239,9 @@ def _retrieve(
             stats: dict[str, Any] = {
                 "graph_seeds": out.seeds,
                 "graph_nodes": len(out.expansion.scores),
+                "graph_expanded": len(out.expansion.scores) - out.seeds,
                 "graph_truncated": out.expansion.truncated,
+                "graph_only": out.graph_only,
             }
             if out.partial:
                 stats["partial_vectors"] = out.partial
@@ -370,7 +372,7 @@ def _tok(r: SearchResult) -> int:
 
 # ── cache ───────────────────────────────────────────────────────────────
 #: Muda sempre que o formato do arquivo de cache muda; entrada de outro formato é miss.
-CACHE_FORMAT = 2
+CACHE_FORMAT = 3  # 3: a expansão do grafo mudou o que entra no contexto (RAGX-0145)
 _CACHE_MAX_FILES = 200
 _CACHE_MAX_BYTES = 32 * 1024 * 1024
 

@@ -127,7 +127,8 @@ def explain(pack: ContextPack) -> str:
         lines.append("")
         lines.append("ETAPAS:")
         for k in ("candidates", "raw_tokens", "kept", "compressed",
-                  "graph_seeds", "graph_nodes", "retrieve_ms", "dedup_ms",
+                  "graph_seeds", "graph_nodes", "graph_expanded", "graph_truncated",
+                  "graph_only", "retrieve_ms", "dedup_ms",
                   "compress_ms", "total_ms"):
             if k in pack.stats:
                 lines.append(f"  {k:<16} {pack.stats[k]}")

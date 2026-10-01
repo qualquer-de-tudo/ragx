@@ -11,6 +11,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Expansão do grafo: semeadura pelo topo, filtros honrados e grau só dos visitados.** A expansão
+  semeava todas as entidades dos documentos dos 100 melhores chunks (90 a 304 sementes nas 26 consultas
+  do repositório; truncada em 26 de 26, sem andar), ignorava `path_glob`/`lang`/`kind` (130 de 650
+  resultados fora do filtro) e calculava o grau de todas as entidades a cada expansão. Agora as sementes
+  são as entidades dos `[graph] seed_top_k` (10) primeiros chunks (6 a 10 sementes, **0 de 26 truncadas**),
+  o teto `max_nodes` conta só os nós expandidos, o desempate é determinístico, o filtro vale para o que o
+  grafo traz (**0 de 650 fora do filtro**) e o grau vem de uma consulta agrupada só dos vizinhos.
+  `--explain` e `pack.stats` ganham `graph_expanded`, `graph_truncated` e `graph_only`. **Atenção:** com a
+  expansão funcionando, o MRR do grafo nessas consultas cai de 0,593 para 0,381 (recall@5 igual, 0,731):
+  os vizinhos passam à frente do arquivo certo; a decisão sobre o peso do grafo na fusão ficou em aberto.
+  O cache do contexto foi invalidado (`CACHE_FORMAT` 3), porque o conteúdo muda (RAGX-0145).
 - **Entrada leve para os hooks.** `ragx claude hint` (roda em toda sessão do Claude Code, até em
   subagente) levava 493 ms e o `hook-run post-commit` bloqueava o commit por 509 ms, porque o ponto de
   entrada importava typer, rich, pydantic e 25 módulos de comando antes de olhar o primeiro argumento.

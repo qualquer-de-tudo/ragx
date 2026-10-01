@@ -189,9 +189,33 @@ Limites obrigatórios (senão a expansão explode):
 
 ```text
 graph.max_depth        2
-graph.max_nodes        200      teto absoluto de nós visitados
+graph.max_nodes        200      teto de nós EXPANDIDOS (as sementes não contam)
 graph.max_fanout       25       vizinhos por nó (os de maior weight)
+graph.seed_top_k       10       só os N primeiros chunks da busca base semeiam a expansão
 ```
+
+**Semeadura (RAGX-0145).** As sementes são as entidades dos `seed_top_k` primeiros chunks da busca
+base, com a nota do próprio chunk; um chunk sem entidade (prosa) semeia UMA entidade de arquivo do seu
+documento, com a nota do melhor chunk dele. Antes, toda entidade de todo documento dos 100 melhores
+chunks entrava com nota 1,0: 158 a 533 sementes (as próprias sementes estouravam o teto antes de a BFS
+andar um passo, e a expansão nunca passava de 6 nós). A ordem é determinística (nota decrescente, depois
+id), e o desempate das arestas também (`weight` decrescente, depois `other_id`). O grau usado na
+penalidade é calculado só para os vizinhos visitados (`GraphStore.degrees_for`), não para todas as
+entidades.
+
+**Filtros.** `lang`, `kind` e `path_glob` valem também para os chunks que o grafo acrescenta (o mesmo
+predicado SQL da busca: `filter_chunk_ids`). Antes só restringiam a busca base, e o grafo reintroduzia
+chunks de fora (130 de 650 resultados com `path_glob` na medição).
+
+`ragx context --explain` mostra `graph_seeds`, `graph_nodes`, `graph_expanded`, `graph_truncated` e
+`graph_only` (quantos chunks do contexto só o grafo trouxe).
+
+**Medição honesta (26 consultas do próprio repositório, `scripts/medir_grafo.py`).** Com a expansão
+funcionando, o grafo deixa de ser inofensivo: o recall@5 fica igual (0,731), mas o MRR do resultado cai
+(0,593 → 0,381) porque chunks de arquivos vizinhos (`calls`, `contains`, `documented_by`) passam à frente
+do arquivo certo em 23 das 26 consultas; nenhum valor de `seed_top_k` (1 a 20) recupera o MRR antigo
+(0,38 a 0,52). O que a medição antiga mostrava como "grafo neutro" era a expansão que nunca andava. O
+peso do grafo na fusão (0,7) e o que fazer com isso ficam para uma decisão própria.
 
 Nós de altíssimo grau (um `utils.php` importado por tudo) são despriorizados por
 penalidade de grau: `weight /= log(1 + grau)`.

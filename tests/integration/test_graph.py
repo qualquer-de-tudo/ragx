@@ -285,7 +285,8 @@ def test_expansao_respeita_limites(proj: Path) -> None:
         store = GraphStore(conn)
         seed = store.find("AuthService")[0]["id"]
         exp = expand(store, {seed: 1.0}, TraversalLimits(max_depth=2, max_nodes=5))
-    assert len(exp.scores) <= 5
+    # o teto vale para nós EXPANDIDOS: as sementes não contam (RAGX-0145)
+    assert len(exp.scores) - 1 <= 5
 
 
 def test_decaimento_por_salto(proj: Path) -> None:

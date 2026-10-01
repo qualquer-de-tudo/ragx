@@ -46,7 +46,8 @@ def expand(
     if not seeds:
         return out
 
-    degrees = store.degrees()
+    # Grau só de quem aparece como vizinho (memo dentro da expansão), não de todas as entidades.
+    degrees: dict[str, int] = {}
     queue: deque[tuple[str, int, float]] = deque()
     for eid, score in seeds.items():
         out.scores[eid] = score
@@ -54,18 +55,27 @@ def expand(
         out.reason[eid] = "seed"
         queue.append((eid, 0, score))
 
+    # O teto vale para nós EXPANDIDOS (os que a BFS acrescenta). As sementes não contam: com
+    # centenas delas o teto estourava antes de a BFS andar um passo.
+    n_sementes = len(seeds)
+
     while queue:
         eid, depth, score = queue.popleft()
         out.visited += 1
         if depth >= limits.max_depth:
             continue
-        if len(out.scores) >= limits.max_nodes:
+        if len(out.scores) - n_sementes >= limits.max_nodes:
             out.truncated = True
             break
 
         edges = store.neighbors([eid], relation_types)
-        edges.sort(key=lambda e: -float(e["weight"]))
-        for edge in edges[: limits.max_fanout]:
+        # desempate determinístico: a ordem de retorno do SQLite não é contrato
+        edges.sort(key=lambda e: (-float(e["weight"]), e["other_id"]))
+        edges = edges[: limits.max_fanout]
+        faltam = [e["other_id"] for e in edges if e["other_id"] not in degrees]
+        if faltam:
+            degrees.update(store.degrees_for(faltam))
+        for edge in edges:
             other = edge["other_id"]
             if other == eid:
                 continue
@@ -74,7 +84,7 @@ def expand(
             new_score = score * (limits.decay ** (depth + 1)) * float(edge["weight"]) * penalty
             if new_score <= out.scores.get(other, 0.0):
                 continue
-            if other not in out.scores and len(out.scores) >= limits.max_nodes:
+            if other not in out.scores and len(out.scores) - n_sementes >= limits.max_nodes:
                 out.truncated = True
                 continue
             out.scores[other] = new_score
