@@ -72,3 +72,27 @@ export interface TelemetrySummary {
   /** Maior `ts` de todas as linhas válidas do log, sem o filtro de `sinceHours`. `null` sem log. */
   lastCallAt: string | null
 }
+
+/** Um trecho do preview de `build_context` (RAGX-0187): sem `content`, o renderer nunca vê código. */
+export interface ContextPreviewFragment {
+  project: string | null
+  documentPath: string
+  lines: [number, number]
+  symbol: string | null
+  headingPath: string | null
+  score: number
+  tokens: number
+  compressed: boolean
+  strategy: string | null
+  reason: string | null
+}
+
+/** O que o agente receberia para uma pergunta, já filtrado: sem `query` nem `content`. */
+export interface ContextPreview {
+  intent: string | null
+  estimatedTokens: number
+  budget: number
+  fragments: ContextPreviewFragment[]
+  /** O que ficou de fora, agrupado por motivo. */
+  dropped: Array<{ why: string; count: number }>
+}

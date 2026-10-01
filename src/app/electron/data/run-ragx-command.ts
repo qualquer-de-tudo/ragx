@@ -14,7 +14,15 @@ function spawnError(err: NodeJS.ErrnoException, cmd: string, cwd: string): Error
   return err
 }
 
-export function runRagxCommand(cwd: string, args: string[], opts: { timeoutMs?: number } = {}): Promise<unknown> {
+/**
+ * `opts.stdin`: texto que vai ao stdin do processo (UTF-8) e o fecha. É o único caminho para dado do usuário que não deve
+ * aparecer no `argv` nem nas mensagens de erro abaixo (que só citam `args`): a pergunta do preview de contexto.
+ */
+export function runRagxCommand(
+  cwd: string,
+  args: string[],
+  opts: { timeoutMs?: number; stdin?: string } = {},
+): Promise<unknown> {
   const timeoutMs = opts.timeoutMs ?? TIMEOUT_MS
   return new Promise((resolve, reject) => {
     const cmd = ragxCommand()
@@ -23,6 +31,11 @@ export function runRagxCommand(cwd: string, args: string[], opts: { timeoutMs?: 
     // RAGX_CALLER: o painel roda `ragx status` a cada poucos segundos; sem a
     // marca, cada um viraria uma linha na tela de atividade (ver ragx.cli.main).
     const child = spawn(cmd, args, { cwd, windowsHide: true, env: { ...process.env, RAGX_CALLER: 'painel' } })
+    if (opts.stdin !== undefined) {
+      // EPIPE (o processo saiu antes de ler tudo) não é erro daqui: o `close` diz o que houve
+      child.stdin?.on('error', () => {})
+      child.stdin?.end(opts.stdin, 'utf8')
+    }
     // `StringDecoder`: um caractere multibyte partido entre dois pedaços do
     // stream não vira lixo (o que `chunk.toString()` por pedaço fazia).
     const outDecoder = new StringDecoder('utf8')

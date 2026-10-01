@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Preview do `build_context` no painel e `ragx context --query-stdin`.** O dono não tinha como ver o que o agente
+  receberia para uma pergunta. Agora a aba Economia tem "Pré-visualizar o contexto": trechos, arquivos e linhas,
+  tokens do orçamento e descartes, sem mostrar código. A pergunta vai só por stdin (nova opção `--query-stdin`, que
+  também força o cache desligado), nunca no argv, em log, em mensagem de erro nem no cache em disco; o processo
+  principal descarta `query` e `content` da resposta. Em JSON, pacote vazio agora sai 0 com `fragments: []`. Corrigido:
+  `ragx context "x"` sem `--tokens` saía com erro de uso (RAGX-0187).
 - **Economia em dinheiro, com o preço que você informa.** O painel só mostrava tokens e percentual. Agora "Configurar
   preço" (moeda e preço por milhão de tokens de entrada, guardados no `settings.json` do painel) faz o card de
   Economia, o resumo de Projetos e Atividade mostrarem o valor, sempre como estimativa. O RAGX não embute tabela de

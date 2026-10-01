@@ -19,6 +19,7 @@ import { LivePill } from '../components/shell/LivePill'
 import { ConfirmButton } from '../components/project/ConfirmButton'
 import { JobButton } from '../components/project/JobButton'
 import { MaintenancePanel } from '../components/project/MaintenancePanel'
+import { ContextPreview } from '../components/project/ContextPreview'
 import { ProjectGlance } from '../components/project/ProjectGlance'
 import { Timeline } from '../components/project/Timeline'
 import { TokenSavings } from '../components/project/TokenSavings'
@@ -427,6 +428,7 @@ export function ProjectPage({
 
       <TabPanel id="economia" idPrefix={tabsId} active={tab === 'economia'}>
         <TokenSavings projectId={project.id} projectPath={project.path} savings={project.telemetry.savings} />
+        {project.exists && project.path !== null && <ContextPreview key={project.id} projectId={project.id} />}
       </TabPanel>
 
       <TabPanel id="historico" idPrefix={tabsId} active={tab === 'historico'}>

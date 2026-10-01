@@ -336,6 +336,7 @@ handleIpc('ragx:getActivity', () => {
 })
 handleIpc('ragx:getProjectStatus', (projectId: unknown) => handlers.getProjectStatus(projectId))
 handleIpc('ragx:runTrial', (projectId: unknown) => handlers.runTrial(projectId))
+handleIpc('ragx:previewContext', (projectId: unknown, question: unknown) => handlers.previewContext(projectId, question))
 handleIpc('ragx:getIndexRuns', (projectId: unknown, offset: unknown) => handlers.getIndexRuns(projectId, offset))
 handleIpc('ragx:runSecurityScan', (projectId: unknown) => handlers.runSecurityScan(projectId))
 handleIpc('ragx:getConnections', () => handlers.getConnections())

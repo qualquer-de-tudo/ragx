@@ -1,6 +1,6 @@
-import type { ActivityEvent, TelemetrySummary } from '../../electron/data/types'
+import type { ActivityEvent, ContextPreview, TelemetrySummary } from '../../electron/data/types'
 
-export type { ActivityEvent }
+export type { ActivityEvent, ContextPreview }
 import type { Pricing, RendererSettings } from '../../electron/settings'
 
 export type { Pricing }
@@ -255,6 +255,8 @@ export interface RagxBridge {
   onActivity: (cb: (events: ActivityEvent[]) => void) => () => void
   getProjectStatus: (projectId: string) => Promise<unknown>
   runTrial: (projectId: string) => Promise<TrialResult>
+  /** O que o agente receberia para a pergunta (RAGX-0187); a pergunta vai só por stdin e nunca é gravada. */
+  previewContext: (projectId: string, question: string) => Promise<ContextPreview>
   /** Página do histórico de indexações (`ragx runs --json`), a partir de `offset`. */
   getIndexRuns: (projectId: string, offset: number) => Promise<unknown>
   runSecurityScan: (projectId: string) => Promise<SecurityScanResult>

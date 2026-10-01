@@ -916,3 +916,79 @@ describe('createHandlers - setPricing (RAGX-0186)', () => {
     expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
   })
 })
+
+describe('createHandlers - previewContext (RAGX-0187)', () => {
+  const PREVIEW_JSON = {
+    query: 'SENTINELA-0187-xyz',
+    intent: 'implementar',
+    estimated_tokens: 900,
+    budget: 3000,
+    fragments: [
+      { project: 'a', chunk_id: 'c1', document_path: 'src/a.py', lines: [1, 9], symbol: 'f', heading_path: null, score: 0.9, tokens: 120, compressed: false, strategy: 'full', reason: 'semantico', content: 'SEGREDO-DE-CODIGO' },
+    ],
+    dropped: [{ id: 'x', why: 'orcamento' }, { id: 'y', why: 'orcamento' }, { id: 'z', why: 'duplicado' }],
+  }
+
+  it('os args são exatos (a pergunta NUNCA está no argv) e vai por stdin com 60 s', async () => {
+    const runRagxCommand = vi.fn(async () => PREVIEW_JSON)
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await handlers.previewContext('a', '  criar pedido da ação 🚀  ')
+    expect(runRagxCommand).toHaveBeenCalledWith('C:/proj/a', ['context', '--query-stdin', '--format', 'json', '--no-cache'], {
+      timeoutMs: 60_000,
+      stdin: 'criar pedido da ação 🚀',
+    })
+    const args = vi.mocked(runRagxCommand).mock.calls[0][1] as string[]
+    expect(args.join(' ')).not.toContain('criar')
+  })
+
+  it('filtra a saída: nem a pergunta de volta nem o conteúdo chegam ao renderer', async () => {
+    const handlers = createHandlers(makeDeps({ runRagxCommand: vi.fn(async () => PREVIEW_JSON) }))
+    const out = await handlers.previewContext('a', 'qualquer')
+    const text = JSON.stringify(out)
+    expect(text).not.toContain('SENTINELA-0187-xyz')
+    expect(text).not.toContain('SEGREDO-DE-CODIGO')
+    expect(out.fragments[0]).toMatchObject({ documentPath: 'src/a.py', lines: [1, 9], tokens: 120, symbol: 'f' })
+    expect(out.dropped).toEqual([{ why: 'orcamento', count: 2 }, { why: 'duplicado', count: 1 }])
+    expect(out.estimatedTokens).toBe(900)
+  })
+
+  it('resposta sem fragments vira erro, não exceção solta', async () => {
+    const handlers = createHandlers(makeDeps({ runRagxCommand: vi.fn(async () => ({ outra: 1 })) }))
+    await expect(handlers.previewContext('a', 'x')).rejects.toThrow('resposta inesperada de ragx context')
+  })
+
+  it.each([
+    ['vazia', ''], ['só espaços', '   '], ['501 caracteres', 'a'.repeat(501)], ['com NUL', 'oi\0tchau'], ['número', 42], ['null', null],
+  ])('recusa pergunta %s sem criar processo e sem repetir a pergunta', async (_n, q) => {
+    const runRagxCommand = vi.fn(async () => PREVIEW_JSON)
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    const err = await handlers.previewContext('a', q).catch((e: Error) => e)
+    expect((err as Error).message).toMatch(/pedido recusado/)
+    if (typeof q === 'string' && q.trim()) expect((err as Error).message).not.toContain(q.trim().slice(0, 20))
+    expect(runRagxCommand).not.toHaveBeenCalled()
+  })
+
+  it('recusa projeto desconhecido e projeto só de federação, sem processo', async () => {
+    const runRagxCommand = vi.fn(async () => PREVIEW_JSON)
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await expect(handlers.previewContext('nao-existe', 'x')).rejects.toThrow(/pedido recusado/)
+    await expect(handlers.previewContext('federado', 'x')).rejects.toThrow(/pedido recusado/)
+    expect(runRagxCommand).not.toHaveBeenCalled()
+  })
+
+  it('nenhum console.* recebe a pergunta, e um preview por vez', async () => {
+    const spies = (['log', 'error', 'warn', 'info'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}))
+    let release: (v: unknown) => void = () => {}
+    const runRagxCommand = vi.fn(() => new Promise((r) => (release = r)))
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    const first = handlers.previewContext('a', 'PERGUNTA-SECRETA')
+    await expect(handlers.previewContext('a', 'outra')).rejects.toThrow('Já há uma pré-visualização em andamento')
+    release(PREVIEW_JSON)
+    await first
+    for (const s of spies) expect(JSON.stringify(s.mock.calls)).not.toContain('PERGUNTA-SECRETA')
+    spies.forEach((s) => s.mockRestore())
+    // e depois de terminar, outro pode rodar
+    vi.mocked(runRagxCommand).mockResolvedValueOnce(PREVIEW_JSON as never)
+    await expect(handlers.previewContext('a', 'de novo')).resolves.toBeDefined()
+  })
+})

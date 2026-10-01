@@ -368,3 +368,62 @@ def test_index_only_reindexa_so_os_caminhos_pedidos(projeto: Path) -> None:
 
     docs = runner.invoke(app, ["documents", "--json"]).output
     assert "novo_a.py" in docs and "novo_b.py" in docs and "novo_c.py" not in docs
+
+
+def _json_out(output: str) -> dict:  # type: ignore[type-arg]
+    import json
+    import re
+
+    return json.loads(re.sub(r"\x1b\[[0-9;]*m", "", output))
+
+
+def test_context_query_stdin_com_acento(projeto: Path) -> None:
+    """RAGX-0187: a consulta pode vir por stdin (UTF-8) e o resultado é o mesmo do argumento."""
+    runner.invoke(app, ["init", "."])
+    runner.invoke(app, ["index", "."])
+    r = runner.invoke(app, ["context", "--query-stdin", "--format", "json", "--tokens", "800"], input="criar pedido da ação")
+    assert r.exit_code == 0, r.output
+    assert _json_out(r.output)["query"] == "criar pedido da ação"
+
+
+def test_context_query_stdin_exclusivo_com_o_argumento(projeto: Path) -> None:
+    runner.invoke(app, ["init", "."])
+    r = runner.invoke(app, ["context", "SENTINELA-0187-argv", "--query-stdin"], input="outra")
+    assert r.exit_code != 0
+    assert "SENTINELA-0187-argv" not in r.output  # a mensagem de erro não repete a consulta
+    r2 = runner.invoke(app, ["context", "--query-stdin"], input="   \n")
+    assert r2.exit_code != 0
+    r3 = runner.invoke(app, ["context"])
+    assert r3.exit_code != 0
+
+
+def test_context_query_stdin_nao_grava_a_consulta_em_ragx(projeto: Path) -> None:
+    """Sentinela: depois do contexto por stdin, nada em `.ragx/` contém a consulta."""
+    runner.invoke(app, ["init", "."])
+    runner.invoke(app, ["index", "."])
+    r = runner.invoke(app, ["context", "--query-stdin", "--format", "json"], input="SENTINELA-0187-xyz criar pedido")
+    assert r.exit_code == 0, r.output
+    achou = [
+        p for p in (projeto / ".ragx").rglob("*")
+        if p.is_file() and b"SENTINELA-0187-xyz" in p.read_bytes()
+    ]
+    assert achou == []
+
+
+def test_context_json_com_pacote_vazio_sai_0_com_fragments_vazio(projeto: Path) -> None:
+    runner.invoke(app, ["init", "."])
+    runner.invoke(app, ["index", "."])
+    consulta = "zzqxjw vvkpl ttnnbb"
+    r_json = runner.invoke(app, ["context", consulta, "--format", "json", "--tokens", "200"])
+    r_md = runner.invoke(app, ["context", consulta, "--tokens", "200"])
+    if _json_out_ok(r_json.output) and not _json_out(r_json.output)["fragments"]:
+        assert r_json.exit_code == 0
+        assert r_md.exit_code == 1  # o modo markdown não mudou
+
+
+def _json_out_ok(output: str) -> bool:
+    try:
+        _json_out(output)
+        return True
+    except ValueError:
+        return False

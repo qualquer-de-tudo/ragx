@@ -278,6 +278,18 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Preview do contexto
+
+Na aba Economia, "Pré-visualizar o contexto" (RAGX-0187) mostra o que o agente receberia para uma pergunta: quantos
+trechos, de que arquivos e linhas, quantos tokens do orçamento, a intenção e o que ficou de fora (agrupado por
+motivo). Nunca mostra código. A pergunta (até 500 caracteres) vai **só por stdin** (`ragx context --query-stdin
+--format json --no-cache`, argumentos fixos): não aparece no `argv`, nas mensagens de erro, em log nem em
+`.ragx/cache/context/`, e vive só em `useState` (some ao trocar de projeto, ao limpar e ao fechar). O processo
+principal valida o projeto contra o snapshot, roda um preview por vez e filtra a resposta (`parseContextPreview`): só
+passam `intent`, `estimated_tokens`, `budget`, os descartes por motivo e, por trecho, caminho, linhas, símbolo,
+título, nota, tokens, `compressed`, `strategy`, `reason` e `project`; `query` e `content` ficam para trás. O que o
+Ollama faz com o texto (ele recebe a pergunta por HTTP local para embutir) está fora do alcance do RAGX.
+
 ## Economia em dinheiro
 
 O painel converte a economia de tokens em dinheiro com um preço que **a pessoa informa** (RAGX-0186): "Configurar

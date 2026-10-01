@@ -169,6 +169,12 @@ ragx context "<query>"
     --scope current|all|project:<nome>
     --explain               mostra por que cada fragmento entrou/saiu
     --out FILE
+    --query-stdin           lê a consulta do stdin (UTF-8) em vez do argumento; nunca vai ao argv nem ao
+                            cache (`use_cache` forçado a falso); exclusivo com o argumento `<query>`
+
+Com `--format json` e nenhum fragmento, `ragx context` imprime o JSON com `fragments: []` e sai 0 (o painel lê assim);
+no modo markdown o texto e o código de saída 1 não mudam. É o caminho do preview do painel (RAGX-0187): a pergunta
+só entra por stdin, e o processo principal descarta `query` e `content` da resposta antes de entregá-la ao renderer.
 
 ragx trial "<query>"
     --tokens N              orçamento do contexto (padrão: 3000)

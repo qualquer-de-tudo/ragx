@@ -3,6 +3,7 @@ import type {
   ActivityEvent,
   ClaudeIntegration,
   ConnectionCheck,
+  ContextPreview,
   DiscoverResult,
   JobRequest,
   JobView,
@@ -30,6 +31,8 @@ const ragx: RagxBridge = {
   },
   getProjectStatus: (projectId: string): Promise<unknown> => ipcRenderer.invoke('ragx:getProjectStatus', projectId),
   runTrial: (projectId: string): Promise<TrialResult> => ipcRenderer.invoke('ragx:runTrial', projectId),
+  previewContext: (projectId: string, question: string): Promise<ContextPreview> =>
+    ipcRenderer.invoke('ragx:previewContext', projectId, question),
   getIndexRuns: (projectId: string, offset: number): Promise<unknown> =>
     ipcRenderer.invoke('ragx:getIndexRuns', projectId, offset),
   runSecurityScan: (projectId: string): Promise<SecurityScanResult> =>

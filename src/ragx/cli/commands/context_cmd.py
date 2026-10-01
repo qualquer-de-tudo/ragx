@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -16,8 +17,8 @@ _FORMATS = ("markdown", "json", "xml")
 
 
 def context(
-    query: Annotated[str, typer.Argument(help="Tarefa ou pergunta.")],
-    tokens: Annotated[int, typer.Option("--tokens", min=200, max=200_000)] = 0,
+    query: Annotated[str | None, typer.Argument(help="Tarefa ou pergunta.")] = None,
+    tokens: Annotated[int | None, typer.Option("--tokens", min=200, max=200_000)] = None,
     fmt: Annotated[str, typer.Option("--format", help="markdown|json|xml")] = "markdown",
     include_graph: Annotated[bool, typer.Option("--include-graph/--no-graph")] = True,
     depth: Annotated[int | None, typer.Option("--depth", min=1, max=3)] = None,
@@ -25,6 +26,13 @@ def context(
     path_glob: Annotated[str | None, typer.Option("--path")] = None,
     explain: Annotated[bool, typer.Option("--explain", help="Por que cada trecho entrou/saiu.")] = False,
     no_cache: Annotated[bool, typer.Option("--no-cache")] = False,
+    query_stdin: Annotated[
+        bool,
+        typer.Option(
+            "--query-stdin",
+            help="Lê a consulta do stdin (UTF-8), não do argumento: não aparece no argv nem no cache.",
+        ),
+    ] = False,
     out: Annotated[Path | None, typer.Option("--out", help="Grava em arquivo.")] = None,
 ) -> None:
     """Monta o contexto de trabalho para uma tarefa."""
@@ -35,6 +43,18 @@ def context(
 
     if fmt not in _FORMATS:
         raise UsageError(f"formato inválido: {fmt!r} (use {' | '.join(_FORMATS)})")
+    if query_stdin and query is not None:
+        # sem repetir a consulta na mensagem
+        raise UsageError("use a consulta como argumento OU --query-stdin, não os dois")
+    if query_stdin:
+        # `sys.stdin` pode não ser UTF-8 no Windows: lê os bytes e decodifica aqui
+        query = sys.stdin.buffer.read().decode("utf-8", errors="replace").strip()
+        if not query:
+            raise UsageError("a consulta lida do stdin está vazia")
+        # RAGX-0187: o cache grava a consulta em `.ragx/cache/context/<hash>.json`; esta via nunca a grava
+        no_cache = True
+    elif query is None:
+        raise UsageError("informe a consulta ou use --query-stdin")
 
     cfg = load_config()
     if cfg.db_path.exists():

@@ -58,6 +58,7 @@ describe('preload', () => {
         'removeClaudeProfile',
         'setOnboardingDone',
         'setPricing',
+        'previewContext',
       ].sort(),
     )
   })

@@ -13,7 +13,10 @@ function fakeChildProcess(stdout: string, exitCode: number) {
   const child = new EventEmitter() as EventEmitter & {
     stdout: EventEmitter
     stderr: EventEmitter
+    stdin: EventEmitter & { end: ReturnType<typeof vi.fn> }
   }
+  // `stdin` existe para os testes de RAGX-0187; sem `opts.stdin` ninguém o toca
+  child.stdin = Object.assign(new EventEmitter(), { end: vi.fn() })
   child.stdout = new EventEmitter()
   child.stderr = new EventEmitter()
   queueMicrotask(() => {
@@ -123,5 +126,21 @@ describe('runRagxCommand - decodificação e erros de spawn', () => {
     vi.mocked(spawn).mockReturnValue(child as never)
 
     await expect(runRagxCommand(process.cwd(), ['status', '--json'])).rejects.toThrow(/^Comando não encontrado: /)
+  })
+
+  it('escreve o stdin em UTF-8 e o encerra; a pergunta fica fora do argv e das mensagens de erro (RAGX-0187)', async () => {
+    const child = fakeChildProcess('', 1)
+    vi.mocked(spawn).mockReturnValue(child as never)
+    const err = await runRagxCommand('C:\\projeto', ['context', '--query-stdin'], { stdin: 'ação 🚀 SENTINELA' }).catch((e: Error) => e)
+    expect(child.stdin.end).toHaveBeenCalledWith('ação 🚀 SENTINELA', 'utf8')
+    expect(vi.mocked(spawn).mock.calls[0][1]).toEqual(['context', '--query-stdin'])
+    expect((err as Error).message).not.toContain('SENTINELA')
+  })
+
+  it('sem opts.stdin não toca no stdin', async () => {
+    const child = fakeChildProcess('{}', 0)
+    vi.mocked(spawn).mockReturnValue(child as never)
+    await runRagxCommand('C:\\projeto', ['status', '--json'])
+    expect(child.stdin.end).not.toHaveBeenCalled()
   })
 })

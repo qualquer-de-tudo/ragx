@@ -4,6 +4,8 @@ import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type Resol
 import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
 import { parsePricing, type PanelSettings, type RendererSettings } from './settings'
+import { parseContextPreview } from './data/context-preview'
+import type { ContextPreview } from './data/types'
 import type {
   ClaudeIntegration,
   ClaudeProfile,
@@ -27,6 +29,9 @@ import type {
  * projectId:'a', path:'C:/x'}` não pode injetar um campo extra que algum
  * código futuro do catálogo passe a ler sem querer.
  */
+const MAX_QUESTION_LENGTH = 500
+const PREVIEW_TIMEOUT_MS = 60_000
+
 const PRICING_KEYS: ReadonlySet<string> = new Set(['currency', 'perMTokInput'])
 
 const JOB_REQUEST_KEYS: ReadonlySet<string> = new Set(['kind', 'projectId', 'folderToken', 'model', 'installHooks'])
@@ -47,7 +52,7 @@ export interface HandlerDeps {
   buildSnapshot: () => Promise<Snapshot>
   /** Último snapshot já construído (pelo polling ou por uma chamada anterior a `buildSnapshot`), sem reconstruir. */
   getCachedSnapshot: () => Snapshot | null
-  runRagxCommand: (cwd: string, args: string[], opts?: { timeoutMs?: number }) => Promise<unknown>
+  runRagxCommand: (cwd: string, args: string[], opts?: { timeoutMs?: number; stdin?: string }) => Promise<unknown>
   /** `light`: o tick de fundo (RAGX-0173), que evita processos; sem a opção, a checagem completa. */
   checkAll: (snapshot: Snapshot, opts?: { light?: boolean }) => Promise<ConnectionCheck[]>
   /**
@@ -158,6 +163,7 @@ interface StoredBenchmark {
 
 export function createHandlers(deps: HandlerDeps) {
   let inFlightBenchmark: Promise<OllamaBenchmark> | null = null
+  let inFlightPreview = false
   let lastBenchmark: StoredBenchmark | null = null
   // Sobe a cada `clearLastBenchmark`: uma medição que começou antes não é guardada.
   let benchmarkGeneration = 0
@@ -307,6 +313,35 @@ export function createHandlers(deps: HandlerDeps) {
     async getProjectStatus(projectIdUnknown: unknown): Promise<unknown> {
       const project = requireLocalProject(projectIdUnknown)
       return deps.runRagxCommand(project.path as string, ['status', '--json'])
+    },
+
+    /**
+     * Preview do `build_context` (RAGX-0187): o que o agente receberia para uma pergunta. A pergunta vai SÓ por stdin
+     * (nunca no argv, em log ou em mensagem de erro) com o cache desligado, e a saída passa por `parseContextPreview`,
+     * que descarta `query` e `content`. Um preview por vez.
+     */
+    async previewContext(projectIdUnknown: unknown, questionUnknown: unknown): Promise<ContextPreview> {
+      const project = requireLocalProject(projectIdUnknown)
+      // Nenhuma das mensagens abaixo repete a pergunta.
+      if (typeof questionUnknown !== 'string') throw rejected('a pergunta precisa ser texto')
+      const question = questionUnknown.trim()
+      if (question.length === 0) throw rejected('a pergunta está vazia')
+      if (question.length > MAX_QUESTION_LENGTH) throw rejected(`a pergunta passa de ${MAX_QUESTION_LENGTH} caracteres`)
+      if (question.includes('\0')) throw rejected('a pergunta tem caractere inválido')
+      if (inFlightPreview) throw rejected('Já há uma pré-visualização em andamento')
+      inFlightPreview = true
+      try {
+        const raw = await deps.runRagxCommand(
+          project.path as string,
+          ['context', '--query-stdin', '--format', 'json', '--no-cache'],
+          { timeoutMs: PREVIEW_TIMEOUT_MS, stdin: question },
+        )
+        const preview = parseContextPreview(raw)
+        if (preview === null) throw new Error('resposta inesperada de ragx context')
+        return preview
+      } finally {
+        inFlightPreview = false
+      }
     },
 
     async runTrial(projectIdUnknown: unknown): Promise<TrialResult> {

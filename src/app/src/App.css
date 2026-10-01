@@ -759,6 +759,50 @@ kbd {
   gap: var(--sp-8);
 }
 
+/* Preview do contexto (RAGX-0187). */
+.preview-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-8);
+}
+
+.preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+
+.preview-row .search-input {
+  flex: 1 1 260px;
+  padding-left: var(--sp-12);
+}
+
+.preview-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-8);
+}
+
+.preview-summary {
+  font-weight: 600;
+}
+
+.preview-list {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.preview-item {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-size: var(--fs-md);
+}
+
+.preview-path {
+  overflow-wrap: anywhere;
+}
+
 /* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
 .skeleton {
   display: block;
