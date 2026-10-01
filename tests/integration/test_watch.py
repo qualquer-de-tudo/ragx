@@ -139,3 +139,23 @@ def test_falha_de_indexacao_nao_derruba_o_laco(cfg, monkeypatch) -> None:
     apply_changes(cfg, st, consolidate=True)
     assert st.last_error and "disco cheio" in st.last_error
     assert st.applied == 0
+
+
+def test_arquivo_travado_nao_vira_remocao_no_watcher(cfg, monkeypatch) -> None:
+    """Antivírus ou editor seguram o arquivo logo depois do save; o watcher
+    dispara exatamente nesse momento (RAGX-0133)."""
+    original = Path.read_bytes
+
+    def trava(self: Path) -> bytes:
+        if self.name == "app.py":
+            raise PermissionError(32, "violação de compartilhamento")
+        return original(self)
+
+    (cfg.root / "app.py").write_text("def alfa():\n    return 99\n", encoding="utf-8")
+    monkeypatch.setattr(Path, "read_bytes", trava)
+    st = WatchState()
+    apply_changes(cfg, st, consolidate=False)
+    with open_db(cfg.db_path, read_only=True) as conn:
+        caminhos = {r[0] for r in conn.execute("SELECT rel_path FROM documents")}
+    assert "app.py" in caminhos
+    assert st.last_error is None

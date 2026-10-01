@@ -48,6 +48,8 @@ class IndexReport:
     degraded: int = 0
     interrupted: bool = False
     embed_error: str | None = None
+    #: arquivos que existem mas não deram para ler agora; ficam como estavam no índice
+    unreadable: int = 0
 
 
 MAX_PENDING_RERUNS = 3
@@ -157,6 +159,7 @@ def _index_once(
 
         known = docs.fingerprints()
         seen_paths: set[str] = set()
+        unreadable_dirs: set[str] = set()
         mode = "embed-only" if embed_only else ("full" if full else "incremental")
         run_id = None if dry_run else runs.start(mode, source, gitinfo.read_state(cfg.root))
         batch = 0
@@ -175,7 +178,7 @@ def _index_once(
                 else {p: (size, mtime) for p, (_h, size, mtime, cv) in known.items()
                       if cv == CHUNKER_VERSION}
             )
-            for walked in _all_sources(cfg, gate, fingerprints):
+            for walked in _all_sources(cfg, gate, fingerprints, unreadable_dirs):
                 report.stats = _bump(report.stats, files_seen=1)
                 if on_event:
                     on_event({"phase": "scan", "done": report.stats.files_seen, "total": None})
@@ -185,6 +188,16 @@ def _index_once(
                 if walked.unchanged:
                     seen_paths.add(walked.rel_path)
                     report.stats = _bump(report.stats, unchanged=1)
+                    continue
+
+                if walked.unreadable:
+                    # Existe, mas está travado agora (antivírus, editor logo após
+                    # o save). Não é "removido": nada é regravado e o documento,
+                    # os chunks e os vetores ficam como estavam (RAGX-0133).
+                    seen_paths.add(walked.rel_path)
+                    report.unreadable += 1
+                    skip_reasons["unreadable"] = skip_reasons.get("unreadable", 0) + 1
+                    report.stats = _bump(report.stats, skipped=1)
                     continue
 
                 d = walked.decision
@@ -268,7 +281,12 @@ def _index_once(
                     batch = 0
 
             # Documentos que sumiram do disco.
-            gone = [p for p in known if p not in seen_paths and p not in report.blocked_paths]
+            gone = [
+                p for p in known
+                if p not in seen_paths
+                and p not in report.blocked_paths
+                and not _sob_pasta_ilegivel(p, unreadable_dirs)
+            ]
             if gone and not dry_run:
                 docs.delete_many(gone)
             report.stats = _bump(report.stats, removed=len(gone))
@@ -325,8 +343,16 @@ def _index_once(
     return report
 
 
+def _sob_pasta_ilegivel(rel_path: str, pastas: set[str]) -> bool:
+    """O caminho é uma das pastas que não abriram, ou está sob uma delas."""
+    return any(p == "" or rel_path == p or rel_path.startswith(p + "/") for p in pastas)
+
+
 def _all_sources(
-    cfg: Config, gate: SecurityGate, fingerprints: dict[str, tuple[int, int]] | None
+    cfg: Config,
+    gate: SecurityGate,
+    fingerprints: dict[str, tuple[int, int]] | None,
+    unreadable_dirs: set[str] | None = None,
 ) -> Iterator[WalkedFile]:
     """O projeto e, depois, o conhecimento base.
 
@@ -340,6 +366,7 @@ def _all_sources(
         max_bytes=cfg.index.max_file_bytes,
         follow_symlinks=cfg.index.follow_symlinks,
         fingerprints=fingerprints,
+        unreadable_dirs=unreadable_dirs,
     )
     if not cfg.base.enabled:
         return
@@ -356,6 +383,7 @@ def _all_sources(
             max_bytes=cfg.base.max_file_bytes,
             follow_symlinks=False,
             fingerprints=fingerprints,
+            unreadable_dirs=unreadable_dirs,
             prefix=f"{base_source.PREFIX}/{name}/",
         )
 

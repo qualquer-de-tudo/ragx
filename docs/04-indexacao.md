@@ -149,6 +149,18 @@ Cache de embeddings: `.ragx/cache/emb/<model_id>/<content_hash>.f32`. Chunk que 
 mudou de lugar (arquivo renomeado, função movida) reaproveita o vetor — é o que faz
 a reindexação ficar barata.
 
+**Arquivo ilegível não é arquivo removido.** Se o arquivo existe mas não abre agora
+(antivírus ou editor segurando-o logo depois do save, `PermissionError`, violação de
+compartilhamento no Windows), o walker o entrega como `unreadable` e a rodada o conta
+em `skip_reasons["unreadable"]` e em `unreadable`, sem regravar nada: documento,
+chunks e vetores ficam como estavam, e a rodada seguinte o reavalia. Só
+`FileNotFoundError`/`NotADirectoryError` significam "sumiu". Uma pasta que não pôde
+ser listada também protege o que estava sob ela. O **nome** continua sendo checado
+sem abrir o arquivo: um `.env` travado que ficou indexado por engano sai do índice do
+mesmo jeito. Efeito aceito: um arquivo que virou sensível e está travado permanece
+no índice com o conteúdo antigo (que já tinha passado pelo Gate) até a primeira
+rodada em que puder ser lido.
+
 Indexação **sem mudança não carrega o modelo de embedding**: o nome e a dimensão do
 modelo saem da configuração (`embedder_id`), os chunks sem vetor são contados primeiro
 e o embedder só é construído (e o Ollama só é sondado) se houver pendência. Com

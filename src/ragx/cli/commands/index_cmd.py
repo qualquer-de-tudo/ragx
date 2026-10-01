@@ -124,7 +124,8 @@ def index(
                     "chunks": report.new_chunks, "skipped": s.skipped,
                     "skip_reasons": s.skip_reasons, "blocked": s.blocked,
                     "redacted": s.redacted, "removed": s.removed,
-                    "degraded": report.degraded, "duration_ms": s.duration_ms,
+                    "degraded": report.degraded, "unreadable": report.unreadable,
+                    "duration_ms": s.duration_ms,
                     "embedded": s.embedded, "embed_error": report.embed_error,
                 },
                 ensure_ascii=False,
@@ -153,6 +154,11 @@ def index(
         )
     if s.redacted:
         console.print(f"  [yellow]Redacted   {s.redacted:>8,}[/]")
+    if report.unreadable:
+        console.print(
+            f"  [yellow]Unreadable {report.unreadable:>8,}[/]   "
+            "[dim]travados agora; ficam como estavam no índice[/]"
+        )
     if report.degraded:
         console.print(f"  [yellow]Degraded   {report.degraded:>8,}[/]   [dim]parsing caiu no fallback[/]")
     console.print(f"\n  Tempo {s.duration_ms / 1000:.1f} s" + ("  [dim](dry-run)[/]" if dry_run else ""))

@@ -262,3 +262,106 @@ def test_indexacao_sem_mudanca_chama_o_git_no_maximo_duas_vezes(
     index_project(cfg)
     assert len(chamadas) <= 2, chamadas
     assert githooks  # a importação é parte do caminho medido
+
+
+# ── RAGX-0133: arquivo ilegível agora não é arquivo removido ────────────
+def _doc_e_chunks(raiz: Path, rel: str) -> tuple[int, int]:
+    cfg = load_config(raiz)
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        docs = conn.execute("SELECT COUNT(*) FROM documents WHERE rel_path = ?", (rel,)).fetchone()[0]
+        chunks = conn.execute(
+            "SELECT COUNT(*) FROM chunks WHERE document_id IN "
+            "(SELECT id FROM documents WHERE rel_path = ?)", (rel,)
+        ).fetchone()[0]
+    finally:
+        conn.close()
+    return docs, chunks
+
+
+def test_arquivo_travado_na_leitura_nao_some_do_indice(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cfg = load_config(proj)
+    index_project(cfg)
+    antes = _doc_e_chunks(proj, "src/b.py")
+    assert antes[0] == 1 and antes[1] > 0
+
+    original = Path.read_bytes
+
+    def trava(self: Path) -> bytes:
+        if self.name == "b.py":
+            raise PermissionError(32, "violação de compartilhamento")
+        return original(self)
+
+    monkeypatch.setattr(Path, "read_bytes", trava)
+    r = index_project(cfg, full=True)
+    assert r.stats.removed == 0
+    assert r.unreadable == 1
+    assert r.stats.skip_reasons.get("unreadable") == 1
+    assert _doc_e_chunks(proj, "src/b.py") == antes
+
+    # liberado e inalterado: volta a contar como já indexado, sem reindexar
+    monkeypatch.setattr(Path, "read_bytes", original)
+    r2 = index_project(cfg)
+    assert r2.unreadable == 0 and r2.stats.removed == 0 and r2.new_chunks == 0
+
+
+def test_travado_no_stat_tambem_nao_remove(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """O `stat` do walker falha DEPOIS de a listagem já ter visto o arquivo (é a
+    corrida real: o antivírus pega o arquivo entre as duas chamadas). A listagem
+    é substituída por uma que não faz `stat`, para isolar o do walker."""
+    import os
+
+    import ragx.walk as walk
+
+    cfg = load_config(proj)
+    index_project(cfg)
+    antes = _doc_e_chunks(proj, "src/a.py")
+
+    def lista_sem_stat(root, follow_symlinks, visited, can_prune=None, on_unreadable_dir=None):  # type: ignore[no-untyped-def]
+        for dp, dn, fn in os.walk(root):
+            dn[:] = [d for d in dn if d != ".ragx"]
+            for f in sorted(fn):
+                yield Path(dp) / f
+
+    original = Path.stat
+
+    def stat_negado(self: Path, *a: object, **k: object):  # type: ignore[no-untyped-def]
+        if self.name == "a.py":
+            raise PermissionError(5, "acesso negado")
+        return original(self, *a, **k)
+
+    monkeypatch.setattr(walk, "_walk", lista_sem_stat)
+    monkeypatch.setattr(Path, "stat", stat_negado)
+    r = index_project(cfg)
+    assert r.stats.removed == 0 and r.unreadable == 1
+    assert _doc_e_chunks(proj, "src/a.py") == antes
+
+
+def test_pasta_ilegivel_nao_apaga_o_que_estava_sob_ela(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cfg = load_config(proj)
+    index_project(cfg)
+    antes = _doc_e_chunks(proj, "src/a.py")
+    original = Path.iterdir
+
+    def iterdir_negado(self: Path):  # type: ignore[no-untyped-def]
+        if self.name == "src":
+            raise PermissionError(5, "acesso negado")
+        return original(self)
+
+    monkeypatch.setattr(Path, "iterdir", iterdir_negado)
+    r = index_project(cfg)
+    assert r.stats.removed == 0
+    assert _doc_e_chunks(proj, "src/a.py") == antes
+
+
+def test_arquivo_realmente_apagado_continua_saindo_do_indice(proj: Path) -> None:
+    cfg = load_config(proj)
+    index_project(cfg)
+    (proj / "src" / "b.py").unlink()
+    r = index_project(cfg)
+    assert r.stats.removed == 1 and r.unreadable == 0
+    assert _doc_e_chunks(proj, "src/b.py") == (0, 0)

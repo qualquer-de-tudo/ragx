@@ -7,7 +7,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | — |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (I-06) · [25-spec-v2.md](../../docs/25-spec-v2.md) · [04-indexacao.md](../../docs/04-indexacao.md) · [02-seguranca.md](../../docs/02-seguranca.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,13 +15,13 @@ Um `OSError` ao abrir um arquivo (antivírus ou editor segurando-o logo depois d
 
 ## Entregáveis
 
-- [ ] **Reproduzir primeiro** com teste portátil (ver Testes): `Path.read_bytes` levantando `PermissionError` para um arquivo já indexado. Registrar o resultado vermelho.
-- [ ] `WalkedFile` (`walk.py:20-30`) ganha `unreadable: bool = False`. Em `iter_files`, `OSError` no `stat` (57-60) e no `read_bytes` (100-103) é separado em dois casos: `FileNotFoundError`/`NotADirectoryError` = o arquivo sumiu (não emite, como hoje); qualquer outro `OSError` emite `WalkedFile(..., GateDecision(Verdict.SKIP, rel, rule_id="unreadable", reason="unreadable"), unreadable=True)` sem abrir o arquivo de novo.
-- [ ] `_walk` (143-180): `iterdir` com `OSError` (156-157) e `is_file()` com `OSError` (179-180) hoje fazem a pasta inteira sumir. Registrar a pasta num conjunto opcional `unreadable_dirs` recebido de `iter_files`/`scan_fingerprints`, em vez de descartá-la em silêncio.
-- [ ] `pipeline._index_once` (`pipeline.py:178-195, 270-274`): `unreadable` entra em `seen_paths`, conta em `skip_reasons["unreadable"]` e em `IndexReport.unreadable` (novo); `gone` exclui os caminhos que estão sob uma pasta de `unreadable_dirs`. Nada é regravado para o arquivo: documento, chunks, embeddings e `security_events` ficam como estavam.
-- [ ] `ragx index --json` e o resumo da CLI mostram `unreadable`; o `docs/04-indexacao.md` ganha a regra "arquivo ilegível não é arquivo removido".
-- [ ] `tests/security/test_architecture.py::test_walker_passa_pelo_gate_antes_de_entregar_bytes` (linhas 191-210) continua valendo: todo `yield` de `iter_files` constrói `WalkedFile` com um `GateDecision`. Ajustar o teste só se a forma do código mudar.
-- [ ] CHANGELOG.
+- [x] **Reproduzir primeiro** com teste portátil (ver Testes): `Path.read_bytes` levantando `PermissionError` para um arquivo já indexado. Registrar o resultado vermelho.
+- [x] `WalkedFile` (`walk.py:20-30`) ganha `unreadable: bool = False`. Em `iter_files`, `OSError` no `stat` (57-60) e no `read_bytes` (100-103) é separado em dois casos: `FileNotFoundError`/`NotADirectoryError` = o arquivo sumiu (não emite, como hoje); qualquer outro `OSError` emite `WalkedFile(..., GateDecision(Verdict.SKIP, rel, rule_id="unreadable", reason="unreadable"), unreadable=True)` sem abrir o arquivo de novo.
+- [x] `_walk` (143-180): `iterdir` com `OSError` (156-157) e `is_file()` com `OSError` (179-180) hoje fazem a pasta inteira sumir. Registrar a pasta num conjunto opcional `unreadable_dirs` recebido de `iter_files`/`scan_fingerprints`, em vez de descartá-la em silêncio.
+- [x] `pipeline._index_once` (`pipeline.py:178-195, 270-274`): `unreadable` entra em `seen_paths`, conta em `skip_reasons["unreadable"]` e em `IndexReport.unreadable` (novo); `gone` exclui os caminhos que estão sob uma pasta de `unreadable_dirs`. Nada é regravado para o arquivo: documento, chunks, embeddings e `security_events` ficam como estavam.
+- [x] `ragx index --json` e o resumo da CLI mostram `unreadable`; o `docs/04-indexacao.md` ganha a regra "arquivo ilegível não é arquivo removido".
+- [x] `tests/security/test_architecture.py::test_walker_passa_pelo_gate_antes_de_entregar_bytes` (linhas 191-210) continua valendo: todo `yield` de `iter_files` constrói `WalkedFile` com um `GateDecision`. Ajustar o teste só se a forma do código mudar.
+- [x] CHANGELOG.
 
 ## Fora de escopo
 
@@ -32,19 +32,19 @@ Um `OSError` ao abrir um arquivo (antivírus ou editor segurando-o logo depois d
 
 ## Critérios de aceite
 
-- [ ] Arquivo já indexado que levanta `PermissionError` na leitura: `removed == 0`, `unreadable == 1`, documento e chunks intactos (antes: `removed 1`, 1/20 → 0/0).
-- [ ] Na rodada seguinte, com o arquivo liberado e **inalterado**, ele conta como `unchanged`; se o conteúdo mudou durante o travamento, é reindexado.
-- [ ] Arquivo realmente apagado continua saindo do índice (`removed == 1`).
-- [ ] Pasta ilegível não apaga os documentos que estavam sob ela.
-- [ ] Arquivo cujo **nome** cai na deny-list continua bloqueado e removido do índice mesmo se estiver travado (o nome é checado antes de abrir).
+- [x] Arquivo já indexado que levanta `PermissionError` na leitura: `removed == 0`, `unreadable == 1`, documento e chunks intactos (antes: `removed 1`, 1/20 → 0/0).
+- [x] Na rodada seguinte, com o arquivo liberado e **inalterado**, ele conta como `unchanged`; se o conteúdo mudou durante o travamento, é reindexado.
+- [x] Arquivo realmente apagado continua saindo do índice (`removed == 1`).
+- [x] Pasta ilegível não apaga os documentos que estavam sob ela.
+- [x] Arquivo cujo **nome** cai na deny-list continua bloqueado e removido do índice mesmo se estiver travado (o nome é checado antes de abrir).
 
 ## Testes
 
-- [ ] `tests/integration/test_pipeline.py`: indexa 3 arquivos, faz `monkeypatch` de `pathlib.Path.read_bytes` para `PermissionError` em um deles (portátil; o lock exclusivo real só existe no Windows) e reindexa com `full=True`. Afirma `removed == 0`, documentos e chunks preservados. **Falha antes do conserto.**
-- [ ] `tests/integration/test_pipeline.py`: o mesmo com `os.stat` falhando com `PermissionError`; e com `Path.iterdir` falhando numa subpasta.
-- [ ] `tests/integration/test_pipeline.py`: apagar de verdade (`unlink`) continua removendo.
-- [ ] `tests/security/test_poda_e_gate.py`: arquivo `.env` já indexado por engano (inserido no banco na mão) e travado: a rodada o remove por nome. Arquivo ilegível nunca gera chunk novo nem `security_event` novo.
-- [ ] `tests/integration/test_watch.py`: o watcher não dispara remoção para arquivo travado.
+- [x] `tests/integration/test_pipeline.py`: indexa 3 arquivos, faz `monkeypatch` de `pathlib.Path.read_bytes` para `PermissionError` em um deles (portátil; o lock exclusivo real só existe no Windows) e reindexa com `full=True`. Afirma `removed == 0`, documentos e chunks preservados. **Falha antes do conserto.**
+- [x] `tests/integration/test_pipeline.py`: o mesmo com `os.stat` falhando com `PermissionError`; e com `Path.iterdir` falhando numa subpasta.
+- [x] `tests/integration/test_pipeline.py`: apagar de verdade (`unlink`) continua removendo.
+- [x] `tests/security/test_poda_e_gate.py`: arquivo `.env` já indexado por engano (inserido no banco na mão) e travado: a rodada o remove por nome. Arquivo ilegível nunca gera chunk novo nem `security_event` novo.
+- [x] `tests/integration/test_watch.py`: o watcher não dispara remoção para arquivo travado.
 
 ## Notas
 
@@ -56,14 +56,24 @@ Um `OSError` ao abrir um arquivo (antivírus ou editor segurando-o logo depois d
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
-- [ ] Documentação confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0133)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [x] Testes escritos e verdes (Windows rodado aqui; Linux e macOS pelo CI)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
+- [x] Documentação confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0133)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+2026-09-30. Reproduzido primeiro (testes vermelhos: `IndexReport` sem `unreadable`; `removed` subia). Implementado:
+`WalkedFile.unreadable`; `_sumiu()` separa FileNotFound/NotADirectory (sumiu) de qualquer outro `OSError` (não sei agora);
+`_decisao_sem_ler()` mantém ignore e deny-list de NOME quando o `stat` falha (o nome é checado sem abrir o arquivo);
+`_walk(on_unreadable_dir=)` e `iter_files(unreadable_dirs=)` registram pasta que não listou (com prefixo `@base/...`, sem barra final);
+`IndexReport.unreadable`, `skip_reasons["unreadable"]`, `--json` e resumo da CLI; `gone` não inclui o que está sob pasta ilegível.
+O teste arquitetural `test_walker_passa_pelo_gate_antes_de_entregar_bytes` continua valendo sem alteração: todo `yield`
+de `iter_files` continua construindo `WalkedFile` (a decisão vem de helper, o yield não).
+Testes: `tests/integration/test_pipeline.py` (4 novos), `tests/integration/test_watch.py` (1), `tests/security/test_poda_e_gate.py` (2).
+Observação: para isolar o `stat` do walker foi preciso substituir `_walk` no teste, porque `is_dir()`/`is_file()` da listagem
+também chamam `Path.stat`. Fast suite, `tests/security`, `ruff`, `mypy` verdes. Sem número antes/depois de tempo: é correção de
+perda de dado (antes `removed 1` e documentos/chunks 1/20 -> 0/0; agora `removed 0`, `unreadable 1`, intactos).

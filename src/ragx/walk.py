@@ -24,6 +24,10 @@ class WalkedFile:
     mtime_ns: int
     decision: GateDecision
     unchanged: bool = False
+    #: o arquivo existe, mas não deu para ler agora (antivírus, editor segurando
+    #: o arquivo logo depois do save). NÃO é "arquivo removido": o pipeline
+    #: preserva o que já está indexado (RAGX-0133).
+    unreadable: bool = False
 
     @property
     def content(self) -> str | None:
@@ -38,6 +42,7 @@ def iter_files(
     only: set[str] | None = None,
     fingerprints: dict[str, tuple[int, int]] | None = None,
     prefix: str = "",
+    unreadable_dirs: set[str] | None = None,
 ) -> Iterator[WalkedFile]:
     """Emite candidatos em streaming — nunca carrega o repositório em memória.
 
@@ -45,18 +50,33 @@ def iter_files(
     `@base/<fonte>/...`). O gate continua vendo o caminho REAL dentro da raiz,
     para que regra de nome e .gitignore funcionem igual; o prefixo só existe
     do lado de fora.
+
+    `unreadable_dirs` recebe (com o `prefix`) as pastas que não puderam ser
+    listadas: o que já estava indexado sob elas não pode ser tratado como
+    removido.
     """
     root = Path(root).resolve()
     visited: set[tuple[int, int]] = set()
 
-    for path in _walk(root, follow_symlinks, visited, gate.ignore.can_prune):
+    def _pasta_ilegivel(pasta: Path) -> None:
+        if unreadable_dirs is not None:
+            rel_dir = pasta.relative_to(root).as_posix()
+            unreadable_dirs.add((prefix + ("" if rel_dir == "." else rel_dir)).rstrip("/"))
+
+    for path in _walk(root, follow_symlinks, visited, gate.ignore.can_prune, _pasta_ilegivel):
         inner = path.relative_to(root).as_posix()
         rel = prefix + inner
         if only is not None and rel not in only:
             continue
         try:
             st = path.stat()
-        except OSError:
+        except OSError as exc:
+            if _sumiu(exc):
+                continue
+            decision = _decisao_sem_ler(gate, inner, rel)
+            yield WalkedFile(
+                rel, 0, 0, decision, unreadable=decision.rule_id == _UNREADABLE
+            )
             continue
 
         # Ignore antes de ler: o arquivo grande ignorado não custa I/O.
@@ -99,7 +119,14 @@ def iter_files(
 
         try:
             raw = path.read_bytes()
-        except OSError:
+        except OSError as exc:
+            if _sumiu(exc):
+                continue
+            yield WalkedFile(
+                rel, st.st_size, st.st_mtime_ns,
+                GateDecision(Verdict.SKIP, rel, rule_id=_UNREADABLE, reason=_UNREADABLE),
+                unreadable=True,
+            )
             continue
 
         if b"\x00" in raw[:_BINARY_PROBE]:
@@ -113,6 +140,32 @@ def iter_files(
         if prefix:
             decision = replace(decision, path=rel)
         yield WalkedFile(rel, st.st_size, st.st_mtime_ns, decision)
+
+
+_UNREADABLE = "unreadable"
+
+
+def _sumiu(exc: OSError) -> bool:
+    """O arquivo não existe mais. Qualquer outro `OSError` (permissão, violação
+    de compartilhamento, antivírus) significa "não sei agora", que é diferente."""
+    return isinstance(exc, FileNotFoundError | NotADirectoryError)
+
+
+def _decisao_sem_ler(gate: SecurityGate, inner: str, rel: str) -> GateDecision:
+    """Decisão para um arquivo cujo `stat` falhou, SEM abri-lo.
+
+    O nome continua sendo checado: um arquivo de nome sensível que ficou
+    indexado por engano e agora está travado tem de sair do índice do mesmo
+    jeito que sairia destravado.
+    """
+    ignored, source = gate.ignore.should_ignore(inner)
+    if ignored:
+        return GateDecision(Verdict.SKIP, rel, rule_id=source, reason="ignore")
+    hit = gate.scanner.scan_filename(inner)
+    if hit is not None:
+        return GateDecision(Verdict.BLOCK, rel, rule_id=hit.rule_id, findings=(hit,),
+                            reason=hit.rule_id)
+    return GateDecision(Verdict.SKIP, rel, rule_id=_UNREADABLE, reason=_UNREADABLE)
 
 
 def scan_fingerprints(
@@ -145,6 +198,7 @@ def _walk(
     follow_symlinks: bool,
     visited: set[tuple[int, int]],
     can_prune: Callable[[str], bool] | None = None,
+    on_unreadable_dir: Callable[[Path], None] | None = None,
 ) -> Iterator[Path]:
     """`can_prune` pula a pasta ignorada inteira (ver `IgnoreEngine.can_prune`):
     descer num `node_modules` ou num worktree ignorado só para pular arquivo por
@@ -154,7 +208,11 @@ def _walk(
         current = stack.pop()
         try:
             entries = list(current.iterdir())
-        except (OSError, PermissionError):
+        except OSError:
+            # Pasta que existe mas não abriu: quem consome precisa saber, para
+            # não confundir com "tudo que havia lá foi apagado".
+            if on_unreadable_dir is not None and current.exists():
+                on_unreadable_dir(current)
             continue
         for entry in sorted(entries):
             try:
@@ -177,4 +235,6 @@ def _walk(
                 elif entry.is_file():
                     yield entry
             except OSError:
+                if on_unreadable_dir is not None:
+                    on_unreadable_dir(entry)
                 continue

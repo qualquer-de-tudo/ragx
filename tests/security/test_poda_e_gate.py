@@ -91,3 +91,79 @@ def test_nenhum_segredo_chega_ao_indice(tmp_path: Path) -> None:
     assert "sub/build/c.py" in admitidos
     assert "sub/keep/k.py" in admitidos
     assert "sub/.vscode/extensions.json" in admitidos
+
+
+# ── RAGX-0133: arquivo ilegível nunca vira conteúdo novo, e o nome continua valendo ──
+def _lista_sem_stat(root, follow_symlinks, visited, can_prune=None, on_unreadable_dir=None):  # type: ignore[no-untyped-def]
+    import os
+
+    for dp, _dn, fn in os.walk(root):
+        for f in sorted(fn):
+            yield Path(dp) / f
+
+
+def test_arquivo_travado_nao_entrega_conteudo_e_nome_sensivel_continua_bloqueado(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ragx.walk as walk
+
+    (tmp_path / ".env").write_text(_SEGREDO, encoding="utf-8")
+    (tmp_path / "app.py").write_text("print('ok')\n", encoding="utf-8")
+    original = Path.stat
+
+    def negado(self: Path, *a: object, **k: object):  # type: ignore[no-untyped-def]
+        if self.name in (".env", "app.py"):
+            raise PermissionError(5, "acesso negado")
+        return original(self, *a, **k)
+
+    monkeypatch.setattr(walk, "_walk", _lista_sem_stat)
+    monkeypatch.setattr(Path, "stat", negado)
+    gate = SecurityGate(tmp_path, policy="strict")
+    vistos = {w.rel_path: w for w in iter_files(tmp_path, gate)}
+
+    # o nome é checado SEM abrir o arquivo: travado ou não, `.env` é bloqueado
+    assert vistos[".env"].decision.verdict.value == "block"
+    assert vistos[".env"].unreadable is False
+    # o comum fica como "ilegível": sem conteúdo, nada para indexar
+    assert vistos["app.py"].unreadable is True
+    assert vistos["app.py"].decision.content is None
+
+
+def test_env_ja_indexado_por_engano_e_travado_sai_do_indice(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ragx.walk as walk
+    from ragx.config import load_config
+    from ragx.core.models import DocKind, Document
+    from ragx.indexing.pipeline import index_project
+    from ragx.storage.db import open_db
+    from ragx.storage.repositories import DocumentRepo
+
+    (tmp_path / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    (tmp_path / ".env").write_text(_SEGREDO, encoding="utf-8")
+    cfg = load_config(tmp_path)
+    index_project(cfg)  # cria o banco; o Gate bloqueia o .env
+    with open_db(cfg.db_path) as conn:  # estado indevido: o .env entrou "por engano"
+        DocumentRepo(conn).upsert(Document(
+            id="docenv", rel_path=".env", doc_kind=DocKind.CONFIG, size_bytes=1, mtime_ns=1,
+            content_hash="h", chunker_version="x", lang=None, title=None, redacted=False,
+        ))
+        conn.commit()
+
+    original = Path.stat
+
+    def negado(self: Path, *a: object, **k: object):  # type: ignore[no-untyped-def]
+        if self.name == ".env":
+            raise PermissionError(5, "acesso negado")
+        return original(self, *a, **k)
+
+    monkeypatch.setattr(walk, "_walk", _lista_sem_stat)
+    monkeypatch.setattr(Path, "stat", negado)
+    r = index_project(cfg)
+    assert r.unreadable == 0
+    with open_db(cfg.db_path) as conn:
+        n = conn.execute("SELECT COUNT(*) FROM documents WHERE rel_path = '.env'").fetchone()[0]
+    assert n == 0, "o .env travado precisa sair do índice pelo nome"

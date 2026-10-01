@@ -371,6 +371,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **Arquivo travado no momento do save não some mais do índice.** No Windows, o
+  antivírus ou o editor seguram o arquivo logo depois do save, que é quando o hook
+  dispara; um `OSError` ao abri-lo fazia o walker simplesmente não entregá-lo e o
+  pipeline o apagava como "removido" (medido: documentos 1 e chunks 20 viravam 0 e 0
+  até a rodada seguinte). Agora o arquivo é `unreadable`: nada é regravado, a rodada
+  mostra `unreadable` no `--json` e no resumo, e uma pasta que não abriu protege o que
+  estava sob ela. Só "não existe" significa removido; o nome sensível continua sendo
+  bloqueado sem abrir o arquivo (RAGX-0133).
 - **Indexar um monorepo pnpm travava por mais de 20 minutos a cada commit.** A
   busca pelos arquivos de ignore fazia três `rglob` pela árvore inteira, e o do
   Python 3.12 entra nas junctions do `node_modules` do pnpm sem lembrar onde já
