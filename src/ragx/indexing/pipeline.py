@@ -30,7 +30,7 @@ from ragx.walk import WalkedFile, iter_files, iter_paths, normalizar_caminho
 
 VALID_SOURCES = frozenset({
     "cli", "panel", "watch", "sync", "mcp:refresh", "mcp:index",
-    "hook:post-checkout", "hook:post-commit", "hook:post-merge", "paths",
+    "hook:post-checkout", "hook:post-commit", "hook:post-merge", "paths", "touch", "mcp:touch",
 })
 
 

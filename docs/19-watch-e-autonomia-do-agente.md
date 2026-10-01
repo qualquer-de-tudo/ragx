@@ -75,6 +75,7 @@ interval_s = 2.0        # entre varreduras
 debounce_s = 1.5        # quietude antes de aplicar
 full_sync_every = 25    # mudanças até consolidar
 max_batch = 500
+touch_debounce_ms = 400 # espera do hook de edição para juntar uma rajada (ragx touch)
 ```
 
 Flags equivalentes: `--interval`, `--debounce`, `--consolidate-every`.

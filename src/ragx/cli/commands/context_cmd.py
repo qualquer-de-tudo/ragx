@@ -37,6 +37,17 @@ def context(
         raise UsageError(f"formato inválido: {fmt!r} (use {' | '.join(_FORMATS)})")
 
     cfg = load_config()
+    if cfg.db_path.exists():
+        from ragx.indexing.touchq import settle
+
+        stale = settle(cfg, source="touch")
+        if stale:
+            # stderr: o stdout é o contexto (ou JSON/XML) e outra ferramenta o lê
+            typer.echo(
+                f"! {len(stale)} arquivo(s) editado(s) ainda sem reindexar "
+                f"(ex.: {', '.join(stale[:3])}); rode `ragx index .`",
+                err=True,
+            )
     pack = build_context(
         cfg, query,
         budget=tokens or cfg.context.default_tokens,

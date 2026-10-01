@@ -169,6 +169,15 @@ absoluto, com `..` ou do conhecimento base, a trava de indexação (ocupada: ped
 `ragx.toml`), que muda o que é visitado. Uma run `paths` não conta como "a última indexação" para
 o veredito de frescor: ela só olhou o que lhe pediram.
 
+**Fila de toque** (`ragx touch`, `indexing/touchq.py`, RAGX-0141). Quem alimenta `index_paths` com o
+que o agente editou é o hook `PostToolUse`: `ragx touch` anexa o caminho (relativo, POSIX) a
+`.ragx/touch.queue` num único `write` em `O_APPEND` e dispara uma drenagem destacada. `drain` espera o
+debounce, toma a fila inteira de forma atômica (`os.replace`, a mesma técnica da trava: dois
+consumidores nunca recebem o mesmo caminho), deduplica (sem diferenciar maiúsculas no Windows) e chama
+`index_paths`. Índice ocupado ou falha: o lote volta à fila. A fila guarda só NOMES; o conteúdo só é
+lido dentro de `index_paths`, depois do Security Gate, e um caminho que escapa da raiz (`..`, outra
+raiz, symlink ou junction para fora) nem entra na fila.
+
 **Chunk com o mesmo id sobrevive à edição.** O `chunk.id` é hash de (caminho, conteúdo
 normalizado, versão do chunker), então "mesmo id" quer dizer "mesmo conteúdo".
 `ChunkRepo.replace_for_document` compara os ids antigos com os novos: os que ficam não são

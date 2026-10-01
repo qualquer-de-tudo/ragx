@@ -119,7 +119,7 @@ def test_off_tira_o_bloco_hooks_que_so_tinha_a_dica(casa: Path) -> None:
 
 
 def test_no_hint_nao_toca_no_settings(casa: Path) -> None:
-    assert runner.invoke(app, ["claude", "on", "--no-hint"]).exit_code == 0
+    assert runner.invoke(app, ["claude", "on", "--no-hint", "--no-touch"]).exit_code == 0
     assert not (casa / ".claude" / "settings.json").exists()
 
 
@@ -265,3 +265,53 @@ def test_arquivo_de_perfis_ilegivel_e_ignorado(casa: Path) -> None:
     (casa / ".ragx").mkdir(exist_ok=True)
     (casa / ".ragx" / "claude-profiles.json").write_text("{quebrado", encoding="utf-8")
     assert _ids() == ["claude-code"]
+
+
+# ── o hook de toque (PostToolUse, RAGX-0141) ────────────────────────────
+def _toques(settings: Path) -> list[dict]:
+    dados = json.loads(settings.read_text(encoding="utf-8"))
+    return list(dados.get("hooks", {}).get("PostToolUse", []))
+
+
+def test_on_instala_o_hook_de_toque_async_e_off_tira(casa: Path) -> None:
+    settings = casa / ".claude" / "settings.json"
+    runner.invoke(app, ["claude", "on"])
+    runner.invoke(app, ["claude", "on"])  # idempotente
+    grupos = _toques(settings)
+    assert len(grupos) == 1
+    assert grupos[0]["matcher"] == "Edit|Write|MultiEdit"
+    (hook,) = grupos[0]["hooks"]
+    assert hook["command"].endswith("touch --stdin-json")
+    assert hook["async"] is True and hook["timeout"] == 10
+
+    runner.invoke(app, ["claude", "off"])
+    assert "hooks" not in json.loads(settings.read_text(encoding="utf-8"))
+
+
+def test_no_touch_nao_instala_e_remove_o_que_havia(casa: Path) -> None:
+    settings = casa / ".claude" / "settings.json"
+    runner.invoke(app, ["claude", "on", "--no-touch"])
+    assert _toques(settings) == []
+    runner.invoke(app, ["claude", "on"])
+    assert len(_toques(settings)) == 1
+    runner.invoke(app, ["claude", "on", "--no-touch"])
+    assert _toques(settings) == []
+    assert len(_hooks(settings)) == 1  # a dica continua
+
+
+def test_hook_de_toque_preserva_os_posttooluse_da_pessoa(casa: Path) -> None:
+    settings = casa / ".claude" / "settings.json"
+    alheio = {"matcher": "Bash", "hooks": [{"type": "command", "command": "echo fmt"}]}
+    settings.write_text(json.dumps({"hooks": {"PostToolUse": [alheio]}}), encoding="utf-8")
+    runner.invoke(app, ["claude", "on"])
+    assert alheio in _toques(settings) and len(_toques(settings)) == 2
+    runner.invoke(app, ["claude", "off"])
+    assert _toques(settings) == [alheio]
+
+
+def test_estado_informa_touch(casa: Path) -> None:
+    runner.invoke(app, ["claude", "on"])
+    r = runner.invoke(app, ["claude", "status", "--json"])
+    assert r.exit_code == 0, r.output
+    estado = json.loads(r.output)
+    assert all(p["touch"] is True for p in estado["profiles"])

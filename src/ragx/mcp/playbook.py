@@ -55,6 +55,11 @@ _ESCRITA = """\
 consolidar é o `sync`. É a diferença entre raciocinar sobre o código de agora e
 sobre o código de ontem.
 
+Arquivos que VOCÊ edita com `Edit`/`Write`/`MultiEdit` entram no índice sozinhos (o hook
+de edição os enfileira e a busca os reindexa antes de responder). Se uma resposta trouxer
+`stale_paths`, esses caminhos ainda podem estar defasados: chame `refresh`. O mesmo vale
+para o que mudou por shell, formatador ou outro editor, que o hook não vê.
+
 `reindex` — varredura explícita. `full=true` só quando o chunker ou o modelo de
 embedding mudou; a incremental resolve o resto.
 

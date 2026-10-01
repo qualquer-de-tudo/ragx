@@ -30,6 +30,7 @@ from ragx.cli.commands import (
     size,
     sync_cmd,
     task_cmd,
+    touch_cmd,
     trial_cmd,
     watch_cmd,
     worker_cmd,
@@ -63,6 +64,7 @@ app.command("size")(size.size)
 app.command("vacuum")(maintenance_cmd.vacuum)
 app.command("reset")(maintenance_cmd.reset)
 app.command("sync")(sync_cmd.sync)
+app.command("touch")(touch_cmd.touch)
 app.command("watch")(watch_cmd.watch)
 app.command("worker")(worker_cmd.worker)
 app.command("export")(portability_cmd.export)

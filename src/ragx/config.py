@@ -206,6 +206,9 @@ class WatchCfg(BaseModel):
     debounce_s: float = 1.5
     full_sync_every: int = 50  # ciclos de mudança até um `sync` completo
     max_batch: int = 500
+    # Arquivos editados pelo agente (hook `PostToolUse` -> `ragx touch`): quanto esperar para
+    # juntar uma rajada de edições numa indexação só.
+    touch_debounce_ms: int = 400
 
 
 class SyncCfg(BaseModel):

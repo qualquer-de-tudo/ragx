@@ -50,8 +50,8 @@ def cfg(tmp_path_factory: pytest.TempPathFactory):
     return c
 
 
-def _chamar(cfg, nome: str, **args):  # type: ignore[no-untyped-def]
-    server = build_server(cfg, allow_write=False)
+def _chamar(cfg, nome: str, write: bool = False, **args):  # type: ignore[no-untyped-def]
+    server = build_server(cfg, allow_write=write)
     return asyncio.run(server.call_tool(nome, args))
 
 
@@ -106,3 +106,72 @@ def test_acentos_nao_viram_escape(cfg) -> None:
     from ragx.mcp.tools import dump
 
     assert dump({"a": "ação"}) == '{"a":"ação"}'
+
+
+# ── fila de toque (RAGX-0141) ───────────────────────────────────────────
+def test_busca_drena_a_fila_e_enxerga_a_edicao(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from ragx.indexing import touchq
+
+    (tmp_path / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "a.py").write_text("def a():\n    return 1\n", encoding="utf-8")
+    c = load_config(tmp_path)
+    index_project(c)
+
+    (tmp_path / "a.py").write_text("def a():\n    return 'tokenmarcadorqwerty'\n", encoding="utf-8")
+    assert "tokenmarcadorqwerty" not in _texto(_chamar(c, "search_hybrid", query="tokenmarcadorqwerty"))
+    touchq.enqueue(c.state_dir, ["a.py"])
+    dados = json.loads(_texto(_chamar(c, "search_hybrid", write=True, query="tokenmarcadorqwerty", response_format="detailed")))
+    assert "tokenmarcadorqwerty" in json.dumps(dados)
+    assert "stale_paths" not in json.dumps(dados)  # a fila foi drenada: nada defasado
+    assert touchq.pending(c.state_dir) == []
+
+
+def test_fila_que_nao_da_para_drenar_vira_stale_paths(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from ragx.core.errors import IndexBusyError
+    from ragx.indexing import pipeline, touchq
+
+    (tmp_path / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "a.py").write_text("def a():\n    return 1\n", encoding="utf-8")
+    c = load_config(tmp_path)
+    index_project(c)
+
+    def ocupado(*_a, **_k):  # type: ignore[no-untyped-def]
+        raise IndexBusyError("ocupado")
+
+    monkeypatch.setattr(pipeline, "index_paths", ocupado)
+    touchq.enqueue(c.state_dir, [f"f{i}.py" for i in range(25)])
+    dados = json.loads(_texto(_chamar(c, "search_hybrid", write=True, query="a")))
+    data = dados.get("data", dados)
+    assert data["stale_count"] == 25
+    assert len(data["stale_paths"]) == 20  # teto de 20 caminhos
+    assert touchq.pending(c.state_dir)  # nada se perdeu: o lote voltou à fila
+
+
+def test_sem_fila_a_resposta_nao_ganha_campos(cfg) -> None:  # type: ignore[no-untyped-def]
+    texto = _texto(_chamar(cfg, "search_hybrid", query="AuthService"))
+    assert "stale" not in texto
+
+
+def test_servidor_somente_leitura_nao_drena_so_informa(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from ragx.indexing import touchq
+
+    (tmp_path / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "a.py").write_text("def a():\n    return 1\n", encoding="utf-8")
+    c = load_config(tmp_path)
+    index_project(c)
+    (tmp_path / "a.py").write_text("def a():\n    return 'somenteleituraxx'\n", encoding="utf-8")
+    touchq.enqueue(c.state_dir, ["a.py"])
+    dados = json.loads(_texto(_chamar(c, "search_hybrid", write=False, query="somenteleituraxx")))
+    data = dados.get("data", dados)
+    assert data["stale_paths"] == ["a.py"] and data["stale_count"] == 1
+    assert "somenteleituraxx" not in json.dumps(data["results"])  # não reindexou
+    assert touchq.pending(c.state_dir) == ["a.py"]  # a fila ficou intacta

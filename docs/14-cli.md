@@ -344,7 +344,8 @@ ragx doctor --json               as mesmas checagens em JSON, saindo com 0
 ragx perf [--days 7] [--project NOME] [--top 5] [--json]
 ragx claude status [--json]      o RAGX está ligado no Claude Code agora? (por perfil)
 ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projetos e perfis
-ragx claude on [--dry-run] [--no-hint]   põe de volta, com a dica de início de sessão
+ragx claude on [--dry-run] [--no-hint] [--no-touch]   põe de volta, com a dica e o aviso de edição
+ragx touch [ARQUIVO...] [--stdin-json] [--root R]    avisa o RAGX de arquivos editados (reindexa só eles)
 ragx claude on|off --profile empresa     só num perfil (id ou nome)
 ragx claude hint                 o texto que a dica entrega ao agente nesta pasta
 ragx claude profiles list [--json]       perfis que o RAGX enxerga, detectados e adicionados
@@ -394,6 +395,16 @@ indexados (um monorepo com front e back separados), a dica lista o
 `scope="project:<nome>"` de cada um. Fora de projeto RAGX, não diz nada. O hook
 nunca falha: um erro ali atrasaria toda sessão. `off` remove só esse hook; os
 seus ficam. `--no-hint` liga o MCP sem a dica.
+
+**Aviso de edição (`ragx touch`, RAGX-0141).** O índice só via uma edição não commitada no
+`refresh` (26 a 91 s) ou no próximo commit. `on` instala também um hook `PostToolUse`
+(`Edit|Write|MultiEdit`, `async`, `timeout` 10 s) que roda `ragx touch --stdin-json`: o comando lê o
+caminho editado do JSON do hook, o enfileira em `.ragx/touch.queue` e dispara, destacado, a
+drenagem que reindexa só aqueles arquivos (`index_paths`). A raiz vem do próprio arquivo (a sessão
+pode estar numa pasta-pai), pasta sem índice é ignorada, e o comando sai sempre com 0. Várias
+edições em sequência (`[watch] touch_debounce_ms`, 400 ms) viram uma só reindexação. `--no-touch`
+liga o MCP sem o hook (e tira o que já estava); `off` o remove, e os seus `PostToolUse` ficam.
+`ragx touch ARQUIVO...` faz o mesmo à mão.
 
 ## Orçamento de tamanho (Fases 1 e 9)
 

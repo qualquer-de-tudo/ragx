@@ -37,6 +37,7 @@ def search(
 
     cfg = load_config()
     filters = SearchFilters(lang=lang, kind=kind, path_glob=path_glob, min_score=min_score)
+    stale: list[str] = []
 
     if scope != "current":
         from ragx.federation.search import search_scoped
@@ -51,6 +52,9 @@ def search(
             degraded="; ".join(f"{k}: {v}" for k, v in scoped.degraded.items()) or None,
         )
     else:
+        from ragx.indexing.touchq import settle
+
+        stale = settle(cfg, source="touch") if cfg.db_path.exists() else []
         outcome = run_search(cfg, query, mode=mode, limit=limit, raw=raw, filters=filters)
 
     if as_json:
@@ -61,6 +65,7 @@ def search(
                     "mode": outcome.mode,
                     "degraded": outcome.degraded,
                     **({"partial": outcome.partial} if outcome.partial else {}),
+                    **({"stale_paths": stale[:20], "stale_count": len(stale)} if stale else {}),
                     "timings_ms": {k: round(v, 2) for k, v in outcome.timings_ms.items()},
                     "results": [
                         {
@@ -88,6 +93,11 @@ def search(
         console.print(f"\n[yellow]![/] {outcome.degraded}")
     if outcome.partial:
         console.print(f"\n[yellow]![/] {outcome.partial}")
+    if stale:
+        console.print(
+            f"\n[yellow]![/] {len(stale)} arquivo(s) editado(s) ainda sem reindexar "
+            f"(ex.: {', '.join(stale[:3])}); rode `ragx index .`"
+        )
 
     if not outcome.results:
         console.print(f"\n[dim]nenhum resultado para[/] [bold]{query}[/]\n")

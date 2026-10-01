@@ -280,6 +280,14 @@ declarado em `get_playbook`):
 - `build_context` entrega **uma** representação por `format` (ver acima) e o texto do
   markdown sem o título.
 
+### Frescor: fila de edição e `stale_paths` (RAGX-0141)
+
+`search_knowledge`, `search_hybrid` e `build_context` (escopo `current`) reindexam, ANTES de buscar, os
+arquivos que o hook de edição deixou em `.ragx/touch.queue` (só um `stat` quando a fila está vazia, e
+sem espera de debounce). Se algo não puder ser reindexado agora (índice ocupado por outra indexação,
+falha), a resposta traz `stale_paths` (até 20 caminhos) e `stale_count`: aqueles arquivos podem estar
+defasados, e o agente chama `refresh`. Sem fila pendente a resposta não ganha nenhum campo.
+
 ### Teto e `response_format` (RAGX-0165)
 
 - **Teto do `build_context`:** o pedido é limitado a `[mcp] max_context_tokens` (padrão **5.000**).

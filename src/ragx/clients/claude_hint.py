@@ -32,9 +32,13 @@ from ragx.clients.registry import (
 )
 
 EVENT = "SessionStart"
+#: O segundo hook (RAGX-0141): depois de cada edição de arquivo, avisa o RAGX para reindexá-lo.
+TOUCH_EVENT = "PostToolUse"
+TOUCH_MATCHER = "Edit|Write|MultiEdit"
 
 #: Reconhece a entrada do RAGX mesmo que o executável gravado mude de lugar.
 _NOSSO = re.compile(r"ragx(\.exe)?\"?\s+claude\s+hint\s*$", re.IGNORECASE)
+_NOSSO_TOUCH = re.compile(r"ragx(\.exe)?\"?\s+touch\s+--stdin-json\s*$", re.IGNORECASE)
 
 
 def hint_command(command: str) -> str:
@@ -52,6 +56,10 @@ def hint_command(command: str) -> str:
 
 def _eh_nosso(hook: Any) -> bool:
     return isinstance(hook, dict) and bool(_NOSSO.search(str(hook.get("command", ""))))
+
+
+def _eh_nosso_touch(hook: Any) -> bool:
+    return isinstance(hook, dict) and bool(_NOSSO_TOUCH.search(str(hook.get("command", ""))))
 
 
 def _ler(path: Path, client: Client) -> tuple[dict[str, Any] | None, Result | None]:
@@ -72,24 +80,26 @@ def _ler(path: Path, client: Client) -> tuple[dict[str, Any] | None, Result | No
     return dados, None
 
 
-def _grupos(dados: dict[str, Any], path: Path, client: Client) -> tuple[list[Any] | None, Result | None]:
+def _grupos(
+    dados: dict[str, Any], path: Path, client: Client, event: str = EVENT
+) -> tuple[list[Any] | None, Result | None]:
     hooks = dados.get("hooks")
     if hooks is not None and not isinstance(hooks, dict):
         return None, Result(client, Outcome.FAILED, f"`hooks` em {path} não é um objeto — não vou mexer.")
-    grupos = (hooks or {}).get(EVENT)
+    grupos = (hooks or {}).get(event)
     if grupos is not None and not isinstance(grupos, list):
-        return None, Result(client, Outcome.FAILED, f"`hooks.{EVENT}` em {path} não é uma lista — não vou mexer.")
+        return None, Result(client, Outcome.FAILED, f"`hooks.{event}` em {path} não é uma lista — não vou mexer.")
     return list(grupos or []), None
 
 
-def _sem_o_nosso(grupos: list[Any]) -> list[Any]:
+def _sem_o_nosso(grupos: list[Any], eh_nosso: Any = _eh_nosso) -> list[Any]:
     """Tira só a nossa entrada; grupo que ficar vazio sai junto."""
     out: list[Any] = []
     for grupo in grupos:
         if not isinstance(grupo, dict) or not isinstance(grupo.get("hooks"), list):
             out.append(grupo)
             continue
-        resto = [h for h in grupo["hooks"] if not _eh_nosso(h)]
+        resto = [h for h in grupo["hooks"] if not eh_nosso(h)]
         if len(resto) == len(grupo["hooks"]):
             out.append(grupo)
         elif resto:
@@ -97,12 +107,14 @@ def _sem_o_nosso(grupos: list[Any]) -> list[Any]:
     return out
 
 
-def _gravar(path: Path, dados: dict[str, Any], grupos: list[Any], existia: bool) -> Path | None:
+def _gravar(
+    path: Path, dados: dict[str, Any], grupos: list[Any], existia: bool, event: str = EVENT
+) -> Path | None:
     hooks = dict(dados.get("hooks") or {})
     if grupos:
-        hooks[EVENT] = grupos
+        hooks[event] = grupos
     else:
-        hooks.pop(EVENT, None)
+        hooks.pop(event, None)
     if hooks:
         dados["hooks"] = hooks
     else:
@@ -169,6 +181,81 @@ def has_hint(client: Client) -> bool:
     if not isinstance(grupos, list):
         return False
     return any(_eh_nosso(h) for g in grupos if isinstance(g, dict) for h in g.get("hooks") or [])
+
+
+# ── o hook de toque (PostToolUse) ───────────────────────────────────────
+def touch_command(command: str) -> str:
+    """`ragx touch --stdin-json`, com o mesmo executável (e as mesmas aspas) do hint."""
+    return hint_command(command).replace(" claude hint", " touch --stdin-json")
+
+
+def _entrada_de_toque(command: str) -> dict[str, Any]:
+    """`async`: o agente não espera a reindexação; `timeout` curto: só enfileira e dispara."""
+    return {
+        "matcher": TOUCH_MATCHER,
+        "hooks": [{"type": "command", "command": touch_command(command), "async": True, "timeout": 10}],
+    }
+
+
+def install_touch_hook(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
+    """Põe (ou corrige) o hook `PostToolUse` que avisa o RAGX das edições do agente."""
+    path = claude_settings(client)
+    try:
+        dados, falha = _ler(path, client)
+        if falha or dados is None:
+            return falha or Result(client, Outcome.FAILED, "configuração ilegível")
+        grupos, falha = _grupos(dados, path, client, TOUCH_EVENT)
+        if falha or grupos is None:
+            return falha or Result(client, Outcome.FAILED, "configuração ilegível")
+
+        nova = _entrada_de_toque(command)
+        atuais = [
+            g for g in grupos
+            if isinstance(g, dict) and any(_eh_nosso_touch(h) for h in g.get("hooks") or [])
+        ]
+        if atuais == [nova]:
+            return Result(client, Outcome.UNCHANGED, "aviso de edição já instalado")
+
+        novos = [*_sem_o_nosso(grupos, _eh_nosso_touch), nova]
+        existia = path.is_file()
+        backup = None if dry_run else _gravar(path, dados, novos, existia, TOUCH_EVENT)
+        return Result(
+            client, Outcome.UPDATED if existia else Outcome.CREATED,
+            f"aviso de edição instalado em {path.name}", backup,
+        )
+    except OSError as exc:
+        return Result(client, Outcome.FAILED, f"não consegui escrever {path}: {exc}")
+
+
+def remove_touch_hook(client: Client, dry_run: bool = False) -> Result:
+    """Tira só o hook de toque do RAGX; os hooks da pessoa (inclusive `PostToolUse`) ficam."""
+    path = claude_settings(client)
+    try:
+        dados, falha = _ler(path, client)
+        if falha or dados is None:
+            return falha or Result(client, Outcome.FAILED, "configuração ilegível")
+        grupos, falha = _grupos(dados, path, client, TOUCH_EVENT)
+        if falha or grupos is None:
+            return falha or Result(client, Outcome.FAILED, "configuração ilegível")
+        novos = _sem_o_nosso(grupos, _eh_nosso_touch)
+        if novos == grupos:
+            return Result(client, Outcome.UNCHANGED, "aviso de edição não estava instalado")
+        backup = None if dry_run else _gravar(path, dados, novos, True, TOUCH_EVENT)
+        return Result(client, Outcome.REMOVED, f"aviso de edição removido de {path.name}", backup)
+    except OSError as exc:
+        return Result(client, Outcome.FAILED, f"não consegui escrever {path}: {exc}")
+
+
+def has_touch_hook(client: Client) -> bool:
+    path = claude_settings(client)
+    try:
+        dados = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except (OSError, ValueError):
+        return False
+    grupos = ((dados or {}).get("hooks") or {}).get(TOUCH_EVENT) if isinstance(dados, dict) else None
+    if not isinstance(grupos, list):
+        return False
+    return any(_eh_nosso_touch(h) for g in grupos if isinstance(g, dict) for h in g.get("hooks") or [])
 
 
 # ── o texto ─────────────────────────────────────────────────────────────
@@ -251,8 +338,8 @@ def _texto_projeto(cfg: Any) -> str:
         "aprofundar.\n"
         f'Se as ferramentas aparecerem só pelo nome (deferred), carregue antes: ToolSearch "{_FERRAMENTAS}".\n'
         "Pule o RAGX só quando a tarefa já traz o caminho exato do arquivo a abrir. "
-        "Mudanças não commitadas podem não estar no índice: se editou algo nesta sessão "
-        "e precisa buscá-lo, chame mcp__ragx__refresh antes."
+        "Arquivos editados com Edit/Write entram no índice sozinhos; se a resposta trouxer "
+        "`stale_paths`, ou se mexeu por shell ou outro editor, chame mcp__ragx__refresh antes."
     )
 
 

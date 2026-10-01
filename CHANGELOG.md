@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Aviso de edição: hook `PostToolUse`, `ragx touch` e `stale_paths` na busca.** Uma edição não
+  commitada só entrava no índice pelo `refresh` (26 a 91 s) ou no próximo commit. `ragx claude on`
+  instala agora um hook assíncrono (`Edit|Write|MultiEdit`) que roda `ragx touch --stdin-json`: o
+  caminho editado vai para `.ragx/touch.queue` (um `write` atômico, a raiz vem do próprio arquivo) e
+  uma drenagem destacada reindexa só ele (`index_paths`); várias edições em 400 ms viram uma
+  reindexação. O servidor MCP drena a fila antes de buscar e, se algo não puder ser reindexado, a
+  resposta traz `stale_paths` e `stale_count`. `--no-touch` desliga, `off` remove só o nosso hook, e
+  o texto da dica e do playbook deixou de mandar chamar `refresh` a cada edição (RAGX-0141).
 - **Reindexação por caminho: `index_paths` e `ragx index --only`.** Reindexar um arquivo editado
   pagava a varredura do projeto, o git e a leitura dos hooks (703 ms mesmo depois da poda e do
   embedder preguiçoso). `index_paths` reindexa só os arquivos pedidos, com o mesmo Security

@@ -163,8 +163,10 @@ class RateLimiter:
 class KnowledgeAPI:
     """Fachada que as ferramentas chamam. Toda a lógica vive abaixo dela."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, can_drain: bool = False):
         self.cfg = cfg
+        # Drenar a fila de edições ESCREVE no índice: só um servidor com escrita habilitada o faz.
+        self.can_drain = can_drain
         self.limiter = RateLimiter(cfg.mcp.rate_per_min)
         self.project = cfg.project.name or "current"
 
@@ -173,6 +175,21 @@ class KnowledgeAPI:
         if not self.limiter.allow():
             return err("rate_limited", f"limite de {self.limiter.per_minute} chamadas/min atingido")
         return None
+
+    #: Quantos caminhos desatualizados a resposta lista (o resto só entra na contagem).
+    _STALE_MAX = 20
+
+    def _settle(self) -> dict[str, Any]:
+        """Drena a fila de arquivos tocados e diz o que ainda pode estar desatualizado.
+
+        Só devolve algo quando sobrou fila: sem edição pendente a resposta não ganha um byte.
+        """
+        from ragx.indexing.touchq import settle
+
+        restantes = settle(self.cfg, can_drain=self.can_drain)
+        if not restantes:
+            return {}
+        return {"stale_paths": restantes[: self._STALE_MAX], "stale_count": len(restantes)}
 
     def _detailed(self, fmt: str | None) -> bool:
         return (fmt or self.cfg.mcp.response_format) == "detailed"
@@ -217,6 +234,7 @@ class KnowledgeAPI:
             # `scope` era aceito e ignorado: `all` consultava só o projeto atual
             return self._search_scoped(req, mode, path_glob)
 
+        stale = self._settle()
         out = run(
             self.cfg, req.query, mode=mode, limit=req.limit,
             filters=SearchFilters(lang=req.lang, kind=req.kind, path_glob=path_glob),
@@ -229,6 +247,7 @@ class KnowledgeAPI:
                     "degraded": out.degraded,
                     # só aparece quando existe: não acrescenta `null` ao fio
                     **({"partial": out.partial} if out.partial else {}),
+                    **stale,
                     "results": [self._hit(r, self._detailed(req.response_format)) for r in out.results],
                 }
             ),
@@ -443,6 +462,7 @@ class KnowledgeAPI:
         from ragx.graph.service import graph_search
         from ragx.search.service import SearchFilters
 
+        stale = self._settle()
         out = graph_search(
             self.cfg, req.query, limit=req.limit, depth=min(max(depth, 1), 2),
             filters=SearchFilters(lang=req.lang),
@@ -454,6 +474,7 @@ class KnowledgeAPI:
                     "seeds": out.seeds,
                     "expanded": len(out.expansion.scores),
                     "truncated": out.expansion.truncated,
+                    **stale,
                     "results": [
                         {**self._hit(r, self._detailed(req.response_format)), "via": r.metadata.get("via", "graph")}
                         for r in out.results
@@ -472,6 +493,7 @@ class KnowledgeAPI:
 
         project = self.project
         other_cfg: Config | None = None
+        stale: dict[str, Any] = {}
         # Teto: o pedido acima dele é limitado E informado (`tokens_capped`), nunca cortado
         # em silêncio. `BuildContextRequest.tokens` continua validando até MAX_TOKENS.
         teto = self.cfg.mcp.max_context_tokens
@@ -496,6 +518,7 @@ class KnowledgeAPI:
                 return err("invalid_scope", str(exc).splitlines()[0])
             other_cfg = None if used_cfg is self.cfg else used_cfg
         else:
+            stale = self._settle()
             pack = run(
                 self.cfg, req.query, budget=budget, include_graph=req.include_graph
             )
@@ -504,6 +527,7 @@ class KnowledgeAPI:
             "estimated_tokens": pack.estimated_tokens,
             "budget": pack.budget,
             "sources": list(pack.sources),
+            **stale,
         }
         if req.tokens > teto:
             payload["tokens_capped"] = teto
@@ -670,7 +694,7 @@ def build_server(
     from mcp.server.mcpserver import MCPServer
 
     write_enabled = cfg.mcp.allow_write if allow_write is None else allow_write
-    api = KnowledgeAPI(cfg)
+    api = KnowledgeAPI(cfg, can_drain=write_enabled)
     ops = WriteAPI(cfg, enabled=write_enabled)
     orq = OrchestrationAPI(cfg, enabled=write_enabled)
     server = MCPServer(
