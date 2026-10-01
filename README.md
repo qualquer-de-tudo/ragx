@@ -18,7 +18,11 @@ provedor do modelo, e RAG genérico trata código como texto puro.
 
 ## Instalação
 
-**Um comando.**
+**Windows, com painel:** baixe `RAGX-Painel-Setup-<versão>.exe` na página de
+[releases](https://github.com/qualquer-de-tudo/ragx/releases), junto com o
+[guia de uso](docs/GUIA-DE-USO.md). Ele instala o painel e a CLI.
+
+**Só a CLI, em qualquer sistema. Um comando.**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/qualquer-de-tudo/ragx/main/install/install.sh | bash

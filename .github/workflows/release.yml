@@ -5,6 +5,12 @@ name: Release
 #     git tag v1.0.0 && git push origin v1.0.0
 #
 # Ou manualmente, pela aba Actions, informando a versão.
+#
+# A release publica DOIS arquivos: o instalador do painel (.exe) e o guia de
+# uso (GUIA-DE-USO.md). O wheel, o sdist e a extensão do VS Code continuam
+# sendo construídos e testados, mas ficam como artefatos do workflow (aba da
+# execução), não na página da release. O GitHub acrescenta sozinho o "Source
+# code (zip/tar.gz)" a toda release: isso não dá para desligar.
 on:
   push:
     tags: ['v*']
@@ -109,7 +115,7 @@ jobs:
         with:
           name: pacote-python
           path: dist/*
-          retention-days: 7
+          retention-days: 30
 
   # ── 3. extensão do VS Code ────────────────────────────────────────────
   extensao:
@@ -146,7 +152,7 @@ jobs:
         with:
           name: extensao-vscode
           path: vscode-plugin/*.vsix
-          retention-days: 7
+          retention-days: 30
 
   # ── 4. o instalador funciona? ─────────────────────────────────────────
   # Instalar a partir do WHEEL recém-construído, nos dois sistemas. É o teste
@@ -337,31 +343,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Só o que o usuário final precisa: o instalador e o guia. O wheel e a
+          # extensão ficam nos artefatos do workflow (retenção maior abaixo).
           mkdir -p release
-          cp baixados/pacote-python/* release/
-          cp baixados/extensao-vscode/*.vsix release/
           cp baixados/painel-windows/*.exe release/
-          # Cópia binária: o `.ps1` precisa continuar ASCII e SEM BOM, e o
-          # `.sh` precisa de LF. Qualquer reescrita de texto aqui desfaria os
-          # dois em silêncio — e um BOM no `.ps1` quebra o `irm | iex`.
-          cp install/install.sh install/install.ps1 release/
-
+          cp docs/GUIA-DE-USO.md release/
           cd release
-          sha256sum * > SHA256SUMS.txt
           ls -la
-          echo "vsix=$(ls *.vsix | head -1)" >> "$GITHUB_OUTPUT"
-          echo "whl=$(ls *.whl | head -1)" >> "$GITHUB_OUTPUT"
+          exe="$(ls *Setup*.exe | head -1)"
+          echo "exe=$exe" >> "$GITHUB_OUTPUT"
+          echo "sha=$(sha256sum "$exe" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Montar as notas
         shell: bash
         run: |
           set -euo pipefail
           RAGX="${{ needs.pacote.outputs.versao }}"
-          PLUGIN="${{ needs.extensao.outputs.versao }}"
+          EXE="${{ steps.reunir.outputs.exe }}"
+          SHA="${{ steps.reunir.outputs.sha }}"
           REPO="${{ github.repository }}"
           # No disparo manual, `github.ref_name` é o nome do ramo (`main`).
           TAG="${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}"
-          EXE="$(cd release && ls *Setup*.exe | head -1)"
 
           # A seção desta versão no CHANGELOG vira "Novidades". Texto fixo aqui
           # envelhecia: as notas da beta 3 ainda anunciavam o que era da beta 1.
@@ -370,120 +372,37 @@ jobs:
           if ! grep -q '[^[:space:]]' novidades.md; then
             echo "Sem seção [$RAGX] no CHANGELOG; veja o arquivo completo." > novidades.md
           fi
-          VSIX="${{ steps.reunir.outputs.vsix }}"
-          WHL="${{ steps.reunir.outputs.whl }}"
 
           # Heredoc SEM expansão ('NOTAS' entre aspas): o corpo tem crases e
-          # cifrões de blocos de código, e deixá-lo expandir transformaria
-          # `$RAGX` dentro de um exemplo em texto vazio. As substituições
-          # acontecem depois, uma a uma, com `sed`.
+          # cifrões de blocos de código. As substituições acontecem depois, uma
+          # a uma, com `sed`.
           cat > NOTAS.md <<'NOTAS'
-          RAGX **__RAGX__** · extensão do VS Code **__PLUGIN__**
-
-          Knowledge Engine local para projetos de software: indexa o
-          repositório, **protege segredos por construção**, responde busca
-          híbrida, monta contexto dentro de um orçamento de tokens e serve
-          agentes via MCP. Sem servidor, sem nuvem, sem chave de API.
+          RAGX **__RAGX__**: Knowledge Engine local para projetos de software.
+          Indexa o repositório, **protege segredos por construção**, monta
+          contexto dentro de um orçamento de tokens e serve agentes via MCP.
+          Sem servidor, sem nuvem, sem chave de API.
 
           ## Instalar
 
-          ### Painel (Windows): o jeito mais simples
-
-          Baixe **`__EXE__`** logo abaixo, em *Assets*, e execute. O
-          instalador põe o painel **e** a CLI (uv, Python 3.12 e o `ragx`), sem
-          precisar de nada instalado antes. Para atualizar, é só rodar o
-          instalador da versão nova por cima.
+          1. Baixe **`__EXE__`** em *Assets*, logo abaixo, e execute.
+          2. O instalador põe o painel **e** a CLI (uv, Python 3.12 e o `ragx`),
+             sem precisar de nada instalado antes.
+          3. Leia o **`GUIA-DE-USO.md`** (também em *Assets*) para os primeiros
+             passos.
 
           O executável ainda não é assinado, então o Windows SmartScreen mostra
           "O Windows protegeu o computador". Clique em **Mais informações →
-          Executar assim mesmo**. Para conferir que o arquivo é este, compare o
-          hash com o `SHA256SUMS.txt`.
-
-          ### Só a CLI, em qualquer sistema
-
-          **Um comando.**
-
-          ```bash
-          curl -fsSL https://raw.githubusercontent.com/__REPO__/main/install/install.sh | bash
-          ```
+          Executar assim mesmo**. Para conferir o arquivo:
 
           ```powershell
-          irm https://raw.githubusercontent.com/__REPO__/main/install/install.ps1 | iex
+          Get-FileHash .\__EXE__ -Algorithm SHA256
           ```
 
-          Isso instala a partir do `main`. Para pregar **esta** versão — e
-          levar junto a extensão do VS Code, que não vem pelo comando único —
-          baixe os arquivos desta página e rode o instalador na pasta deles:
-
-          ```bash
-          gh release download __TAG__ --repo __REPO__ --dir ragx
-          cd ragx && bash install.sh        # Windows: .\install.ps1
+          ```text
+          __SHA__
           ```
 
-          O instalador põe o `uv` no lugar se não houver, instala o RAGX
-          isolado, grava o PATH, registra o servidor MCP no Claude Desktop e no
-          Claude Code, e instala a extensão se achar o `code`. Depois,
-          **abra um terminal novo** — o PATH só vale na próxima sessão.
-
-          ```bash
-          ragx --version
-          ```
-
-          ## Usar
-
-          ```bash
-          cd seu-projeto
-          ragx init
-          ragx security scan .    # veja o que será bloqueado ANTES de indexar
-          ragx index .
-          ragx search "como funciona a autenticação"
-          ```
-
-          A partir daí:
-
-          ```bash
-          ragx context "implementar SSO" --tokens 3000   # contexto no orçamento
-          ragx graph rebuild                             # entidades e relações
-          ragx dictionary generate                       # mapa barato do projeto
-          ragx watch                                     # o índice segue suas edições
-          ragx doctor                                    # o que está fora do lugar
-          ```
-
-          **Para o seu agente**, o RAGX é um servidor MCP:
-
-          ```bash
-          ragx mcp serve
-          ```
-
-          O instalador já o registra no Claude Desktop e no Claude Code. A
-          ordem que rende: `get_dictionary` (orientação barata) →
-          `search_hybrid` (localizar) → `build_context` (montar o contexto) →
-          `get_chunk` (aprofundar).
-
-          **No VS Code**, a extensão abre o índice numa barra lateral ou em
-          tela cheia: busca, documentos, grafo de entidades, dicionário,
-          origens e tarefas. À mão:
-
-          ```bash
-          code --install-extension __VSIX__
-          ```
-
-          Depois de atualizar, **recarregue a janela**
-          (`Developer: Reload Window`): a extensão mantém um servidor MCP vivo
-          e só fala com o RAGX novo na próxima conexão.
-
-          ## Segredo não entra no índice
-
-          Não é filtro na saída, é portão na entrada: o Security Gate examina o
-          arquivo **antes** de indexar. O que ele bloqueia não existe no banco,
-          então não há consulta, ferramenta MCP nem agente que o alcance.
-
-          Este build **quebra** se um `.env` com credencial entrar no índice do
-          projeto de teste. Veja com seus próprios olhos antes de confiar:
-
-          ```bash
-          ragx security scan .
-          ```
+          Para atualizar, rode o instalador da versão nova por cima.
 
           ## Novidades desta versão
 
@@ -495,7 +414,6 @@ jobs:
           ## Verificado nesta build
 
           - testes em Ubuntu, macOS e Windows
-          - instalação a partir do wheel nos três sistemas
           - o instalador do painel, em silêncio, deixa o `ragx` respondendo, e
             o desinstalador o remove
           - ciclo completo num projeto novo: `init`, `index`, `search`, MCP
@@ -507,19 +425,14 @@ jobs:
           - **É uma beta.** A interface de linha de comando e o formato do
             índice ainda podem mudar sem cerimônia entre betas.
           - **A busca híbrida ainda não supera a busca por palavra-chave** neste
-            corpus (recall@5 0,65 contra 0,77). O critério documentado não foi
-            atingido; o diagnóstico está em `docs/05-busca.md`.
-
-          ## Conferir o download
-
-          ```bash
-          sha256sum -c SHA256SUMS.txt
-          ```
+            corpus (recall@5 0,65 contra 0,77). O diagnóstico está em
+            `docs/05-busca.md`.
+          - Os arquivos "Source code" no fim da lista são gerados pelo GitHub em
+            toda release; o que você precisa é o `.exe`.
           NOTAS
 
-          sed -i "s|__RAGX__|$RAGX|g;  s|__PLUGIN__|$PLUGIN|g; s|__REPO__|$REPO|g; \
-                  s|__TAG__|$TAG|g;    s|__VSIX__|$VSIX|g;     s|__WHL__|$WHL|g; \
-                  s|__EXE__|$EXE|g" NOTAS.md
+          sed -i "s|__RAGX__|$RAGX|g; s|__REPO__|$REPO|g; s|__TAG__|$TAG|g; \
+                  s|__EXE__|$EXE|g; s|__SHA__|$SHA|g" NOTAS.md
           # O CHANGELOG entra por último e por arquivo: tem `|`, `&` e barras
           # que um `sed` interpretaria.
           awk 'FNR==NR {n = n $0 "\n"; next} $0 == "__NOVIDADES__" {printf "%s", n; next} {print}' \

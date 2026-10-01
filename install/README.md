@@ -1,5 +1,13 @@
 # Instalação do RAGX
 
+> **Mudou a partir da beta 6:** a página de release passa a publicar só o
+> instalador do painel (`RAGX-Painel-Setup-<versão>.exe`) e o
+> [`GUIA-DE-USO.md`](../docs/GUIA-DE-USO.md). Wheel, sdist, `.vsix`, scripts e
+> `SHA256SUMS.txt` **não** vão mais para a release: ficam como artefatos da
+> execução do workflow (30 dias), na aba Actions. Os trechos abaixo que mandam
+> baixar esses arquivos da release valem para as versões até a beta 5; hoje, o
+> comando único (instala do `main`) é o caminho só-CLI.
+
 Há dois caminhos, e a diferença entre eles importa:
 
 | | O que instala | Traz a extensão do VS Code? |

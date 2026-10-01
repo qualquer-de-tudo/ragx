@@ -9,6 +9,24 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Guia de uso do RAGX** (`docs/GUIA-DE-USO.md`): do instalador ao agente
+  consultando o índice — instalação e SmartScreen, configuração inicial, telas
+  do painel, as três conexões, MCP, comandos do terminal, problemas comuns e
+  desinstalação. Vai anexado à release.
+
+### Alterado
+
+- **A release publica só o instalador e o guia.** Antes, a página trazia o
+  `.exe`, o wheel, o sdist, o `.vsix`, `install.sh`, `install.ps1` e o
+  `SHA256SUMS.txt`, e quem procurava o instalador encontrava um monte de
+  arquivo de código. Agora são dois: `RAGX-Painel-Setup-<versão>.exe` e
+  `GUIA-DE-USO.md`; o SHA-256 do `.exe` está nas notas. Wheel e extensão do VS
+  Code continuam sendo construídos e testados na release, mas ficam como
+  artefatos do workflow (30 dias), não na página. O "Source code (zip/tar.gz)"
+  que o GitHub acrescenta a toda release não tem como ser desligado.
+
 ## [1.0.0-beta.5] — 2026-09-30
 
 ### Adicionado
