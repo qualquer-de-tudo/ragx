@@ -86,3 +86,34 @@ def test_missing_relevant_path_is_flagged_not_counted_as_zero_tokens(proj: Path)
         budget=2000,
     )[0]
     assert r.baseline_tokens == only_auth.baseline_tokens
+
+
+# ── RAGX-0163: dois baselines honestos, com a economia conservadora ─────
+def test_trial_traz_os_dois_baselines_e_a_economia_conservadora(proj: Path) -> None:
+    cases = [EvalCase(query="detalhes do manual", relevant_paths=("manual.md",))]
+    r = run_trial(load_config(proj), cases, budget=300)[0]
+    assert r.baseline_oracle_tokens > 0 and r.baseline_grep_tokens > 0
+    assert r.baseline_tokens == r.baseline_oracle_tokens  # compatibilidade: o antigo é o oráculo
+    menor = min(r.baseline_oracle_tokens, r.baseline_grep_tokens)
+    assert r.saved_ratio_conservative == pytest.approx(1 - r.ragx_tokens / menor)
+    assert r.saved_ratio_conservative <= r.saved_ratio + 1e-9
+
+
+def test_ragx_tokens_do_trial_e_o_markdown_entregue(proj: Path) -> None:
+    from ragx.context.engine import build_context
+    from ragx.context.render import render
+    from ragx.tokens import count_tokens
+
+    cfg = load_config(proj)
+    r = run_trial(cfg, [EvalCase(query="autenticacao sessao redis", relevant_paths=("auth.py",))],
+                  budget=900)[0]
+    pack = build_context(cfg, "autenticacao sessao redis", budget=900, use_cache=False)
+    assert r.ragx_tokens == count_tokens(render(pack, "markdown", title=False))
+
+
+def test_grep_files_muda_o_baseline_do_grep(proj: Path) -> None:
+    cfg = load_config(proj)
+    cases = [EvalCase(query="paragrafo manual detalhes autenticacao", relevant_paths=("manual.md",))]
+    k1 = run_trial(cfg, cases, budget=500, grep_files=1)[0].baseline_grep_tokens
+    k5 = run_trial(cfg, cases, budget=500, grep_files=5)[0].baseline_grep_tokens
+    assert k5 >= k1 > 0

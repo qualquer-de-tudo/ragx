@@ -58,6 +58,12 @@ export interface TrialResult {
     ragx_tokens: number
     saved_ratio: number
     source_coverage: number
+    /** Campos de `ragx trial` mais novo (RAGX-0163); CLI antigo não os traz e o painel segue funcionando. */
+    baseline_oracle_tokens?: number
+    baseline_grep_tokens?: number
+    /** Economia contra o MENOR dos dois baselines: a manchete honesta. */
+    saved_ratio_conservative?: number
+    grep_files?: number
   }
 }
 

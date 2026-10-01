@@ -18,6 +18,19 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **A economia do `ragx trial` e do painel fica honesta: dois baselines, a conservadora e nada de
+  "real".** O "sem RAGX" era o arquivo inteiro (`size_bytes // 4` no log, `read_text` no trial), em
+  unidade diferente do entregue, e a economia logada (92,7%) passava da entrega real (~82%). Agora o
+  `trial` compara o markdown entregue com o **oráculo** (os arquivos certos, inteiros) e com um **Grep
+  simulado** (`--grep-files K`, padrão 1) e mostra a economia **conservadora**, contra o menor dos
+  dois: neste repositório (26 consultas, `--budget 3000`) **27,2% pelo oráculo e 24,2% pela
+  conservadora com K=1**, 8 e 15 consultas negativas, cobertura de fonte 58%. O `baseline_tokens` do
+  log do servidor passa a ser a soma de `chunks.token_count` dos documentos-fonte, na mesma unidade do
+  entregue (antes `bytes/4`, que em markdown erra por ~30%), e a conta saiu de `ragx.mcp` para
+  `ragx.context.baseline`. O painel diz "Arquivos inteiros (limite superior)" e "Economia estimada" e
+  mostra a conservadora e os dois baselines quando o CLI os traz (o `ragx trial` antigo continua
+  legível). Logs antigos seguem em bytes/4 (RAGX-0163).
+
 - **A telemetria do MCP diz se a chamada deu certo e quanto saiu.** A linha de `mcp.jsonl` não
   tinha `ok`, `err_code` nem tamanho: uma chamada que devolvia `ok: false` (`not_found`,
   `rate_limited`) era gravada como sucesso, as que falhavam por argumento inválido ou erro

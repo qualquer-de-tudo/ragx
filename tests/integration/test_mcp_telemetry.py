@@ -91,7 +91,19 @@ def test_build_context_logs_baseline_from_index(proj: Path) -> None:
 
     fontes = KnowledgeAPI(cfg).build_context(BuildContextRequest(query="login sso", tokens=500))["data"]["sources"]
     assert "auth.py" in fontes
-    assert entry["baseline_tokens"] == sum((proj / f).stat().st_size for f in fontes) // 4
+    # Na MESMA unidade do que é entregue (tokens do contador, `chunks.token_count`), e não
+    # `size_bytes // 4`, que em markdown erra por ~30% (RAGX-0163)
+    import sqlite3
+
+    conn = sqlite3.connect(cfg.db_path)
+    marcas = ",".join("?" * len(fontes))
+    esperado = conn.execute(
+        "SELECT COALESCE(SUM(c.token_count), 0) FROM chunks c JOIN documents d "
+        f"ON d.id = c.document_id WHERE d.rel_path IN ({marcas})",
+        list(fontes),
+    ).fetchone()[0]
+    conn.close()
+    assert entry["baseline_tokens"] == esperado
 
 
 def test_failed_call_still_logs(proj: Path) -> None:

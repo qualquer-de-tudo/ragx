@@ -168,8 +168,10 @@ ragx trial "<query>"
     --json
 ```
 
-`ragx trial` compara o contexto montado com a leitura integral dos arquivos e
-mostra a diferença em tokens.
+`ragx trial` compara o contexto montado com **dois baselines** (os arquivos certos lidos
+inteiros, o oráculo; e um "Grep + Read" simulado, `--grep-files K`) e mostra a economia
+**conservadora**, contra o menor dos dois. São proxies, não a economia real (ver
+[07](07-context-engine.md#trial--economia-de-tokens-honesta)).
 
 Sem `--queries` e sem `tests/eval/queries.yaml` no projeto, o `trial` gera 8
 consultas do próprio índice ("como funciona <nome>", com o arquivo que o define

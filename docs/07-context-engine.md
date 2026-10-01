@@ -217,25 +217,46 @@ por `mtime`.
 ```bash
 ragx trial                          # usa tests/eval/queries.yaml
 ragx trial --budget 1500 --json
+ragx trial --grep-files 3           # quantos arquivos o "Grep" simulado lê
 ```
 
-Para cada consulta do corpus de avaliação, compara dois números medidos com o
-mesmo `TokenCounter`:
+Para cada consulta do corpus de avaliação, compara números medidos com o mesmo
+`TokenCounter`:
 
-- **baseline** — tokens do conteúdo INTEIRO de cada arquivo em `relevant_paths`
-  (o que um agente leria sem o RAGX);
-- **ragx** — `estimated_tokens` do `ContextPack` que o `build_context` entrega
-  para o mesmo orçamento.
+- **oráculo** (`baseline_oracle_tokens`, o antigo `baseline_tokens`) — tokens do conteúdo
+  INTEIRO de cada arquivo em `relevant_paths`: os arquivos certos, de graça;
+- **Grep~** (`baseline_grep_tokens`) — os `K` primeiros documentos de uma busca por
+  palavra-chave, lidos inteiros: um "Grep + Read" simulado. `K` é `--grep-files`;
+- **ragx** (`ragx_tokens`) — os tokens do **markdown entregue** (`estimated_tokens`, RAGX-0154).
 
-**O que isto NÃO é**: uma sessão de agente real reproduzida com e sem RAGX.
-É um proxy — mede o que o RAGX controla (o tamanho do que ele entrega), não o
-que o agente realmente teria lido sozinho. Por isso `ragx trial` sempre reporta
-também a **cobertura de fonte** (`sources_hit / sources_total`): economia de
-token sem a fonte relevante dentro do pacote não é economia, é perda de
-informação disfarçada de otimização.
+A manchete é a economia **conservadora** (`saved_ratio_conservative`): contra o **menor** dos
+dois baselines. `baseline_tokens` e `saved_ratio` continuam no JSON, por compatibilidade, e
+valem o oráculo.
+
+**Sensibilidade a `K`** (medido neste repositório, 26 consultas, `--budget 3000`; oráculo
+94.996 tokens, RAGX 69.175, cobertura de fonte 58%): com `K=1` o Grep fica **abaixo** do
+oráculo (91.273) e passa a valer: economia conservadora **24,2%**, 15 consultas negativas; com
+`K=2` (157.395), `K=3` (267.100) ou `K=5` (502.749) ele passa do oráculo e a conservadora volta a
+**27,2%**, com 8 a 9 consultas negativas. `K=1` é o padrão: é o piso, e dá a manchete menos
+favorável ao RAGX. A economia **não muda de sinal** entre os valores de `K`, mas o quanto
+depende dele: é exatamente por isso que o número real só pode vir de uma sessão de verdade (o A/B
+da RAGX-0162).
+
+**O que isto NÃO é**: uma sessão de agente real reproduzida com e sem RAGX. São **dois proxies**,
+e nenhum é "a economia real". Medem o que o RAGX controla (o tamanho do que ele entrega), não o que o
+agente teria lido sozinho. Por isso `ragx trial` sempre reporta também a **cobertura de fonte**
+(`sources_hit / sources_total`): economia de token sem a fonte relevante dentro do pacote não é
+economia, é perda de informação disfarçada de otimização.
+
+**O gráfico do painel** ("Arquivos inteiros (limite superior)") usa o log do servidor
+(`baseline_tokens` de cada `build_context`): a soma de `chunks.token_count` dos documentos de onde
+o contexto saiu, **na mesma unidade do entregue**. Antes era `size_bytes // 4`, que em markdown erra
+por ~30% (`docs/09-mcp.md`: 4.265 contra 5.993 tokens reais). Registros antigos do log seguem em
+bytes/4 e não são reescritos; a ordem de grandeza é a mesma.
 
 Um `saved_ratio` negativo é esperado, não é bug: acontece quando o arquivo
 relevante já é menor que o orçamento de tokens, então "ler o arquivo inteiro"
 (baseline) já é mais barato que o pacote orçado do `build_context`. No corpus
-deste próprio repositório, cerca de 10 das 26 consultas mostram economia
-negativa por exatamente esse motivo.
+deste próprio repositório, 8 das 26 consultas mostram economia negativa contra o
+oráculo por exatamente esse motivo (eram ~10 antes de o `estimated_tokens` passar a contar
+o markdown entregue).

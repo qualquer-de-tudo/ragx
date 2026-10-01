@@ -578,6 +578,23 @@ describe('ProjectPage: economia estimada e segurança (sob demanda)', () => {
     expect(screen.getByRole('button', { name: /simular de novo/i })).toBeEnabled()
   })
 
+  it('mostra a economia conservadora e os dois baselines quando o ragx trial os traz', async () => {
+    const runTrial = vi.fn().mockResolvedValue({
+      totals: {
+        baseline_tokens: 1000, baseline_oracle_tokens: 1000, baseline_grep_tokens: 800,
+        ragx_tokens: 600, saved_ratio: 0.4, saved_ratio_conservative: 0.25, source_coverage: 0.8,
+      },
+    })
+    renderPage({ project: snap({ id: 'trial-cons' }), bridge: { runTrial } })
+    fireEvent.click(botaoTrial())
+
+    await waitFor(() => expect(screen.getByText('menos tokens')).toBeInTheDocument())
+    expect(screen.getByText('25%')).toBeInTheDocument() // a conservadora, não os 40%
+    expect(screen.getByText('Arquivos certos, lidos inteiros')).toBeInTheDocument()
+    expect(screen.getByText('Busca por palavra-chave e leitura (simulada)')).toBeInTheDocument()
+    expect(screen.getByText(/dois proxies, não uma sessão real/)).toBeInTheDocument()
+  })
+
   it('mostra a mensagem de erro real quando ragx trial falha', async () => {
     renderPage({
       project: snap({ id: 'trial-err' }),
@@ -718,7 +735,11 @@ describe('ProjectPage: economia de tokens (uso real)', () => {
     const s = within(section('Economia de tokens'))
     expect(s.getByText('menos tokens').closest('.trial-figure')).toHaveTextContent('80%menos tokens')
     expect(s.getByText('32.000')).toBeInTheDocument()
-    expect(s.getByRole('img', { name: 'Tokens por dia, sem e com o RAGX' })).toBeInTheDocument()
+    // RAGX-0163: o baseline é um limite superior, e a economia é estimativa, nunca "real"
+    expect(s.getAllByText(/Arquivos inteiros \(limite superior\)/).length).toBeGreaterThan(0)
+    expect(s.getAllByText('Economia estimada').length).toBeGreaterThan(0)
+    expect(s.queryByText(/Sem RAGX/)).not.toBeInTheDocument()
+    expect(s.getByRole('img', { name: 'Tokens por dia, arquivos inteiros e com o RAGX' })).toBeInTheDocument()
     // a tabela lista só os dias com consulta
     const rows = within(s.getByRole('table')).getAllByRole('row')
     expect(rows).toHaveLength(3)

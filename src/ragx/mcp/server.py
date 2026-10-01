@@ -20,6 +20,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from ragx.config import Config, load_config
+from ragx.context.baseline import whole_files_tokens
 from ragx.diagnostics import log_exception, log_mcp_call, mcp_entry
 from ragx.dictionary import builder as dictionary_builder
 from ragx.mcp.operations import WriteAPI
@@ -511,30 +512,8 @@ class KnowledgeAPI:
             ]
         else:
             payload["markdown"] = render(pack, "markdown", title=False)
-        payload["baseline_tokens"] = self._baseline_tokens(pack.sources, other_cfg)
+        payload["baseline_tokens"] = whole_files_tokens(other_cfg or self.cfg, pack.sources)
         return cap(ok(payload), self.cfg.mcp.max_response_bytes)
-
-    def _baseline_tokens(self, sources: tuple[str, ...], cfg: Config | None = None) -> int:
-        """Tokens que o agente gastaria lendo INTEIROS os arquivos de onde o
-        contexto saiu — o "sem RAGX" do gráfico de economia do painel.
-
-        Vem do índice (`documents.size_bytes`, ~4 bytes por token), nunca do
-        disco. Os chunks de topo não servem: não cobrem o arquivo inteiro.
-        """
-        if not sources:
-            return 0
-        from ragx.storage.db import open_db
-
-        try:
-            with open_db((cfg or self.cfg).db_path, read_only=True) as conn:
-                marks = ",".join("?" * len(sources))
-                row = conn.execute(
-                    f"SELECT COALESCE(SUM(size_bytes), 0) FROM documents WHERE rel_path IN ({marks})",
-                    list(sources),
-                ).fetchone()
-        except Exception:
-            return 0
-        return int(row[0]) // 4
 
     def get_dictionary(self, section: str | None = None) -> dict[str, Any]:
         blocked = self._guard()

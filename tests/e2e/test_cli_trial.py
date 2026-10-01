@@ -49,7 +49,8 @@ def test_trial_human_output_prints_honesty_caveat(proj: Path, monkeypatch: pytes
     monkeypatch.chdir(proj)
     result = runner.invoke(app, ["trial", "--queries", "queries.yaml"])
     assert result.exit_code == 0, result.output
-    assert "proxy" in result.output.lower()
+    saida = " ".join(result.output.lower().split())
+    assert "dois proxies" in saida and "não é a economia real" in saida
 
 
 def test_trial_human_output_escapes_rich_markup_in_query(
@@ -102,3 +103,30 @@ def test_trial_sem_grafo_usa_nomes_de_arquivo(tmp_path: Path, monkeypatch: pytes
     assert r.exit_code == 0, r.output
     dados = json.loads(r.output)
     assert [x["query"] for x in dados["results"]] == ["como funciona billing-orders"]
+
+
+def test_trial_json_traz_as_chaves_novas_e_as_antigas(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    monkeypatch.chdir(proj)
+    result = runner.invoke(app, ["trial", "--queries", "queries.yaml", "--json"])
+    dados = json.loads(result.output)
+    r = dados["results"][0]
+    for chave in ("baseline_tokens", "ragx_tokens", "saved_ratio",
+                  "baseline_oracle_tokens", "baseline_grep_tokens", "saved_ratio_conservative"):
+        assert chave in r, chave
+    t = dados["totals"]
+    for chave in ("baseline_tokens", "saved_ratio", "baseline_oracle_tokens",
+                  "baseline_grep_tokens", "saved_ratio_conservative", "grep_files"):
+        assert chave in t, chave
+    menor = min(t["baseline_oracle_tokens"], t["baseline_grep_tokens"])
+    assert t["saved_ratio_conservative"] == round(1 - t["ragx_tokens"] / menor, 4)
+
+
+def test_trial_humano_imprime_os_dois_baselines_e_nao_diz_economia_real(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(proj)
+    out = runner.invoke(app, ["trial", "--queries", "queries.yaml"]).output
+    assert "Oráculo" in out and "Grep" in out and "conservadora" in out.lower()
+    assert "economia real" not in out.lower().replace("não é a economia real", "")

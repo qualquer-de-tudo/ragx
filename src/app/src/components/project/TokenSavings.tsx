@@ -73,7 +73,7 @@ function Chart({ days }: { days: SavingsDay[] }) {
 
   return (
     <div className="savings-chart" ref={wrapRef}>
-      <svg width={width} height={HEIGHT} role="img" aria-label="Tokens por dia, sem e com o RAGX" onMouseLeave={() => setHover(null)}>
+      <svg width={width} height={HEIGHT} role="img" aria-label="Tokens por dia, arquivos inteiros e com o RAGX" onMouseLeave={() => setHover(null)}>
         {ticks.map((t) => (
           <g key={t}>
             <line className="chart-grid" x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} />
@@ -122,7 +122,7 @@ function Chart({ days }: { days: SavingsDay[] }) {
             <dl>
               <div>
                 <dt>
-                  <span className="swatch swatch-baseline" aria-hidden="true" /> Sem RAGX
+                  <span className="swatch swatch-baseline" aria-hidden="true" /> Arquivos inteiros (limite superior)
                 </dt>
                 <dd>{formatNumber(active.baseline)}</dd>
               </div>
@@ -133,7 +133,7 @@ function Chart({ days }: { days: SavingsDay[] }) {
                 <dd>{formatNumber(active.delivered)}</dd>
               </div>
               <div>
-                <dt>Economia</dt>
+                <dt>Economia estimada</dt>
                 <dd>{formatPercent(saved(active))}</dd>
               </div>
             </dl>
@@ -183,7 +183,7 @@ export function TokenSavings({
             <dl className="pairs savings-pairs">
               <div>
                 <dt>
-                  <span className="swatch swatch-baseline" aria-hidden="true" /> Sem RAGX
+                  <span className="swatch swatch-baseline" aria-hidden="true" /> Arquivos inteiros (limite superior)
                 </dt>
                 <dd>{formatNumber(savings.baseline)}</dd>
               </div>
@@ -210,9 +210,9 @@ export function TokenSavings({
               <thead>
                 <tr>
                   <th scope="col">Dia</th>
-                  <th scope="col">Sem RAGX</th>
+                  <th scope="col">Arquivos inteiros (limite superior)</th>
                   <th scope="col">Com RAGX</th>
-                  <th scope="col">Economia</th>
+                  <th scope="col">Economia estimada</th>
                 </tr>
               </thead>
               <tbody>
@@ -230,8 +230,10 @@ export function TokenSavings({
             </table>
           </details>
           <p className="hint">
-            "Sem RAGX" é o tamanho dos arquivos inteiros de onde cada contexto saiu, estimado em ~4 caracteres por
-            token. Conta só as chamadas de build_context.
+            "Arquivos inteiros" é o tamanho, em tokens, dos arquivos de onde cada contexto saiu, lido do índice: um limite
+            superior, porque um agente com busca não leria todos eles. A economia mostrada é uma estimativa contra esse
+            limite, não a economia real. Conta só as chamadas de build_context; registros anteriores a esta versão
+            estimavam o tamanho em ~4 caracteres por token.
           </p>
         </>
       ) : (

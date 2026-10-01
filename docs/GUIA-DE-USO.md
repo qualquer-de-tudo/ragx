@@ -165,7 +165,7 @@ ragx graph rebuild                       # grafo de entidades e relações
 ragx dictionary generate                 # mapa barato do projeto
 ragx watch                               # o índice acompanha suas edições
 ragx doctor                              # o que está fora do lugar
-ragx trial                               # estima, no seu corpus, quanto token se economiza
+ragx trial                               # estima (dois proxies, conservador) quanto token se economiza
 ```
 
 Outros comandos úteis:

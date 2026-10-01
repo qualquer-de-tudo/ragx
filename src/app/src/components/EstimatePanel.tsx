@@ -41,7 +41,7 @@ export function TrialEstimate({ projectId, projectPath }: Props) {
         <Badge tone="muted">estimativa</Badge>
       </div>
       <p className="dim panel-lede">
-        Roda consultas de exemplo e compara o contexto do RAGX com a leitura dos arquivos inteiros. Não mede o uso real.
+        Roda consultas de exemplo e compara o contexto do RAGX com a leitura de arquivos inteiros, de duas maneiras. É uma estimativa: não mede o uso real.
       </p>
 
       {done && <TrialFigures result={done.result} at={done.at} />}
@@ -58,33 +58,45 @@ export function TrialEstimate({ projectId, projectPath }: Props) {
 }
 
 function TrialFigures({ result, at }: { result: TrialResult; at: string }) {
-  const { saved_ratio, baseline_tokens, ragx_tokens, source_coverage } = result.totals
-  const saves = saved_ratio >= 0
+  const t = result.totals
+  // A manchete é a economia CONSERVADORA (contra o menor dos dois baselines) quando o
+  // CLI a traz; o `ragx trial` antigo só tem o baseline "arquivos certos, inteiros".
+  const ratio = t.saved_ratio_conservative ?? t.saved_ratio
+  const conservadora = t.saved_ratio_conservative !== undefined
+  const saves = ratio >= 0
+  const oraculo = t.baseline_oracle_tokens ?? t.baseline_tokens
   return (
     <div className="trial">
       <p className="trial-figure trial-figure-sm">
-        <span className="trial-value">{formatPercent(Math.abs(saved_ratio))}</span>
+        <span className="trial-value">{formatPercent(Math.abs(ratio))}</span>
         <span className="trial-unit">{saves ? 'menos tokens' : 'mais tokens'}</span>
       </p>
+      <p className="hint">{conservadora ? 'Economia estimada, contra o menor dos dois baselines.' : 'Economia estimada.'}</p>
       <dl className="pairs">
         <div>
-          <dt>Lendo os arquivos</dt>
-          <dd>{formatNumber(baseline_tokens)}</dd>
+          <dt>Arquivos certos, lidos inteiros</dt>
+          <dd>{formatNumber(oraculo)}</dd>
         </div>
+        {t.baseline_grep_tokens !== undefined && (
+          <div>
+            <dt>Busca por palavra-chave e leitura (simulada)</dt>
+            <dd>{formatNumber(t.baseline_grep_tokens)}</dd>
+          </div>
+        )}
         <div>
           <dt>Com o contexto do RAGX</dt>
-          <dd>{formatNumber(ragx_tokens)}</dd>
+          <dd>{formatNumber(t.ragx_tokens)}</dd>
         </div>
         <div>
           <dt>Fontes certas encontradas</dt>
-          <dd>{formatPercent(source_coverage)}</dd>
+          <dd>{formatPercent(t.source_coverage)}</dd>
         </div>
       </dl>
       <p className="hint">
         {result.auto_generated
           ? `${result.cases ?? 'Algumas'} consultas geradas dos arquivos do projeto (ele não tem tests/eval/queries.yaml). `
           : ''}
-        Calculada às {formatTime(at)}
+        São dois proxies, não uma sessão real de agente. Calculada às {formatTime(at)}
       </p>
     </div>
   )
