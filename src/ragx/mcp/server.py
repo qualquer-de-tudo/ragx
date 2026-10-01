@@ -917,6 +917,8 @@ def serve(
     allow_write: bool | None = None,
 ) -> None:
     cfg = load_config(project) if project else load_config()
-    build_server(cfg, allow_index=allow_index, allow_write=allow_write).run(
-        transport="stdio"
-    )
+    server = build_server(cfg, allow_index=allow_index, allow_write=allow_write)
+    from ragx.mcp.warmup import start
+
+    start(cfg)  # em segundo plano: não atrasa o `initialize`
+    server.run(transport="stdio")

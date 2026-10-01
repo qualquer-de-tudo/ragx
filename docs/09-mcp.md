@@ -320,6 +320,16 @@ chars (−18,4%); `get_dictionary` 36.713 → 21.530 (−41,4%); `get_document` 
 
 ## Execução
 
+**Aquecimento (RAGX-0142).** A primeira busca de um processo pagava o carregamento do modelo de
+embedding (ONNX, tokenizer, imports) e do `tiktoken`. Ao subir, o servidor dispara, numa thread
+`daemon`, a construção do embedder (com uma consulta de verdade), do contador de tokens e a carga da
+matriz de vetores, enquanto espera o primeiro pedido. Medido neste repositório (fastembed): a primeira
+`search_hybrid` depois de 5 s ociosos caiu de **1.447 ms para 42 ms**, e o `initialize` ficou igual
+(910 → 922 ms). Uma busca que chega DURANTE o aquecimento espera a mesma construção (nunca monta dois
+modelos). Só aquece pasta com índice (o servidor global em pasta sem projeto não carrega nada), e
+`[mcp] warmup = false` desliga. Falha no aquecimento vai para `.ragx/logs/errors.log` e não derruba o
+servidor. `scripts/medir_mcp_frio.py` reproduz a medição.
+
 ```bash
 ragx mcp serve                 # stdio (padrão)
 ragx mcp serve --project /caminho/do/projeto

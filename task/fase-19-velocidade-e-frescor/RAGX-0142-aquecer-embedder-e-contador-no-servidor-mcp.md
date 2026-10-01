@@ -7,7 +7,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | RAGX-0132 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (M-06, C-08) · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-V9, S9) · [05-busca.md](../../docs/05-busca.md) · [09-mcp.md](../../docs/09-mcp.md) · [15-configuracao.md](../../docs/15-configuracao.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,14 +15,14 @@ A primeira `search_hybrid` de cada processo custa **3,0–3,3 s** (logs reais 3,
 
 ## Entregáveis
 
-- [ ] **Medir primeiro**: script que sobe `ragx mcp serve` por stdio (cliente do pacote `mcp`), mede `initialize` e a 1ª `search_hybrid` com e sem espera de 5 s entre os dois; registrar em Medição
-- [ ] `build_embedder` (`src/ragx/embeddings/__init__.py:44-55`) passa a ser seguro entre threads: trava por chave de cache, de modo que a thread de aquecimento e a 1ª busca esperem a **mesma** construção em vez de construir duas (dois modelos = ~1,4 GB). Hoje `_CACHE` é um `dict` sem trava
-- [ ] Mesma garantia para `get_counter`/`count_tokens` (`src/ragx/tokens.py:56-73`, `_default` global criado sem trava)
-- [ ] `src/ragx/mcp/warmup.py` (novo): `warm(cfg)` faz `build_embedder(cfg)` + `embed_query("ragx")` + `count_tokens("ragx")` (+ `load_index` quando a RAGX-0134 já o cacheia), cada passo em `try/except` que grava em `.ragx/logs/errors.log` via `ragx.diagnostics.log_exception` e nunca propaga
-- [ ] `ragx.mcp.server.serve` (`src/ragx/mcp/server.py:772-780`) dispara `warm` numa thread `daemon` assim que o servidor começa a rodar (ou no `lifespan` do `MCPServer`, aceito em mcp 2.2.0: conferir qual dos dois deixa o `initialize` mais rápido); **só** quando `cfg.db_path.exists()` e `cfg.mcp.warmup` é verdadeiro
-- [ ] `McpCfg.warmup: bool = True` em `src/ragx/config.py:136-145`, documentado em `docs/15-configuracao.md` (quem tem 3 servidores abertos e pouca RAM desliga)
-- [ ] Servidor registrado globalmente em pasta sem projeto RAGX **não aquece nada** (sem 680 MB de RAM à toa)
-- [ ] Atualizar `docs/05-busca.md` e `docs/09-mcp.md` (primeira busca, aquecimento, `[mcp] warmup`)
+- [x] **Medir primeiro**: script que sobe `ragx mcp serve` por stdio (cliente do pacote `mcp`), mede `initialize` e a 1ª `search_hybrid` com e sem espera de 5 s entre os dois; registrar em Medição
+- [x] `build_embedder` (`src/ragx/embeddings/__init__.py:44-55`) passa a ser seguro entre threads: trava por chave de cache, de modo que a thread de aquecimento e a 1ª busca esperem a **mesma** construção em vez de construir duas (dois modelos = ~1,4 GB). Hoje `_CACHE` é um `dict` sem trava
+- [x] Mesma garantia para `get_counter`/`count_tokens` (`src/ragx/tokens.py:56-73`, `_default` global criado sem trava)
+- [x] `src/ragx/mcp/warmup.py` (novo): `warm(cfg)` faz `build_embedder(cfg)` + `embed_query("ragx")` + `count_tokens("ragx")` (+ `load_index` quando a RAGX-0134 já o cacheia), cada passo em `try/except` que grava em `.ragx/logs/errors.log` via `ragx.diagnostics.log_exception` e nunca propaga
+- [x] `ragx.mcp.server.serve` (`src/ragx/mcp/server.py:772-780`) dispara `warm` numa thread `daemon` assim que o servidor começa a rodar (ou no `lifespan` do `MCPServer`, aceito em mcp 2.2.0: conferir qual dos dois deixa o `initialize` mais rápido); **só** quando `cfg.db_path.exists()` e `cfg.mcp.warmup` é verdadeiro
+- [x] `McpCfg.warmup: bool = True` em `src/ragx/config.py:136-145`, documentado em `docs/15-configuracao.md` (quem tem 3 servidores abertos e pouca RAM desliga)
+- [x] Servidor registrado globalmente em pasta sem projeto RAGX **não aquece nada** (sem 680 MB de RAM à toa)
+- [x] Atualizar `docs/05-busca.md` e `docs/09-mcp.md` (primeira busca, aquecimento, `[mcp] warmup`)
 
 ## Fora de escopo
 
@@ -33,30 +33,30 @@ A primeira `search_hybrid` de cada processo custa **3,0–3,3 s** (logs reais 3,
 
 ## Critérios de aceite
 
-- [ ] 1ª `search_hybrid` após o `initialize` e 5 s de espera: **≤ 600 ms** (S9)
-- [ ] Busca disparada **durante** o aquecimento (sem esperar) devolve resultado correto e constrói o modelo uma vez só (contador de construção = 1)
-- [ ] O aquecimento não atrasa o `initialize` em mais de 100 ms sobre a linha de base
-- [ ] `[mcp] warmup = false` e pasta sem índice: nenhuma thread, nenhum modelo carregado
-- [ ] Falha do embedder (Ollama fora) no aquecimento não derruba o servidor nem muda o `degraded` da busca
+- [x] 1ª `search_hybrid` após o `initialize` e 5 s de espera: **≤ 600 ms** (S9)
+- [x] Busca disparada **durante** o aquecimento (sem esperar) devolve resultado correto e constrói o modelo uma vez só (contador de construção = 1)
+- [x] O aquecimento não atrasa o `initialize` em mais de 100 ms sobre a linha de base
+- [x] `[mcp] warmup = false` e pasta sem índice: nenhuma thread, nenhum modelo carregado
+- [x] Falha do embedder (Ollama fora) no aquecimento não derruba o servidor nem muda o `degraded` da busca
 
 ### Medição
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| 1ª `search_hybrid` do processo (S9) | 3,0–3,3 s (logs reais 3,0–5,0 s) | |
-| `ragx mcp serve` até `initialize` | 0,96–1,28 s | |
-| Construção do `FastEmbedEmbedder` | 3,98 s | |
-| Primeiro `count_tokens` (tiktoken) | 0,9 s | |
+| 1ª `search_hybrid` do processo (S9), após 5 s ociosos | 3,0–3,3 s (logs reais 3,0–5,0 s); medido agora sem warmup: 1.447 ms | **42 ms** (3 execuções: 51, 31, 42) |
+| `ragx mcp serve` até `initialize` | 0,96–1,28 s; sem warmup agora: 910 ms | 922 ms (+12 ms) |
+| Construção do `FastEmbedEmbedder` | 3,98 s | acontece em segundo plano, fora do caminho da 1ª busca |
+| Primeiro `count_tokens` (tiktoken) | 0,9 s | idem (em segundo plano) |
 
-Comando: `uv run python scripts/medir_mcp_frio.py --espera 5` (criar; deve imprimir `initialize_ms` e `primeira_busca_ms`, mediana de 5 execuções).
+Comando: `uv run python scripts/medir_mcp_frio.py --espera 5 [--sem-warmup]` (criado; mediana de N execuções, aqui N=3). Sem esperar (`--espera 0`) a busca cai no aquecimento em andamento: 1.321 ms com warmup contra 1.543 ms sem, ou seja, nunca pior, e o modelo é construído uma vez só.
 
 ## Testes
 
-- [ ] `tests/unit/test_embedder_cache.py`: 8 threads chamando `build_embedder` juntas constroem **uma** instância (espiar o contador de construção); regressão que falha hoje
-- [ ] `tests/unit/test_tokens_threads.py`: idem para `count_tokens`
-- [ ] `tests/integration/test_mcp_warmup.py`: `build_server` + `serve` simulado com provider `hashing` e `FastEmbedEmbedder` trocado por um falso lento (0,3 s) → a busca logo depois do `initialize` espera o aquecimento e não constrói duas vezes; `warmup=false` não cria thread; sem índice não aquece
-- [ ] `tests/integration/test_mcp_warmup.py`: exceção no aquecimento vai para `errors.log` e o servidor continua respondendo
-- [ ] `tests/security/test_architecture.py` continua verde: `ragx.mcp.warmup` não importa `os`, `pathlib`, `subprocess` nem rede (o log vai por `ragx.diagnostics`)
+- [x] `tests/unit/test_embedder_cache.py`: 8 threads chamando `build_embedder` juntas constroem **uma** instância (espiar o contador de construção); regressão que falha hoje
+- [x] `tests/unit/test_tokens_threads.py`: idem para `count_tokens`
+- [x] `tests/integration/test_mcp_warmup.py`: `build_server` + `serve` simulado com provider `hashing` e `FastEmbedEmbedder` trocado por um falso lento (0,3 s) → a busca logo depois do `initialize` espera o aquecimento e não constrói duas vezes; `warmup=false` não cria thread; sem índice não aquece
+- [x] `tests/integration/test_mcp_warmup.py`: exceção no aquecimento vai para `errors.log` e o servidor continua respondendo
+- [x] `tests/security/test_architecture.py` continua verde: `ragx.mcp.warmup` não importa `os`, `pathlib`, `subprocess` nem rede (o log vai por `ragx.diagnostics`)
 
 ## Notas
 
@@ -69,14 +69,16 @@ Comando: `uv run python scripts/medir_mcp_frio.py --espera 5` (criar; deve impri
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
-- [ ] Documentação confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0142)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [ ] Testes escritos e verdes em Linux, macOS e Windows (verdes no Windows; Linux e macOS só a CI confirma)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
+- [x] Documentação confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0142)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — Implementado: trava por chave em `build_embedder` (`_LOCKS`/`_GUARDA`), trava em `count_tokens`, `ragx/mcp/warmup.py` (`warm`, `start`; três passos isolados: embedder com `embed_query`, contador, `load_index`), `McpCfg.warmup`, e `serve` dispara a thread antes de `server.run`. A thread começa em `serve()` (e não no `lifespan`): o `initialize` medido não piorou (+12 ms), então não houve motivo para a variante mais complexa.
+- Testes em `tests/unit/test_warmup_threads.py` e `tests/integration/test_mcp_warmup.py` (os nomes sugeridos `test_embedder_cache.py`/`test_tokens_threads.py` já existiam ou não cabiam). O arquitetural continua verde: `warmup.py` só importa `threading` e `ragx.diagnostics`.
+- Ressalva: a medição de 42 ms é com o provider `fastembed` deste repositório. Com Ollama o aquecimento só abre a conexão e deixa o modelo carregar; não medi.

@@ -57,6 +57,11 @@ para índice aproximado (`sqlite-vec` / HNSW) é **100k chunks**, definido em
 [ADR-0003](adr/ADR-0003-busca-vetorial.md). Abaixo disso, força bruta é mais simples
 e mais precisa. A matriz é carregada uma vez por processo e cacheada pela **geração `vec_gen`** (`meta`), mantida por gatilhos em `embeddings`: `mtime` do banco não é confiável sob WAL. O carregamento é vetorizado (7,3 mil vetores: ~17 ms frio, ~0,01 ms com o cache quente) e o `VectorIndex` devolvido é compartilhado e somente leitura.
 
+**Primeira busca de cada processo.** O embedder (modelo ONNX do `fastembed`) e o contador de tokens
+são construídos uma vez por processo, com trava por configuração: duas threads que pedem juntas esperam
+a MESMA construção. O servidor MCP faz isso em segundo plano ao subir ([09-mcp.md](09-mcp.md),
+`[mcp] warmup`), de modo que a primeira busca não paga o carregamento.
+
 Assimetria de query/documento importa: `nomic-embed-text` exige os prefixos
 `search_query:` e `search_document:`. Isso é responsabilidade do provider, não do
 caller — ver [ADR-0004](adr/ADR-0004-embeddings.md).

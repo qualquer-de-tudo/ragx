@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+
 from ragx.config import Config
 from ragx.core.errors import UsageError
 from ragx.embeddings.base import Embedder
@@ -24,6 +26,12 @@ _CACHE: dict[tuple[object, ...], Embedder] = {}
 #: que uma suíte que varre configurações não segure N modelos na memória.
 _MAX_CACHE = 4
 
+#: Uma trava por chave de configuração, e uma que guarda o dicionário delas. A thread de
+#: aquecimento do servidor MCP (RAGX-0142) e a primeira busca esperam a MESMA construção em
+#: vez de construir dois modelos (cerca de 1,4 GB). Construir de chaves diferentes não se serializa.
+_LOCKS: dict[tuple[object, ...], threading.Lock] = {}
+_GUARDA = threading.Lock()
+
 
 def _chave(cfg: Config) -> tuple[object, ...]:
     """O que, se mudar, exige um embedder diferente.
@@ -38,7 +46,9 @@ def _chave(cfg: Config) -> tuple[object, ...]:
 
 def reset_embedder_cache() -> None:
     """Descarta as instâncias. Para teste e para troca de configuração em voo."""
-    _CACHE.clear()
+    with _GUARDA:
+        _CACHE.clear()
+        _LOCKS.clear()
 
 
 def build_embedder(cfg: Config) -> Embedder:
@@ -47,12 +57,20 @@ def build_embedder(cfg: Config) -> Embedder:
     if pronto is not None:
         return pronto
 
-    embedder = _construir(cfg)
-    if len(_CACHE) >= _MAX_CACHE:
-        # FIFO: o dict preserva ordem de inserção desde o 3.7.
-        _CACHE.pop(next(iter(_CACHE)))
-    _CACHE[chave] = embedder
-    return embedder
+    with _GUARDA:
+        trava = _LOCKS.setdefault(chave, threading.Lock())
+    with trava:
+        # quem esperou a trava encontra o embedder que a outra thread acabou de construir
+        pronto = _CACHE.get(chave)
+        if pronto is not None:
+            return pronto
+        embedder = _construir(cfg)
+        with _GUARDA:
+            if len(_CACHE) >= _MAX_CACHE:
+                # FIFO: o dict preserva ordem de inserção desde o 3.7.
+                _CACHE.pop(next(iter(_CACHE)))
+            _CACHE[chave] = embedder
+        return embedder
 
 
 def _modelo_fastembed(cfg: Config) -> str:

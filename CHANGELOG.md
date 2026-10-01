@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Aquecimento do servidor MCP.** A primeira `search_hybrid` de cada sessão pagava o carregamento do
+  modelo de embedding e do `tiktoken` (1.447 ms medidos neste repositório, 3 a 5 s nos logs reais). O
+  servidor agora os carrega numa thread em segundo plano ao subir (`[mcp] warmup`, padrão ligado, só em
+  pasta com índice): a primeira busca depois de 5 s ociosos leva **42 ms**, e o `initialize` não
+  piora (910 → 922 ms). `build_embedder` e `count_tokens` passaram a ser seguros entre threads (trava
+  por configuração): busca e aquecimento simultâneos constroem o modelo uma vez só. Falha no
+  aquecimento vai para `errors.log` e não derruba o servidor. Script de medição:
+  `scripts/medir_mcp_frio.py` (RAGX-0142).
 - **Veredito guardado de arquivo fora do índice (`file_verdicts`).** Arquivo `unsupported`, binário,
   indecodável ou bloqueado nunca entrava em `documents`, então o atalho de tamanho+mtime não valia
   para ele: era relido inteiro e passava de novo pelo Security Gate a cada rodada (e os bloqueados

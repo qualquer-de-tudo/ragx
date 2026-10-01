@@ -179,6 +179,10 @@ class McpCfg(BaseModel):
     # resposta diz (`tokens_capped`), nunca cortado em silêncio. Uso real medido: máx.
     # 3.239 tokens, p95 2.601, nenhum acima de 5.000 (RAGX-0165).
     max_context_tokens: int = 5000
+    # Carrega o embedder e o contador de tokens em segundo plano assim que o servidor sobe, para
+    # a primeira busca não pagar 3 s (RAGX-0142). Só acontece em pasta com índice. Quem mantém
+    # vários servidores abertos e pouca RAM desliga.
+    warmup: bool = True
     # `concise`: a busca devolve um `snippet` curto no lugar do conteúdo (o agente abre o
     # trecho inteiro com `get_chunk`); `detailed` devolve o conteúdo, como antes. 140 caracteres
     # (e não 200) porque é onde a busca de 10 hits cruza -60% em tokens no fio: 200 dava -56,8%.

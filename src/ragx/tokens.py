@@ -10,6 +10,7 @@ A contagem é declaradamente ESTIMATIVA — o ContextPack sempre reporta
 from __future__ import annotations
 
 import re
+import threading
 from typing import Protocol
 
 _TOKENISH = re.compile(r"\w+|[^\w\s]")
@@ -64,10 +65,17 @@ def get_counter(prefer: str = "auto") -> TokenCounter:
 
 
 _default: TokenCounter | None = None
+#: O primeiro `count_tokens` carrega o `tiktoken` (cerca de 0,9 s). Com a thread de aquecimento do
+#: servidor MCP (RAGX-0142) e a primeira busca chamando juntas, só uma constrói; a outra espera.
+_default_lock = threading.Lock()
 
 
 def count_tokens(text: str) -> int:
     global _default
-    if _default is None:
-        _default = get_counter()
-    return _default.count(text)
+    contador = _default
+    if contador is None:
+        with _default_lock:
+            if _default is None:
+                _default = get_counter()
+            contador = _default
+    return contador.count(text)
