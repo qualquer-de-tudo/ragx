@@ -5,6 +5,8 @@ import { activeConnectionJob, activeOllamaSwitch, jobStateLabel } from '../../st
 import { enqueueConnectionAction, measureOllama } from '../../jobs'
 import { formatRelative } from '../../format'
 import { useClock } from '../../hooks/useClock'
+import { ipcErrorMessage } from '../../ipcError'
+import { notify } from '../../toast'
 import { Icon } from '../ui/Icon'
 import { Tooltip } from '../ui/Tooltip'
 
@@ -34,6 +36,7 @@ function HelpBlock({ text }: { text: string }) {
       await navigator.clipboard.writeText(text)
     } catch (err) {
       console.error('copiar falhou:', err)
+      notify.error(`Não foi possível copiar: ${ipcErrorMessage(err)}`)
       return
     }
     setCopied(true)

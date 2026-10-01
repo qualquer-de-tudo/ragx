@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Toda falha de ação do painel aparece num aviso.** Enfileirar uma tarefa, cancelar, copiar o texto de ajuda,
+  escolher pasta e salvar o fim do assistente só escreviam no console: a pessoa clicava e nada acontecia. Agora um
+  aviso (`role="alert"` para erro, `role="status"` para sucesso, no máximo 3, erro some em 8 s e sucesso em 4 s,
+  com o prazo pausado em hover e foco) mostra "Não foi possível ...: <motivo>" sem o prefixo do Electron, e uma
+  tarefa que falha em andamento também avisa (RAGX-0180).
 - **Primitivos de UI compartilhados no painel.** O controle segmentado, o interruptor, o modal com foco preso, os
   ícones em SVG e as telas vazias estavam copiados à mão em vários arquivos (2 dos 3 segmentados não tinham setas), e
   10 atributos `title` levavam informação que teclado e toque não alcançam. Agora vivem em `src/components/ui/`

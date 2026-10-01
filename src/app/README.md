@@ -296,6 +296,17 @@ fixo na janela por portal, sem wrapper: `{(tip) => <elemento {...tip} />}`). `ui
 `role="radio"`, `role="switch"` ou `<svg` aparecerem fora de `ui/` (salvo `RagxMark` e o gráfico de `TokenSavings`).
 Só o `<abbr title="Documentos">` da lista continua com `title`.
 
+## Avisos (toasts)
+
+Toda falha de ação aparece (RAGX-0180). `src/toast.ts` é um store de módulo (`notify.error/success/info`, no máximo 3
+na tela, o mesmo texto em 3 s não duplica, sucesso some em 4 s e erro em 8 s) e `ui/Toaster` o mostra, montado uma vez
+em `App` (no shell e no onboarding): a região `aria-live` fica sempre no DOM, erro é `role="alert"`, sucesso é
+`role="status"`, o prazo pausa com ponteiro ou foco e "Fechar aviso" tira na hora. `enqueue` e `enqueueConnectionAction`
+(`src/jobs.ts`), cancelar tarefa, copiar o texto de ajuda, escolher pasta e salvar o fim do onboarding avisam com o
+motivo, que `ipcErrorMessage` limpa do prefixo `Error invoking remote method '...'` que o Electron põe. Uma tarefa que
+passa a `failed` também avisa (`useJobFailureToasts`; o que já tinha falhado antes da primeira lista e o `cancelled`
+não). Falha de **leitura** (snapshot, conexões, atividade) continua só no console: é da `RAGX-0182`.
+
 ## Segurança do renderer
 
 O painel não carrega nada de fora (um teste, `no-remote-resources.test.ts`, falha se aparecer `http(s)://`, `ws://`

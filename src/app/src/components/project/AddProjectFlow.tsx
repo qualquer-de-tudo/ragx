@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ipcErrorMessage } from '../../ipcError'
+import { notify } from '../../toast'
 import type { DiscoverItem } from '../../types/ragx-bridge'
 
 const TRUNCATED_NOTE =
@@ -101,6 +103,7 @@ export function AddProjectFlow({
       picked = await window.ragx.pickFolder()
     } catch (err) {
       console.error('pickFolder() falhou:', err)
+      notify.error(`Não foi possível abrir o seletor de pasta: ${ipcErrorMessage(err)}`)
       return
     }
     if (picked === null || !alive.current) return

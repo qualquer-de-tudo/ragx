@@ -540,6 +540,52 @@
   color: var(--ink-2);
 }
 
+/* Avisos (ui/Toaster): canto inferior direito; abaixo de 640 px ocupam a largura toda. */
+.toaster {
+  position: fixed;
+  right: var(--sp-16);
+  bottom: var(--sp-16);
+  z-index: var(--z-toast);
+  display: grid;
+  gap: var(--sp-8);
+  width: min(380px, calc(100vw - 2 * var(--sp-16)));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-8) var(--sp-8) var(--sp-12);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  pointer-events: auto;
+}
+
+.toast-text {
+  flex: 1;
+  min-width: 0;
+  padding-top: var(--sp-4);
+  font-size: var(--fs-md);
+  overflow-wrap: anywhere;
+}
+
+.toast-error {
+  border-color: var(--critical-line);
+}
+
+.toast-success {
+  border-color: var(--good-line);
+}
+
+@media (max-width: 640px) {
+  .toaster {
+    left: var(--sp-16);
+    width: auto;
+  }
+}
+
 .empty-title {
   color: var(--ink);
   font-weight: 600;
@@ -1231,13 +1277,6 @@
   line-height: 1.4;
   color: var(--critical-text);
   overflow-wrap: anywhere;
-}
-
-.page-notice {
-  min-height: 20px;
-  margin-top: 14px;
-  font-size: var(--fs-md);
-  color: var(--ink-2);
 }
 
 .project-card-progress {

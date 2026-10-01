@@ -4,6 +4,10 @@ import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
 import { useClaudeIntegration } from './hooks/useClaudeIntegration'
 import { useActivity } from './hooks/useActivity'
+import { useJobFailureToasts } from './hooks/useJobFailureToasts'
+import { ipcErrorMessage } from './ipcError'
+import { notify } from './toast'
+import { Toaster } from './components/ui/Toaster'
 import { useLiveIds } from './hooks/useClock'
 import { ActivityPage } from './pages/ActivityPage'
 import { Sidebar } from './components/shell/Sidebar'
@@ -32,6 +36,7 @@ function worstOf(checks: ConnectionCheck[] | null): Health {
 function App() {
   const { snapshot } = useSnapshot()
   const jobs = useJobs()
+  useJobFailureToasts(jobs)
   // Depois de uma correção de conexão, quem confere de novo é o processo
   // principal (o resultado chega por `ragx:connections`).
   const { connections, checking, refresh } = useConnections()
@@ -99,7 +104,10 @@ function App() {
   const openProject = useCallback((id: string) => setRoute({ page: 'project', id }), [])
 
   const onCancelJob = useCallback((id: string) => {
-    window.ragx.cancelJob(id).catch((err: unknown) => console.error('cancelJob() falhou:', err))
+    window.ragx.cancelJob(id).catch((err: unknown) => {
+      console.error('cancelJob() falhou:', err)
+      notify.error(`Não foi possível cancelar a tarefa: ${ipcErrorMessage(err)}`)
+    })
   }, [])
 
   // O próprio onboarding grava a preferência; aqui só se sai dele.
@@ -119,13 +127,16 @@ function App() {
   // Onboarding é tela cheia, sem barra lateral nem barra superior.
   if (route.page === 'onboarding') {
     return (
-      <Onboarding
-        connections={connections}
-        checking={checking}
-        onRefresh={() => void refresh()}
-        jobs={jobs}
-        onFinish={finishOnboarding}
-      />
+      <>
+        <Onboarding
+          connections={connections}
+          checking={checking}
+          onRefresh={() => void refresh()}
+          jobs={jobs}
+          onFinish={finishOnboarding}
+        />
+        <Toaster />
+      </>
     )
   }
 
@@ -196,6 +207,7 @@ function App() {
           <div className="content-inner">{page}</div>
         </main>
       </div>
+      <Toaster />
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { ProjectsPage } from '../ProjectsPage'
 import { installBridge, job, snap } from '../../test/snap'
 import { listPrefs } from '../../projectMetrics'
+import { Toaster } from '../../components/ui/Toaster'
+import { resetToasts } from '../../toast'
 import type { JobView, ProjectSnapshot } from '../../types/ragx-bridge'
 
 // Um projeto por estado (a ordem das regras de `deriveProjectState` decide).
@@ -25,8 +27,12 @@ const BUSY: JobView[] = [job({ id: 'jb', projectId: 'busy', kind: 'update', etaS
 
 function renderPage(over: { projects?: ProjectSnapshot[]; jobs?: JobView[]; query?: string } = {}) {
   const onOpen = vi.fn()
+  // Os avisos (RAGX-0180) saem pelo Toaster, que o App monta uma vez; aqui ele é montado ao lado da página.
   const utils = render(
-    <ProjectsPage projects={over.projects ?? ALL} jobs={over.jobs ?? BUSY} query={over.query ?? ''} onOpen={onOpen} />,
+    <>
+      <ProjectsPage projects={over.projects ?? ALL} jobs={over.jobs ?? BUSY} query={over.query ?? ''} onOpen={onOpen} />
+      <Toaster />
+    </>,
   )
   return { ...utils, onOpen }
 }
@@ -39,6 +45,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  resetToasts()
   vi.useRealTimers()
 })
 
@@ -284,8 +291,8 @@ describe('ProjectsPage', () => {
       await act(async () => {
         fireEvent.click(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' }))
       })
+      expect(screen.getByRole('region', { name: 'Avisos' })).toHaveAttribute('aria-live', 'polite')
       const status = screen.getByRole('status')
-      expect(status).toHaveAttribute('aria-live', 'polite')
       expect(status).toHaveTextContent('Adicionado à fila: Instalar hooks em Nohooks')
       act(() => {
         vi.advanceTimersByTime(3900)
@@ -306,7 +313,7 @@ describe('ProjectsPage', () => {
       await act(async () => {
         fireEvent.click(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' }))
       })
-      expect(screen.getByText('Não foi possível adicionar à fila: fila cheia')).toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível adicionar à fila: fila cheia')
       act(() => {
         vi.advanceTimersByTime(7900)
       })
@@ -337,15 +344,16 @@ describe('ProjectsPage', () => {
       expect(within(card('Nohooks')).queryByText(/Última tarefa falhou/)).not.toBeInTheDocument()
     })
 
-    it('desmontar limpa o timer do aviso', async () => {
+    it('o aviso é do store global (RAGX-0180): desmontar a página não o mantém vivo e limpar o store apaga o timer', async () => {
       vi.useRealTimers()
       vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
       installBridge()
-      const { unmount } = renderPage()
+      renderPage()
       await act(async () => {
         fireEvent.click(within(card('Nohooks')).getByRole('button', { name: 'Instalar hooks' }))
       })
-      unmount()
+      expect(vi.getTimerCount()).toBeGreaterThan(0)
+      act(() => resetToasts())
       expect(vi.getTimerCount()).toBe(0)
     })
   })

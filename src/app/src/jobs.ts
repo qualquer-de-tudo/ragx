@@ -1,9 +1,12 @@
 import type { ConnectionAction, JobKind, JobView } from './types/ragx-bridge'
+import { ipcErrorMessage } from './ipcError'
+import { notify } from './toast'
 
-/** Enfileira uma tarefa de projeto pelo tipo e id; falha vai para o console. */
+/** Enfileira uma tarefa de projeto pelo tipo e id; a falha aparece num aviso (e no console). */
 export function enqueue(kind: JobKind, projectId: string): Promise<JobView | null> {
   return window.ragx.enqueueJob({ kind, projectId }).catch((err: unknown) => {
     console.error(`enqueueJob(${kind}) falhou:`, err)
+    notify.error(`Não foi possível adicionar à fila: ${ipcErrorMessage(err)}`)
     return null
   })
 }
@@ -42,6 +45,7 @@ export function enqueueConnectionAction(action: ConnectionAction): Promise<JobVi
   const req = action.model === undefined ? { kind: action.kind } : { kind: action.kind, model: action.model }
   return window.ragx.enqueueJob(req).catch((err: unknown) => {
     console.error(`enqueueJob(${action.kind}) falhou:`, err)
+    notify.error(`Não foi possível adicionar à fila: ${ipcErrorMessage(err)}`)
     return null
   })
 }

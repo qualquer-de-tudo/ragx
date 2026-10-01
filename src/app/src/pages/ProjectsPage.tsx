@@ -16,6 +16,8 @@ import { AddProjectDialog } from '../components/project/AddProjectDialog'
 import { ProjectActionButton } from '../components/project/ProjectBits'
 import { Badge } from '../components/shell/Badge'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ipcErrorMessage } from '../ipcError'
+import { notify } from '../toast'
 import { Segmented } from '../components/ui/Segmented'
 import { LivePill } from '../components/shell/LivePill'
 import { RelativeTime } from '../components/shell/RelativeTime'
@@ -36,31 +38,6 @@ function activeAction(jobs: readonly JobView[], projectId: string, state: Projec
   const action = STATE_ACTION[state]
   if (action === null || action.kind === 'open') return null
   return activeJobFor(jobs, projectId, [action.kind])
-}
-
-const NOTICE_MS = 4000
-const NOTICE_ERROR_MS = 8000
-
-/** Aviso discreto da página: some sozinho; o timer é limpo ao desmontar. */
-function useNotice() {
-  const [notice, setNotice] = useState<string | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(
-    () => () => {
-      if (timer.current !== null) clearTimeout(timer.current)
-    },
-    [],
-  )
-  // Estável: entra nos `useCallback` dos handlers das linhas (que são `memo`).
-  const show = useCallback((text: string, ms: number) => {
-    if (timer.current !== null) clearTimeout(timer.current)
-    setNotice(text)
-    timer.current = setTimeout(() => {
-      timer.current = null
-      setNotice(null)
-    }, ms)
-  }, [])
-  return { notice, show }
 }
 
 /** Linha da lista. `memo`: só renderiza quando o projeto dela, a tarefa ou o estado mudam. */
@@ -137,7 +114,6 @@ export function ProjectsPage({
     listPrefs.setView(v)
   }
   const [adding, setAdding] = useState(false)
-  const { notice, show } = useNotice()
 
   // A fila mais recente, lida só quando o clique acontece: o handler não troca a cada push de tarefas.
   const jobsRef = useRef(jobs)
@@ -149,14 +125,14 @@ export function ProjectsPage({
     (project: ProjectSnapshot, kind: JobKind) => {
       const label = STATE_ACTION[deriveProjectState(project, busyProjectIds(jobsRef.current))]?.label ?? kind
       window.ragx.enqueueJob({ kind, projectId: project.id }).then(
-        () => show(`Adicionado à fila: ${label} em ${project.name}`, NOTICE_MS),
+        () => notify.success(`Adicionado à fila: ${label} em ${project.name}`),
         (err: unknown) => {
           console.error(`enqueueJob(${kind}) falhou:`, err)
-          show(`Não foi possível adicionar à fila: ${err instanceof Error ? err.message : String(err)}`, NOTICE_ERROR_MS)
+          notify.error(`Não foi possível adicionar à fila: ${ipcErrorMessage(err)}`)
         },
       )
       },
-    [show],
+    [],
   )
 
   const rows = useMemo(() => {
@@ -307,10 +283,6 @@ export function ProjectsPage({
       {shown.length === 0 && (
         <EmptyState>Nenhum projeto neste filtro.</EmptyState>
       )}
-
-      <div className="page-notice" role="status" aria-live="polite">
-        {notice}
-      </div>
 
       <AddProjectDialog open={adding} onClose={() => setAdding(false)} />
     </section>

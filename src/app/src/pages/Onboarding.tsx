@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { ipcErrorMessage } from '../ipcError'
+import { notify } from '../toast'
 import type { ConnectionCheck, JobView } from '../types/ragx-bridge'
 import { RagxMark } from '../components/brand/RagxMark'
 import { ConnectionGrid } from '../components/connections/ConnectionCard'
@@ -69,6 +71,7 @@ export function Onboarding({
       await window.ragx.setOnboardingDone(true)
     } catch (err) {
       console.error('setOnboardingDone() falhou:', err)
+      notify.error(`Não foi possível salvar que o assistente terminou (${ipcErrorMessage(err)}). Ele pode aparecer de novo na próxima abertura.`)
     }
     onFinish()
   }
