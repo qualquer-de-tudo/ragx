@@ -240,6 +240,29 @@ Política padrão (`security.policy = "strict"`): qualquer achado `critical`/`hi
 promove o arquivo inteiro para `block`. Em `"balanced"`, `high` isolado vira `redact`.
 `"permissive"` não existe — deliberadamente.
 
+### Veredito guardado: o cache só mantém um arquivo FORA
+
+Reexecutar o gate num arquivo que não mudou é trabalho jogado fora (800 `.csv` eram relidos a cada
+rodada), então o resultado das decisões que deixam o arquivo fora do índice (`blocked`,
+`unsupported`, binário, indecodável) fica em `file_verdicts` (RAGX-0139). As regras de segurança deste
+cache:
+
+- **Nunca admite.** Um veredito guardado vira `BLOCK` ou `SKIP`; não existe `ALLOW` em cache. Nada
+  entra no índice por causa dele, e se o mesmo caminho estivesse (por engano) em `documents` e em
+  `file_verdicts`, vale o mais restritivo e o documento sai.
+- **Só vale com o mesmo contexto.** O contexto (`meta('verdict_ctx')`) é o `sha256` dos arquivos de regra
+  (`patterns.yaml`, `filenames.yaml`, `default_ignore.txt`), `RULESET_VERSION`, `CHUNKER_VERSION`,
+  `[security]` (`policy`, `scan_content`, `min_entropy`, `disabled_rules`) e `[index]` (`exclude`,
+  `include`, `include_unknown`, `max_file_bytes`). Qualquer mudança descarta o cache inteiro e tudo é
+  reavaliado: afrouxar a política não deixa um arquivo preso como `blocked`, e endurecê-la não deixa um
+  `unsupported` passar.
+- **Só vale com o mesmo arquivo.** Tamanho ou `mtime` diferentes reavaliam: o `.csv` inofensivo que
+  ganha um segredo vira `blocked`, com `security_event`.
+- **Não guarda conteúdo.** As colunas são o caminho, o veredito, o id da regra, o tamanho, o mtime e a
+  data; um teste de segurança varre todas as tabelas atrás dos segredos da fixture.
+- **Limite conhecido:** conteúdo que muda sem mudar tamanho nem `mtime` (relógio manipulado) não é
+  detectado, como já acontece com o atalho de `fingerprints`. `ragx index --full` descarta o cache.
+
 ## Redactor
 
 O valor do segredo **nunca** é persistido, logado ou impresso. O que se guarda:

@@ -9,7 +9,7 @@ lotes já confirmados. Ver docs/04-indexacao.md.
 from __future__ import annotations
 
 import time
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -23,9 +23,17 @@ from ragx.core.models import Document, IndexStats, Verdict
 from ragx.indexing import freshness, lock, parsers, status_file
 from ragx.indexing.chunkers import ChunkOptions, chunk_document
 from ragx.indexing.embed import embed_pending
+from ragx.indexing.verdicts import BLOCKED, CACHED_SKIPS
+from ragx.indexing.verdicts import prepare as vprepare
 from ragx.security.gate import SecurityGate
 from ragx.storage.db import open_db, set_meta
-from ragx.storage.repositories import ChunkRepo, DocumentRepo, RunRepo, SecurityEventRepo
+from ragx.storage.repositories import (
+    ChunkRepo,
+    DocumentRepo,
+    RunRepo,
+    SecurityEventRepo,
+    VerdictRepo,
+)
 from ragx.walk import WalkedFile, iter_files, iter_paths, normalizar_caminho
 
 VALID_SOURCES = frozenset({
@@ -219,10 +227,12 @@ def _index_paths_once(
         )
         run_id = runs.start("paths", source, git)
         run_error: str | None = None
+        verdicts = vprepare(conn, cfg, full=False, dry_run=False, only=pedidos)
         ctx = _Ctx(
             cfg=cfg, conn=conn, opts=opts, report=report, skip_reasons=skip_reasons,
             docs=docs, chunks=chunks, events=events, run_id=run_id, known=known,
             seen_paths=seen_paths, full=False, dry_run=False, on_event=on_event,
+            verdicts=verdicts, vrepo=VerdictRepo(conn),
         )
         try:
             fingerprints = {
@@ -231,6 +241,7 @@ def _index_paths_once(
             for walked in iter_paths(
                 cfg.root, gate, rels, max_bytes=cfg.index.max_file_bytes,
                 follow_symlinks=cfg.index.follow_symlinks, fingerprints=fingerprints,
+                verdicts=verdicts,
             ):
                 report.stats = _bump(report.stats, files_seen=1)
                 _handle(ctx, walked)
@@ -240,6 +251,7 @@ def _index_paths_once(
             if gone:
                 docs.delete_many(gone)
             report.stats = _bump(report.stats, removed=len(gone))
+            _flush_verdicts(ctx, gone=[p for p in ctx.verdicts if p not in ctx.walked])
             conn.commit()
 
             if embed:
@@ -339,12 +351,14 @@ def _index_once(
                 else {p: (size, mtime) for p, (_h, size, mtime, cv) in known.items()
                       if cv == CHUNKER_VERSION}
             )
+            verdicts = vprepare(conn, cfg, full=full, dry_run=dry_run)
             ctx = _Ctx(
                 cfg=cfg, conn=conn, opts=opts, report=report, skip_reasons=skip_reasons,
                 docs=docs, chunks=chunks, events=events, run_id=run_id, known=known,
                 seen_paths=seen_paths, full=full, dry_run=dry_run, on_event=on_event,
+                verdicts=verdicts, vrepo=VerdictRepo(conn),
             )
-            for walked in _all_sources(cfg, gate, fingerprints, unreadable_dirs):
+            for walked in _all_sources(cfg, gate, fingerprints, unreadable_dirs, verdicts):
                 report.stats = _bump(report.stats, files_seen=1)
                 if on_event:
                     on_event({"phase": "scan", "done": report.stats.files_seen, "total": None})
@@ -363,6 +377,11 @@ def _index_once(
             if gone and not dry_run:
                 docs.delete_many(gone)
             report.stats = _bump(report.stats, removed=len(gone))
+            # veredito de arquivo que sumiu (fora de pasta ilegível: lá não se sabe)
+            _flush_verdicts(ctx, gone=[
+                p for p in ctx.verdicts
+                if p not in ctx.walked and not _sob_pasta_ilegivel(p, unreadable_dirs)
+            ])
 
             if not dry_run:
                 conn.commit()
@@ -435,6 +454,40 @@ class _Ctx:
     dry_run: bool
     on_event: Callable[[dict[str, Any]], None] | None = None
     batch: int = 0
+    #: veredito guardado (RAGX-0139): o que a rodada pode usar, e o que ela decidiu de novo
+    verdicts: dict[str, tuple[int, int, str, str | None]] = field(default_factory=dict)
+    vrepo: VerdictRepo | None = None
+    vput: dict[str, tuple[str, str | None, int, int]] = field(default_factory=dict)
+    vdrop: set[str] = field(default_factory=set)
+    walked: set[str] = field(default_factory=set)
+
+
+def _guardar(ctx: _Ctx, walked: WalkedFile, veredito: str, rule_id: str | None) -> None:
+    """Enfileira o veredito de um arquivo que fica FORA do índice (gravado em `_flush_verdicts`)."""
+    if ctx.dry_run or ctx.vrepo is None or walked.mtime_ns == 0:
+        return
+    ctx.vput[walked.rel_path] = (veredito, rule_id, walked.size_bytes, walked.mtime_ns)
+    ctx.vdrop.discard(walked.rel_path)
+
+
+def _sem_veredito(ctx: _Ctx, rel: str) -> None:
+    """O arquivo não é mais um caso de cache (virou documento, ou outra razão de pular)."""
+    if not ctx.dry_run and ctx.vrepo is not None and rel in ctx.verdicts:
+        ctx.vdrop.add(rel)
+        ctx.vput.pop(rel, None)
+
+
+def _flush_verdicts(ctx: _Ctx, gone: Iterable[str] = ()) -> None:
+    """Grava (na mesma transação do índice) os vereditos novos e apaga os que caducaram."""
+    if ctx.dry_run or ctx.vrepo is None:
+        return
+    apagar = ctx.vdrop | set(gone)
+    if apagar:
+        ctx.vrepo.delete_many(apagar)
+    if ctx.vput:
+        ctx.vrepo.put_many((p, v, r, size, mtime) for p, (v, r, size, mtime) in ctx.vput.items())
+    ctx.vdrop.clear()
+    ctx.vput.clear()
 
 
 def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
@@ -443,9 +496,11 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
     docs, chunks, events = ctx.docs, ctx.chunks, ctx.events
     known, seen_paths = ctx.known, ctx.seen_paths
     full, dry_run, run_id, opts, on_event = ctx.full, ctx.dry_run, ctx.run_id, ctx.opts, ctx.on_event
+    ctx.walked.add(walked.rel_path)
     if walked.unchanged:
         seen_paths.add(walked.rel_path)
         report.stats = _bump(report.stats, unchanged=1)
+        _sem_veredito(ctx, walked.rel_path)
         return
 
     if walked.unreadable:
@@ -463,6 +518,11 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
         reason = d.rule_id or "ignore"
         skip_reasons[reason] = skip_reasons.get(reason, 0) + 1
         report.stats = _bump(report.stats, skipped=1)
+        if not walked.cached_verdict:
+            if reason in CACHED_SKIPS:  # binário, indecodável: decidido lendo o arquivo
+                _guardar(ctx, walked, reason, reason)
+            else:
+                _sem_veredito(ctx, walked.rel_path)
         return
 
     if d.verdict is Verdict.BLOCK:
@@ -471,8 +531,11 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
         if not dry_run:
             # Arquivo que virou sensível some do índice.
             docs.delete_many([walked.rel_path])
-            events.clear_for(walked.rel_path)
-            events.record(run_id, d.findings)
+            if not walked.cached_verdict:
+                events.clear_for(walked.rel_path)
+                events.record(run_id, d.findings)
+                _guardar(ctx, walked, BLOCKED, d.rule_id)
+            # veredito guardado: os `security_events` da decisão original continuam como estão
             ctx.batch += 1
         return
 
@@ -488,6 +551,7 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
         and prior[3] == CHUNKER_VERSION
     ):
         report.stats = _bump(report.stats, unchanged=1)
+        _sem_veredito(ctx, walked.rel_path)
         return
 
     parsed = parsers.parse(
@@ -497,7 +561,9 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
         skip_reasons["unsupported"] = skip_reasons.get("unsupported", 0) + 1
         report.stats = _bump(report.stats, skipped=1)
         seen_paths.discard(walked.rel_path)
+        _guardar(ctx, walked, "unsupported", "unsupported")
         return
+    _sem_veredito(ctx, walked.rel_path)
     if parsed.degraded:
         report.degraded += 1
 
@@ -537,6 +603,7 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
 
     ctx.batch += 1
     if ctx.batch >= cfg.index.batch_size:
+        _flush_verdicts(ctx)
         ctx.conn.commit()
         ctx.batch = 0
 
@@ -551,6 +618,7 @@ def _all_sources(
     gate: SecurityGate,
     fingerprints: dict[str, tuple[int, int]] | None,
     unreadable_dirs: set[str] | None = None,
+    verdicts: dict[str, tuple[int, int, str, str | None]] | None = None,
 ) -> Iterator[WalkedFile]:
     """O projeto e, depois, o conhecimento base.
 
@@ -565,6 +633,7 @@ def _all_sources(
         follow_symlinks=cfg.index.follow_symlinks,
         fingerprints=fingerprints,
         unreadable_dirs=unreadable_dirs,
+        verdicts=verdicts,
     )
     if not cfg.base.enabled:
         return
@@ -582,6 +651,7 @@ def _all_sources(
             follow_symlinks=False,
             fingerprints=fingerprints,
             unreadable_dirs=unreadable_dirs,
+            verdicts=verdicts,
             prefix=f"{base_source.PREFIX}/{name}/",
         )
 

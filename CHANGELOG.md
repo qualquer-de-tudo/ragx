@@ -11,6 +11,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Veredito guardado de arquivo fora do índice (`file_verdicts`).** Arquivo `unsupported`, binário,
+  indecodável ou bloqueado nunca entrava em `documents`, então o atalho de tamanho+mtime não valia
+  para ele: era relido inteiro e passava de novo pelo Security Gate a cada rodada (e os bloqueados
+  refaziam `DELETE`+`INSERT` em `security_events`). Com 800 `.csv` o `index` sem mudança lia **800
+  arquivos, agora 0**, e caiu de 629 para 344 ms (p50, processo quente; o resto é a varredura).
+  Novo `0008_file_verdicts.sql` (`SCHEMA_VERSION` 8). O cache só mantém um arquivo FORA do índice
+  (nunca admite), vale só com o mesmo tamanho, `mtime` e o mesmo contexto (hash das regras de
+  segurança, `[security]`, `[index]`, versões), e `--full` o refaz. Trocar a política de `strict` para
+  `balanced` reavalia e o arquivo entra redigido (RAGX-0139).
 - **Aviso de edição: hook `PostToolUse`, `ragx touch` e `stale_paths` na busca.** Uma edição não
   commitada só entrava no índice pelo `refresh` (26 a 91 s) ou no próximo commit. `ragx claude on`
   instala agora um hook assíncrono (`Edit|Write|MultiEdit`) que roda `ragx touch --stdin-json`: o

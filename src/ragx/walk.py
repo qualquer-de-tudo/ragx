@@ -17,6 +17,9 @@ from ragx.security.links import is_junction, is_link
 
 _BINARY_PROBE = 8192
 
+#: `rel_path -> (tamanho, mtime_ns, veredito, rule_id)`: o que `file_verdicts` guardou.
+Verdicts = dict[str, tuple[int, int, str, str | None]]
+
 
 @dataclass(frozen=True, slots=True)
 class WalkedFile:
@@ -29,6 +32,9 @@ class WalkedFile:
     #: o arquivo logo depois do save). NÃO é "arquivo removido": o pipeline
     #: preserva o que já está indexado (RAGX-0133).
     unreadable: bool = False
+    #: a decisão veio do veredito guardado (`file_verdicts`), sem abrir o arquivo: o pipeline
+    #: não refaz o que o veredito original já gravou (RAGX-0139).
+    cached_verdict: bool = False
 
     @property
     def content(self) -> str | None:
@@ -44,6 +50,7 @@ def iter_files(
     fingerprints: dict[str, tuple[int, int]] | None = None,
     prefix: str = "",
     unreadable_dirs: set[str] | None = None,
+    verdicts: Verdicts | None = None,
 ) -> Iterator[WalkedFile]:
     """Emite candidatos em streaming — nunca carrega o repositório em memória.
 
@@ -68,7 +75,7 @@ def iter_files(
         rel = prefix + path.relative_to(root).as_posix()
         if only is not None and rel not in only:
             continue
-        yield from _examinar(path, root, gate, max_bytes, fingerprints, prefix)
+        yield from _examinar(path, root, gate, max_bytes, fingerprints, prefix, verdicts)
 
 
 def iter_paths(
@@ -78,6 +85,7 @@ def iter_paths(
     max_bytes: int = 1_048_576,
     follow_symlinks: bool = False,
     fingerprints: dict[str, tuple[int, int]] | None = None,
+    verdicts: Verdicts | None = None,
 ) -> Iterator[WalkedFile]:
     """Como `iter_files`, mas só para os caminhos pedidos e SEM percorrer a árvore.
 
@@ -107,7 +115,7 @@ def iter_paths(
                 continue
         except OSError:
             continue
-        yield from _examinar(path, root, gate, max_bytes, fingerprints, "")
+        yield from _examinar(path, root, gate, max_bytes, fingerprints, "", verdicts)
 
 
 def normalizar_caminho(bruto: str) -> str | None:
@@ -158,6 +166,7 @@ def _examinar(
     max_bytes: int,
     fingerprints: dict[str, tuple[int, int]] | None,
     prefix: str,
+    verdicts: Verdicts | None = None,
 ) -> Iterator[WalkedFile]:
     """Decide UM arquivo: ignore, atalho, tamanho, nome, leitura, binário e Gate.
 
@@ -184,6 +193,17 @@ def _examinar(
             GateDecision(Verdict.SKIP, rel, rule_id=source, reason="ignore"),
         )
         return
+
+    # Veredito guardado (RAGX-0139): arquivo que NÃO entra no índice, decidido antes com este
+    # mesmo tamanho e mtime e as mesmas regras (o chamador descarta o cache quando elas mudam).
+    # Vem ANTES do atalho de `fingerprints`: se algum dia os dois existirem para o mesmo
+    # caminho, vale o mais restritivo. O cache só mantém um arquivo FORA; nunca coloca um dentro.
+    if verdicts is not None:
+        guardado = verdicts.get(rel)
+        if guardado is not None and guardado[:2] == (st.st_size, st.st_mtime_ns):
+            yield WalkedFile(rel, st.st_size, st.st_mtime_ns, _decisao_guardada(rel, guardado),
+                             cached_verdict=True)
+            return
 
     # Atalho: size+mtime idênticos ao registrado -> nem abre o arquivo.
     # É o que faz a reindexação sem mudanças ser barata (docs/04-indexacao.md).
@@ -240,6 +260,15 @@ def _examinar(
 
 
 _UNREADABLE = "unreadable"
+
+
+def _decisao_guardada(rel: str, guardado: tuple[int, int, str, str | None]) -> GateDecision:
+    """`GateDecision` equivalente ao veredito guardado. NUNCA é ALLOW: o cache não admite nada."""
+    _size, _mtime, veredito, rule_id = guardado
+    if veredito == "blocked":
+        regra = rule_id or "blocked"
+        return GateDecision(Verdict.BLOCK, rel, rule_id=regra, reason=regra)
+    return GateDecision(Verdict.SKIP, rel, rule_id=veredito, reason=veredito)
 
 
 def _sumiu(exc: OSError) -> bool:

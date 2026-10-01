@@ -154,6 +154,17 @@ Cache de embeddings: `.ragx/cache/emb/<model_id>/<content_hash>.f32`. Chunk que 
 mudou de lugar (arquivo renomeado, função movida) reaproveita o vetor — é o que faz
 a reindexação ficar barata.
 
+**Veredito guardado** (`file_verdicts`, RAGX-0139). Arquivo `unsupported`, binário, indecodável ou
+bloqueado nunca entra em `documents`, então o atalho de tamanho+mtime não o alcançava: era relido e
+reexecutado no gate a cada rodada (800 `.csv`: 800 leituras por `index` sem mudança). Agora o
+resultado é guardado com o tamanho e o `mtime` e, na rodada seguinte, o arquivo nem é aberto
+(**800 leituras → 0**; `stats.blocked`, `blocked_paths` e `security_events` ficam iguais, com os mesmos
+ids de linha). Vale para `index_project` e para `index_paths`. O cache é descartado inteiro quando muda
+qualquer coisa de que o veredito depende (regras de segurança, `[security]`, `[index]`, versão do
+chunker; ver [02-seguranca.md](02-seguranca.md)) e por `--full`; `--dry-run` usa o que existe e nunca
+grava. Arquivo que muda de tamanho ou `mtime`, vira documento ou some tem o veredito reavaliado ou
+apagado.
+
 **Reindexação por caminho** (`index_paths`, `ragx index --only <caminho>`). Quando só se sabe
 QUAIS arquivos mudaram (uma edição feita no meio de uma sessão), a varredura do projeto inteiro e
 o git são trabalho jogado fora: `index_paths` reindexa só os arquivos pedidos, numa transação, e

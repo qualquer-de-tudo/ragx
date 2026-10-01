@@ -36,10 +36,11 @@ o schema é pequeno e explícito.
 | `0005_federation.sql` | 11 | federação (superfície pública do projeto) |
 | `0006_run_provenance.sql` | 9 | `index_runs`: `git_branch`, `git_commit`, `git_dirty`, `source` |
 | `0007_vec_gen.sql` | 19 | `meta('vec_gen')` e gatilhos em `embeddings` (geração dos vetores, RAGX-0134) |
+| `0008_file_verdicts.sql` | 19 | `file_verdicts` (veredito guardado de arquivo fora do índice, RAGX-0139) |
 
 > A tabela de migrações acima foi corrigida contra os arquivos em
 > `src/ragx/storage/migrations/` (listava `0005_dictionary`, `0006_agents`, `0007_sync` e
-> `0008_federation`, que nunca existiram com esses nomes). `SCHEMA_VERSION` é **7**.
+> `0008_federation`, que nunca existiram com esses nomes). `SCHEMA_VERSION` é **8**.
 
 Migrações do hub ficam em `migrations/hub/NNNN_*.sql`, com `user_version` próprio.
 
@@ -116,6 +117,25 @@ Regras:
   `running` é o dono da trava quando o processo está vivo, senão `null`.
   `hooks.installed` é `null` quando o projeto não está dentro de um
   repositório Git.
+
+### `file_verdicts` — o veredito de quem fica FORA do índice (RAGX-0139)
+
+```sql
+CREATE TABLE file_verdicts (
+  rel_path   TEXT PRIMARY KEY,
+  verdict    TEXT NOT NULL,            -- blocked | unsupported | binary | undecodable
+  rule_id    TEXT,                     -- só o id da regra, nunca um trecho do arquivo
+  size_bytes INTEGER NOT NULL,
+  mtime_ns   INTEGER NOT NULL,
+  checked_at TEXT NOT NULL
+);
+```
+
+Arquivo bloqueado, `unsupported`, binário ou indecodável nunca vira linha em `documents`, então o
+atalho de tamanho+mtime nunca valia para ele: a cada rodada era relido e passava de novo pelo gate.
+Com `(tamanho, mtime)` iguais e as mesmas regras (`meta('verdict_ctx')`, ver
+[04-indexacao.md](04-indexacao.md)), o veredito vale e o arquivo nem é aberto. É estado local e
+derivado: não vai para `knowledge/` e `ragx index --full` o refaz.
 
 ### `security_events` — sem segredo, só prova
 

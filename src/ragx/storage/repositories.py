@@ -14,6 +14,44 @@ if TYPE_CHECKING:
     from ragx.gitinfo import GitState
 
 
+class VerdictRepo:
+    """Veredito guardado de arquivo fora do índice (`file_verdicts`, RAGX-0139).
+
+    Só o resultado: `blocked | unsupported | binary | undecodable`, o id da regra e o
+    tamanho/mtime com que foi decidido. Nenhuma coluna guarda trecho do arquivo.
+    """
+
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def load(self, only: Iterable[str] | None = None) -> dict[str, tuple[int, int, str, str | None]]:
+        """rel_path -> (size, mtime_ns, verdict, rule_id). `only` restringe aos caminhos pedidos."""
+        rows = self.conn.execute(
+            "SELECT rel_path, size_bytes, mtime_ns, verdict, rule_id FROM file_verdicts"
+        )
+        wanted = None if only is None else set(only)
+        return {
+            r["rel_path"]: (r["size_bytes"], r["mtime_ns"], r["verdict"], r["rule_id"])
+            for r in rows
+            if wanted is None or r["rel_path"] in wanted
+        }
+
+    def put_many(self, rows: Iterable[tuple[str, str, str | None, int, int]]) -> None:
+        """(rel_path, verdict, rule_id, size, mtime_ns)."""
+        agora = utcnow()
+        self.conn.executemany(
+            "INSERT OR REPLACE INTO file_verdicts "
+            "(rel_path, verdict, rule_id, size_bytes, mtime_ns, checked_at) VALUES (?,?,?,?,?,?)",
+            [(p, v, rule, size, mtime, agora) for p, v, rule, size, mtime in rows],
+        )
+
+    def delete_many(self, paths: Iterable[str]) -> None:
+        self.conn.executemany("DELETE FROM file_verdicts WHERE rel_path = ?", [(p,) for p in paths])
+
+    def clear(self) -> None:
+        self.conn.execute("DELETE FROM file_verdicts")
+
+
 class DocumentRepo:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
