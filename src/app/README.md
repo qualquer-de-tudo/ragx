@@ -278,6 +278,19 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Saúde do índice
+
+Na Visão geral do detalhe, logo depois de "Está em dia?" e "Índice", a seção "Saúde do índice" (RAGX-0189) resume em
+texto, com selo de nível (Saudável, Atenção, Com problema), poucas checagens (`src/indexHealth.ts`, puro): embeddings
+pendentes (ação "Gerar embeddings"), a última indexação com erro, "o índice está falhando" com 2 ou mais falhas
+seguidas e hooks de git ausentes (ação "Instalar hooks"). Dado ausente diz "sem dado", nunca "ok". A defasagem em si
+continua em "Está em dia?". A **tendência** é a das indexações (as 10 mais recentes de `ragx status`: `duration_ms`,
+`files_seen`, `blocked`, `embedded` do `index_runs`), não uma série de cobertura ou defasagem, que não é gravada em
+lugar nenhum: mediana de duração das indexações sem mudança e das com mudança, falhas nas últimas e a direção ("mais
+lenta", "estável", "mais rápida") comparando a mediana das 3 mais novas com a das anteriores. `MIN_RUNS_FOR_TREND = 6`
+e `TREND_RATIO = 1.5` são decisões da tarefa, não medidas; com menos de 6 indexações a tela diz "poucos dados para
+tendência (N de 6 indexações)". O mini-gráfico de barras tem `aria-label` por barra e a alternativa "Ver em tabela".
+
 ## Adoção pelos agentes
 
 A Atividade tem a seção "Adoção pelos agentes" (RAGX-0190, S13): das sessões abertas em projeto indexado, quantas

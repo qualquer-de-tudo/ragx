@@ -4,9 +4,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 // RAGX-0179: o padrão mora num primitivo. `role="radio"`, `role="switch"` e `<svg` só aparecem em `components/ui/`
-// (mais a marca da logo e o gráfico de economia, que são desenho próprio, não ícone).
+// (mais a marca da logo e os gráficos de economia e de duração das indexações, que são desenho próprio, não ícone).
 const ROOT = path.resolve(__dirname, '..') // src/app/src
-const ALLOWED = ['components/ui/', 'components/brand/RagxMark.tsx', 'components/project/TokenSavings.tsx']
+const ALLOWED = ['components/ui/', 'components/brand/RagxMark.tsx', 'components/project/TokenSavings.tsx', 'components/project/IndexHealth.tsx']
 
 function files(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {

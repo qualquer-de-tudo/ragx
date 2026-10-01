@@ -21,6 +21,7 @@ import { ConfirmButton } from '../components/project/ConfirmButton'
 import { JobButton } from '../components/project/JobButton'
 import { MaintenancePanel } from '../components/project/MaintenancePanel'
 import { ContextPreview } from '../components/project/ContextPreview'
+import { IndexHealth } from '../components/project/IndexHealth'
 import { ProjectGlance } from '../components/project/ProjectGlance'
 import { Timeline } from '../components/project/Timeline'
 import { TokenSavings } from '../components/project/TokenSavings'
@@ -437,6 +438,7 @@ export function ProjectPage({
           <FreshnessSection project={project} view={status} />
           <IndexSection project={project} jobs={jobs} />
         </div>
+        <IndexHealth project={project} status={status.phase === 'ok' ? status.status : null} jobs={jobs} />
         <UsageSection telemetry={project.telemetry} adoption={projectAdoption} />
       </TabPanel>
 

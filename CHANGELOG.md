@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Saúde do índice com tendência no detalhe do projeto.** O painel dizia só se o índice está em dia agora. Agora a
+  Visão geral tem "Saúde do índice": nível em texto, poucas checagens (embeddings pendentes, última indexação com
+  erro, falhas seguidas, hooks ausentes) com a ação que resolve, e a tendência das últimas indexações (mediana de
+  duração com e sem mudança, falhas e se está mais lenta, estável ou mais rápida), com gráfico e tabela. Com menos de
+  6 indexações diz "poucos dados" (RAGX-0189).
 - **Adoção pelos agentes no painel.** A adoção só se media à mão, lendo transcripts. Agora a Atividade mostra "x de y
   sessões chamaram o RAGX (z%)" desde o evento mais antigo lido (até 14 dias), por projeto e no total, e o detalhe
   do projeto mostra as sessões dele; linha sem sessão e chamada sem início registrado ficam fora da razão e são

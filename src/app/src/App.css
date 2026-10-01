@@ -863,6 +863,49 @@ kbd {
   padding: 0 var(--sp-12) var(--sp-12);
 }
 
+/* Saúde do índice (RAGX-0189). */
+.health-checks {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.health-check {
+  font-size: var(--fs-md);
+  overflow-wrap: anywhere;
+}
+
+.health-level {
+  font-weight: 600;
+}
+
+.health-level-ok {
+  color: var(--good);
+}
+
+.health-level-warn {
+  color: var(--warning);
+}
+
+.health-level-bad {
+  color: var(--critical-text);
+}
+
+.health-trend {
+  font-size: var(--fs-md);
+}
+
+.health-chart {
+  max-width: 100%;
+}
+
+.health-bar {
+  fill: var(--series-delivered);
+}
+
+.health-bar.is-failure {
+  fill: var(--critical-text);
+}
+
 /* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
 .skeleton {
   display: block;

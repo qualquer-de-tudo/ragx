@@ -30,6 +30,11 @@ export interface IndexRun {
   commit: string | null
   /** Arquivos reindexados; `null` quando o run não registrou. */
   indexed: number | null
+  /** `duration_ms` da CLI; `null` quando ausente ou inválido (CLI antiga). */
+  durationMs: number | null
+  filesSeen: number | null
+  blocked: number | null
+  embedded: number | null
   error: string | null
 }
 
@@ -100,6 +105,10 @@ function parseRun(v: unknown, i: number): IndexRun | null {
     branch: str(v.git_branch),
     commit: str(v.git_commit),
     indexed: count(v.indexed),
+    durationMs: count(v.duration_ms),
+    filesSeen: count(v.files_seen),
+    blocked: count(v.blocked),
+    embedded: count(v.embedded),
     error: str(v.error),
   }
 }
