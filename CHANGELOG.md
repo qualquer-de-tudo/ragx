@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Gráfico de economia por teclado e alvos de clique de 24 px no painel.** O gráfico só respondia ao mouse (quem usa
+  teclado ou leitor de tela só chegava aos números pela tabela) e 180 alvos medidos ficavam abaixo de 24x24 px (o
+  interruptor, os nomes de projeto nas listas e nos cartões). Agora cada dia é focável com nome acessível, setas,
+  Home e End percorrem os 14 dias e o balão acompanha o foco; os alvos passaram a ter 24 px (0 abaixo disso nas telas
+  medidas) e um teste com axe-core (0 violações `serious` e `critical`) e o harness visual vigiam a volta
+  (RAGX-0185).
 - **Detalhe do projeto responde as três perguntas no topo.** "O índice está em dia?" era a segunda coisa da página, a
   economia ficava noutra aba e o uso pelo agente vinha embaixo. Agora uma faixa antes das abas, em todas elas, diz em
   texto se está em dia (com o primeiro motivo e o botão da ação), quanto economizou nos últimos 14 dias (com "Ver

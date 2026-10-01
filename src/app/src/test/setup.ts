@@ -1,7 +1,10 @@
 import { afterEach } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { CACHE_KEY, resetCacheThrottle } from '../snapshotCache'
+
+// Com a suíte inteira em paralelo o `findBy*` de 1 s (padrão) estourava em máquina carregada.
+configure({ asyncUtilTimeout: 4000 })
 
 // Node 25 traz um `localStorage` global sem os métodos (sem `--localstorage-file`) que esconde o do jsdom. Os testes
 // que dependem de armazenamento (preferências de lista, cache do snapshot) ganham um em memória.

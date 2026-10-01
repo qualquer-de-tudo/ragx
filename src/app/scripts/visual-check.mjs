@@ -130,9 +130,37 @@ function measure() {
   const bar = document.querySelector('.topbar-inner') || document.querySelector('.topbar')
   const body = document.querySelector('.content-inner')
   const align = bar && body ? { bar: [Math.round(bar.getBoundingClientRect().left), Math.round(bar.getBoundingClientRect().right)], body: [Math.round(body.getBoundingClientRect().left), Math.round(body.getBoundingClientRect().right)] } : null
+  // Alvos de clique abaixo de 24x24 (WCAG 2.2, 2.5.8). Isentos: o que está oculto ou é `sr-only` (1 px) e links em linha.
+  const small = []
+  for (const el of document.querySelectorAll('button, [role=button], [role=switch], [role=radio], [role=tab], a[href], input, select')) {
+    const r = el.getBoundingClientRect()
+    const st = getComputedStyle(el)
+    if (st.display === 'none' || st.visibility === 'hidden' || r.width <= 1 || r.height <= 1) continue
+    if (el.tagName === 'A' && st.display === 'inline') continue
+    if (r.width < 24 || r.height < 24) {
+      // `elementFromPoint` só enxerga o que está na janela: traz o elemento para a vista antes de sondar.
+      el.scrollIntoView({ block: 'center', inline: 'center' })
+      const r2 = el.getBoundingClientRect()
+      // A área de clique pode passar do retângulo do elemento (pseudo-elemento `::after`): sonda para fora até sair dele.
+      const hit = (x, y) => el.contains(document.elementFromPoint(x, y))
+      const cx = r2.left + r2.width / 2
+      const cy = r2.top + r2.height / 2
+      let up = 0
+      let down = 0
+      while (up < 8 && hit(cx, r2.top - up - 1)) up++
+      while (down < 8 && hit(cx, r2.bottom + down)) down++
+      let left = 0
+      let right = 0
+      while (left < 8 && hit(r2.left - left - 1, cy)) left++
+      while (right < 8 && hit(r2.right + right, cy)) right++
+      const w = r2.width + left + right
+      const h = r2.height + up + down
+      if (w < 24 || h < 24) small.push({ el: describe(el), w: Math.round(w), h: Math.round(h) })
+    }
+  }
   const glance = document.querySelector('.glance')
   const glanceBottom = glance ? Math.round(glance.getBoundingClientRect().bottom) : null
-  return { over: outer, scroll, align, glanceBottom }
+  return { over: outer, scroll, align, glanceBottom, small }
 }
 
 const SCREENS = [
@@ -179,7 +207,7 @@ for (const width of widths) {
       report.push({ width, screen: screen.id, ...result, errors })
       if (shotsDir) await page.screenshot({ path: path.join(shotsDir, `${screen.id}-${width}.png`) })
     } catch (err) {
-      report.push({ width, screen: screen.id, over: [], scroll: [], align: null, errors: [...errors, `falha ao percorrer a tela: ${err.message.split('\n')[0]}`] })
+      report.push({ width, screen: screen.id, over: [], scroll: [], align: null, small: [], errors: [...errors, `falha ao percorrer a tela: ${err.message.split('\n')[0]}`] })
     }
     await page.close()
   }
@@ -194,12 +222,13 @@ if (asJson) {
 } else {
   let bad = 0
   for (const r of report) {
-    const problems = r.over.length + r.scroll.length + r.errors.length
+    const problems = r.over.length + r.scroll.length + r.errors.length + (r.small?.length ?? 0)
     bad += problems
     const mark = problems === 0 ? 'ok ' : 'XX '
     console.log(`${mark}${String(r.width).padStart(4)} px  ${r.screen}`)
     for (const o of r.over.slice(0, 6)) console.log(`      estoura: ${o.el} (direita em ${o.right})`)
     if (r.over.length > 6) console.log(`      ... e mais ${r.over.length - 6}`)
+    for (const t of r.small ?? []) console.log(`      alvo pequeno: ${t.el} (${t.w}x${t.h})`)
     for (const s of r.scroll) console.log(`      rola: ${s.el} scrollWidth ${s.scrollWidth} > clientWidth ${s.clientWidth}`)
     for (const e of r.errors) console.log(`      erro: ${e}`)
   }

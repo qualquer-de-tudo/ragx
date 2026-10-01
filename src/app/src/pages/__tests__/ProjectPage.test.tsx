@@ -739,7 +739,7 @@ describe('ProjectPage: economia de tokens (uso real)', () => {
     expect(s.getAllByText(/Arquivos inteiros \(limite superior\)/).length).toBeGreaterThan(0)
     expect(s.getAllByText('Economia estimada').length).toBeGreaterThan(0)
     expect(s.queryByText(/Sem RAGX/)).not.toBeInTheDocument()
-    expect(s.getByRole('img', { name: 'Tokens por dia, arquivos inteiros e com o RAGX' })).toBeInTheDocument()
+    expect(s.getByRole('group', { name: 'Tokens por dia, arquivos inteiros e com o RAGX' })).toBeInTheDocument()
     // a tabela lista só os dias com consulta
     const rows = within(s.getByRole('table')).getAllByRole('row')
     expect(rows).toHaveLength(3)

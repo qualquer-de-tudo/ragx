@@ -278,6 +278,19 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Acessibilidade
+
+O gráfico de economia responde ao teclado (RAGX-0185): o `<svg>` é um `role="group"` e cada dia é um item focável
+(`role="img"`, nome como "01/09: sem RAGX 12.000, com RAGX 3.000, economia 75%" ou "03/09: sem consultas"), com
+`tabIndex` móvel (só o dia ativo entra no Tab); setas, Home e End percorrem os 14 dias, o balão acompanha o foco e um
+anel azul marca o dia (`stroke`). A tabela "Ver em tabela" continua. Os grupos de rádio (Filtrar, Visualização, Tipo de
+atividade) respondem a seta, Home e End (`radiogroup-keyboard.test.tsx`). Alvos de clique têm pelo menos 24x24 px
+(WCAG 2.5.8): `.link-button`, o nome do cartão e o `.switch` (visual de 38x22, área de clique de 26 px). Quem vigia:
+`a11y.test.tsx` (axe-core, devDependency só de teste: 0 violações `serious` e `critical` nas quatro telas, com
+`color-contrast` desligado porque o jsdom não calcula) e o harness `scripts/visual-check.mjs`, que mede o tamanho real
+da área de clique de todo botão, interruptor, rádio, aba, link, campo e seletor em cada tela. `.content` tem
+`scroll-padding-bottom` para o foco não ficar atrás dos avisos.
+
 ## Atalhos
 
 | Tecla | O que faz |

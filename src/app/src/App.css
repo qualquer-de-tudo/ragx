@@ -21,6 +21,8 @@
 .content {
   overflow-y: scroll; /* a calha fica sempre: a barra superior compensa a mesma largura */
   min-height: 0;
+  /* o foco não pode ficar escondido atrás dos avisos (até 3, WCAG 2.4.11) */
+  scroll-padding-bottom: calc(var(--sp-32) * 3);
 }
 
 .content-inner {
@@ -1427,6 +1429,9 @@ kbd {
 }
 
 .project-card-name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   max-width: 100%;
   padding: 0;
   border: 0;
@@ -1969,6 +1974,13 @@ kbd {
     border-color var(--dur) ease;
 }
 
+/* O visual segue 38x22; a área de clique sobe para 26 px de altura (alvo mínimo de 24 px, WCAG 2.5.8). */
+.switch::after {
+  content: '';
+  position: absolute;
+  inset: -2px 0;
+}
+
 .switch-knob {
   position: absolute;
   top: 2px;
@@ -2355,6 +2367,16 @@ kbd {
   fill: transparent;
 }
 
+/* O dia ativo do gráfico por teclado: anel em `stroke` (o Chromium não desenha `outline` em `rect` de SVG de forma confiável). */
+.chart-hit:focus {
+  outline: none;
+}
+
+.chart-hit:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 2px;
+}
+
 .chart-tooltip {
   position: absolute;
   top: 0;
@@ -2479,6 +2501,9 @@ kbd {
 /* ── atividade ao vivo ─────────────────────────────────────────────── */
 
 .link-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px; /* alvo mínimo de 24 px (WCAG 2.5.8) sem mudar o visual do texto */
   padding: 0;
   border: 0;
   background: none;

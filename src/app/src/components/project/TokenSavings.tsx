@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import type { SavingsDay, SavingsSeries } from '../../../electron/data/types'
 import { formatNumber, formatPercent } from '../../format'
 import { TrialEstimate } from '../EstimatePanel'
@@ -57,9 +57,19 @@ function saved(day: { baseline: number; delivered: number }): number {
   return day.baseline > 0 ? (day.baseline - day.delivered) / day.baseline : 0
 }
 
+/** Nome acessível de um dia: "12/09: sem RAGX 12.000, com RAGX 3.000, economia 75%" ou "12/09: sem consultas". */
+function dayLabel(d: SavingsDay): string {
+  if (d.calls === 0) return `${shortDate(d.date)}: sem consultas`
+  return `${shortDate(d.date)}: sem RAGX ${formatNumber(d.baseline)}, com RAGX ${formatNumber(d.delivered)}, economia ${formatPercent(saved(d))}`
+}
+
 function Chart({ days }: { days: SavingsDay[] }) {
   const [wrapRef, width] = useWidth<HTMLDivElement>(640)
   const [hover, setHover] = useState<number | null>(null)
+  // Teclado: só o dia "ativo" entra no Tab (tabIndex móvel); `focused` diz se algum dia tem o foco agora.
+  const [roving, setRoving] = useState(days.length - 1)
+  const [focused, setFocused] = useState<number | null>(null)
+  const hits = useRef<Array<SVGRectElement | null>>([])
   const plotW = width - PAD.left - PAD.right
   const plotH = HEIGHT - PAD.top - PAD.bottom
   const max = niceMax(Math.max(...days.map((d) => Math.max(d.baseline, d.delivered))))
@@ -70,11 +80,26 @@ function Chart({ days }: { days: SavingsDay[] }) {
   const ticks = [0, max / 2, max]
   // Rótulo de data a cada N dias para não encavalar.
   const every = slot < 34 ? Math.ceil(34 / slot) : 1
-  const active = hover !== null ? days[hover] : null
+  const shown = hover ?? focused
+  const active = shown !== null ? days[shown] : null
+  const tab = Math.min(roving, days.length - 1)
+
+  const onKeyDown = (e: KeyboardEvent<SVGRectElement>, i: number) => {
+    const last = days.length - 1
+    let next: number
+    if (e.key === 'ArrowRight') next = Math.min(i + 1, last)
+    else if (e.key === 'ArrowLeft') next = Math.max(i - 1, 0)
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = last
+    else return
+    e.preventDefault()
+    setRoving(next)
+    hits.current[next]?.focus()
+  }
 
   return (
     <div className="savings-chart" ref={wrapRef}>
-      <svg width={width} height={HEIGHT} role="img" aria-label="Tokens por dia, arquivos inteiros e com o RAGX" onMouseLeave={() => setHover(null)}>
+      <svg width={width} height={HEIGHT} role="group" aria-label="Tokens por dia, arquivos inteiros e com o RAGX" onMouseLeave={() => setHover(null)}>
         {ticks.map((t) => (
           <g key={t}>
             <line className="chart-grid" x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} />
@@ -87,7 +112,7 @@ function Chart({ days }: { days: SavingsDay[] }) {
           const x0 = PAD.left + i * slot + (slot - groupW) / 2
           return (
             <g key={d.date}>
-              {hover === i && <rect className="chart-hover" x={PAD.left + i * slot} y={PAD.top} width={slot} height={plotH} />}
+              {shown === i && <rect className="chart-hover" x={PAD.left + i * slot} y={PAD.top} width={slot} height={plotH} />}
               <path className="bar-baseline" d={barPath(x0, y(d.baseline), barW, PAD.top + plotH - y(d.baseline))} />
               <path className="bar-delivered" d={barPath(x0 + barW + GAP, y(d.delivered), barW, PAD.top + plotH - y(d.delivered))} />
               {(i % every === 0 || i === days.length - 1) && (
@@ -97,23 +122,35 @@ function Chart({ days }: { days: SavingsDay[] }) {
               )}
               {/* Alvo do hover: a coluna inteira do dia, maior que as barras. */}
               <rect
+                ref={(el) => {
+                  hits.current[i] = el
+                }}
                 className="chart-hit"
                 x={PAD.left + i * slot}
                 y={PAD.top}
                 width={slot}
                 height={plotH}
+                role="img"
+                aria-label={dayLabel(d)}
+                tabIndex={i === tab ? 0 : -1}
                 onMouseEnter={() => setHover(i)}
+                onFocus={() => {
+                  setRoving(i)
+                  setFocused(i)
+                }}
+                onBlur={() => setFocused(null)}
+                onKeyDown={(e) => onKeyDown(e, i)}
               />
             </g>
           )
         })}
       </svg>
-      {active && hover !== null && (
+      {active && shown !== null && (
         <div
           className="chart-tooltip"
           role="status"
           style={{
-            left: Math.min(Math.max(PAD.left + hover * slot + slot / 2, 90), width - 90),
+            left: Math.min(Math.max(PAD.left + shown * slot + slot / 2, 90), width - 90),
           }}
         >
           <p className="chart-tooltip-title">{longDate(active.date)}</p>
