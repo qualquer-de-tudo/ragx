@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Snapshot } from '../types/ragx-bridge'
+import { shareSnapshot } from '../snapshotShare'
 
 function isNewer(a: Snapshot, b: Snapshot): boolean {
   return Date.parse(a.generatedAt) > Date.parse(b.generatedAt)
@@ -14,7 +15,7 @@ export function useSnapshot(): { snapshot: Snapshot | null } {
       (s) => {
         // Um push (`onSnapshot`) pode chegar antes desta resposta e ser mais
         // novo que ela: só troca se a resposta inicial for mesmo a mais nova.
-        if (!cancelled) setSnapshot((prev) => (prev === null || isNewer(s, prev) ? s : prev))
+        if (!cancelled) setSnapshot((prev) => (prev === null || isNewer(s, prev) ? shareSnapshot(prev, s) : prev))
       },
       (err) => {
         // Sem isso, uma rejeicao deixa `snapshot` preso em null para sempre
@@ -23,7 +24,8 @@ export function useSnapshot(): { snapshot: Snapshot | null } {
         if (!cancelled) console.error('getSnapshot() falhou:', err)
       },
     )
-    const unsubscribe = window.ragx.onSnapshot((s) => setSnapshot(s))
+    // Sem mudança de conteúdo (só `generatedAt` novo) o estado segue o mesmo objeto: nada re-renderiza.
+    const unsubscribe = window.ragx.onSnapshot((s) => setSnapshot((prev) => shareSnapshot(prev, s)))
     return () => {
       cancelled = true
       unsubscribe()

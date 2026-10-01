@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { JobKind, JobView, ProjectSnapshot } from '../types/ragx-bridge'
 import {
   STATE_ACTION,
@@ -10,12 +10,13 @@ import {
   lastFailureFor,
   type ProjectState,
 } from '../state'
-import { commonBase, foldForSearch, formatCompact, formatNumber, formatPercent, formatRelative, parentHint } from '../format'
+import { commonBase, foldForSearch, formatCompact, formatNumber, formatPercent, parentHint } from '../format'
 import { ProjectCard } from '../components/project/ProjectCard'
 import { AddProjectDialog } from '../components/project/AddProjectDialog'
 import { ProjectActionButton } from '../components/project/ProjectBits'
 import { Badge } from '../components/shell/Badge'
 import { LivePill } from '../components/shell/LivePill'
+import { RelativeTime } from '../components/shell/RelativeTime'
 import { Stat } from '../components/shell/Card'
 import { STATE_LABEL, STATE_TONE } from '../state'
 import { SORT_LABEL, listPrefs, needsAttention, savingsRatio, sortRows, tokensSaved, type ListView, type SortKey } from '../projectMetrics'
@@ -98,16 +99,65 @@ function useNotice() {
     },
     [],
   )
-  const show = (text: string, ms: number) => {
+  // Estável: entra nos `useCallback` dos handlers das linhas (que são `memo`).
+  const show = useCallback((text: string, ms: number) => {
     if (timer.current !== null) clearTimeout(timer.current)
     setNotice(text)
     timer.current = setTimeout(() => {
       timer.current = null
       setNotice(null)
     }, ms)
-  }
+  }, [])
   return { notice, show }
 }
+
+/** Linha da lista. `memo`: só renderiza quando o projeto dela, a tarefa ou o estado mudam. */
+const ProjectRow = memo(function ProjectRow({
+  project,
+  state,
+  hint,
+  active,
+  live,
+  onOpen,
+  onAction,
+}: {
+  project: ProjectSnapshot
+  state: ProjectState
+  hint: string | null
+  active: JobView | null
+  live: boolean
+  onOpen: (id: string) => void
+  onAction: (project: ProjectSnapshot, kind: JobKind) => void
+}) {
+  const ratio = savingsRatio(project)
+  return (
+    <tr>
+      <th scope="row">
+        <button type="button" className="link-button" onClick={() => onOpen(project.id)}>
+          {project.name}
+        </button>
+        {live && <LivePill />}
+        <span className="projects-table-hint dim">{hint ?? 'sem dados'}</span>
+      </th>
+      <td>
+        <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>
+      </td>
+      <td className="num">{ratio === null ? 'sem uso' : formatPercent(ratio)}</td>
+      <td className="num">{formatNumber(project.telemetry.totalCalls)}</td>
+      <td className="num">{project.counts ? formatCompact(project.counts.documents) : 'sem dados'}</td>
+      <td className="dim">{project.index ? <RelativeTime iso={project.index.finishedAt} /> : 'não indexado'}</td>
+      <td className="projects-table-action">
+        <ProjectActionButton
+          project={project}
+          state={state}
+          active={active}
+          onOpen={() => onOpen(project.id)}
+          onAction={(kind) => onAction(project, kind)}
+        />
+      </td>
+    </tr>
+  )
+})
 
 export function ProjectsPage({
   projects,
@@ -137,16 +187,25 @@ export function ProjectsPage({
   const [adding, setAdding] = useState(false)
   const { notice, show } = useNotice()
 
-  const queueAction = (project: ProjectSnapshot, kind: JobKind) => {
-    const label = STATE_ACTION[deriveProjectState(project, busyProjectIds(jobs))]?.label ?? kind
-    window.ragx.enqueueJob({ kind, projectId: project.id }).then(
-      () => show(`Adicionado à fila: ${label} em ${project.name}`, NOTICE_MS),
-      (err: unknown) => {
-        console.error(`enqueueJob(${kind}) falhou:`, err)
-        show(`Não foi possível adicionar à fila: ${err instanceof Error ? err.message : String(err)}`, NOTICE_ERROR_MS)
+  // A fila mais recente, lida só quando o clique acontece: o handler não troca a cada push de tarefas.
+  const jobsRef = useRef(jobs)
+  useEffect(() => {
+    jobsRef.current = jobs
+  }, [jobs])
+
+  const queueAction = useCallback(
+    (project: ProjectSnapshot, kind: JobKind) => {
+      const label = STATE_ACTION[deriveProjectState(project, busyProjectIds(jobsRef.current))]?.label ?? kind
+      window.ragx.enqueueJob({ kind, projectId: project.id }).then(
+        () => show(`Adicionado à fila: ${label} em ${project.name}`, NOTICE_MS),
+        (err: unknown) => {
+          console.error(`enqueueJob(${kind}) falhou:`, err)
+          show(`Não foi possível adicionar à fila: ${err instanceof Error ? err.message : String(err)}`, NOTICE_ERROR_MS)
+        },
+      )
       },
-    )
-  }
+    [show],
+  )
 
   const rows = useMemo(() => {
     const busy = busyProjectIds(jobs)
@@ -247,36 +306,18 @@ export function ProjectsPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {shown.map((r) => {
-                    const ratio = savingsRatio(r.project)
-                    return (
-                      <tr key={r.project.id}>
-                        <th scope="row">
-                          <button type="button" className="link-button" onClick={() => onOpen(r.project.id)}>
-                            {r.project.name}
-                          </button>
-                          {liveIds?.has(r.project.id) && <LivePill />}
-                          <span className="projects-table-hint dim">{r.hint ?? 'sem dados'}</span>
-                        </th>
-                        <td>
-                          <Badge tone={STATE_TONE[r.state]}>{STATE_LABEL[r.state]}</Badge>
-                        </td>
-                        <td className="num">{ratio === null ? 'sem uso' : formatPercent(ratio)}</td>
-                        <td className="num">{formatNumber(r.project.telemetry.totalCalls)}</td>
-                        <td className="num">{r.project.counts ? formatCompact(r.project.counts.documents) : 'sem dados'}</td>
-                        <td className="dim">{r.project.index ? formatRelative(r.project.index.finishedAt) : 'não indexado'}</td>
-                        <td className="projects-table-action">
-                          <ProjectActionButton
-                            project={r.project}
-                            state={r.state}
-                            active={activeAction(jobs, r.project.id, r.state)}
-                            onOpen={() => onOpen(r.project.id)}
-                            onAction={(kind) => queueAction(r.project, kind)}
-                          />
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {shown.map((r) => (
+                    <ProjectRow
+                      key={r.project.id}
+                      project={r.project}
+                      state={r.state}
+                      hint={r.hint}
+                      active={activeAction(jobs, r.project.id, r.state)}
+                      live={liveIds?.has(r.project.id) ?? false}
+                      onOpen={onOpen}
+                      onAction={queueAction}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -304,7 +345,7 @@ export function ProjectsPage({
               failure={r.failure}
               live={liveIds?.has(r.project.id) ?? false}
               onOpen={onOpen}
-              onAction={(kind) => queueAction(r.project, kind)}
+              onAction={queueAction}
             />
           </li>
         ))}

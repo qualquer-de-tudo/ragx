@@ -12,6 +12,7 @@ import {
 import { formatCompact, formatNumber, formatPercent, formatRelative, formatTime } from '../format'
 import { Section, Stat } from '../components/shell/Card'
 import { sourceLabel } from '../indexSource'
+import { useClock } from '../hooks/useClock'
 
 const FILTERS: ActivityFilter[] = ['all', 'mcp', 'cli', 'session']
 
@@ -61,15 +62,18 @@ export function ActivityPage({
   events,
   projects,
   jobs,
-  now,
+  now: nowProp,
   onOpen,
 }: {
   events: readonly ActivityEvent[]
   projects: readonly ProjectSnapshot[]
   jobs: readonly JobView[]
-  now: number
+  /** Instante fixo (testes); sem ele a página assina o relógio de 5 s. */
+  now?: number
   onOpen: (projectId: string) => void
 }) {
+  const clock = useClock(5000)
+  const now = nowProp ?? clock
   const [kind, setKind] = useState<ActivityFilter>('all')
   const [projectId, setProjectId] = useState<string | null>(null)
 

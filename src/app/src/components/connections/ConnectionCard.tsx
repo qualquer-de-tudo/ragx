@@ -1,9 +1,10 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import type { ConnectionAction, ConnectionCheck, JobView } from '../../types/ragx-bridge'
 import { Badge, type Tone } from '../shell/Badge'
 import { activeConnectionJob, activeOllamaSwitch, jobStateLabel } from '../../state'
 import { enqueueConnectionAction, measureOllama } from '../../jobs'
 import { formatRelative } from '../../format'
+import { useClock } from '../../hooks/useClock'
 
 const BADGE: Record<ConnectionCheck['state'], { tone: Tone; label: string }> = {
   ok: { tone: 'good', label: 'Conectado' },
@@ -143,7 +144,7 @@ function SwitchNote({ job }: { job: JobView }) {
  * "Medir velocidade" não passa por `onAction`: não é tarefa da fila, e o card
  * precisa esperar a medição para mostrar "Medindo…" e o erro, se houver.
  */
-export function ConnectionCard({
+export const ConnectionCard = memo(function ConnectionCard({
   check,
   onAction = (a) => void enqueueConnectionAction(a),
   jobs = [],
@@ -155,6 +156,8 @@ export function ConnectionCard({
   children?: ReactNode
 }) {
   const titleId = useId()
+  // "Última chamada MCP" avança sozinho: o card assina o relógio de 60 s, o resto da tela não.
+  const clock = useClock(60_000)
   const badge = BADGE[check.state]
   const [measuring, setMeasuring] = useState(false)
   const [benchError, setBenchError] = useState<string | null>(null)
@@ -192,7 +195,7 @@ export function ConnectionCard({
           ...check.facts,
           {
             label: 'Última chamada MCP',
-            value: check.lastMcpCallAt ? formatRelative(check.lastMcpCallAt) : 'nenhuma registrada',
+            value: check.lastMcpCallAt ? formatRelative(check.lastMcpCallAt, new Date(clock)) : 'nenhuma registrada',
           },
         ]
       : check.facts
@@ -253,7 +256,7 @@ export function ConnectionCard({
       {children}
     </article>
   )
-}
+})
 
 /** Card neutro enquanto a primeira checagem não voltou: nada de verde antes da hora. */
 function PendingCard({ title }: { title: string }) {

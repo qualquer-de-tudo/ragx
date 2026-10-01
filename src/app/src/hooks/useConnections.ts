@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ConnectionCheck } from '../types/ragx-bridge'
+import { shareById } from '../snapshotShare'
+
+/** Mantém a lista (e cada card) já em estado quando o conteúdo é o mesmo. */
+function keep(prev: ConnectionCheck[] | null, next: ConnectionCheck[]): ConnectionCheck[] {
+  if (prev === null) return next
+  return shareById(prev, next) as ConnectionCheck[]
+}
 
 /**
  * Checagem das três conexões (RAGX CLI, Claude Code, Ollama). O processo
@@ -31,7 +38,7 @@ export function useConnections(): {
       window.ragx.getConnections().then(
         (next) => {
           if (!alive.current) return
-          if (!(fromMount && pushed.current)) setConnections(next)
+          if (!(fromMount && pushed.current)) setConnections((prev) => keep(prev, next))
           setChecking(false)
         },
         (err: unknown) => {
@@ -52,7 +59,7 @@ export function useConnections(): {
     alive.current = true
     const unsubscribe = window.ragx.onConnections((next) => {
       pushed.current = true
-      setConnections(next)
+      setConnections((prev) => keep(prev, next))
       setChecking(false)
     })
     void check(true)

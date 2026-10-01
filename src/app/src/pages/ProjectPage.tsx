@@ -10,7 +10,7 @@ import {
   STATE_LABEL,
   STATE_TONE,
 } from '../state'
-import { formatNumber, formatPercent, formatRelative } from '../format'
+import { formatNumber, formatPercent } from '../format'
 import { parseProjectStatus, reasonText, UNKNOWN_FRESHNESS_TEXT, type ProjectStatus } from '../projectStatus'
 import { enqueue } from '../jobs'
 import { Badge } from '../components/shell/Badge'
@@ -23,6 +23,7 @@ import { MaintenancePanel } from '../components/project/MaintenancePanel'
 import { Timeline } from '../components/project/Timeline'
 import { TokenSavings } from '../components/project/TokenSavings'
 import { SecurityPanel } from '../components/SecurityPanel'
+import { RelativeTime } from '../components/shell/RelativeTime'
 import { TabPanel, Tabs, type TabItem } from '../components/shell/Tabs'
 import { lastProjectTab, rememberProjectTab, type ProjectTab } from '../projectTab'
 
@@ -186,9 +187,13 @@ function FreshnessSection({ project, view }: { project: ProjectSnapshot; view: S
     <Section title="Está em dia?">
       {body}
       <p className="hint">
-        {project.index
-          ? `Última indexação ${formatRelative(project.index.finishedAt)}`
-          : 'Ainda não indexado com esta versão'}
+        {project.index ? (
+          <>
+            Última indexação <RelativeTime iso={project.index.finishedAt} />
+          </>
+        ) : (
+          'Ainda não indexado com esta versão'
+        )}
       </p>
     </Section>
   )

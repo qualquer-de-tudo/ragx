@@ -3,8 +3,8 @@ import { useSnapshot } from './hooks/useSnapshot'
 import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
 import { useClaudeIntegration } from './hooks/useClaudeIntegration'
-import { useActivity, useNow } from './hooks/useActivity'
-import { liveProjectIds } from './activity'
+import { useActivity } from './hooks/useActivity'
+import { useLiveIds } from './hooks/useClock'
 import { ActivityPage } from './pages/ActivityPage'
 import { Sidebar } from './components/shell/Sidebar'
 import { TopBar, type Health } from './components/shell/TopBar'
@@ -37,9 +37,9 @@ function App() {
   const { connections, checking, refresh } = useConnections()
   const claude = useClaudeIntegration()
   const activity = useActivity()
-  // "Em uso agora" apaga um minuto depois do último evento, sem evento novo.
-  const now = useNow(5000)
-  const liveIds = useMemo(() => liveProjectIds(activity, now), [activity, now])
+  // "Em uso agora" apaga um minuto depois do último evento, sem evento novo. O `Set` só muda quando a pertença muda,
+  // então o App não renderiza a cada tick do relógio.
+  const liveIds = useLiveIds(activity)
 
   // `null` enquanto não se sabe. Uma falha ao ler as preferências não prende
   // ninguém no onboarding.
@@ -96,6 +96,8 @@ function App() {
     setRoute((r) => (r && r.page !== 'projects' && r.page !== 'onboarding' ? { page: 'projects' } : r))
   }, [])
 
+  const openProject = useCallback((id: string) => setRoute({ page: 'project', id }), [])
+
   const onCancelJob = useCallback((id: string) => {
     window.ragx.cancelJob(id).catch((err: unknown) => console.error('cancelJob() falhou:', err))
   }, [])
@@ -136,7 +138,7 @@ function App() {
           jobs={jobs}
           query={query}
           liveIds={liveIds}
-          onOpen={(id) => setRoute({ page: 'project', id })}
+          onOpen={openProject}
         />
       )
       break
@@ -146,8 +148,7 @@ function App() {
           events={activity}
           projects={projects}
           jobs={jobs}
-          now={now}
-          onOpen={(id) => setRoute({ page: 'project', id })}
+          onOpen={openProject}
         />
       )
       break

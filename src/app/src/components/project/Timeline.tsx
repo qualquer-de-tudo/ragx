@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import { parseRunsPage, type IndexRun } from '../../projectStatus'
-import { formatNumber, formatRelative } from '../../format'
+import { formatNumber } from '../../format'
+import { RelativeTime } from '../shell/RelativeTime'
 import { sourceLabel } from '../../indexSource'
 
 /** Tamanho da página: o `ragx status` traz as 10 primeiras, o `ragx runs` o resto. */
@@ -105,7 +106,7 @@ export function Timeline({
                   <p className="timeline-head">
                     {at ? (
                       <time className="timeline-when" dateTime={at} title={absolute(at)}>
-                        {formatRelative(at)}
+                        <RelativeTime iso={at} />
                       </time>
                     ) : (
                       <span className="timeline-when">sem dados</span>

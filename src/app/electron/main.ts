@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { initSqlWasm } from './data/project-stats'
 import { buildSnapshot } from './data/snapshot'
+import { createSnapshotGate } from './data/snapshot-gate'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
 import { checkAll, defaultCheckDeps, resetRagxVersionCache } from './connections/checks'
@@ -237,6 +238,8 @@ function onJobsChange(jobs: JobView[]): void {
 }
 
 let snapshotDirtyAfterInFlight = false
+// Só manda `ragx:snapshot` quando o conteúdo mudou (RAGX-0175); `latestSnapshot` e `getSnapshot` seguem atualizados.
+const snapshotGate = createSnapshotGate()
 
 function pushSnapshotNow(opts: { markDirtyIfBusy?: boolean } = {}): Promise<void> {
   if (inFlightSnapshot) {
@@ -246,7 +249,7 @@ function pushSnapshotNow(opts: { markDirtyIfBusy?: boolean } = {}): Promise<void
   return refreshSnapshot()
     .then(async (snapshot) => {
       snapshotStale = false
-      mainWindow?.webContents.send('ragx:snapshot', snapshot)
+      if (snapshotGate.shouldSend(snapshot)) mainWindow?.webContents.send('ragx:snapshot', snapshot)
       if (snapshotDirtyAfterInFlight) {
         snapshotDirtyAfterInFlight = false
         await pushSnapshotNow()
@@ -583,6 +586,7 @@ function createWindow(): void {
     win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   }
 
+  snapshotGate.reset() // janela nova: o renderer dela ainda não viu snapshot nenhum
   win.webContents.once('did-finish-load', () => {
     startSnapshotPolling()
     startConnectionsPolling()

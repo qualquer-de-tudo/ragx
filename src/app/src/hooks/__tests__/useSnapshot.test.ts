@@ -63,7 +63,8 @@ describe('useSnapshot', () => {
 
 describe('useSnapshot - corrida entre o getSnapshot inicial e o push', () => {
   const older: Snapshot = { projects: [], generatedAt: '2026-09-23T10:00:00.000Z' }
-  const newer: Snapshot = { projects: [], generatedAt: '2026-09-23T10:00:05.000Z' }
+  // O conteúdo difere (`connectionsHealth`): com conteúdo igual o hook mantém o objeto anterior (RAGX-0175).
+  const newer: Snapshot = { projects: [], generatedAt: '2026-09-23T10:00:05.000Z', connectionsHealth: 'ok' }
 
   function install(getSnapshot: () => Promise<Snapshot>) {
     const listeners: Array<(s: Snapshot) => void> = []
@@ -86,7 +87,7 @@ describe('useSnapshot - corrida entre o getSnapshot inicial e o push', () => {
     act(() => push(newer))
     await act(async () => answer(older))
 
-    expect(result.current.snapshot).toBe(newer)
+    expect(result.current.snapshot).toEqual(newer)
   })
 
   it('se o inicial for mais novo que o push já recebido, vale o inicial', async () => {
@@ -97,7 +98,7 @@ describe('useSnapshot - corrida entre o getSnapshot inicial e o push', () => {
     act(() => push(older))
     await act(async () => answer(newer))
 
-    expect(result.current.snapshot).toBe(newer)
+    expect(result.current.snapshot).toEqual(newer)
   })
 
   it('push sempre substitui (é o que o processo principal acabou de construir)', async () => {
@@ -106,6 +107,16 @@ describe('useSnapshot - corrida entre o getSnapshot inicial e o push', () => {
     await waitFor(() => expect(result.current.snapshot).toBe(older))
 
     act(() => push(newer))
-    expect(result.current.snapshot).toBe(newer)
+    expect(result.current.snapshot).toEqual(newer)
+  })
+
+  it('push com o mesmo conteúdo e generatedAt novo mantém o MESMO objeto (nada re-renderiza)', async () => {
+    const { push } = install(async () => older)
+    const { result } = renderHook(() => useSnapshot())
+    await waitFor(() => expect(result.current.snapshot).toBe(older))
+    const antes = result.current.snapshot
+
+    act(() => push({ projects: [], generatedAt: '2026-09-23T10:00:09.000Z' }))
+    expect(result.current.snapshot).toBe(antes)
   })
 })

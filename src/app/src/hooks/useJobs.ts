@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { JobView } from '../types/ragx-bridge'
+import { shareById } from '../snapshotShare'
 
 /** Fila de tarefas: começa com `listJobs()` e segue os eventos de `onJobs`. */
 export function useJobs(): JobView[] {
@@ -12,11 +13,11 @@ export function useJobs(): JobView[] {
     let pushed = false
     const unsubscribe = window.ragx.onJobs((next) => {
       pushed = true
-      setJobs(next)
+      setJobs((prev) => shareById(prev, next) as JobView[])
     })
     window.ragx.listJobs().then(
       (initial) => {
-        if (!cancelled && !pushed) setJobs(initial)
+        if (!cancelled && !pushed) setJobs((prev) => shareById(prev, initial) as JobView[])
       },
       (err) => {
         if (!cancelled) console.error('listJobs() falhou:', err)

@@ -208,6 +208,16 @@ depois que uma tarefa termina, sem esperar o próximo tick. Um `running` em
 `status.json` só conta enquanto o processo dono (`pid`) existe: um índice
 cancelado ou um hook que morreu não deixam o card preso em "Indexando…".
 
+O renderer só re-renderiza o que mudou (RAGX-0175). O snapshot chega com `generatedAt` novo a cada 5 s;
+`shareSnapshot` (`src/snapshotShare.ts`) devolve o objeto anterior quando só ele mudou e, quando algo mudou,
+reaproveita a referência de cada projeto inalterado, e o processo principal nem manda `ragx:snapshot` se o conteúdo
+(sem `generatedAt`) é igual ao último enviado (`createSnapshotGate`; `getSnapshot` segue atualizado). A fila e as
+conexões passam pela mesma comparação. O tempo vem de **um** relógio compartilhado por intervalo (`useClock`,
+`useSyncExternalStore`): `useLiveIds` recalcula "em uso agora" a cada 5 s mas só renderiza quando a pertença muda, e
+os rótulos "há N min" são a folha `<RelativeTime>` (relógio de 60 s), então só ela re-renderiza por minuto.
+`ProjectCard`, a linha da lista e `ConnectionCard` são `memo`, com handlers estáveis (`onAction(project, kind)`).
+Com 12 projetos e dados parados, 60 s custam 12 renders de card (a montagem) e 0 do `App`, contra 300 e 24.
+
 As conexões (RAGX CLI, Claude Code, Ollama) também são checadas só pelo
 processo principal: a cada 30 segundos, no startup, logo depois de uma
 correção de conexão e no "Verificar agora". Cada resultado vai ao renderer

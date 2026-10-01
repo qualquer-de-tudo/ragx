@@ -1,10 +1,11 @@
-import { useId, type MouseEvent } from 'react'
+import { memo, useId, type MouseEvent } from 'react'
 import type { JobKind, JobView, ProjectSnapshot } from '../../types/ragx-bridge'
 import { STATE_LABEL, STATE_TONE, type ProjectState } from '../../state'
-import { formatCompact, formatEta, formatRelative } from '../../format'
+import { formatCompact, formatEta } from '../../format'
 import { ProjectActionButton, ProjectNumbers } from './ProjectBits'
 import { Badge } from '../shell/Badge'
 import { LivePill } from '../shell/LivePill'
+import { RelativeTime } from '../shell/RelativeTime'
 
 export function BranchIcon() {
   return (
@@ -46,7 +47,7 @@ function branchLine(project: ProjectSnapshot): { current: string; indexBranch: s
  * (`STATE_ACTION`); clicar em qualquer outro lugar do card abre o detalhe.
  * Para o teclado, o nome do projeto é um botão que também abre o detalhe.
  */
-export function ProjectCard({
+export const ProjectCard = memo(function ProjectCard({
   project,
   state,
   hint,
@@ -70,7 +71,8 @@ export function ProjectCard({
   /** Houve atividade (MCP, CLI, sessão) no último minuto. */
   live?: boolean
   onOpen: (id: string) => void
-  onAction: (kind: JobKind) => void
+  /** Estável entre renders (o card é `memo`): recebe o projeto, em vez de uma closure por linha. */
+  onAction: (project: ProjectSnapshot, kind: JobKind) => void
 }) {
   const titleId = useId()
   const open = () => onOpen(project.id)
@@ -95,7 +97,14 @@ export function ProjectCard({
   const progressDone = running ? Math.min(running.done ?? 0, running.total ?? 0) : 0
 
   const button = (
-    <ProjectActionButton project={project} state={state} active={active} onOpen={open} onAction={onAction} block />
+    <ProjectActionButton
+      project={project}
+      state={state}
+      active={active}
+      onOpen={open}
+      onAction={(kind) => onAction(project, kind)}
+      block
+    />
   )
 
   return (
@@ -119,7 +128,13 @@ export function ProjectCard({
       </p>
 
       <p className="project-card-line">
-        {project.index ? `Indexado ${formatRelative(project.index.finishedAt)}` : 'Ainda não indexado com esta versão'}
+        {project.index ? (
+          <>
+            Indexado <RelativeTime iso={project.index.finishedAt} />
+          </>
+        ) : (
+          'Ainda não indexado com esta versão'
+        )}
       </p>
 
       <ProjectNumbers project={project} />
@@ -160,4 +175,4 @@ export function ProjectCard({
       </div>
     </article>
   )
-}
+})

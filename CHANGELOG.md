@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **O painel só re-renderiza o que mudou.** Com os dados parados, o renderer refazia tudo a cada 5 s (o snapshot
+  chega com `generatedAt` novo e objetos novos, o relógio do `App` e nenhum `memo`). Agora o snapshot, a fila e as
+  conexões mantêm a referência quando o conteúdo é o mesmo, o processo principal não manda `ragx:snapshot` repetido,
+  o relógio é um só e o "há N min" é uma folha própria. Com 12 projetos parados por 60 s: **300 → 12** renders de
+  card e **24 → 0** do `App`; mudando um projeto, só o card dele renderiza (RAGX-0175).
 - **Telemetria incremental no painel e rotação dos logs.** O painel relia o `mcp.jsonl` inteiro de cada
   projeto a cada snapshot (5 s) e o servidor nunca rotacionava `mcp.jsonl` nem `cli.jsonl`: o custo era latente
   e crescia sem limite (`[log] retain_days` nem tinha leitor). Agora o painel lê só o que foi acrescentado
