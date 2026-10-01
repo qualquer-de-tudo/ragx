@@ -234,6 +234,16 @@ rodando, "Ollama local rodando" é inferido. A detecção **completa** continua 
 startup, no fim de tarefa, no "Verificar agora" e em toda condição de passo da
 fila: o dado inferido nunca decide uma tarefa.
 
+A telemetria do MCP de cada projeto (`.ragx/logs/mcp.jsonl`) é lida de forma
+**incremental** (`createTelemetryTail`): cada arquivo tem um deslocamento, e sem
+crescimento o snapshot só faz um `stat` e devolve o mesmo objeto; com
+crescimento lê apenas o que foi acrescentado, até a última quebra de linha. A
+primeira leitura pega só os últimos 4 MB (e o `mcp.jsonl.1` da rotação, se o
+arquivo for menor que isso); arquivo que encolheu ou trocou de `ino` +
+`birthtimeMs` é relido do zero. O resumo é idêntico ao da leitura completa
+(`readTelemetryFull`, mantida como referência). O servidor Python rotaciona o
+log aos 5 MiB. `node scripts/measure-telemetry.mjs` reproduz a medição.
+
 A resposta completa de `ragx status --json` (com os motivos de defasagem e o
 histórico de indexações) só é pedida para o projeto aberto no momento na
 tela de Detalhe, nunca para todos de uma vez.

@@ -180,7 +180,7 @@ def _registrar(inicio: float, codigo: int) -> None:
             "ms": round((time.monotonic() - inicio) * 1000, 1),
             "ok": codigo == 0,
             "project": cfg.project.name or cfg.root.name,
-        })
+        }, cfg.log.retain_days)
     except Exception:
         pass
 

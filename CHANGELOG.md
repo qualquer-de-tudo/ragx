@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Telemetria incremental no painel e rotação dos logs.** O painel relia o `mcp.jsonl` inteiro de cada
+  projeto a cada snapshot (5 s) e o servidor nunca rotacionava `mcp.jsonl` nem `cli.jsonl`: o custo era latente
+  e crescia sem limite (`[log] retain_days` nem tinha leitor). Agora o painel lê só o que foi acrescentado
+  (um `stat` e o mesmo objeto de volta quando nada mudou), o resumo é idêntico ao da leitura completa, e os dois
+  logs rotacionam aos **5 MiB** para `<nome>.1` (`retain_days` apaga o `.1` velho). Medido com 12 projetos: log de
+  10 MB **777 → 0,9 ms** por ciclo, de 50 MB **7.227 → 1,96 ms** (RAGX-0174).
 - **O painel para de trabalhar quando ninguém o está vendo, e abre uma só vez.** Os três pollers (snapshot
   a cada 5 s, conexões a cada 30 s, atividade a cada 1,5 s) rodavam também com a janela minimizada, oculta,
   com a tela bloqueada ou o computador suspendendo (~290 processos `git` por minuto, medido na RAGX-0177).

@@ -11,7 +11,7 @@ Desempenho: com 12 projetos o painel dispara ~290 processos `git` por minuto (2 
 | [RAGX-0171](RAGX-0171-pausar-pollers-com-a-janela-oculta-instancia-unica.md) | Pausar pollers com a janela oculta; instância única | P0 | 0,5d | `done` |
 | [RAGX-0172](RAGX-0172-snapshot-sem-spawn-de-git.md) | Snapshot sem spawn de `git` | P0 | 0,5d | `done` |
 | [RAGX-0173](RAGX-0173-checagem-de-conexoes-barata.md) | Checagem de conexões barata | P0 | 0,75d | `done` |
-| [RAGX-0174](RAGX-0174-telemetria-incremental-e-rotacao-do-log-da-cli.md) | Telemetria incremental e rotação do log da CLI | P0 | 0,75d | `todo` |
+| [RAGX-0174](RAGX-0174-telemetria-incremental-e-rotacao-do-log-da-cli.md) | Telemetria incremental e rotação do log da CLI | P0 | 0,75d | `done` |
 | [RAGX-0175](RAGX-0175-so-re-renderiza-o-que-mudou.md) | Só re-renderiza o que mudou | P1 | 0,5d | `todo` |
 | [RAGX-0176](RAGX-0176-remover-o-fallback-que-le-knowledge-db-inteiro.md) | Remover o fallback que lê `knowledge.db` inteiro | P1 | 0,25d | `todo` |
 | [RAGX-0177](RAGX-0177-medir-ram-e-cpu-do-electron-em-execucao-linha-de-base.md) | Medir RAM e CPU do Electron em execução (linha de base) | P1 | 0,5d | `done` |

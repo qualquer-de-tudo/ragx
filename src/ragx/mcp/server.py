@@ -130,7 +130,7 @@ def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
             if isinstance(baseline, int):
                 entry["baseline_tokens"] = baseline
 
-        log_mcp_call(cfg.state_dir, entry)
+        log_mcp_call(cfg.state_dir, entry, cfg.log.retain_days)
     except Exception:
         # Um bug na construção da entrada nunca pode virar `internal` para uma
         # chamada que, de resto, teve sucesso.

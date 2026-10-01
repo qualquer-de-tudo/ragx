@@ -20,6 +20,13 @@ export interface ActivitySource {
 export interface TailFs {
   size(file: string): number | null
   read(file: string, start: number, end: number): string
+  /**
+   * Os mesmos bytes, sem decodificar (RAGX-0174): o deslocamento é em BYTES, e um caractere multibyte
+   * cortado no meio não pode desalinhar a leitura seguinte. Opcional: sem ela, usa `read`.
+   */
+  readBytes?(file: string, start: number, end: number): Buffer
+  /** `ino` + `birthtimeMs`: muda quando o arquivo é substituído (rotação), mesmo que o tamanho não encolha. */
+  signature?(file: string): string | null
 }
 
 export const nodeTailFs: TailFs = {
@@ -31,13 +38,24 @@ export const nodeTailFs: TailFs = {
     }
   },
   read(file, start, end) {
+    return this.readBytes!(file, start, end).toString('utf8')
+  },
+  readBytes(file, start, end) {
     const fd = fs.openSync(file, 'r')
     try {
       const buf = Buffer.alloc(end - start)
       const n = fs.readSync(fd, buf, 0, buf.length, start)
-      return buf.subarray(0, n).toString('utf8')
+      return buf.subarray(0, n)
     } finally {
       fs.closeSync(fd)
+    }
+  },
+  signature(file) {
+    try {
+      const st = fs.statSync(file)
+      return `${st.ino}:${st.birthtimeMs}`
+    } catch {
+      return null
     }
   },
 }

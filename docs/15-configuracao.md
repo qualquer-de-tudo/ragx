@@ -140,8 +140,14 @@ git_hooks        = false
 [log]
 level  = "info"                 # debug | info | warn | error
 dir    = ".ragx/logs"
-retain_days = 14
+retain_days = 14               # dias que o `mcp.jsonl.1` / `cli.jsonl.1` (log rotacionado) fica; 0 não apaga
 ```
+
+`mcp.jsonl` e `cli.jsonl` (telemetria do MCP e da CLI, em `.ragx/logs/`) têm teto de **5 MiB** (RAGX-0174):
+acima disso o arquivo vira `<nome>.1` (substituindo o `.1` anterior) e recomeça pequeno. A rotação é de melhor
+esforço (no Windows outro processo pode estar com o arquivo aberto, e ela tenta de novo na próxima escrita), e
+`retain_days` apaga o `.1` mais velho que isso. Antes, os dois logs cresciam sem limite (só o `errors.log` tinha
+teto) e `retain_days` não tinha leitor. O painel lê esses logs de forma incremental.
 
 ## Variáveis de ambiente
 

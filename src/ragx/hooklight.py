@@ -62,12 +62,13 @@ def _secao(dados: dict[str, Any], nome: str) -> dict[str, Any]:
 class Leve:
     """O que a dica precisa da configuração: raiz, nome do projeto e pasta do hub."""
 
-    __slots__ = ("hub_dir", "nome", "root")
+    __slots__ = ("hub_dir", "nome", "retain_days", "root")
 
-    def __init__(self, root: Path, nome: str, hub_dir: Path):
+    def __init__(self, root: Path, nome: str, hub_dir: Path, retain_days: int = 14):
         self.root = root
         self.nome = nome
         self.hub_dir = hub_dir
+        self.retain_days = retain_days
 
     @property
     def state_dir(self) -> Path:
@@ -84,15 +85,19 @@ def carregar(start: Path | None = None) -> Leve:
     root, found = find_root(start)
     projeto: dict[str, Any] = {}
     hub: dict[str, Any] = {}
+    log: dict[str, Any] = {}
     usuario = Path(os.path.expanduser("~/.config/ragx/config.toml"))
     for arquivo, existe in ((usuario, usuario.is_file()), (root / CONFIG_NAME, found)):
         if existe:
             dados = _toml(arquivo)
             projeto = {**projeto, **_secao(dados, "project")}
             hub = {**hub, **_secao(dados, "hub")}
+            log = {**log, **_secao(dados, "log")}
     nome = os.environ.get("RAGX_PROJECT_NAME", projeto.get("name", "projeto"))
     hub_path = os.environ.get("RAGX_HUB_PATH", hub.get("path", "~/.ragx/hub"))
-    return Leve(root, str(nome) or root.name, Path(os.path.expanduser(str(hub_path))))
+    dias = log.get("retain_days", 14)
+    retain_days = dias if isinstance(dias, int) and not isinstance(dias, bool) else 14
+    return Leve(root, str(nome) or root.name, Path(os.path.expanduser(str(hub_path))), retain_days)
 
 
 # ── o texto ─────────────────────────────────────────────────────────────
@@ -257,7 +262,7 @@ def record_session_start(start: Path | None = None) -> None:
         "ts": _utcnow(),
         "command": "session_start",
         "project": cfg.nome or cfg.root.name,
-    })
+    }, cfg.retain_days)
 
 
 def run_hint() -> int:
@@ -328,7 +333,7 @@ def run_nudge() -> int:
 
         log_cli_call(cfg.state_dir, {
             "ts": _utcnow(), "command": "nudge", "project": cfg.nome or cfg.root.name,
-        })
+        }, cfg.retain_days)
         saida = json.dumps(
             {"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": texto_lembrete()}},
             ensure_ascii=False,

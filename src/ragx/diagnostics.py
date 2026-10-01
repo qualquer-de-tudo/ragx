@@ -12,6 +12,7 @@ erro e uma mensagem genérica.
 from __future__ import annotations
 
 import json
+import os
 import time
 import traceback
 import uuid
@@ -26,6 +27,12 @@ def utcnow() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 MAX_BYTES = 2 * 1024 * 1024
+
+#: Teto de `mcp.jsonl` e `cli.jsonl` (RAGX-0174): acima disso o arquivo vira `<nome>.1` e recomeça. Sem teto, o
+#: log crescia sem limite e o painel o relia inteiro a cada snapshot.
+MAX_LOG_BYTES = 5 * 1024 * 1024
+#: `[log] retain_days` quando quem chama não o conhece.
+DEFAULT_RETAIN_DAYS = 14
 
 #: Um por processo do servidor. Agrupa as linhas quando não há `session` (versões do
 #: Claude Code sem a variável de ambiente): cada sessão sobe o seu servidor, então o
@@ -83,23 +90,23 @@ def log_exception(state_dir: Path, scope: str, exc: BaseException) -> None:
         pass
 
 
-def log_mcp_call(state_dir: Path, entry: dict[str, Any]) -> None:
+def log_mcp_call(state_dir: Path, entry: dict[str, Any], retain_days: int = DEFAULT_RETAIN_DAYS) -> None:
     """Grava telemetria de chamada MCP. Falha de log nunca vira falha adicional.
 
     A origem (Claude Code, qual perfil, qual sessão) entra aqui e não no
     servidor: vem do ambiente do processo, e `ragx.mcp` não lê o ambiente
     (ADR-0006). É o que deixa a tela de atividade do painel dizer quem chamou.
     """
-    _append(state_dir, "mcp.jsonl", {**entry, **_origin()})
+    _append(state_dir, "mcp.jsonl", {**entry, **_origin()}, retain_days)
 
 
-def log_cli_call(state_dir: Path, entry: dict[str, Any]) -> None:
+def log_cli_call(state_dir: Path, entry: dict[str, Any], retain_days: int = DEFAULT_RETAIN_DAYS) -> None:
     """Uma linha por comando de consulta da CLI (`.ragx/logs/cli.jsonl`).
 
     Nunca a consulta nem os argumentos: o painel mostra QUE houve uma busca,
     quando e por quem, não o que se buscou.
     """
-    _append(state_dir, "cli.jsonl", {**entry, **_origin()})
+    _append(state_dir, "cli.jsonl", {**entry, **_origin()}, retain_days)
 
 
 def _origin() -> dict[str, str]:
@@ -109,11 +116,32 @@ def _origin() -> dict[str, str]:
         return {}
 
 
-def _append(state_dir: Path, name: str, entry: dict[str, Any]) -> None:
+def _rotate(path: Path, retain_days: int) -> None:
+    """Passa o log de `MAX_LOG_BYTES` para `<nome>.1` (substituindo o `.1` anterior) e apaga o `.1` velho demais.
+
+    Melhor esforço, nunca levanta: no Windows outro processo pode estar com o arquivo aberto
+    (`PermissionError`), e a rotação simplesmente tenta de novo na próxima escrita.
+    """
+    rotated = path.with_name(path.name + ".1")
+    try:
+        if path.stat().st_size > MAX_LOG_BYTES:
+            os.replace(path, rotated)
+    except OSError:
+        pass
+    try:
+        if retain_days > 0 and time.time() - rotated.stat().st_mtime > retain_days * 86400:
+            rotated.unlink()
+    except OSError:
+        pass
+
+
+def _append(state_dir: Path, name: str, entry: dict[str, Any], retain_days: int = DEFAULT_RETAIN_DAYS) -> None:
     try:
         folder = Path(state_dir) / "logs"
         folder.mkdir(parents=True, exist_ok=True)
-        with (folder / name).open("a", encoding="utf-8", newline="\n") as f:
+        path = folder / name
+        _rotate(path, retain_days)
+        with path.open("a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass
