@@ -8,7 +8,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 
 | ID | Tarefa | Prio | Est. | Status |
 |---|---|---|---|---|
-| [RAGX-0129](RAGX-0129-poda-de-diretorios-com-negacao-em-gitignore-aninhado.md) | Poda de diretórios com negação em `.gitignore` aninhado | P0 | 0,5d | `todo` |
+| [RAGX-0129](RAGX-0129-poda-de-diretorios-com-negacao-em-gitignore-aninhado.md) | Poda de diretórios com negação em `.gitignore` aninhado | P0 | 0,5d | `done` |
 | [RAGX-0130](RAGX-0130-indice-sem-mudanca-embedder-preguicoso-e-git-status-unico.md) | Índice sem mudança: embedder preguiçoso e `git status` único | P0 | 0,5d | `todo` |
 | [RAGX-0131](RAGX-0131-refresh-incremental-sync-sob-pedido-rehydrate-opt-in-serialize-so-se-mudou.md) | `refresh` incremental: `sync` só sob pedido, `rehydrate` opt-in, `serialize` só se mudou | P0 | 1d | `todo` |
 | [RAGX-0132](RAGX-0132-ollama-em-127-0-0-1-adeus-2-s-por-requisicao-no-windows.md) | Ollama em `127.0.0.1` (adeus 2 s por requisição no Windows) | P0 | 0,25d | `done` |

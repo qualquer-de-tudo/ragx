@@ -113,7 +113,11 @@ Gate. Nos repositórios de referência, o conjunto de arquivos admitidos, com os
 veredictos, ficou idêntico com e sem poda. Regras:
 
 - negação **com caminho** que aponta para dentro da pasta (`!build/keep.txt`,
-  `--include node_modules/pkg/**`) impede a poda: esse arquivo continua entrando;
+  `--include node_modules/pkg/**`) impede a poda: esse arquivo continua entrando.
+  Só impede a poda do **alvo, dos ancestrais e dos descendentes dele**, nunca dos
+  irmãos: `!src/app/build/` não impede a poda de `src/app/node_modules`. (Antes de
+  RAGX-0129 a regra guardava o pai do alvo, e um `!src/app/build/` desligava a poda
+  de tudo sob `src/app`: 19.195 arquivos vistos para 743 que valiam);
 - negação **genérica** de arquivo de ignore (`!.env.example`, `!**/*.md`) não entra
   em pasta excluída, como no git ("não é possível reincluir um arquivo se um
   diretório pai está excluído"). Fora de pasta excluída, vale como sempre;

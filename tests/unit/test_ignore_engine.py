@@ -154,3 +154,54 @@ def test_ignore_de_dentro_de_pasta_excluida_nao_e_lido_nem_impede_a_poda(tmp_pat
     e = IgnoreEngine(tmp_path)
     assert e.can_prune(".claude/worktrees")
     assert not any("worktrees" in n for n in e.source_names), e.source_names
+
+
+# ── RAGX-0129: negação com caminho não trava a poda dos irmãos ──────────
+def _monorepo(tmp_path: Path) -> Path:
+    """Raiz com `!sub/keep/` e `sub/.gitignore` com `!.vscode/extensions.json`:
+    o desenho de `src/app` neste repositório (negação do `build`, do `.vscode`)."""
+    (tmp_path / ".gitignore").write_text("node_modules/\ndist/\nbuild/\n!sub/build/\n", encoding="utf-8")
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / ".gitignore").write_text(
+        ".vscode/*\n!.vscode/extensions.json\n", encoding="utf-8"
+    )
+    for rel in ("sub/node_modules/pkg/a.js", "sub/dist/b.js", "sub/build/c.js",
+                "sub/.vscode/extensions.json", "sub/.vscode/settings.json", "sub/src/d.py"):
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text("x\n", encoding="utf-8")
+    return tmp_path
+
+
+def test_negacao_de_um_diretorio_nao_trava_a_poda_dos_irmaos(tmp_path: Path) -> None:
+    e = IgnoreEngine(_monorepo(tmp_path))
+    # irmãos do alvo da negação: podáveis (antes: False, a poda ficava desligada)
+    assert e.can_prune("sub/node_modules")
+    assert e.can_prune("sub/dist")
+    # o alvo, e o diretório do arquivo reincluído, continuam sendo visitados
+    assert not e.can_prune("sub/build")
+    assert not e.can_prune("sub/.vscode")
+    # e o que estava sendo reincluído continua reincluído
+    assert not e.should_ignore("sub/.vscode/extensions.json")[0]
+    assert not e.should_ignore("sub/build/c.js")[0]
+
+
+@pytest.mark.parametrize(
+    ("padrao", "escopo", "esperado"),
+    [
+        (".vscode/extensions.json", "", ".vscode/extensions.json"),
+        (".vscode/extensions.json", "src/app", "src/app/.vscode/extensions.json"),
+        ("src/app/build/", "", "src/app/build"),
+        ("build/**/keep.txt", "", "build"),
+        ("node_modules/pkg/**", "", "node_modules/pkg"),
+        ("a/*.md", "", "a"),
+        ("**/x", "", ""),
+        ("!foo", "", ""),
+        (".env.example", "", ""),
+        ("/a/b.txt", "", "a/b.txt"),
+    ],
+)
+def test_prefixo_literal(padrao: str, escopo: str, esperado: str) -> None:
+    from ragx.security.ignore_engine import _prefixo_literal
+
+    # `_prefixo_literal` recebe o padrão SEM o `!` (o chamador já o tirou)
+    assert _prefixo_literal(padrao.removeprefix("!"), escopo) == esperado

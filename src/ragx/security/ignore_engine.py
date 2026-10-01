@@ -163,7 +163,9 @@ class IgnoreEngine:
 
         Uma negação com caminho que aponta para dentro da pasta
         (`!build/keep.txt`, `--include node_modules/pkg/**`) impede a poda,
-        como sempre funcionou. Uma negação genérica de arquivo de ignore
+        como sempre funcionou, mas só dessa pasta: do próprio alvo, dos
+        ancestrais dele e dos descendentes, nunca dos irmãos (`_prefixo_literal`
+        guarda o caminho completo do alvo, não o do pai). Uma negação genérica de arquivo de ignore
         (`!.env.example`, `!**/*.md`) não entra em pasta excluída, que é a
         regra do git ("não é possível reincluir um arquivo se um diretório pai
         está excluído"). Um `--include` genérico, que é pedido explícito,
@@ -187,15 +189,26 @@ class IgnoreEngine:
 
 
 def _prefixo_literal(padrao: str, scope: str) -> str:
-    """A parte fixa do caminho que um padrão alcança, com o escopo aplicado.
+    """O caminho fixo que um padrão alcança, com o escopo aplicado.
 
-    `build/**/keep.txt` -> `build`; `.yarn/patches` -> `.yarn`. Padrão de um
+    Sem curinga, é o caminho do próprio alvo: `.vscode/extensions.json` em
+    `src/app` -> `src/app/.vscode/extensions.json`; `src/app/build/` ->
+    `src/app/build`. Com curinga, é a parte fixa antes dele: `build/**/keep.txt`
+    -> `build`; `node_modules/pkg/**` -> `node_modules/pkg`. Padrão de um
     segmento só (`!.env.example`) ou que começa com curinga (`**/x`) vale em
     qualquer profundidade: prefixo vazio.
+
+    `can_prune` lê o resultado como "ancestral do alvo, o próprio alvo ou
+    descendente dele". Por isso o último segmento entra quando é literal:
+    devolver só o PAI do alvo (`src/app` para `!src/app/build/`) fazia dele
+    "ancestral" de tudo sob `src/app`, inclusive `node_modules`, e desligava a
+    poda de 19 mil arquivos.
     """
     partes = padrao.strip().lstrip("/").rstrip("/").split("/")
+    if len(partes) < 2:
+        return ""
     fixas: list[str] = []
-    for parte in partes[:-1]:
+    for parte in partes:
         if not parte or any(c in parte for c in "*?["):
             break
         fixas.append(parte)

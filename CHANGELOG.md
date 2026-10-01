@@ -18,6 +18,19 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **A poda de pasta ignorada voltou a funcionar com negação em `.gitignore`
+  aninhado.** `!src/app/build/` na raiz fazia o `IgnoreEngine` guardar o pai do
+  alvo (`src/app`), e a regra "ancestral do alvo não se poda" passava a valer
+  para tudo sob `src/app`, inclusive `node_modules`, `dist` e `out`: o walker
+  descia em todos. Agora guarda o caminho completo do alvo, e a negação só
+  protege o alvo, os ancestrais e os descendentes dele. Neste repositório,
+  `ragx index . --dry-run`: arquivos vistos **19.195 → 743**, `duration_ms`
+  **3.775 → 328**; varredura do watcher (`snapshot`) **3,49 s → 0,13–0,16 s**;
+  `IgnoreEngine.__init__` **0,35 s → 0,02 s**; o walker inteiro, **17,0 s → 2,5 s**.
+  O conjunto de arquivos admitidos e bloqueados é idêntico com e sem poda
+  (754 arquivos, verificado no repositório inteiro e por teste em
+  `tests/security/test_poda_e_gate.py`) (RAGX-0129).
+
 - **Ollama em `127.0.0.1`: fim dos ~2 s por requisição no Windows.** `localhost`
   resolve para `::1` antes de `127.0.0.1` e o Ollama escuta só em IPv4, então
   cada chamada esperava o tempo de falha do IPv6. Medido nesta máquina:
