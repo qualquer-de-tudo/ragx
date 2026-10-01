@@ -18,6 +18,18 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **Teto do `build_context` e `response_format` `concise`/`detailed`.** O agente podia pedir até 32.000
+  tokens de contexto e a busca devolvia o conteúdo inteiro de cada hit mesmo quando só queria
+  localizar. Agora `[mcp] max_context_tokens` (5.000) limita o pedido e a resposta diz
+  (`tokens_capped`), sem cortar em silêncio (uso real: máx. 3.239 tokens, nenhum acima de 5.000), e
+  `response_format` (padrão `concise`) faz a busca devolver um `snippet` de 140 caracteres no lugar de
+  `content`: `search_hybrid` com 10 hits **2.915 → 1.108 tokens (−62%)**; com `snippet_chars` 200 seriam
+  −56,8%, abaixo da meta de −60%, então o padrão é 140. `detailed` devolve o conteúdo como antes
+  e, no `build_context`, acrescenta `intent`, `fragments_meta`, `dropped` e `stats`. **Muda o
+  comportamento:** quem lia `content` na busca passa a ver `snippet` (abra o trecho com `get_chunk`);
+  `[mcp] response_format = "detailed"` reverte sem código. O plugin do VS Code pede `detailed`
+  (RAGX-0165).
+
 - **A economia do `ragx trial` e do painel fica honesta: dois baselines, a conservadora e nada de
   "real".** O "sem RAGX" era o arquivo inteiro (`size_bytes // 4` no log, `read_text` no trial), em
   unidade diferente do entregue, e a economia logada (92,7%) passava da entrega real (~82%). Agora o

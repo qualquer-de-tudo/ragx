@@ -600,3 +600,61 @@ def test_get_chunk_prefixo_ambiguo_e_recusado(api: KnowledgeAPI) -> None:
         conn.execute("DELETE FROM chunks WHERE id = ?", (novo,))
         conn.commit()
         conn.close()
+
+
+# ── RAGX-0165: teto do build_context e response_format ──────────────────
+def test_build_context_acima_do_teto_e_limitado_e_informado(api: KnowledgeAPI) -> None:
+    api.cfg.mcp.max_context_tokens = 600
+    try:
+        out = api.build_context(BuildContextRequest(query="autenticacao", tokens=20_000))
+        assert out["ok"]
+        assert out["data"]["tokens_capped"] == 600
+        assert out["data"]["budget"] == 600 and out["data"]["estimated_tokens"] <= 600
+        # dentro do teto, o campo nem aparece
+        dentro = api.build_context(BuildContextRequest(query="autenticacao", tokens=500))
+        assert "tokens_capped" not in dentro["data"]
+    finally:
+        api.cfg.mcp.max_context_tokens = 5000
+
+
+def test_busca_concise_devolve_snippet_sem_content_e_detailed_devolve_content(api: KnowledgeAPI) -> None:
+    conc = api.search(SearchRequest(query="sessao", response_format="concise"), mode="hybrid")
+    det = api.search(SearchRequest(query="sessao", response_format="detailed"), mode="hybrid")
+    assert conc["data"]["results"] and det["data"]["results"]
+    for h in conc["data"]["results"]:
+        assert "content" not in h and h["snippet"]
+    for h in det["data"]["results"]:
+        assert "snippet" not in h and h["content"]
+    # o resto do hit é igual
+    chaves = lambda h: {k: v for k, v in h.items() if k not in ("content", "snippet")}  # noqa: E731
+    assert [chaves(h) for h in conc["data"]["results"]] == [chaves(h) for h in det["data"]["results"]]
+
+
+def test_o_padrao_da_busca_vem_da_configuracao(api: KnowledgeAPI) -> None:
+    padrao = api.search(SearchRequest(query="sessao"), mode="hybrid")["data"]["results"][0]
+    assert "snippet" in padrao and "content" not in padrao  # concise por padrão
+    api.cfg.mcp.response_format = "detailed"
+    try:
+        revertido = api.search(SearchRequest(query="sessao"), mode="hybrid")["data"]["results"][0]
+        assert "content" in revertido and "snippet" not in revertido
+    finally:
+        api.cfg.mcp.response_format = "concise"
+
+
+def test_get_chunk_de_um_hit_concise_devolve_o_conteudo_inteiro(api: KnowledgeAPI) -> None:
+    hit = api.search(SearchRequest(query="sessao"), mode="hybrid")["data"]["results"][0]
+    chunk = api.get_chunk(hit["chunk_id"])
+    assert chunk["ok"] and len(chunk["data"]["content"]) >= len(hit["snippet"].removesuffix("…"))
+
+
+def test_build_context_detailed_acrescenta_metadados_sem_conteudo(api: KnowledgeAPI) -> None:
+    conc = api.build_context(BuildContextRequest(query="autenticacao", tokens=800))["data"]
+    det = api.build_context(
+        BuildContextRequest(query="autenticacao", tokens=800, response_format="detailed")
+    )["data"]
+    assert "intent" not in conc and "stats" not in conc and "dropped" not in conc
+    assert det["intent"] and "stats" in det and isinstance(det["dropped"], dict)
+    meta = det["fragments_meta"]
+    assert meta and all({"chunk_id", "lines", "tokens", "strategy", "reason", "score"} <= m.keys() for m in meta)
+    assert not any("content" in m for m in meta)
+    assert det["markdown"] == conc["markdown"]  # a representação não muda

@@ -280,6 +280,31 @@ declarado em `get_playbook`):
 - `build_context` entrega **uma** representação por `format` (ver acima) e o texto do
   markdown sem o título.
 
+### Teto e `response_format` (RAGX-0165)
+
+- **Teto do `build_context`:** o pedido é limitado a `[mcp] max_context_tokens` (padrão **5.000**).
+  Um pedido acima dele **não é cortado em silêncio**: a resposta traz `tokens_capped` com o teto
+  aplicado. `tokens` continua validando até 32.000. Uso real medido (45 chamadas): máximo 3.239 tokens,
+  p95 2.601, nenhuma acima de 5.000.
+- **`response_format`** (`concise` | `detailed`; padrão `[mcp] response_format`, hoje `concise`) em
+  `search_hybrid`, `search_knowledge` e `build_context`. Na **busca**, `concise` devolve um `snippet`
+  (os primeiros `snippet_chars` = 140 do conteúdo, cortados em fim de linha ou de palavra, com `…`) no
+  lugar de `content`; `detailed` devolve `content`, como antes. O agente abre o trecho inteiro com
+  `get_chunk`. No **`build_context`**, `concise` entrega só o contexto; `detailed` acrescenta `intent`,
+  `fragments_meta` (id, linhas, tokens, estratégia, motivo, score, **sem** conteúdo), `dropped`
+  agrupado por motivo e `stats`.
+
+| `format` | `response_format` | O que vem em `build_context` |
+|---|---|---|
+| `markdown` | `concise` | `markdown` |
+| `markdown` | `detailed` | `markdown` + `intent`, `fragments_meta`, `dropped`, `stats` |
+| `json` | `concise` | `fragments` (com conteúdo) |
+| `json` | `detailed` | `fragments` + `intent`, `fragments_meta`, `dropped`, `stats` |
+
+Medido (tiktoken, este repositório): `search_hybrid` com 10 hits, **2.915 → 1.108 tokens (−62%)** com
+`snippet_chars = 140` (com 200, −56,8%); `build_context(tokens=20000)` entrega 5.083 tokens no fio
+(`estimated_tokens` 4.503, `budget` 5.000). O VS Code pede `detailed`, porque mostra o conteúdo.
+
 Medido com `scripts/medir_fio.py` (tiktoken, este repositório; antes → depois, texto da resposta,
 sem contar o `structuredContent` que deixou de existir): `search_hybrid` (10 hits) 11.864 → 9.679
 chars (−18,4%); `get_dictionary` 36.713 → 21.530 (−41,4%); `get_document` 2.610 → 1.436 (−45%);

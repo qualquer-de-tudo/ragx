@@ -15,7 +15,7 @@ from __future__ import annotations
 import functools
 import time
 from collections import deque
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import ValidationError
 
@@ -39,6 +39,7 @@ from ragx.mcp.tools import (
     validate_path,
     wire_id,
 )
+from ragx.search.snippet import make_snippet
 
 
 def _explain(exc: ValidationError) -> str:
@@ -173,7 +174,10 @@ class KnowledgeAPI:
             return err("rate_limited", f"limite de {self.limiter.per_minute} chamadas/min atingido")
         return None
 
-    def _hit(self, r: Any) -> dict[str, Any]:
+    def _detailed(self, fmt: str | None) -> bool:
+        return (fmt or self.cfg.mcp.response_format) == "detailed"
+
+    def _hit(self, r: Any, detailed: bool = True) -> dict[str, Any]:
         # Sem `project` por hit: ele vai UMA vez em `data.project` (a busca federada
         # o acrescenta de volta, porque lá cada hit tem a sua origem). Nulos somem no
         # fio (`compact`) e o score tem 4 casas: o resto era ruído em cada um dos 10 hits.
@@ -185,7 +189,13 @@ class KnowledgeAPI:
             "kind": r.kind.value,
             "lines": [r.start_line, r.end_line],
             "score": round(r.score, 4),
-            "content": r.content,
+            # `concise` (o padrão da busca): um trecho curto, não o conteúdo inteiro. O
+            # agente abre o trecho completo com `get_chunk`.
+            **(
+                {"content": r.content}
+                if detailed
+                else {"snippet": make_snippet(r.content, self.cfg.mcp.snippet_chars)}
+            ),
             "matched_by": list(r.matched_by),
         }
 
@@ -219,7 +229,7 @@ class KnowledgeAPI:
                     "degraded": out.degraded,
                     # só aparece quando existe: não acrescenta `null` ao fio
                     **({"partial": out.partial} if out.partial else {}),
-                    "results": [self._hit(r) for r in out.results],
+                    "results": [self._hit(r, self._detailed(req.response_format)) for r in out.results],
                 }
             ),
             self.cfg.mcp.max_response_bytes,
@@ -445,7 +455,7 @@ class KnowledgeAPI:
                     "expanded": len(out.expansion.scores),
                     "truncated": out.expansion.truncated,
                     "results": [
-                        {**self._hit(r), "via": r.metadata.get("via", "graph")}
+                        {**self._hit(r, self._detailed(req.response_format)), "via": r.metadata.get("via", "graph")}
                         for r in out.results
                     ],
                 }
@@ -462,6 +472,10 @@ class KnowledgeAPI:
 
         project = self.project
         other_cfg: Config | None = None
+        # Teto: o pedido acima dele é limitado E informado (`tokens_capped`), nunca cortado
+        # em silêncio. `BuildContextRequest.tokens` continua validando até MAX_TOKENS.
+        teto = self.cfg.mcp.max_context_tokens
+        budget = min(req.tokens, teto)
         if req.scope != "current":
             from ragx.core.errors import UsageError
             from ragx.federation.context import (
@@ -472,7 +486,7 @@ class KnowledgeAPI:
 
             try:
                 pack, project, used_cfg = build_scoped_context(
-                    self.cfg, req.scope, req.query, req.tokens, req.include_graph
+                    self.cfg, req.scope, req.query, budget, req.include_graph
                 )
             except ScopeNotFoundError as exc:
                 return err("not_found", str(exc).splitlines()[0])
@@ -483,15 +497,16 @@ class KnowledgeAPI:
             other_cfg = None if used_cfg is self.cfg else used_cfg
         else:
             pack = run(
-                self.cfg, req.query, budget=req.tokens, include_graph=req.include_graph
+                self.cfg, req.query, budget=budget, include_graph=req.include_graph
             )
         payload: dict[str, Any] = {
             "project": project,
-            "intent": pack.intent,
             "estimated_tokens": pack.estimated_tokens,
             "budget": pack.budget,
             "sources": list(pack.sources),
         }
+        if req.tokens > teto:
+            payload["tokens_capped"] = teto
         # UMA representação do conteúdo, nunca duas: o markdown e os fragmentos
         # carregavam o mesmo texto, e um pedido de 3.000 tokens chegava a ~8.000
         # (RAGX-0154). `estimated_tokens` conta o markdown que sai, sem o título.
@@ -512,6 +527,27 @@ class KnowledgeAPI:
             ]
         else:
             payload["markdown"] = render(pack, "markdown", title=False)
+        if self._detailed(req.response_format):
+            # `detailed`: o que serve para depurar a montagem do contexto, SEM o conteúdo
+            # (que já está no markdown).
+            motivos: dict[str, int] = {}
+            for _cid, why in pack.dropped:
+                chave = why.split(":")[0]
+                motivos[chave] = motivos.get(chave, 0) + 1
+            payload["intent"] = pack.intent
+            payload["dropped"] = motivos
+            payload["stats"] = pack.stats
+            payload["fragments_meta"] = [
+                {
+                    "chunk_id": wire_id(f.chunk_id),
+                    "lines": [f.start_line, f.end_line],
+                    "tokens": f.tokens,
+                    "strategy": f.strategy,
+                    "reason": f.reason,
+                    "score": round(f.score, 4),
+                }
+                for f in pack.fragments
+            ]
         payload["baseline_tokens"] = whole_files_tokens(other_cfg or self.cfg, pack.sources)
         return cap(ok(payload), self.cfg.mcp.max_response_bytes)
 
@@ -618,7 +654,10 @@ class KnowledgeAPI:
                     "mode": mode, "scope": req.scope,
                     "projects": out.projects,
                     "degraded": out.degraded or None,
-                    "results": [{**self._hit(r), "project": r.project} for r in out.results],
+                    "results": [
+                        {**self._hit(r, self._detailed(req.response_format)), "project": r.project}
+                        for r in out.results
+                    ],
                 }
             ),
             self.cfg.mcp.max_response_bytes,
@@ -673,11 +712,13 @@ def build_server(
     def search_knowledge(
         query: str, limit: int = 10, lang: str | None = None,
         kind: str | None = None, path_glob: str | None = None, scope: str = "current",
+        response_format: Literal["concise", "detailed"] | None = None,
     ) -> dict[str, Any]:
         return _guarded(
             lambda: api.search(
                 SearchRequest(query=query, limit=limit, lang=lang, kind=kind,
-                              path_glob=path_glob, scope=scope),
+                              path_glob=path_glob, scope=scope,
+                              response_format=response_format),
                 mode="semantic",
             ),
             "search_knowledge", cfg,
@@ -687,11 +728,13 @@ def build_server(
     def search_hybrid(
         query: str, limit: int = 10, lang: str | None = None,
         kind: str | None = None, path_glob: str | None = None, scope: str = "current",
+        response_format: Literal["concise", "detailed"] | None = None,
     ) -> dict[str, Any]:
         return _guarded(
             lambda: api.search(
                 SearchRequest(query=query, limit=limit, lang=lang, kind=kind,
-                              path_glob=path_glob, scope=scope),
+                              path_glob=path_glob, scope=scope,
+                              response_format=response_format),
                 mode="hybrid",
             ),
             "search_hybrid", cfg,
@@ -729,12 +772,14 @@ def build_server(
     def build_context(
         query: str, tokens: int = 3000, format: str = "markdown",
         include_graph: bool = True, scope: str = "current",
+        response_format: Literal["concise", "detailed"] | None = None,
     ) -> dict[str, Any]:
         return _guarded(
             lambda: api.build_context(
                 BuildContextRequest(
                     query=query, tokens=tokens, format=format,  # type: ignore[arg-type]
                     include_graph=include_graph, scope=scope,
+                    response_format=response_format,
                 )
             ),
             "build_context", cfg,

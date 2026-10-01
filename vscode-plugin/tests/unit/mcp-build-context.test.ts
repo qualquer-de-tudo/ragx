@@ -66,6 +66,7 @@ describe('build_context pelo MCP', () => {
 
     const pedido = chamadas.find((x) => x.name === 'build_context');
     expect(pedido!.arguments.format).toBe('json');
+    expect(pedido!.arguments.response_format).toBe('detailed');
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.data.fragments).toHaveLength(1);

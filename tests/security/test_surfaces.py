@@ -387,7 +387,10 @@ def test_superficie_mcp_no_fio(indexado: Path) -> None:
     chamadas = [
         ("get_dictionary", {}),
         ("search_hybrid", {"query": "{probe}"}),
+        ("search_hybrid", {"query": "{probe}", "response_format": "detailed"}),
+        ("search_hybrid", {"query": "{probe}", "response_format": "concise"}),
         ("search_knowledge", {"query": "{probe}"}),
+        ("build_context", {"query": "{probe}", "tokens": 500, "response_format": "detailed"}),
         ("get_chunk", {"chunk_id": "{probe}"}),
         ("get_entity", {"name": "{probe}"}),
         ("search_graph", {"query": "{probe}"}),

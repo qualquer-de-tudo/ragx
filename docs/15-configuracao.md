@@ -121,6 +121,9 @@ allow_index  = false
 log_queries  = false            # true grava o texto da query no log
 rate_per_min = 60
 max_response_bytes = 1048576
+max_context_tokens = 5000       # teto do build_context pedido pelo agente (acima: limitado + `tokens_capped`)
+response_format    = "concise"  # concise: a busca devolve `snippet`; detailed: devolve `content`
+snippet_chars      = 140        # tamanho do trecho do modo concise
 
 [sync]
 auto_dictionary  = true         # regenera dictionary no sync

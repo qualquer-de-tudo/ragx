@@ -12,7 +12,7 @@ import os
 import re
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit, urlunsplit
 
 from pydantic import BaseModel, Field, field_validator
@@ -175,6 +175,15 @@ class McpCfg(BaseModel):
     # ao agente acesso ao filesystem nem afrouxa o Security Gate. Ver ADR-0012.
     allow_write: bool = False
     write_timeout_s: int = 900
+    # Teto do `build_context` pedido pelo agente: o pedido acima dele é limitado e a
+    # resposta diz (`tokens_capped`), nunca cortado em silêncio. Uso real medido: máx.
+    # 3.239 tokens, p95 2.601, nenhum acima de 5.000 (RAGX-0165).
+    max_context_tokens: int = 5000
+    # `concise`: a busca devolve um `snippet` curto no lugar do conteúdo (o agente abre o
+    # trecho inteiro com `get_chunk`); `detailed` devolve o conteúdo, como antes. 140 caracteres
+    # (e não 200) porque é onde a busca de 10 hits cruza -60% em tokens no fio: 200 dava -56,8%.
+    response_format: Literal["concise", "detailed"] = "concise"
+    snippet_chars: int = 140
 
 
 class TasksCfg(BaseModel):

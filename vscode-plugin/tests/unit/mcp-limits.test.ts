@@ -82,4 +82,12 @@ describe('o teto de limit do RAGX', () => {
 
     expect(ultima('search_hybrid')!.arguments.limit).toBe(50);
   });
+
+  it('pede response_format detailed: a UI mostra o conteúdo, e o padrão do servidor é só um trecho', async () => {
+    const c = await conectado(['get_playbook', 'search_hybrid']);
+
+    await c.search('qualquer', 'keyword', 10);
+
+    expect(ultima('search_hybrid')!.arguments.response_format).toBe('detailed');
+  });
 });

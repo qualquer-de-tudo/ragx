@@ -42,7 +42,8 @@ relevância e corta pelo orçamento, em vez de estourar o seu.
 
 ## 4. Para aprofundar
 
-`get_chunk` traz o trecho inteiro; `get_document` lista os pedaços de um
+A busca devolve só um `snippet` curto de cada hit (para localizar). Para o trecho
+inteiro, `get_chunk` com o `chunk_id` do hit; `get_document` lista os pedaços de um
 arquivo; `get_entity` abre as relações de um símbolo.
 """
 

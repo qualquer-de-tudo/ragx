@@ -32,6 +32,8 @@ class SearchRequest(BaseModel):
     kind: Literal["file", "class", "function", "method", "section", "statement", "block"] | None = None
     path_glob: str | None = Field(default=None, max_length=200)
     scope: str = Field(default="current", pattern=_SCOPE_PATTERN)
+    #: `None` = o padrão de `[mcp] response_format`
+    response_format: Literal["concise", "detailed"] | None = None
 
 
 class BuildContextRequest(BaseModel):
@@ -40,6 +42,7 @@ class BuildContextRequest(BaseModel):
     format: Literal["markdown", "json"] = "markdown"
     include_graph: bool = True
     scope: str = Field(default="current", pattern=_SCOPE_PATTERN)
+    response_format: Literal["concise", "detailed"] | None = None
 
 
 class SearchHit(BaseModel):

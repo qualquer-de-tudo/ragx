@@ -336,7 +336,8 @@ export class McpRagClient implements RagClient {
     signal?: AbortSignal,
   ): Promise<RagResult<SearchResponse>> {
     const tool = mode === 'semantic' ? 'search_knowledge' : 'search_hybrid';
-    const args: Json = { query, limit: Math.min(limit, MAX_SEARCH_LIMIT) };
+    // `detailed`: a UI mostra o conteúdo de cada hit; o padrão do servidor (`concise`) manda só um trecho.
+    const args: Json = { query, limit: Math.min(limit, MAX_SEARCH_LIMIT), response_format: 'detailed' };
     if (filters?.lang) args.lang = filters.lang;
     if (filters?.kind) args.kind = filters.kind;
     if (filters?.pathGlob) args.path_glob = filters.pathGlob;
@@ -648,6 +649,7 @@ export class McpRagClient implements RagClient {
       query,
       tokens,
       format: 'json',
+      response_format: 'detailed',
     });
     if (!r.ok) return propagate<ContextPack>(r);
     const frags = ((r.data?.fragments as Json[]) ?? []).map((f) => ({
