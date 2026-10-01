@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react'
-import type { JobView, ProjectSnapshot } from '../types/ragx-bridge'
+import type { ActivityEvent, JobView, ProjectSnapshot } from '../types/ragx-bridge'
 import type { TelemetrySummary } from '../../electron/data/types'
 import {
   activeJobFor,
@@ -13,6 +13,7 @@ import {
 import { formatNumber, formatPercent } from '../format'
 import { parseProjectStatus, reasonText, UNKNOWN_FRESHNESS_TEXT, type StatusView } from '../projectStatus'
 import { enqueue } from '../jobs'
+import { useAdoption } from '../hooks/useAdoption'
 import { Badge } from '../components/shell/Badge'
 import { Section, Stat } from '../components/shell/Card'
 import { LivePill } from '../components/shell/LivePill'
@@ -81,6 +82,9 @@ function useProjectStatus(project: ProjectSnapshot | null): StatusView {
   }
   return result !== null && result.id === id ? result.view : { phase: 'loading' }
 }
+
+// So o mount busca a adocao na pagina do projeto (nao ha feed aqui para disparar de novo).
+const NO_EVENTS: ActivityEvent[] = []
 
 function BackButton({ onBack }: { onBack: () => void }) {
   return <IconButton label="Voltar para Projetos" icon="back" className="back" onClick={onBack} />
@@ -266,7 +270,13 @@ function KnowledgeSection({ project, jobs }: { project: ProjectSnapshot; jobs: r
   )
 }
 
-function UsageSection({ telemetry }: { telemetry: TelemetrySummary }) {
+function UsageSection({ telemetry, adoption }: { telemetry: TelemetrySummary; adoption: { withCalls: number; sessions: number } | null }) {
+  const adoptionText =
+    adoption && adoption.sessions > 0 ? (
+      <p className="hint">
+        Sessões que chamaram o RAGX: {formatNumber(adoption.withCalls)} de {formatNumber(adoption.sessions)}
+      </p>
+    ) : null
   if (telemetry.totalCalls === 0) {
     return (
       <Section title="Uso pelos agentes nas últimas 24 h">
@@ -274,6 +284,7 @@ function UsageSection({ telemetry }: { telemetry: TelemetrySummary }) {
           Nenhuma chamada nas últimas 24 h. Elas aparecem aqui assim que um agente usar o servidor MCP do RAGX neste
           projeto.
         </p>
+        {adoptionText}
       </Section>
     )
   }
@@ -289,6 +300,7 @@ function UsageSection({ telemetry }: { telemetry: TelemetrySummary }) {
           note="Medido nas respostas do build_context"
         />
       </div>
+      {adoptionText}
       <ul className="bars" aria-label="Chamadas por ferramenta">
         {tools.map((t) => (
           <Tooltip
@@ -372,6 +384,8 @@ export function ProjectPage({
   onBack: () => void
 }) {
   const status = useProjectStatus(project)
+  const adoption = useAdoption(NO_EVENTS)
+  const projectAdoption = adoption?.byProject.find((p) => p.projectId === project?.id) ?? null
   const state = useMemo(
     () => (project ? deriveProjectState(project, busyProjectIds(jobs)) : null),
     [project, jobs],
@@ -423,7 +437,7 @@ export function ProjectPage({
           <FreshnessSection project={project} view={status} />
           <IndexSection project={project} jobs={jobs} />
         </div>
-        <UsageSection telemetry={project.telemetry} />
+        <UsageSection telemetry={project.telemetry} adoption={projectAdoption} />
       </TabPanel>
 
       <TabPanel id="economia" idPrefix={tabsId} active={tab === 'economia'}>

@@ -8,6 +8,7 @@ import { createSnapshotGate } from './data/snapshot-gate'
 import { buildMenuTemplate } from './menu'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
+import { computeAdoption } from './data/adoption'
 import { checkAll, defaultCheckDeps, resetRagxVersionCache } from './connections/checks'
 import { resetRagxCache, resolveRagx } from './system/ragx-exe'
 import { execFileText } from './system/exec'
@@ -333,6 +334,11 @@ handleIpc('ragx:getSnapshot', () => handlers.getSnapshot())
 handleIpc('ragx:getActivity', () => {
   pollActivity()
   return activity.recent()
+})
+// Sem argumentos: só contagens (RAGX-0190). O índice por sessão vem do mesmo `poll` do feed.
+handleIpc('ragx:getAdoption', () => {
+  pollActivity()
+  return computeAdoption(activity.sessions(), Date.now())
 })
 handleIpc('ragx:getProjectStatus', (projectId: unknown) => handlers.getProjectStatus(projectId))
 handleIpc('ragx:runTrial', (projectId: unknown) => handlers.runTrial(projectId))

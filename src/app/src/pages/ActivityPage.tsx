@@ -19,6 +19,8 @@ import { Segmented } from '../components/ui/Segmented'
 import { ActivityRow } from '../components/activity/ActivityRow'
 import { SessionList } from '../components/activity/SessionList'
 import { groupSessions } from '../sessions'
+import { AdoptionSection } from '../components/activity/AdoptionSection'
+import { useAdoption } from '../hooks/useAdoption'
 
 type ActivityView = 'eventos' | 'sessoes'
 
@@ -81,6 +83,7 @@ export function ActivityPage({
 
   const shown = useMemo(() => filterEvents(events, kind, projectId), [events, kind, projectId])
   const t = useMemo(() => totals(events), [events])
+  const adoption = useAdoption(events)
   const sessions = useMemo(() => (view === 'sessoes' ? groupSessions(shown) : []), [view, shown])
   const running = runningNow(projects, jobs)
   const live = events.length > 0 && now - Date.parse(events[0].ts) <= LIVE_MS
@@ -120,6 +123,8 @@ export function ActivityPage({
         />
         <Stat label="Projetos em uso" value={formatNumber(t.projects)} note={`de ${formatNumber(projects.length)}`} />
       </div>
+
+      {adoption && <AdoptionSection adoption={adoption} />}
 
       {running.length > 0 && (
         <Section title="Em andamento">

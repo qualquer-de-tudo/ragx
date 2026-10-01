@@ -7,7 +7,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | RAGX-0156, RAGX-0188 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (M-05) · [25-spec-v2.md](../../docs/25-spec-v2.md) (S13) · [src/app/README.md](../../src/app/README.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,13 +15,13 @@ Hoje a adoção só se mede à mão, lendo transcripts do Claude: 3 de 38 sessõ
 
 ## Entregáveis
 
-- [ ] `src/app/electron/data/adoption.ts` (novo): função pura `computeAdoption(sessions, now, days)` que devolve `{ since, sessions, withCalls, withoutCalls, unidentified, callsWithoutStart, byProject }`. Definição, escrita no comentário do módulo: **universo** = sessões com um `session_start` em `cli.jsonl`; **usou** = existe chamada em `mcp.jsonl` com o mesmo `session` e o mesmo projeto.
-- [ ] `ActivityTail` (`electron/data/activity.ts`) mantém um índice leve por sessão (`Map` chaveado por projeto + `session`, com `startedAt` e número de chamadas), alimentado pelo mesmo `parseLine`, sem reler arquivo, com janela `ADOPTION_DAYS = 14` (mesma de `SAVINGS_DAYS`). O índice é atualizado **antes** do corte de 24 h do `poll` (que descarta eventos antigos) e expõe `sessions()`.
-- [ ] Degradação sem exceção: linha sem `session` conta em `unidentified` e fica fora da razão; chamada MCP de sessão sem `session_start` conta em `callsWithoutStart` (hint desligado ou sessão aberta antes da janela); zero sessões mostra "Nenhuma sessão registrada ainda", nunca "0%".
-- [ ] `since` = `ts` do evento mais antigo realmente lido. A tela diz "desde 18/09" e não "14 dias" quando o log é mais curto (a primeira leitura pega só `INITIAL_TAIL_BYTES`, 512 KB).
-- [ ] Canal IPC `ragx:getAdoption`, sem argumentos (ao lado de `ragx:getActivity`, em `electron/main.ts`), mais `getAdoption` em `electron/preload.ts` e em `RagxBridge` (`src/types/ragx-bridge.d.ts`), com o tipo `AdoptionSummary` em `electron/data/types.ts`.
-- [ ] Hook `useAdoption(events)` em `src/hooks/` que busca no mount e de novo quando chega evento novo de tipo `session` ou `mcp`.
-- [ ] `ActivityPage`: seção "Adoção pelos agentes" abaixo do bloco `stats-4`, com "3 de 38 sessões chamaram o RAGX (8%)", o período real e a lista por projeto ("projeto: x de y"). `ProjectPage`, em `UsageSection`: uma linha "Sessões que chamaram o RAGX: x de y", só quando houver sessão.
+- [x] `src/app/electron/data/adoption.ts` (novo): função pura `computeAdoption(sessions, now, days)` que devolve `{ since, sessions, withCalls, withoutCalls, unidentified, callsWithoutStart, byProject }`. Definição, escrita no comentário do módulo: **universo** = sessões com um `session_start` em `cli.jsonl`; **usou** = existe chamada em `mcp.jsonl` com o mesmo `session` e o mesmo projeto.
+- [x] `ActivityTail` (`electron/data/activity.ts`) mantém um índice leve por sessão (`Map` chaveado por projeto + `session`, com `startedAt` e número de chamadas), alimentado pelo mesmo `parseLine`, sem reler arquivo, com janela `ADOPTION_DAYS = 14` (mesma de `SAVINGS_DAYS`). O índice é atualizado **antes** do corte de 24 h do `poll` (que descarta eventos antigos) e expõe `sessions()`.
+- [x] Degradação sem exceção: linha sem `session` conta em `unidentified` e fica fora da razão; chamada MCP de sessão sem `session_start` conta em `callsWithoutStart` (hint desligado ou sessão aberta antes da janela); zero sessões mostra "Nenhuma sessão registrada ainda", nunca "0%".
+- [x] `since` = `ts` do evento mais antigo realmente lido. A tela diz "desde 18/09" e não "14 dias" quando o log é mais curto (a primeira leitura pega só `INITIAL_TAIL_BYTES`, 512 KB).
+- [x] Canal IPC `ragx:getAdoption`, sem argumentos (ao lado de `ragx:getActivity`, em `electron/main.ts`), mais `getAdoption` em `electron/preload.ts` e em `RagxBridge` (`src/types/ragx-bridge.d.ts`), com o tipo `AdoptionSummary` em `electron/data/types.ts`.
+- [x] Hook `useAdoption(events)` em `src/hooks/` que busca no mount e de novo quando chega evento novo de tipo `session` ou `mcp`.
+- [x] `ActivityPage`: seção "Adoção pelos agentes" abaixo do bloco `stats-4`, com "3 de 38 sessões chamaram o RAGX (8%)", o período real e a lista por projeto ("projeto: x de y"). `ProjectPage`, em `UsageSection`: uma linha "Sessões que chamaram o RAGX: x de y", só quando houver sessão.
 
 ## Fora de escopo
 
@@ -32,26 +32,26 @@ Hoje a adoção só se mede à mão, lendo transcripts do Claude: 3 de 38 sessõ
 
 ## Critérios de aceite
 
-- [ ] Fixture com 3 `session_start` e 1 sessão com chamada MCP resulta em "1 de 3" (teste de `computeAdoption` e de tela).
-- [ ] Linha sem `session`, linha corrompida e log ausente não lançam exceção e aparecem nos contadores certos (`unidentified`, ignorada, zero).
-- [ ] Medição em log real: rodar o painel (`npm run dev:electron`) num projeto com os dois logs e comparar com a contagem independente `node -e "const fs=require('fs');const r=p=>fs.readFileSync(p,'utf8').split('\n').filter(Boolean).map(l=>JSON.parse(l));const s=new Set(r('.ragx/logs/cli.jsonl').filter(e=>e.command==='session_start'&&e.session).map(e=>e.session));const u=new Set(r('.ragx/logs/mcp.jsonl').filter(e=>e.session&&s.has(e.session)).map(e=>e.session));console.log(u.size,'de',s.size)"`; os dois números batem. Registrar em Andamento.
-- [ ] O resumo que sai do processo principal só tem contagens, datas e ids de projeto: nenhum campo de consulta ou argumento (teste que compara as chaves).
-- [ ] Nenhum `fs.readFileSync` de log inteiro no novo caminho: a leitura continua por deslocamento (teste de `activity.test.ts` com `size` e `read` simulados).
+- [x] Fixture com 3 `session_start` e 1 sessão com chamada MCP resulta em "1 de 3" (teste de `computeAdoption` e de tela).
+- [x] Linha sem `session`, linha corrompida e log ausente não lançam exceção e aparecem nos contadores certos (`unidentified`, ignorada, zero).
+- [x] Medição em log real (rodei o `ActivityTail` + `computeAdoption` compilados sobre os logs deste repositório, sem abrir o Electron): comparar com a contagem independente `node -e "const fs=require('fs');const r=p=>fs.readFileSync(p,'utf8').split('\n').filter(Boolean).map(l=>JSON.parse(l));const s=new Set(r('.ragx/logs/cli.jsonl').filter(e=>e.command==='session_start'&&e.session).map(e=>e.session));const u=new Set(r('.ragx/logs/mcp.jsonl').filter(e=>e.session&&s.has(e.session)).map(e=>e.session));console.log(u.size,'de',s.size)"`; os dois números batem. Registrar em Andamento.
+- [x] O resumo que sai do processo principal só tem contagens, datas e ids de projeto: nenhum campo de consulta ou argumento (teste que compara as chaves).
+- [x] Nenhum `fs.readFileSync` de log inteiro no novo caminho: a leitura continua por deslocamento (teste de `activity.test.ts` com `size` e `read` simulados).
 
 ### Medição
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| Sessões em projeto indexado que chamaram o RAGX (S13) | 3 de 38 (8%), contagem manual em transcripts, 24/09 em diante | o que o painel mostrar, com o período real (`since`) |
+| Sessões em projeto indexado que chamaram o RAGX (S13) | 3 de 38 (8%), contagem manual em transcripts, 24/09 em diante | neste repositório: **2 de 2** pelo `computeAdoption`, desde 29/09 (`since`); a contagem independente do `node -e` deu os mesmos **2 de 2** |
 
 Método: o comando `node -e` do segundo critério acima, sobre os logs reais, comparado ao número da tela.
 
 ## Testes
 
-- [ ] `src/app/electron/data/__tests__/adoption.test.ts` (novo): universo, "usou", `unidentified`, `callsWithoutStart`, janela de 14 dias, projetos diferentes com o mesmo id de sessão.
-- [ ] `src/app/electron/data/__tests__/activity.test.ts` (existente): o índice por sessão sobrevive ao corte de 24 h e à primeira leitura parcial.
-- [ ] `src/app/src/pages/__tests__/ActivityPage.test.tsx` e `ProjectPage.test.tsx` (existentes): texto da razão, estado vazio, período real.
-- [ ] `src/app/electron/__tests__/preload.test.ts`: acrescentar `getAdoption` à lista exata de métodos; atualizar os quatro mocks completos de `RagxBridge` (`installBridge` em `src/test/snap.ts`, `src/__tests__/App.test.tsx`, `src/hooks/__tests__/useSnapshot.test.ts` e `useJobsConnections.test.ts`), senão o `tsc` quebra.
+- [x] `src/app/electron/data/__tests__/adoption.test.ts` (novo): universo, "usou", `unidentified`, `callsWithoutStart`, janela de 14 dias, projetos diferentes com o mesmo id de sessão.
+- [x] `src/app/electron/data/__tests__/activity.test.ts` (existente): o índice por sessão sobrevive ao corte de 24 h e à primeira leitura parcial.
+- [x] `src/app/src/pages/__tests__/ActivityPage.test.tsx` e `ProjectPage.test.tsx` (existentes): texto da razão, estado vazio, período real.
+- [x] `src/app/electron/__tests__/preload.test.ts`: acrescentar `getAdoption` à lista exata de métodos; atualizar os quatro mocks completos de `RagxBridge` (`installBridge` em `src/test/snap.ts`, `src/__tests__/App.test.tsx`, `src/hooks/__tests__/useSnapshot.test.ts` e `useJobsConnections.test.ts`), senão o `tsc` quebra.
 
 ## Notas
 
@@ -63,14 +63,20 @@ Método: o comando `node -e` do segundo critério acima, sobre os logs reais, co
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes
-- [ ] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
-- [ ] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
-- [ ] CHANGELOG atualizado na MESMA alteração
-- [ ] Documentação (`src/app/README.md`) confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0190)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [x] Testes escritos e verdes
+- [x] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
+- [x] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
+- [x] CHANGELOG atualizado na MESMA alteração
+- [x] Documentação (`src/app/README.md`) confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0190)` na branch `feat/v2`
 
 ## Andamento
 
 _(o loop registra aqui o que fez, com datas e medições)_
+
+- 2026-10-01 — Implementado: `electron/data/adoption.ts` (`computeAdoption`, `ADOPTION_DAYS = 14`, `AdoptionSession`; a definição está no comentário do módulo), `AdoptionSummary` em `types.ts`, índice por sessão no `ActivityTail` (`sessions()`, alimentado antes do corte de 24 h, poda por 14 dias), canal `ragx:getAdoption`, `preload`, `RagxBridge`, os 4 mocks, `useAdoption` (busca no mount e quando chega evento `session` ou `mcp`), `AdoptionSection` na Atividade e a linha na `UsageSection` do detalhe (a página do projeto só busca no mount).
+- **Medido** (logs reais deste repositório, `.ragx/logs`): `computeAdoption` = 2 sessões, 2 com chamadas, 0 sem, `unidentified` 19, `callsWithoutStart` 1, desde 2026-09-29; o comando `node -e` independente do critério = **2 de 2**. Batem. Observação: o universo é pequeno aqui porque os logs deste repo são curtos (a primeira leitura pega só os últimos 512 KB e o hint só grava `session_start` com o hook ativo); a razão de 8% da auditoria vinha de transcripts e não se reproduz com estes logs. O risco dos subagentes (cada um rodando o hint) não deu para checar: o log só tem uma sessão com muitos `session_start`, e como a chave é por `session`, ela é uma sessão só.
+- Testes novos: `adoption.test.ts` (11: os critérios de aceite de `computeAdoption`, o índice que sobrevive ao corte de 24 h, linha corrompida/sem sessão/log ausente, leitura por deslocamento, primeira leitura parcial) e `adoption-ui.test.tsx` (5: razão, período real, lista por projeto, vazio sem "0%", falha silenciosa, linha do projeto); `preload.test.ts` com `getAdoption`. Painel: 1403 testes verdes, `lint` e `tsc` limpos.
+- Bundle: JS 333.568 → **335.247 B** (gzip 100.301 → 100.794); CSS 43.157 B, sem mudança.
+- Não feito: abrir o painel no Electron real com `npm run dev:electron`; o critério usa o caminho compilado do mesmo código.

@@ -96,3 +96,14 @@ export interface ContextPreview {
   /** O que ficou de fora, agrupado por motivo. */
   dropped: Array<{ why: string; count: number }>
 }
+
+/** Adoção (RAGX-0190): só contagens, datas e ids de projeto. `since` é o evento mais antigo realmente lido. */
+export interface AdoptionSummary {
+  since: string | null
+  sessions: number
+  withCalls: number
+  withoutCalls: number
+  unidentified: number
+  callsWithoutStart: number
+  byProject: Array<{ projectId: string; projectName: string; sessions: number; withCalls: number }>
+}

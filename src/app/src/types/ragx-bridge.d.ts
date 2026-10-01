@@ -1,6 +1,6 @@
-import type { ActivityEvent, ContextPreview, TelemetrySummary } from '../../electron/data/types'
+import type { ActivityEvent, AdoptionSummary, ContextPreview, TelemetrySummary } from '../../electron/data/types'
 
-export type { ActivityEvent, ContextPreview }
+export type { ActivityEvent, AdoptionSummary, ContextPreview }
 import type { Pricing, RendererSettings } from '../../electron/settings'
 
 export type { Pricing }
@@ -251,6 +251,8 @@ export interface RagxBridge {
   onSnapshot: (cb: (snapshot: Snapshot) => void) => () => void
   /** Eventos de atividade das últimas 24 h em memória, do mais antigo ao mais novo. */
   getActivity: () => Promise<ActivityEvent[]>
+  /** Sessões que chamaram o RAGX e as que não, em 14 dias (RAGX-0190): só contagens. */
+  getAdoption: () => Promise<AdoptionSummary>
   /** Só os eventos novos, a cada ~1,5 s em que algum log cresceu. */
   onActivity: (cb: (events: ActivityEvent[]) => void) => () => void
   getProjectStatus: (projectId: string) => Promise<unknown>

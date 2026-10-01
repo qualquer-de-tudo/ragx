@@ -27,7 +27,7 @@ Desempenho: com 12 projetos o painel dispara ~290 processos `git` por minuto (2 
 | [RAGX-0187](RAGX-0187-preview-do-build-context-no-detalhe-do-projeto.md) | Preview do `build_context` no detalhe do projeto | P2 | 1,25d | `done` |
 | [RAGX-0188](RAGX-0188-linha-do-tempo-de-sessoes-na-atividade.md) | Linha do tempo de sessões na Atividade | P2 | 1d | `done` |
 | [RAGX-0189](RAGX-0189-saude-do-indice-com-tendencia.md) | Saúde do índice com tendência | P2 | 0,5d | `todo` |
-| [RAGX-0190](RAGX-0190-adocao-sessoes-que-chamaram-o-ragx.md) | Adoção: sessões que chamaram o RAGX e as que não | P2 | 0,5d | `todo` |
+| [RAGX-0190](RAGX-0190-adocao-sessoes-que-chamaram-o-ragx.md) | Adoção: sessões que chamaram o RAGX e as que não | P2 | 0,5d | `done` |
 | [RAGX-0191](RAGX-0191-bandeja-com-estado-e-notificacao-de-defasagem.md) | Bandeja com estado e notificação de defasagem | P3 | 1d | `todo` |
 | [RAGX-0192](RAGX-0192-auto-update-com-electron-updater.md) | Auto-update com `electron-updater` | P3 | 1d | `todo` |
 | [RAGX-0193](RAGX-0193-tema-claro.md) | Tema claro | P3 | 1d | `todo` |

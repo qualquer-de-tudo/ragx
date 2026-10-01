@@ -20,6 +20,7 @@ describe('useSnapshot', () => {
         }
       }),
       getActivity: vi.fn().mockResolvedValue([]),
+      getAdoption: vi.fn().mockResolvedValue({ since: null, sessions: 0, withCalls: 0, withoutCalls: 0, unidentified: 0, callsWithoutStart: 0, byProject: [] }),
       onActivity: vi.fn(() => () => {}),
       getProjectStatus: vi.fn(),
       runTrial: vi.fn(),

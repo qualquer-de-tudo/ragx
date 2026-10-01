@@ -278,6 +278,19 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Adoção pelos agentes
+
+A Atividade tem a seção "Adoção pelos agentes" (RAGX-0190, S13): das sessões abertas em projeto indexado, quantas
+chamaram o RAGX ("3 de 38 sessões chamaram o RAGX (8%) · desde 18/09", com a lista por projeto). **Universo** = sessões
+com um `session_start` em `cli.jsonl`; **usou** = existe chamada em `mcp.jsonl` com o mesmo `session` e o mesmo projeto
+(`electron/data/adoption.ts`, `computeAdoption`). Linha sem `session` (`unidentified`) e chamada de sessão sem início
+registrado (`callsWithoutStart`) ficam fora da razão e aparecem em "Fora da razão". A janela é de 14 dias, mas é a dos
+logs realmente lidos: a tela diz "desde dd/mm" (o evento mais antigo lido), não "14 dias". O `ActivityTail` mantém um
+índice por sessão, atualizado pelo mesmo `parseLine`, sem reler arquivo e antes do corte de 24 h do feed; o canal
+`ragx:getAdoption` não tem argumentos e devolve só contagens, datas e ids de projeto. No detalhe do projeto, a
+`UsageSection` ganha "Sessões que chamaram o RAGX: x de y" quando há sessão. S13 é de **medição**: a spec não fixa
+meta, que se fixa depois de 2 semanas de dados.
+
 ## Atividade: Eventos e Sessões
 
 A Atividade tem duas visões (RAGX-0188), escolhidas por "Eventos | Sessões" (o padrão é Eventos; a escolha vale até fechar

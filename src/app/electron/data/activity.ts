@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { ActivityEvent, ActivityKind } from './types'
+import { ADOPTION_DAYS, type AdoptionSession } from './adoption'
 
 /** Janela do feed: o que passou disso sai da memória. */
 export const ACTIVITY_WINDOW_MS = 24 * 60 * 60 * 1000
@@ -125,6 +126,11 @@ export function parseLine(line: string, source: ActivitySource, log: 'mcp.jsonl'
 export class ActivityTail {
   private files = new Map<string, FileState>()
   private events: ActivityEvent[] = []
+  /**
+   * Índice leve por sessão (RAGX-0190), alimentado pelo mesmo `parseLine` e ANTES do corte de 24 h do `poll`: a adoção
+   * olha 14 dias, e o feed só 24 h. Chave: projeto + sessão (o mesmo id em dois projetos não funde).
+   */
+  private sessionIndex = new Map<string, AdoptionSession>()
 
   constructor(
     private readonly deps: { fs: TailFs; now: () => number } = { fs: nodeTailFs, now: Date.now },
@@ -139,11 +145,44 @@ export class ActivityTail {
         novos.push(...this.readNew(source, log))
       }
     }
+    this.indexSessions(novos)
     const corte = this.deps.now() - ACTIVITY_WINDOW_MS
     const recentes = novos.filter((e) => Date.parse(e.ts) >= corte)
     recentes.sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts))
     this.events = [...this.events, ...recentes].filter((e) => Date.parse(e.ts) >= corte).slice(-ACTIVITY_MAX)
     return recentes
+  }
+
+  /** Sessões vistas na janela da adoção (14 dias), para `computeAdoption`. */
+  sessions(): AdoptionSession[] {
+    this.pruneSessions()
+    return [...this.sessionIndex.values()]
+  }
+
+  private indexSessions(novos: readonly ActivityEvent[]): void {
+    const corte = this.deps.now() - ADOPTION_DAYS * 86_400_000
+    for (const e of novos) {
+      if (Date.parse(e.ts) < corte) continue
+      const key = `${e.projectId}\u0000${e.session ?? ''}`
+      let s = this.sessionIndex.get(key)
+      if (!s) {
+        s = { projectId: e.projectId, projectName: e.projectName, session: e.session, startedAt: null, firstAt: e.ts, lastAt: e.ts, calls: 0, events: 0 }
+        this.sessionIndex.set(key, s)
+      }
+      s.events += 1
+      if (Date.parse(e.ts) < Date.parse(s.firstAt)) s.firstAt = e.ts
+      if (Date.parse(e.ts) > Date.parse(s.lastAt)) s.lastAt = e.ts
+      if (e.kind === 'session') {
+        if (s.startedAt === null || Date.parse(e.ts) < Date.parse(s.startedAt)) s.startedAt = e.ts
+      } else {
+        s.calls += 1
+      }
+    }
+  }
+
+  private pruneSessions(): void {
+    const corte = this.deps.now() - ADOPTION_DAYS * 86_400_000
+    for (const [k, s] of this.sessionIndex) if (Date.parse(s.lastAt) < corte) this.sessionIndex.delete(k)
   }
 
   /** O que está em memória, do mais antigo ao mais novo. */

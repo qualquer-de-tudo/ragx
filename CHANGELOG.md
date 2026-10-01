@@ -11,6 +11,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Adoção pelos agentes no painel.** A adoção só se media à mão, lendo transcripts. Agora a Atividade mostra "x de y
+  sessões chamaram o RAGX (z%)" desde o evento mais antigo lido (até 14 dias), por projeto e no total, e o detalhe
+  do projeto mostra as sessões dele; linha sem sessão e chamada sem início registrado ficam fora da razão e são
+  contadas à parte. Só contagens: nada de consulta (RAGX-0190).
 - **Visão "Sessões" na Atividade do painel.** O feed era plano e misturava as chamadas de conversas diferentes. Agora
   dá para alternar para uma linha por sessão (quem, projeto, intervalo, chamadas, tokens entregues, se usou o RAGX,
   inícios de contexto de subagentes e falhas, com "sem dado" quando o log não tem `ok`), que abre os eventos em

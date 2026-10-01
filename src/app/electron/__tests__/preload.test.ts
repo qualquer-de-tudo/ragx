@@ -37,6 +37,7 @@ describe('preload', () => {
         'discover',
         'enqueueJob',
         'getActivity',
+        'getAdoption',
         'getClaudeIntegration',
         'getConnections',
         'getIndexRuns',
