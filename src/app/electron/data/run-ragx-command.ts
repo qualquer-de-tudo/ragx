@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import { StringDecoder } from 'node:string_decoder'
 import { ragxCommand } from '../system/ragx-exe'
+import { addSpawnDuration, countSpawn } from '../system/spawn-counter'
 
 const TIMEOUT_MS = 60_000
 
@@ -17,6 +18,8 @@ export function runRagxCommand(cwd: string, args: string[], opts: { timeoutMs?: 
   const timeoutMs = opts.timeoutMs ?? TIMEOUT_MS
   return new Promise((resolve, reject) => {
     const cmd = ragxCommand()
+    const started = Date.now()
+    countSpawn('ragx') // RAGX-0177
     // RAGX_CALLER: o painel roda `ragx status` a cada poucos segundos; sem a
     // marca, cada um viraria uma linha na tela de atividade (ver ragx.cli.main).
     const child = spawn(cmd, args, { cwd, windowsHide: true, env: { ...process.env, RAGX_CALLER: 'painel' } })
@@ -51,6 +54,7 @@ export function runRagxCommand(cwd: string, args: string[], opts: { timeoutMs?: 
       if (settled) return
       settled = true
       clearTimeout(timer)
+      addSpawnDuration('ragx', Date.now() - started)
       stdout += outDecoder.end()
       stderr += errDecoder.end()
       // `ragx security scan`/`ragx trial` podem sair com codigo != 0 mesmo

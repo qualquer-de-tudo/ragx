@@ -25,3 +25,17 @@ describe('execFileText - comando inexistente', () => {
     expect(r.notFound).toBeFalsy()
   })
 })
+
+describe('execFileText - contador de processos (RAGX-0177)', () => {
+  it('conta o processo e soma a duração, inclusive em ENOENT e em lançamento síncrono', async () => {
+    const { resetSpawnCounter, snapshot } = await import('../spawn-counter')
+    resetSpawnCounter()
+    await execFileText(process.execPath, ['-e', 'process.exit(0)'])
+    await execFileText('comando-que-nao-existe-ragx-xyz', [])
+    await execFileText('ragx\u0000bad', ['x']) // `execFile` lança de forma síncrona
+    const totals = snapshot()
+    // `node` não é um nome conhecido: vira `outro`; o inexistente e o inválido também
+    expect(totals.outro.count).toBe(3)
+    expect(totals.outro.ms).toBeGreaterThan(0)
+  })
+})

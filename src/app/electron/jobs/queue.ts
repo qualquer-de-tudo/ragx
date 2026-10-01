@@ -5,6 +5,7 @@ import path from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
 import { ollamaCommand } from '../ollama/paths'
 import { ragxCommand } from '../system/ragx-exe'
+import { countSpawn } from '../system/spawn-counter'
 import { uvCommand } from '../bootstrap/bundle'
 import type { ResolvedJob, Step, StepCondition } from './catalog'
 import type { JobKind, JobView, JobState } from '../../src/types/ragx-bridge'
@@ -795,6 +796,7 @@ export function defaultSpawn(): SpawnFn {
   return (cmd, args, cwd, opts) => {
     const resolvedCmd = resolveSpawnCommand(cmd)
     const workDir = cwd ?? os.homedir()
+    countSpawn('job') // RAGX-0177: toda tarefa da fila conta como um filho (rótulo `job`)
     if (opts?.detached === true) return spawnDetached(resolvedCmd, args, workDir, opts.env)
 
     const child = nodeSpawn(resolvedCmd, args, {

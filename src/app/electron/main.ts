@@ -10,6 +10,8 @@ import { ActivityTail } from './data/activity'
 import { checkAll, defaultCheckDeps } from './connections/checks'
 import { resetRagxCache, resolveRagx } from './system/ragx-exe'
 import { execFileText } from './system/exec'
+import { createRuntimeSampler, metricsFileFromEnv } from './system/runtime-metrics'
+import { parsePlan, type PanelState } from './system/runtime-summary'
 import { findBundleDir, loadBundle, uvCommand } from './bootstrap/bundle'
 import { afterRagxInstall } from './bootstrap/post-install'
 import { realPathDeps, removeFromUserPath } from './bootstrap/path-user'
@@ -37,7 +39,10 @@ import {
 } from './ollama/wiring'
 import type { ConnectionCheck, JobView, Snapshot } from '../src/types/ragx-bridge'
 
-const isDev = !app.isPackaged
+// RAGX-0177: com `RAGX_PANEL_METRICS` o painel mede o próprio consumo, e mede a casca de PRODUÇÃO
+// (`dist/index.html`, sem DevTools), mesmo rodando sem empacotar.
+const METRICS_FILE = metricsFileFromEnv(process.env)
+const isDev = !app.isPackaged && METRICS_FILE === null
 
 // Modos sem janela, chamados pelo instalador NSIS (`build/installer.nsh`).
 const BOOTSTRAP = process.argv.includes('--bootstrap')
@@ -82,11 +87,16 @@ function withConnectionsHealth(snapshot: Snapshot): Snapshot {
 // MESMO resultado em vez de disparar outra.
 let inFlightSnapshot: Promise<Snapshot> | null = null
 
+/** Quanto levou a última reconstrução do snapshot (só a medição de consumo lê). */
+let lastSnapshotMs: number | null = null
+
 function refreshSnapshot(): Promise<Snapshot> {
   if (inFlightSnapshot) return inFlightSnapshot
   const promise = (async () => {
     try {
+      const started = Date.now()
       const s = await buildSnapshot()
+      lastSnapshotMs = Date.now() - started
       latestSnapshot = s
       return withConnectionsHealth(s)
     } finally {
@@ -441,6 +451,49 @@ function startConnectionsPolling(): void {
   }, CONNECTIONS_POLL_MS)
 }
 
+// -- medição de consumo (RAGX-0177) ----------------------------------------
+
+let panelState: PanelState = 'visible'
+
+/**
+ * Só com `RAGX_PANEL_METRICS`: amostra RAM/CPU/filhos a cada 5 s num JSONL e, com
+ * `RAGX_PANEL_METRICS_PLAN="visible:5,minimized:5,hidden:5"`, leva a janela a cada estado pelo tempo
+ * pedido e encerra o app. Sem a variável nada disso existe. Nenhum canal IPC novo.
+ */
+function startRuntimeMeasurement(): void {
+  if (METRICS_FILE === null || HEADLESS) return
+  fs.mkdirSync(path.dirname(METRICS_FILE), { recursive: true })
+  const sampler = createRuntimeSampler({
+    getAppMetrics: () => app.getAppMetrics(),
+    getState: () => panelState,
+    getSnapshotMs: () => lastSnapshotMs,
+    write: (line) => fs.appendFileSync(METRICS_FILE, line + '\n'),
+  })
+  sampler.start()
+
+  const planText = process.env.RAGX_PANEL_METRICS_PLAN?.trim()
+  if (!planText) return
+  const steps = parsePlan(planText)
+  void (async () => {
+    for (const step of steps) {
+      const win = mainWindow
+      if (win === null) break
+      if (step.state === 'visible') {
+        win.show()
+        win.restore()
+      } else if (step.state === 'minimized') {
+        win.minimize()
+      } else {
+        win.hide()
+      }
+      panelState = step.state
+      await new Promise((resolve) => setTimeout(resolve, step.minutes * 60_000))
+    }
+    sampler.stop()
+    app.quit()
+  })()
+}
+
 // -- janela ------------------------------------------------------------
 
 function createWindow(): void {
@@ -483,6 +536,7 @@ function createWindow(): void {
     startSnapshotPolling()
     startConnectionsPolling()
     startActivityPolling()
+    startRuntimeMeasurement()
     // Fix round 1 (MINOR 4): a primeira checagem de conexão roda logo depois
     // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`
     // já constrói um snapshot se ainda não houver nenhum (decisão 2 da Task 6).

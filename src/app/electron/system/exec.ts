@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { addSpawnDuration, countSpawn } from './spawn-counter'
 
 /** `notFound`: o executável nem existe (ENOENT) - diferente de um que existe e falha. */
 export type ExecResult = { code: number; stdout: string; stderr: string; notFound?: boolean }
@@ -11,12 +12,17 @@ export type ExecFn = (
 /** Roda um executável com lista de argumentos (nunca shell). Nunca rejeita. */
 export const execFileText: ExecFn = (file, args, opts = {}) =>
   new Promise((resolve) => {
+    // RAGX-0177: conta o processo ao nascer (mesmo que `execFile` lance ou o executável não exista)
+    // e soma a duração quando ele termina
+    const started = Date.now()
+    countSpawn(file)
     try {
       execFile(
         file,
         args,
         { cwd: opts.cwd, timeout: opts.timeoutMs ?? 5000, windowsHide: true, encoding: 'utf-8' },
         (err, stdout, stderr) => {
+          addSpawnDuration(file, Date.now() - started)
           if (!err) return resolve({ code: 0, stdout, stderr })
           const e = err as NodeJS.ErrnoException & { code?: number | string; killed?: boolean }
           if (e.killed) return resolve({ code: -1, stdout, stderr: 'tempo esgotado' })

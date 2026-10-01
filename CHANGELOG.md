@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **O painel mede o próprio consumo (opt-in).** A auditoria só tinha comandos isolados: "o Electron real não
+  foi aberto". Com `RAGX_PANEL_METRICS=<arquivo.jsonl>` o painel amostra, a cada 5 s, RAM e CPU de cada
+  processo (`app.getAppMetrics()`) e os processos filhos que ele cria por executável (`git`, `ragx`,
+  `docker`...), e `node scripts/measure-runtime.mjs --plan visible:5,minimized:5,hidden:5` leva a janela a
+  cada estado e acrescenta o resumo a `src/app/docs/medicao-runtime.md`. Sem a variável nada é criado, e
+  nenhum canal IPC foi acrescentado. **Linha de base (12 projetos, 15 min):** ~288 `git` por minuto nos três
+  estados (a auditoria estimava ≈290), o mesmo com a janela minimizada ou oculta; ~335 MB de RAM; CPU do
+  painel ~0,1 a 0,2% de um núcleo, mas **17 a 20 s por minuto de processos filhos** (RAGX-0177).
 - **`ragx ab`: harness de A/B de economia.** "O RAGX economiza X%" não era afirmável (o baseline do painel
   e do `trial` é o arquivo inteiro). `ragx ab` planeja as mesmas tarefas por `claude -p` em três braços
   (`without`, `full`, `slim`), com o mesmo modelo e ferramentas, ordem girando por tarefa, e compara o

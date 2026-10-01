@@ -95,6 +95,35 @@ npx tsc -p tsconfig.app.json --noEmit       # tipos do renderer
 npx tsc -p tsconfig.electron.json --noEmit  # tipos do processo principal
 ```
 
+## Medindo o consumo
+
+O painel mede o próprio consumo (RAM, CPU e processos filhos por minuto) sem nenhum canal IPC novo e
+sem custo quando desligado: o amostrador só existe com `RAGX_PANEL_METRICS=<arquivo.jsonl>`. Para uma
+medição completa, com a janela visível, minimizada e oculta:
+
+```bash
+npm run build && npm run build:electron:ts        # a casca de produção (dist/ e dist-electron/)
+node scripts/measure-runtime.mjs --plan visible:5,minimized:5,hidden:5 --label baseline-1.0.0-beta.5 \
+     [--exe <caminho>] [--projects fixture12|real]
+```
+
+O script sobe o Electron com `--user-data-dir` temporário, leva a janela a cada estado pelo tempo
+pedido, lê o JSONL (em `%TEMP%`, **não** versionado) e **acrescenta** uma seção a
+`docs/medicao-runtime.md`: RAM (working set e privada), CPU por tipo de processo e filhos criados por
+minuto por executável (`git`, `ragx`, `docker`...), mais o tempo da reconstrução do snapshot. A 1ª
+amostra de cada execução é descartada (o CPU do Electron é medido desde a chamada anterior).
+`fixture12` cria 12 repositórios `git init` e um hub de 12 projetos numa pasta temporária (o
+`USERPROFILE` aponta para ela; nada da sua máquina é tocado); `real` lê o hub da máquina, somente
+leitura. Em modo de medição o painel carrega `dist/index.html` (sem DevTools), para medir a casca de
+produção mesmo sem empacotar.
+
+A medição do Electron **não** empacotado difere pouco da do `.exe`; para medir o `.exe`:
+`npm run build && npm run build:electron:ts && npx electron-builder --dir`, depois
+`--exe "release/win-unpacked/RAGX Painel.exe"`. Meça com a fila de tarefas vazia: uma indexação em
+andamento distorce a CPU. O contador de filhos (`electron/system/spawn-counter.ts`) cobre os três
+pontos de criação de processo (`execFileText`, a fila de tarefas e `runRagxCommand`); os processos do
+próprio Chromium aparecem pelas métricas do Electron.
+
 ## Empacotando
 
 ```bash
