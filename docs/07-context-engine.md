@@ -176,6 +176,34 @@ e ajusta a mistura:
 Detecção por padrões léxicos simples (lista em `context/intents.yaml`). É heurística
 declarada, não mágica — e o `--explain` mostra qual intenção foi inferida.
 
+## Dedupe de sessão (RAGX-0159)
+
+O `dedup` da seção [4] limpa a repetição DENTRO de um pack. Entre packs, numa mesma sessão, o agente
+refaz perguntas parecidas e o `build_context` reenviava os mesmos chunks inteiros. Com
+`[context] session_dedupe = true` o servidor MCP guarda um **livro-razão em memória**
+(`context/session.py`, um por processo) com só o `chunk_id`, o caminho, as linhas, os tokens e a hora da
+entrega, **nunca o conteúdo**, e `apply_session` (depois do cache, que guarda o pack completo) troca por
+referência o fragmento que a sessão já recebeu:
+
+```text
+Já entregues nesta sessão (reabra com get_chunk): `src/a.py:3-9 [a1b2c3d4e5f6]`, ...
+```
+
+O custo da linha entra em `estimated_tokens`; se as referências custarem tanto quanto o conteúdo que
+substituem (chunk minúsculo), o pack segue completo. `get_chunk` marca o chunk como entregue e **sempre**
+devolve o conteúdo inteiro, nunca uma referência. A resposta traz `dedupe_refs` e `dedupe_saved_tokens`
+(e `references` no formato `json`), e a telemetria registra os mesmos dois campos. O chunk editado entre
+as chamadas tem id novo (o id deriva do conteúdo) e volta como conteúdo; passado o TTL
+(`session_ttl_minutes`, 45) o chunk também volta. `ragx context` (CLI) não usa o dedupe: não é sessão.
+
+**Desligado por padrão, e por quê.** No cenário medido (3 consultas sobrepostas sobre este repositório,
+`scripts/medir_dedupe_sessao.py`) o ganho foi de **4,2%** (8.110 → 7.767 tokens; 3 chunks repetidos em
+3 chamadas), e o risco é real: o servidor não sabe quando o cliente compactou o contexto ou deu `/clear`,
+nem distingue o agente principal de um subagente (que compartilha o servidor, mas não o contexto), e
+um agente nessa situação recebe uma referência a algo que não vê (recuperável com `get_chunk`, a custo
+de uma chamada). O A/B da RAGX-0162 decide se vira padrão. Fora de escopo, por ora: reaproveitar o
+orçamento liberado com chunks novos (a v1 só encurta a resposta).
+
 ## Cache
 
 `ContextPack` é caro de montar (~70-80 ms quente, 2 s+ frio). O cache fica em

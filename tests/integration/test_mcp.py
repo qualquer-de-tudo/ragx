@@ -33,7 +33,8 @@ def api(tmp_path_factory: pytest.TempPathFactory) -> KnowledgeAPI:
     root = tmp_path_factory.mktemp("mcp")
     (root / "ragx.toml").write_text(
         '[project]\nname = "demo"\nid = "demo"\n\n'
-        '[embedding]\nprovider = "hashing"\ndim = 128\nversioned_dim = 64\n',
+        '[embedding]\nprovider = "hashing"\ndim = 128\nversioned_dim = 64\n\n'
+        "[context]\nsession_dedupe = false\n",  # o `api` é compartilhado entre testes: sem estado de sessão
         encoding="utf-8",
     )
     (root / "auth.py").write_text(AUTH, encoding="utf-8")
@@ -516,7 +517,8 @@ def test_resposta_de_busca_so_traz_partial_quando_o_indice_e_parcial(
     root = tmp_path_factory.mktemp("mcp_partial")
     (root / "ragx.toml").write_text(
         '[project]\nname = "demo"\nid = "demo"\n\n'
-        '[embedding]\nprovider = "hashing"\ndim = 128\nversioned_dim = 64\n',
+        '[embedding]\nprovider = "hashing"\ndim = 128\nversioned_dim = 64\n\n'
+        "[context]\nsession_dedupe = false\n",  # o `api` é compartilhado entre testes: sem estado de sessão
         encoding="utf-8",
     )
     (root / "auth.py").write_text(AUTH, encoding="utf-8")

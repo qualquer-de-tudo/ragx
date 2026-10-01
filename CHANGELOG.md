@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Dedupe de sessão no `build_context` do MCP (desligado por padrão).** Com `[context] session_dedupe =
+  true`, o chunk que a sessão já recebeu volta como referência (`caminho:linhas [id]`, reabrível com
+  `get_chunk`) em vez do conteúdo inteiro, e `get_chunk` continua devolvendo o conteúdo íntegro. O
+  livro-razão guarda só metadado (nunca conteúdo), com TTL (45 min) e teto de entradas, e a resposta e a
+  telemetria trazem `dedupe_refs` e `dedupe_saved_tokens`. Medido em 3 consultas sobrepostas neste
+  repositório: **−4,2%** (8.110 → 7.767 tokens). Por isso e pelo risco (o servidor não sabe quando o
+  cliente compacta o contexto, nem distingue subagente) o padrão é **desligado**; a RAGX-0162 decide
+  (RAGX-0159).
 - **Descrições das ferramentas MCP para Tool Search, `instructions` com teto e lista estável.** As 33
   descrições foram reescritas: começam por um verbo, dizem o que a ferramenta faz com os termos de quem
   procura ("localiza", "onde", "quem chama", "reindexa") e têm no máximo 200 caracteres (a maior: 141).

@@ -136,8 +136,10 @@ class ContextCfg(BaseModel):
     reserve_ratio: float = 0.05
     min_sources: int = 3
     # Dedupe de sessão (RAGX-0159): chunk já entregue volta como referência em vez de conteúdo.
-    # O servidor não sabe quando o cliente compacta o contexto: por isso o TTL é curto.
-    session_dedupe: bool = True
+    # O servidor não sabe quando o cliente compacta o contexto: por isso o TTL é curto. DESLIGADO por
+    # padrão: no cenário medido (3 consultas sobrepostas) o ganho foi de 4,2% e o risco é real (o agente
+    # que perdeu o contexto recebe referências); o A/B da RAGX-0162 decide se vira padrão.
+    session_dedupe: bool = False
     session_ttl_minutes: int = 45
     session_max_chunks: int = 2000
 

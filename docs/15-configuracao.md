@@ -111,6 +111,9 @@ mmr_lambda       = 0.7
 compress         = true
 reserve_ratio    = 0.05         # overhead de formatação
 min_sources      = 3
+session_dedupe        = false  # chunk já entregue nesta sessão volta como referência (MCP; ver 07-context-engine.md)
+session_ttl_minutes   = 45
+session_max_chunks    = 2000
 
 [dictionary]
 out_dir  = "knowledge"
