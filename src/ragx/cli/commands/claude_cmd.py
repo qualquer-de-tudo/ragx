@@ -19,6 +19,8 @@ console = Console()
 app = typer.Typer(no_args_is_help=True)
 profiles_app = typer.Typer(no_args_is_help=True, help="Perfis do Claude Code: listar, adicionar e tirar pastas.")
 app.add_typer(profiles_app, name="profiles")
+agent_app = typer.Typer(no_args_is_help=True, help="O subagente `ragx-explorer` (opt-in): explora sem encher o seu contexto.")
+app.add_typer(agent_app, name="agent")
 
 ProfileOpt = Annotated[
     str | None,
@@ -48,6 +50,7 @@ def _nome(c) -> str:
 
 def _estado() -> list[dict[str, object]]:
     from ragx.clients import is_registered
+    from ragx.clients.claude_agent import has_agent
     from ragx.clients.claude_hint import has_hint, has_nudge_hook, has_touch_hook
 
     return [
@@ -62,6 +65,7 @@ def _estado() -> list[dict[str, object]]:
             "hint": has_hint(c),
             "touch": has_touch_hook(c),
             "nudge": has_nudge_hook(c),
+            "agent": has_agent(c),
             "added": c.added,
         }
         for c in _perfis()
@@ -101,6 +105,7 @@ def off(
 ) -> None:
     """Tira o RAGX do Claude Code, em todos os projetos e perfis (ou só em `--profile`)."""
     from ragx.clients import unregister
+    from ragx.clients.claude_agent import remove_agent
     from ragx.clients.claude_hint import remove_hint, remove_nudge_hook, remove_touch_hook
 
     results = []
@@ -109,6 +114,7 @@ def off(
         results.append(remove_hint(c, dry_run=dry_run))
         results.append(remove_touch_hook(c, dry_run=dry_run))
         results.append(remove_nudge_hook(c, dry_run=dry_run))
+        results.append(remove_agent(c, dry_run=dry_run))  # só o arquivo com o marcador
     _report(results, "RAGX desligado", as_json)
 
 
@@ -138,12 +144,20 @@ def on(
             help="Instala o lembrete do índice no primeiro Grep/Glob de cada sessão (sugere, nunca bloqueia).",
         ),
     ] = True,
+    agent: Annotated[
+        bool,
+        typer.Option(
+            "--agent/--no-agent",
+            help="Instala também o subagente `ragx-explorer` (desligado por padrão: aparece na sua lista).",
+        ),
+    ] = False,
     profile: ProfileOpt = None,
     dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Põe o RAGX no Claude Code, em todos os projetos e perfis (ou só em `--profile`)."""
     from ragx.clients import register
+    from ragx.clients.claude_agent import install_agent
     from ragx.clients.claude_hint import (
         install_hint,
         install_nudge_hook,
@@ -167,6 +181,8 @@ def on(
                 install_nudge_hook(c, command=command, dry_run=dry_run)
                 if nudge else remove_nudge_hook(c, dry_run=dry_run)
             )
+            if agent:
+                results.append(install_agent(c, dry_run=dry_run))
     _report(results, "RAGX ligado", as_json)
 
 
@@ -214,6 +230,53 @@ def hint() -> None:
     from ragx.hooklight import run_hint
 
     run_hint()
+
+
+# ── o subagente ragx-explorer ───────────────────────────────────────────
+@agent_app.command("install")
+def agent_install(
+    profile: ProfileOpt = None,
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Instala o subagente `ragx-explorer` em cada perfil (ou só em `--profile`).
+
+    Só leitura (RAGX, Read, Grep, Glob), sem `model`: herda o seu; para fixar um mais barato, edite
+    a linha `model:` do arquivo. Um arquivo seu com o mesmo nome nunca é sobrescrito.
+    """
+    from ragx.clients.claude_agent import install_agent
+
+    _report([install_agent(c, dry_run=dry_run) for c in _perfis(profile)], "Subagente instalado", as_json)
+
+
+@agent_app.command("remove")
+def agent_remove(
+    profile: ProfileOpt = None,
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Remove o subagente `ragx-explorer`: só o arquivo que tem o marcador do RAGX."""
+    from ragx.clients.claude_agent import remove_agent
+
+    _report([remove_agent(c, dry_run=dry_run) for c in _perfis(profile)], "Subagente removido", as_json)
+
+
+@agent_app.command("status")
+def agent_status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
+    """Mostra, por perfil, se o subagente `ragx-explorer` está instalado."""
+    from ragx.clients.claude_agent import agent_path, has_agent
+
+    linhas = [
+        {"profile": _nome(c), "installed": has_agent(c), "path": str(agent_path(c))} for c in _perfis()
+    ]
+    if as_json:
+        console.print_json(json.dumps({"agents": linhas}, ensure_ascii=False))
+        return
+    console.print()
+    for linha in linhas:
+        marca = "[green]instalado[/]" if linha["installed"] else "[dim]não instalado[/]"
+        console.print(f"  {escape(str(linha['profile']))}: {marca}  [dim]{escape(str(linha['path']))}[/]")
+    console.print()
 
 
 @app.command("nudge")

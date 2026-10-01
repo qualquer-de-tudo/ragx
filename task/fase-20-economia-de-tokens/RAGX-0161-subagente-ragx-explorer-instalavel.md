@@ -7,7 +7,7 @@
 | **Estimativa** | 0,5d |
 | **Depende de** | RAGX-0157 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (M-05, 7.2 #10) · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-T7) · [14-cli.md](../../docs/14-cli.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,12 +15,12 @@ Explorar código num repositório grande enche o contexto do agente principal co
 
 ## Entregáveis
 
-- [ ] **Conferir o formato antes:** na versão instalada do Claude Code (`claude --version`), confirmar o formato de subagente de usuário (arquivo `.md` com frontmatter `name`, `description`, `tools`, opcional `model`) e onde ele mora para o perfil padrão e para os de `CLAUDE_CONFIG_DIR`. Registrar em Andamento.
-- [ ] `src/ragx/clients/claude_agent.py` (novo): o texto do agente como constante Python (como `agents/profile.py` faz com `_INSTRUCTIONS`), com a linha `<!-- ragx:managed v1 -->` logo após o frontmatter. `tools`: `mcp__ragx__build_context`, `mcp__ragx__search_hybrid`, `mcp__ragx__get_chunk`, `mcp__ragx__get_entity`, `Read`, `Grep`, `Glob` (só leitura; sem `Edit`, `Write` nem `Bash`). Sem `model` (herda; a pessoa pode fixar um mais barato, documentado).
-- [ ] O corpo do agente: usar o RAGX primeiro (`build_context`, depois `get_chunk`/`get_entity`), `Read`/`Grep` só nos arquivos apontados, e **responder curto**: caminhos com linhas e 3 a 6 frases, sem colar trechos longos (é isso que poupa o contexto do principal).
-- [ ] `install_agent`, `remove_agent`, `has_agent` no mesmo módulo, usando `_backup` e `_escrever` de `clients/registry.py` (443-474) e o diretório `claude_settings(client).parent / "agents"` (registry.py:256-260). Arquivo existente **sem** o marcador (é da pessoa) não é sobrescrito: `Outcome.FAILED` com a explicação. Arquivo nosso de versão antiga é atualizado. `remove` só apaga arquivo com o marcador.
-- [ ] CLI: `ragx claude agent install|remove|status [--profile X] [--dry-run] [--json]` e `ragx claude on --agent/--no-agent` (**padrão desligado**: um subagente novo aparece na lista da pessoa). `ragx claude status --json` ganha `agent` por perfil (`_estado`, claude_cmd.py:49-66).
-- [ ] `docs/14-cli.md` (linhas 343-350) e `docs/GUIA-DE-USO.md` (linhas 176-177): o que o subagente faz, como instalar e como fixar o modelo. CHANGELOG.
+- [x] **Conferir o formato antes:** na versão instalada do Claude Code (`claude --version`), confirmar o formato de subagente de usuário (arquivo `.md` com frontmatter `name`, `description`, `tools`, opcional `model`) e onde ele mora para o perfil padrão e para os de `CLAUDE_CONFIG_DIR`. Registrar em Andamento.
+- [x] `src/ragx/clients/claude_agent.py` (novo): o texto do agente como constante Python (como `agents/profile.py` faz com `_INSTRUCTIONS`), com a linha `<!-- ragx:managed v1 -->` logo após o frontmatter. `tools`: `mcp__ragx__build_context`, `mcp__ragx__search_hybrid`, `mcp__ragx__get_chunk`, `mcp__ragx__get_entity`, `Read`, `Grep`, `Glob` (só leitura; sem `Edit`, `Write` nem `Bash`). Sem `model` (herda; a pessoa pode fixar um mais barato, documentado).
+- [x] O corpo do agente: usar o RAGX primeiro (`build_context`, depois `get_chunk`/`get_entity`), `Read`/`Grep` só nos arquivos apontados, e **responder curto**: caminhos com linhas e 3 a 6 frases, sem colar trechos longos (é isso que poupa o contexto do principal).
+- [x] `install_agent`, `remove_agent`, `has_agent` no mesmo módulo, usando `_backup` e `_escrever` de `clients/registry.py` (443-474) e o diretório `claude_settings(client).parent / "agents"` (registry.py:256-260). Arquivo existente **sem** o marcador (é da pessoa) não é sobrescrito: `Outcome.FAILED` com a explicação. Arquivo nosso de versão antiga é atualizado. `remove` só apaga arquivo com o marcador.
+- [x] CLI: `ragx claude agent install|remove|status [--profile X] [--dry-run] [--json]` e `ragx claude on --agent/--no-agent` (**padrão desligado**: um subagente novo aparece na lista da pessoa). `ragx claude status --json` ganha `agent` por perfil (`_estado`, claude_cmd.py:49-66).
+- [x] `docs/14-cli.md` (linhas 343-350) e `docs/GUIA-DE-USO.md` (linhas 176-177): o que o subagente faz, como instalar e como fixar o modelo. CHANGELOG.
 
 ## Fora de escopo
 
@@ -31,25 +31,25 @@ Explorar código num repositório grande enche o contexto do agente principal co
 
 ## Critérios de aceite
 
-- [ ] `ragx claude agent install` num perfil de teste cria `agents/ragx-explorer.md`; o frontmatter é YAML válido e **toda** ferramenta `mcp__ragx__*` listada existe nos dois perfis do servidor (`full` e `slim`, da 0157).
-- [ ] Rodar de novo não muda nada; `remove` apaga só o arquivo com o marcador; arquivo da pessoa com o mesmo nome fica intacto.
-- [ ] A `description` custa ≤ **60 tokens** (ela entra no contexto do agente principal em toda sessão).
+- [x] `ragx claude agent install` num perfil de teste cria `agents/ragx-explorer.md`; o frontmatter é YAML válido e **toda** ferramenta `mcp__ragx__*` listada existe nos dois perfis do servidor (`full` e `slim`, da 0157).
+- [x] Rodar de novo não muda nada; `remove` apaga só o arquivo com o marcador; arquivo da pessoa com o mesmo nome fica intacto.
+- [x] A `description` custa ≤ **60 tokens** (ela entra no contexto do agente principal em toda sessão).
 
 ### Medição
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| Tokens fixos no contexto principal (`name` + `description`) | 0 (não existe) | |
-| Tamanho do arquivo instalado, tokens (carregado só quando o subagente roda) | n/a | |
+| Tokens fixos no contexto principal (`name` + `description`) | 0 (não existe) | **48** (`description` 44; tiktoken cl100k; teto 60) |
+| Tamanho do arquivo instalado, tokens (carregado só quando o subagente roda) | n/a | 356 |
 
 O efeito em tokens do contexto principal só é mensurável pelo A/B da 0162; esta tarefa não declara número de economia.
 
 ## Testes
 
-- [ ] `tests/unit/test_claude_agent.py` (novo, com um `casa` como o de `test_claude_profiles_hint.py`, HOME redirecionado): instalar, idempotência, `--dry-run` sem escrita, arquivo alheio preservado, versão antiga atualizada, `remove`, vários perfis, `ragx claude status --json` com `agent`.
-- [ ] Mesmo arquivo: parse do frontmatter e conferência das ferramentas contra `build_server(cfg, profile=...).list_tools()` nos dois perfis (**falha** se alguém renomear uma ferramenta e esquecer o agente).
-- [ ] Teste do limite de 60 tokens da `description`.
-- [ ] Nada em `src/ragx/mcp` muda (invariante "MCP é casca fina" intacto); `tests/security` verde.
+- [x] `tests/unit/test_claude_agent.py` (novo, com um `casa` como o de `test_claude_profiles_hint.py`, HOME redirecionado): instalar, idempotência, `--dry-run` sem escrita, arquivo alheio preservado, versão antiga atualizada, `remove`, vários perfis, `ragx claude status --json` com `agent`.
+- [x] Mesmo arquivo: parse do frontmatter e conferência das ferramentas contra `build_server(cfg, profile=...).list_tools()` nos dois perfis (**falha** se alguém renomear uma ferramenta e esquecer o agente).
+- [x] Teste do limite de 60 tokens da `description`.
+- [x] Nada em `src/ragx/mcp` muda (invariante "MCP é casca fina" intacto); `tests/security` verde.
 
 ## Notas
 
@@ -60,14 +60,17 @@ O efeito em tokens do contexto principal só é mensurável pelo A/B da 0162; es
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
-- [ ] Documentação confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0161)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [ ] Testes escritos e verdes em Linux, macOS e Windows (verdes no Windows; Linux e macOS só a CI confirma)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
+- [x] Documentação confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0161)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — **Formato conferido na documentação** (code.claude.com/docs/en/sub-agents, versão instalada 2.1.286): arquivo `.md` com frontmatter YAML, só `name` e `description` obrigatórios, `tools` aceita string separada por vírgula ou lista YAML, `model` opcional (`sonnet`, `opus`, `haiku`, `fable`, id completo ou `inherit`), ferramentas MCP por nome exato (`mcp__ragx__build_context`). **Ponto que ficou em aberto:** a página diz que o `CLAUDE_CONFIG_DIR` NÃO muda o local `~/.claude/agents/` (fixo na home), mas a task manda instalar em `<perfil>/agents` (o diretório do `settings.json`), e foi o que implementei. No perfil padrão as duas coisas coincidem; nos perfis de `CLAUDE_CONFIG_DIR` o arquivo pode não ser enxergado pelo Claude Code. Não tenho como confirmar sem uma sessão com um perfil desses; quem usa vários perfis deve conferir se o `ragx-explorer` aparece na lista.
+- Implementado: `clients/claude_agent.py` (texto como constante, marcador `<!-- ragx:managed v1 -->` logo após o frontmatter, `install_agent/remove_agent/has_agent` com `_backup` e `_escrever` do registry), `ragx claude agent install|remove|status [--profile] [--dry-run] [--json]`, `ragx claude on --agent/--no-agent` (padrão desligado), `off` remove o nosso, `agent` em `claude status --json`. O teste de frontmatter pegou um bug real: a `description` tinha um `: ` e quebrava o YAML; agora ela vai entre aspas (JSON é YAML válido) e o texto não tem o `: `. Testes em `tests/unit/test_claude_agent.py` (13: frontmatter, ≤ 60 tokens, ferramentas contra `build_server` nos dois perfis, idempotência, dry-run, arquivo alheio, versão antiga, remove, vários perfis, on/off, status).
+- Reinstalar reescreve o arquivo (com backup `.ragx-backup-*`): quem acrescentou `model:` precisa refazer. A `docs/14-cli.md` diz isso.
+- Nada medido sobre economia: só o A/B da 0162 diz.

@@ -11,6 +11,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Subagente `ragx-explorer` instalável (opt-in).** `ragx claude agent install` (ou `ragx claude on
+  --agent`) grava `<perfil>/agents/ragx-explorer.md`: um explorador só de leitura (RAGX, `Read`, `Grep`,
+  `Glob`) que usa o RAGX primeiro e **responde curto**, para a exploração não encher o contexto do
+  agente principal. Desligado por padrão (aparece na lista da pessoa), com marcador de versão: só o
+  arquivo com o marcador é atualizado ou removido, e um arquivo da pessoa com o mesmo nome nunca é
+  sobrescrito. A `description` (que entra no contexto principal) tem ~44 tokens. `agent remove|status` e
+  `agent` em `claude status --json`. O efeito em tokens só se mede no A/B da RAGX-0162 (RAGX-0161).
 - **Lembrete do índice no primeiro `Grep`/`Glob` da sessão.** Quase ninguém chamava o RAGX (3 de 38
   sessões em projetos indexados): o hint de `SessionStart` é lido uma vez e esquecido, e o modelo vai no
   que já está carregado. `ragx claude on` instala agora um hook `PreToolUse` (`Grep|Glob`) que roda

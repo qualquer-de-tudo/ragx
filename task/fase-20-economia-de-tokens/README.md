@@ -15,7 +15,7 @@ Um `build_context` de 3.000 tokens entrega **7.684** no fio (2,6×): o conteúdo
 | [RAGX-0158](RAGX-0158-instructions-ate-2-kb-descricoes-para-tool-search-e-lista-estavel.md) | `instructions` ≤ 2 KB, descrições para Tool Search e lista estável | P1 | 0,5d | `done` |
 | [RAGX-0159](RAGX-0159-dedupe-de-sessao-chunk-ja-entregue-volta-como-referencia.md) | Dedupe de sessão: chunk já entregue volta como referência | P1 | 1,5d | `done` |
 | [RAGX-0160](RAGX-0160-hook-pretooluse-em-grep-glob-lembra-do-indice-uma-vez-por-sessao.md) | Hook `PreToolUse` em `Grep\|Glob` lembra do índice uma vez por sessão | P1 | 1d | `done` |
-| [RAGX-0161](RAGX-0161-subagente-ragx-explorer-instalavel.md) | Subagente `ragx-explorer` instalável | P2 | 0,5d | `todo` |
+| [RAGX-0161](RAGX-0161-subagente-ragx-explorer-instalavel.md) | Subagente `ragx-explorer` instalável | P2 | 0,5d | `done` |
 | [RAGX-0162](RAGX-0162-harness-de-ab-de-economia-claude-p-com-e-sem-o-mcp.md) | Harness de A/B de economia (`claude -p` com e sem o MCP) | P1 | 2d | `todo` |
 | [RAGX-0163](RAGX-0163-ragx-trial-e-o-painel-com-baseline-honesto.md) | `ragx trial` e o painel com baseline honesto | P1 | 0,5d | `done` |
 | [RAGX-0164](RAGX-0164-hint-de-sessionstart-enxuto-e-sem-repetir-em-subagente.md) | Hint de SessionStart enxuto e sem repetir em subagente | P2 | 0,5d | `done` |

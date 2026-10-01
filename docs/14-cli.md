@@ -365,6 +365,9 @@ ragx touch [ARQUIVO...] [--stdin-json] [--root R]    avisa o RAGX de arquivos ed
 ragx claude on|off --profile empresa     só num perfil (id ou nome)
 ragx claude hint                 o texto que a dica entrega ao agente nesta pasta
 ragx claude nudge                lembrete do índice no 1º Grep/Glob da sessão (uso do hook PreToolUse)
+ragx claude agent install [--dry-run] [--profile X]   instala o subagente ragx-explorer (opt-in)
+ragx claude agent remove [--dry-run] [--profile X]    remove só o arquivo com o marcador do RAGX
+ragx claude agent status [--json]                      o subagente está instalado, por perfil?
 ragx claude profiles list [--json]       perfis que o RAGX enxerga, detectados e adicionados
 ragx claude profiles add PASTA [--on]    adiciona uma pasta de perfil (qualquer lugar)
 ragx claude profiles remove PASTA        tira da lista, sem mexer na configuração dela
@@ -423,6 +426,21 @@ perdido) a dica volta e o marcador é renovado. O `session_id` vira nome de arqu
 `[A-Za-z0-9_-]` (até 64): um id hostil não escapa da pasta. Sem `session_id` (uso manual no terminal, stdin
 vazio ou inválido) a dica sai sempre. O stdin nunca bloqueia o hook (espera até 0,5 s). Marcadores
 com mais de 7 dias são apagados ao criar um novo.
+
+**Subagente `ragx-explorer` (RAGX-0161, opt-in).** Explorar código num repositório grande enche o contexto
+do agente principal com leituras que ele não vai reusar. `ragx claude agent install` (ou `ragx claude on
+--agent`; **desligado por padrão**, porque um subagente novo aparece na lista da pessoa) grava
+`<perfil>/agents/ragx-explorer.md`: só leitura (`mcp__ragx__build_context`, `search_hybrid`, `get_chunk`,
+`get_entity`, `Read`, `Grep`, `Glob`; sem `Edit`, `Write` nem `Bash`), que usa o RAGX primeiro, abre só os
+arquivos apontados e **responde curto** (caminhos com linhas e 3 a 6 frases). A `description`, que entra no
+contexto principal em toda sessão, tem ~44 tokens. O arquivo leva o marcador `<!-- ragx:managed v1 -->`:
+só o arquivo com o marcador é atualizado (com backup) ou removido (`agent remove`, `claude off`); um
+arquivo seu com o mesmo nome nunca é sobrescrito. Sem `model:` (herda o do agente principal); para fixar
+um mais barato, acrescente a linha `model:` ao frontmatter; rodar `agent install` de novo reescreve o
+arquivo (com backup `.ragx-backup-*`), então a edição precisa ser refeita.
+`agent status [--json]` e `claude status --json` (`agent`, por perfil) mostram o estado. Instala na pasta do
+perfil, nunca no repositório do usuário. Subagentes usam o mesmo servidor MCP do agente principal, então
+o que o explorador recebeu não está no contexto do principal (relevante para o dedupe de sessão, 0159).
 
 **Lembrete no `Grep`/`Glob` (RAGX-0160).** O hint de `SessionStart` é lido uma vez e esquecido, e
 `Grep`/`Glob` já estão carregados: o modelo vai no que está à mão. `on` instala também um hook `PreToolUse`

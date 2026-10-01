@@ -175,6 +175,7 @@ ragx status                              # o índice está em dia? por quê?
 ragx hooks install                       # hooks de git deste projeto
 ragx claude status                       # o RAGX está ligado no Claude Code?
 ragx claude off                          # desliga (e `on` religa)
+ragx claude agent install                # opcional: o subagente `ragx-explorer` (explora sem encher o seu contexto)
 ragx mcp serve                           # servidor MCP à mão
 ```
 
