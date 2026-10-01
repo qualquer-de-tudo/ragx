@@ -7,7 +7,7 @@
 | **Estimativa** | 2d |
 | **Depende de** | RAGX-0156, RAGX-0157 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (M-03, seção 8, 7.2 #11) · [25-spec-v2.md](../../docs/25-spec-v2.md) (S14, R-T8) · [07-context-engine.md](../../docs/07-context-engine.md) · [14-cli.md](../../docs/14-cli.md) |
-| **Status** | `todo` (termina em `review`, ver Notas) |
+| **Status** | `todo` |
 
 ## Objetivo
 
@@ -36,6 +36,7 @@
 - [ ] `ragx ab --simulate` roda de ponta a ponta, grava o relatório com `simulated: true` e **não** imprime nenhuma economia como "real".
 - [ ] `--execute` sem `RAGX_AB_REAL=1` ou sem `--max-calls` recusa, com mensagem que diz o custo planejado.
 - [ ] O relatório contém os campos do método e rotula "inconclusivo" corretamente.
+- [ ] **A tarefa termina em Status `review`, não `done`:** o loop nunca roda com chamadas reais (gasta cota da conta). Em Andamento, deixa o comando exato de `--execute` e o total de chamadas do `--dry-run` para a pessoa.
 
 ### Medição
 

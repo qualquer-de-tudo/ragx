@@ -15,7 +15,7 @@ Um `build_context` pedido com 3.000 tokens entrega **7.684 tokens no fio** (2,6�
 
 ## Entregáveis
 
-- [ ] **Medir primeiro:** criar `scripts/medir_fio.py` (reutilizado por 0155, 0157 e 0165). Sobe `build_server(cfg)` em processo e, com `--tool <nome> [--tokens N] [--query ...]` (ou `--tool tools_list`), chama a ferramenta por `call_tool` e imprime chars e tokens do texto que o cliente recebe (heurístico e, se instalado, tiktoken). Registrar o "Antes" em Medição.
+- [ ] **Medir primeiro:** criar `scripts/medir_fio.py` (reutilizado por 0155, 0157 e 0165). Sobe `build_server(cfg)` em processo e, com `--tool <nome> [--tokens N] [--query ...] [--arg chave=valor ...]` (ou `--tool tools_list`), chama a ferramenta por `call_tool` e imprime chars e tokens do texto que o cliente recebe (heurístico e, se instalado, tiktoken). Registrar o "Antes" em Medição.
 - [ ] `src/ragx/context/engine.py`: `ContextFragment` (linhas 37-50) ganha `chunk_id: str = ""`, preenchido em `_to_fragments` (220-261). Necessário para o dedupe (0159) e para o `vscode-plugin`, que hoje recebe `chunkId` vazio. `_cache_read`/`_cache_write` (349-394) seguem compatíveis por causa do padrão.
 - [ ] `src/ragx/context/render.py`: extrair `fragment_header(...)` (hoje inline em `_markdown`, linhas 24-34) e `rendered_tokens(pack)`; `render(pack, "markdown", title=True)` ganha `title`. O título `# Contexto — <consulta>` só a CLI imprime; o MCP usa `title=False` (o agente já sabe a consulta, que pode ter 2.000 chars).
 - [ ] `src/ragx/context/budget.py`: em `allocate` (linha 32), trocar `per_fragment_overhead=12` (linha 37) pelo custo real `count_tokens(cabeçalho)` de cada candidato (derivável de `SearchResult`: caminho, linhas, `heading_path`/`symbol`), mais o custo do rodapé.
@@ -60,7 +60,7 @@ Um `build_context` pedido com 3.000 tokens entrega **7.684 tokens no fio** (2,6�
 ## Notas
 
 - Confirmado em `mcp/server.py:431-453` (fragments e markdown juntos), `engine.py:151,160` (`estimated_tokens` = soma de `f.tokens`), `budget.py:37` (overhead 12).
-- Os dois números da auditoria (7.684 tokens e 26.735 chars) são medidas diferentes do mesmo pedido; registrar ambos e dizer qual contador usou. Sem `tiktoken` o script usa `chars/4`.
+- Os dois números da auditoria (7.684 tokens e 26.735 chars) são medidas diferentes do mesmo pedido; registrar ambos e dizer qual contador usou. A auditoria mediu tokens de ferramenta com `chars/4` (sem `tiktoken`); o `.venv` do repo tem `tiktoken` (cl100k) e `count_tokens` o usa. Rodar o script com os dois contadores e registrar qual produziu cada número.
 - Armadilha: `vscode-plugin` hoje manda `format: 'markdown'` e lê `fragments`; sem o ajuste do `McpClient.ts`, o Context Builder do VS Code fica vazio. O `get_playbook` e os perfis em `agents/` falam de `build_context` sem citar o formato: nada a mudar.
 - `claim_task` (`tasks/dispatcher.py:134-141`) monta o próprio markdown a partir de `pack.fragments`; não é afetado.
 - Se o markdown sozinho já passar de 3.200 no corpus, o culpado é a margem do `allocate`, não o JSON: ajustar `SAFETY_MARGIN` (budget.py:20) e registrar.

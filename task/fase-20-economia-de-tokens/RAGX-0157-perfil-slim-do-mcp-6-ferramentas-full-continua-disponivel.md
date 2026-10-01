@@ -7,7 +7,7 @@
 | **Estimativa** | 2d |
 | **Depende de** | RAGX-0137, RAGX-0154, RAGX-0155 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (M-04, 4.1) · [25-spec-v2.md](../../docs/25-spec-v2.md) (S2, R-T3) · [09-mcp.md](../../docs/09-mcp.md) · [15-configuracao.md](../../docs/15-configuracao.md) |
-| **Status** | `todo` (termina em `review`, ver Notas) |
+| **Status** | `todo` |
 
 ## Objetivo
 
@@ -38,6 +38,7 @@ O servidor expõe 33 ferramentas e 28 nunca foram chamadas (só `build_context`,
 - [ ] `build_server(cfg)` sem perfil continua expondo as mesmas 33 ferramentas, com os mesmos nomes e argumentos.
 - [ ] As 6 respondem corretamente no `slim`; `refresh` em modo leitura responde `write_disabled`.
 - [ ] `McpCfg().profile == "full"`: o padrão não mudou.
+- [ ] **A tarefa termina em Status `review`, não `done`:** o padrão só vira `slim` por decisão da pessoa, depois de conferir os perfis de agente gerados. Em Andamento, o loop escreve o que a pessoa precisa conferir.
 
 ### Medição
 
