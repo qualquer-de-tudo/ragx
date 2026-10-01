@@ -11,6 +11,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Perfil `slim` do servidor MCP: 6 ferramentas.** O servidor expõe 33 ferramentas e só 5 aparecem
+  nos logs de uso real; as outras 28 custam tokens em todo turno (2.773 tokens de nome, descrição e
+  schema, na régua de antes). `[mcp] profile = "slim"` (ou `RAGX_MCP_PROFILE=slim`, ou
+  `ragx mcp serve --profile slim`) expõe só `get_dictionary`, `search_hybrid`, `build_context`,
+  `get_chunk`, `get_entity` e `refresh`, com descrições curtas e schemas sem `title`/`default`/`anyOf`:
+  **~380 tokens, −86%**. O padrão continua `full` (33, nada renomeado): trocar para `slim` é decisão de
+  quem usa. `ragx perf` e `ragx mcp tools` liam `inputSchema` e o campo do SDK é `input_schema`: a
+  régua contava ~1.000 tokens em vez de ~2.800 e `ragx mcp tools --json` imprimia `input_schema: null`.
+  As mensagens de "outra operação em andamento" deixaram de mandar usar uma ferramenta (`get_status`)
+  que não existe (RAGX-0157).
 - **Clone novo usa os embeddings versionados.** O projeto versiona os vetores int8 em `knowledge/embeddings/`
   para que um clone não recalcule nada, mas `serialize.read_embeddings` não tinha chamador: num clone
   `ragx sync` falhava com "banco não encontrado" e o primeiro `ragx index` reembedava todos os chunks.

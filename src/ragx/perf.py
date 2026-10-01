@@ -238,3 +238,19 @@ def tool_wall_stats(sessions: list[SessionPerf]) -> dict[str, ToolStats]:
     return {
         t: ToolStats(len(v), statistics.median(v), _percentile(v, 0.95)) for t, v in merged.items()
     }
+
+
+def footprint_tokens(listed: Any) -> tuple[int, int]:
+    """(ferramentas, tokens estimados) que a lista de ferramentas do MCP custa em TODA requisição.
+
+    Conta nome, descrição e schema de entrada, como o cliente os põe no prompt. O campo do schema
+    é `input_schema` no SDK `mcp` 2.x (`inputSchema` no 1.x): ler só um deles subestimava o custo
+    em cerca de 60% (~1.000 contra ~2.650 tokens).
+    """
+    chars = 0
+    for t in listed:
+        esquema = getattr(t, "input_schema", None) or getattr(t, "inputSchema", None) or getattr(t, "parameters", None)
+        chars += len(json.dumps(
+            {"n": t.name, "d": t.description, "s": esquema}, ensure_ascii=False, default=str, separators=(",", ":"),
+        ))
+    return len(listed), chars // 4

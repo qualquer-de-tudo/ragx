@@ -136,6 +136,61 @@ def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
         pass
 
 
+#: O perfil `slim` (RAGX-0157): as ferramentas que as sessões reais usam. `get_playbook` vira as
+#: `instructions` (0158) e `sync` fica na CLI. Os nomes não mudam em relação ao `full`.
+SLIM_TOOLS = ("get_dictionary", "search_hybrid", "build_context", "get_chunk", "get_entity", "refresh")
+
+#: Descrições do `slim`: curtas e com a função primeiro (a descrição é custo fixo em todo turno).
+_SLIM_DESCRIPTIONS = {
+    "get_dictionary": "Mapa do projeto: tecnologias, serviços, módulos, convenções. Comece por aqui.",
+    "search_hybrid": "Localiza código e docs por busca híbrida (vetor + palavra-chave).",
+    "build_context": "Monta o contexto de trabalho de uma tarefa dentro de um orçamento de tokens.",
+    "get_chunk": "Texto completo de um chunk pelo chunk_id de um resultado.",
+    "get_entity": "Relações diretas de um símbolo: quem o chama e de quem depende.",
+    "refresh": "Reindexa o que mudou no disco (incremental). Chame no início de uma tarefa.",
+}
+
+
+def _slim_schema(node: Any) -> Any:
+    """Tira do schema o que o modelo não usa: `title`, `default` e o `anyOf` com `null`.
+
+    O schema exposto é só descrição: a validação dos argumentos vem da assinatura da função, então
+    enxugar aqui não muda o que a ferramenta aceita. Os nomes dos parâmetros ficam, mesmo que algum
+    se chame `title` ou `default` (por isso `properties` é tratado à parte).
+    """
+    if isinstance(node, list):
+        return [_slim_schema(x) for x in node]
+    if not isinstance(node, dict):
+        return node
+    out: dict[str, Any] = {}
+    for chave, valor in node.items():
+        if chave in ("title", "default"):
+            continue
+        if chave == "properties" and isinstance(valor, dict):
+            out[chave] = {nome: _slim_schema(sub) for nome, sub in valor.items()}
+        else:
+            out[chave] = _slim_schema(valor)
+    alternativas = out.get("anyOf")
+    if isinstance(alternativas, list) and len(alternativas) == 2:
+        sem_nulo = [a for a in alternativas if a != {"type": "null"}]
+        if len(sem_nulo) == 1 and isinstance(sem_nulo[0], dict):
+            del out["anyOf"]
+            out = {**sem_nulo[0], **out}
+    return out
+
+
+def _slim_schemas(server: Any) -> None:
+    """Aplica `_slim_schema` ao schema de entrada de cada ferramenta registrada.
+
+    O gerenciador de ferramentas do SDK é privado (`_tool_manager`); o acesso fica isolado aqui e
+    coberto por teste, porque uma mudança do SDK que o quebre deve falhar alto.
+    """
+    for tool in server._tool_manager.list_tools():
+        novo = _slim_schema(tool.parameters)
+        tool.parameters.clear()
+        tool.parameters.update(novo)
+
+
 _ORDER_HINT = (
     "Ordem recomendada: get_dictionary (orientação barata) -> search_hybrid "
     "(localizar) -> build_context (montar o contexto de trabalho) -> get_chunk "
@@ -689,17 +744,21 @@ class KnowledgeAPI:
 
 
 def build_server(
-    cfg: Config, allow_index: bool = False, allow_write: bool | None = None
+    cfg: Config,
+    allow_index: bool = False,
+    allow_write: bool | None = None,
+    profile: str | None = None,
 ) -> Any:
     from mcp.server.mcpserver import MCPServer
 
     write_enabled = cfg.mcp.allow_write if allow_write is None else allow_write
+    perfil = profile or cfg.mcp.profile
     api = KnowledgeAPI(cfg, can_drain=write_enabled)
     ops = WriteAPI(cfg, enabled=write_enabled)
     orq = OrchestrationAPI(cfg, enabled=write_enabled)
     server = MCPServer(
         name="ragx",
-        instructions=short_instructions(write_enabled) + " " + _ORDER_HINT,
+        instructions=short_instructions(write_enabled, perfil) + " " + _ORDER_HINT,
     )
 
     def _tool(description: str) -> Any:
@@ -712,6 +771,12 @@ def build_server(
         aqui, uma vez, na borda (RAGX-0155).
         """
         def deco(fn: Any) -> Any:
+            nonlocal description
+            if perfil == "slim":
+                if fn.__name__ not in SLIM_TOOLS:
+                    return fn  # fora do perfil: a função continua existindo, só não é registrada
+                description = _SLIM_DESCRIPTIONS.get(fn.__name__, description)
+
             @functools.wraps(fn)
             def wrapper(*args: Any, **kwargs: Any) -> str:
                 return dump(compact(fn(*args, **kwargs)))
@@ -908,6 +973,8 @@ def build_server(
     def run_worker() -> dict[str, Any]:
         return _guarded(lambda: orq.run_worker(), "run_worker", cfg)
 
+    if perfil == "slim":
+        _slim_schemas(server)
     return server
 
 
@@ -915,9 +982,10 @@ def serve(
     project: str | None = None,
     allow_index: bool = False,
     allow_write: bool | None = None,
+    profile: str | None = None,
 ) -> None:
     cfg = load_config(project) if project else load_config()
-    server = build_server(cfg, allow_index=allow_index, allow_write=allow_write)
+    server = build_server(cfg, allow_index=allow_index, allow_write=allow_write, profile=profile)
     from ragx.mcp.warmup import start
 
     start(cfg)  # em segundo plano: não atrasa o `initialize`

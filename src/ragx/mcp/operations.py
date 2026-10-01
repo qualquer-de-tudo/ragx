@@ -34,8 +34,7 @@ from ragx.mcp.tools import err, ok
 # duas varreduras completas em paralelo pelo mesmo motivo. A segunda espera.
 _LOCK = threading.Lock()
 _BUSY_MSG = (
-    "outra operação de escrita está em andamento — aguarde e repita; "
-    "use get_status para acompanhar"
+    "outra operação de escrita está em andamento — aguarde alguns segundos e repita"
 )
 
 
@@ -57,7 +56,7 @@ def _busy_from_lock(exc: IndexBusyError) -> dict[str, Any]:
         "busy",
         f"outra indexação já está rodando (origem {who}, pid {pid}). "
         "Este pedido roda quando ela terminar, ou já está agendado — repita "
-        "mais tarde ou use get_status para acompanhar.",
+        "mais tarde.",
     )
 
 

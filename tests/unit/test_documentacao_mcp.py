@@ -19,6 +19,8 @@ from pathlib import Path
 
 import pytest
 
+from ragx.mcp.server import SLIM_TOOLS
+
 RAIZ = Path(__file__).resolve().parents[2]
 DOC = RAIZ / "docs" / "09-mcp.md"
 
@@ -84,8 +86,9 @@ def test_o_readme_nao_promete_uma_contagem_que_o_codigo_desmente() -> None:
     seja frágil de forma BARULHENTA, e não silenciosa.
     """
     readme = (RAIZ / "README.md").read_text(encoding="utf-8")
-    real = len(_registradas())
+    # cada perfil tem a sua contagem (`full` e `slim`, RAGX-0157): o número citado tem de ser a de algum
+    reais = {len(_registradas()), len(SLIM_TOOLS)}
     for m in re.finditer(r"(\d+)\s+ferramentas", readme):
-        assert int(m.group(1)) == real, (
-            f"o README diz {m.group(1)} ferramentas MCP; o servidor expõe {real}."
+        assert int(m.group(1)) in reais, (
+            f"o README diz {m.group(1)} ferramentas MCP; os perfis do servidor expõem {sorted(reais)}."
         )

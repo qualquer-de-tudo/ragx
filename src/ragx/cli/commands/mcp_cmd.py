@@ -16,6 +16,14 @@ console = Console()
 app = typer.Typer(no_args_is_help=True)
 
 
+def _perfil(valor: str | None) -> str | None:
+    from ragx.core.errors import UsageError
+
+    if valor is not None and valor not in ("full", "slim"):
+        raise UsageError(f"perfil desconhecido: {valor!r} (use full | slim)")
+    return valor
+
+
 @app.command("serve")
 def serve(
     project: Annotated[Path | None, typer.Option("--project")] = None,
@@ -28,6 +36,10 @@ def serve(
             help="Deixa o agente reindexar e sincronizar. Não afeta o Security Gate.",
         ),
     ] = True,
+    profile: Annotated[
+        str | None,
+        typer.Option("--profile", help="full (33 ferramentas) ou slim (6). Padrão: [mcp] profile."),
+    ] = None,
 ) -> None:
     """Sobe o servidor MCP (stdio).
 
@@ -41,6 +53,7 @@ def serve(
         project=str(project) if project else None,
         allow_index=allow_index,
         allow_write=write,
+        profile=_perfil(profile),
     )
 
 
@@ -48,26 +61,35 @@ def serve(
 def tools(
     as_json: Annotated[bool, typer.Option("--json")] = False,
     write: Annotated[bool, typer.Option("--write/--read-only")] = True,
+    profile: Annotated[
+        str | None,
+        typer.Option("--profile", help="full (33 ferramentas) ou slim (6). Padrão: [mcp] profile."),
+    ] = None,
 ) -> None:
     """Lista as ferramentas expostas e seus schemas."""
     import asyncio
 
     from ragx.mcp.server import build_server
+    from ragx.perf import footprint_tokens
 
-    server = build_server(load_config(), allow_write=write)
+    server = build_server(load_config(), allow_write=write, profile=_perfil(profile))
     listed = asyncio.run(server.list_tools())
     payload = [
         {
             "name": t.name,
             "description": t.description,
-            "input_schema": getattr(t, "inputSchema", None) or getattr(t, "parameters", None),
+            # `input_schema` no SDK `mcp` 2.x; lia `inputSchema` e imprimia `null`
+            "input_schema": getattr(t, "input_schema", None)
+            or getattr(t, "inputSchema", None)
+            or getattr(t, "parameters", None),
         }
         for t in listed
     ]
+    ferramentas, tokens = footprint_tokens(listed)
     if as_json:
         console.print_json(json.dumps(payload, ensure_ascii=False, default=str))
         return
-    console.print(f"\n[bold]Ferramentas MCP[/] — {len(payload)}\n")
+    console.print(f"\n[bold]Ferramentas MCP[/] — {ferramentas} (≈ {tokens} tokens de custo fixo por turno)\n")
     for t in payload:
         console.print(f"  [cyan]{t['name']}[/]")
         console.print(f"    [dim]{t['description']}[/]")

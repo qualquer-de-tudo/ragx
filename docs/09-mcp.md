@@ -318,6 +318,36 @@ sem contar o `structuredContent` que deixou de existir): `search_hybrid` (10 hit
 chars (−18,4%); `get_dictionary` 36.713 → 21.530 (−41,4%); `get_document` 2.610 → 1.436 (−45%);
 `get_entity` 23.679 → 17.419 (−26,4%); `build_context(3000)` 7.983 → 2.947 tokens.
 
+## Perfis (RAGX-0157)
+
+O servidor expõe 33 ferramentas (perfil `full`, o padrão), mas só `build_context`, `search_hybrid`,
+`get_dictionary`, `get_playbook` e `sync` aparecem nos logs e nos transcripts de uso real: as outras 28
+custam tokens em todo turno e quase nunca são chamadas. O custo fixo (nome + descrição + schema de
+entrada de cada ferramenta, no prompt de TODA requisição ao modelo) é **~2.600 tokens** no `full`.
+
+O perfil **`slim`** expõe 6, com os mesmos nomes e argumentos do `full`, e custa **~360 tokens**
+(−86%):
+
+| Ferramenta | Para quê |
+|---|---|
+| `get_dictionary` | o mapa barato do projeto; por onde começar |
+| `search_hybrid` | localizar |
+| `build_context` | montar o contexto de uma tarefa dentro de um orçamento de tokens |
+| `get_chunk` | abrir o texto completo de um resultado |
+| `get_entity` | quem chama / de quem depende um símbolo |
+| `refresh` | reindexar o que mudou (em modo leitura responde `write_disabled`) |
+
+No `slim` as descrições são curtas (a função primeiro) e os schemas não trazem `title`, `default` nem
+`anyOf` com `null`: a validação dos argumentos continua a da função, só o que o modelo lê encolhe.
+`get_playbook` vira as `instructions` do servidor e `sync` fica na CLI. As `instructions` do `slim` só
+citam ferramentas que ele expõe.
+
+Como ligar (o padrão **não** muda): `[mcp] profile = "slim"` no `ragx.toml` ou em
+`~/.config/ragx/config.toml`, `RAGX_MCP_PROFILE=slim`, ou `ragx mcp serve --profile slim`;
+`ragx mcp tools --profile slim` lista e mostra o custo. O plugin do VS Code usa ferramentas que só o
+`full` tem (`task_status`, `list_projects`): não o aponte para o `slim`. As contagens ("33 ferramentas")
+nos READMEs são as do `full`.
+
 ## Execução
 
 **Aquecimento (RAGX-0142).** A primeira busca de um processo pagava o carregamento do modelo de

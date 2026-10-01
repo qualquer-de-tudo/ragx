@@ -25,14 +25,10 @@ def _footprint() -> tuple[int, int] | None:
 
         from ragx.config import load_config
         from ragx.mcp.server import build_server
+        from ragx.perf import footprint_tokens
 
         listed = asyncio.run(build_server(load_config(), allow_write=True).list_tools())
-        chars = sum(
-            len(json.dumps({"n": t.name, "d": t.description, "s": getattr(t, "inputSchema", None)},
-                           ensure_ascii=False, default=str))
-            for t in listed
-        )
-        return len(listed), chars // 4
+        return footprint_tokens(listed)
     except Exception:
         return None
 

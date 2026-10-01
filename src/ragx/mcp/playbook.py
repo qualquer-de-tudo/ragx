@@ -132,8 +132,17 @@ def playbook(cfg: Config, write_enabled: bool) -> dict[str, Any]:
     }
 
 
-def short_instructions(write_enabled: bool) -> str:
+def short_instructions(write_enabled: bool, profile: str = "full") -> str:
     """As duas frases que o cliente MCP mostra antes de qualquer chamada."""
+    if profile == "slim":
+        # só cita ferramentas que o perfil `slim` expõe: `get_playbook` e `sync` não existem nele
+        base = (
+            "Conhecimento do projeto indexado pelo RAGX; tudo vem do índice, que não contém segredos. "
+            "Comece por get_dictionary."
+        )
+        if write_enabled:
+            base += " Chame refresh no início de uma tarefa para reindexar o que mudou."
+        return base
     base = (
         "Conhecimento do projeto indexado pelo RAGX. Nenhuma ferramenta lê o "
         "filesystem: tudo vem do índice, que por construção não contém segredos. "
