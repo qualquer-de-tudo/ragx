@@ -1,7 +1,9 @@
 import type { ActivityEvent, TelemetrySummary } from '../../electron/data/types'
 
 export type { ActivityEvent }
-import type { RendererSettings } from '../../electron/settings'
+import type { Pricing, RendererSettings } from '../../electron/settings'
+
+export type { Pricing }
 
 /** Só o que o renderer vê; o modo preferido do Ollama fica no processo principal. */
 export type PanelSettings = RendererSettings
@@ -268,6 +270,8 @@ export interface RagxBridge {
   discover: (token: string) => Promise<DiscoverResult>
   getSettings: () => Promise<PanelSettings>
   setOnboardingDone: (done: boolean) => Promise<void>
+  /** Preço por milhão de tokens de entrada que a pessoa informa (RAGX-0186); `null` limpa. */
+  setPricing: (pricing: Pricing | null) => Promise<void>
   /** Mede embeddings/s no Ollama em uso; o modelo é escolhido pelo processo principal. Sem argumentos. */
   runOllamaBenchmark: () => Promise<OllamaBenchmark>
   /** Interruptor do RAGX no Claude Code (`ragx claude status|on|off`), para todos os projetos. */

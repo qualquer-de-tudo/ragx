@@ -11,6 +11,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Economia em dinheiro, com o preço que você informa.** O painel só mostrava tokens e percentual. Agora "Configurar
+  preço" (moeda e preço por milhão de tokens de entrada, guardados no `settings.json` do painel) faz o card de
+  Economia, o resumo de Projetos e Atividade mostrarem o valor, sempre como estimativa. O RAGX não embute tabela de
+  preços nem câmbio e não usa rede; sem preço, nenhuma tela mostra dinheiro (RAGX-0186).
 - **Gráfico de economia por teclado e alvos de clique de 24 px no painel.** O gráfico só respondia ao mouse (quem usa
   teclado ou leitor de tela só chegava aos números pela tabela) e 180 alvos medidos ficavam abaixo de 24x24 px (o
   interruptor, os nomes de projeto nas listas e nos cartões). Agora cada dia é focável com nome acessível, setas,

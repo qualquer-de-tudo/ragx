@@ -17,6 +17,8 @@ import { ProjectActionButton } from '../components/project/ProjectBits'
 import { Badge } from '../components/shell/Badge'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ipcErrorMessage } from '../ipcError'
+import { formatMoney, savedMoney } from '../money'
+import { usePricing } from '../hooks/usePricing'
 import { notify } from '../toast'
 import { Segmented } from '../components/ui/Segmented'
 import { LivePill } from '../components/shell/LivePill'
@@ -114,6 +116,7 @@ export function ProjectsPage({
     listPrefs.setView(v)
   }
   const [adding, setAdding] = useState(false)
+  const { pricing } = usePricing()
 
   // A fila mais recente, lida só quando o clique acontece: o handler não troca a cada push de tarefas.
   const jobsRef = useRef(jobs)
@@ -179,7 +182,15 @@ export function ProjectsPage({
         <div className="stats stats-4 projects-summary" aria-label="Resumo dos projetos">
           <Stat label="Projetos" value={formatNumber(projects.length)} />
           <Stat label="Chamadas MCP" value={formatNumber(resumo.chamadas)} note="últimas 24 h" />
-          <Stat label="Tokens economizados" value={formatCompact(resumo.economizados)} note="últimos 14 dias" />
+          <Stat
+            label="Tokens economizados"
+            value={formatCompact(resumo.economizados)}
+            note={
+              pricing && resumo.economizados > 0
+                ? `últimos 14 dias · ${formatMoney(savedMoney(resumo.economizados, pricing.perMTokInput), pricing.currency)} (estimativa)`
+                : 'últimos 14 dias'
+            }
+          />
           <Stat
             label="Pedem atenção"
             value={formatNumber(resumo.atencao)}

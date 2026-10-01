@@ -3,7 +3,7 @@ import type { BundleInfo } from './bootstrap/bundle'
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
 import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
-import type { PanelSettings, RendererSettings } from './settings'
+import { parsePricing, type PanelSettings, type RendererSettings } from './settings'
 import type {
   ClaudeIntegration,
   ClaudeProfile,
@@ -27,6 +27,8 @@ import type {
  * projectId:'a', path:'C:/x'}` não pode injetar um campo extra que algum
  * código futuro do catálogo passe a ler sem querer.
  */
+const PRICING_KEYS: ReadonlySet<string> = new Set(['currency', 'perMTokInput'])
+
 const JOB_REQUEST_KEYS: ReadonlySet<string> = new Set(['kind', 'projectId', 'folderToken', 'model', 'installHooks'])
 
 export interface QueueLike {
@@ -435,7 +437,31 @@ export function createHandlers(deps: HandlerDeps) {
 
     /** Só `onboardingDone` sai para o renderer; o resto das configurações fica aqui. */
     getSettings(): RendererSettings {
-      return { onboardingDone: deps.readSettings().onboardingDone }
+      const { onboardingDone, pricing } = deps.readSettings()
+      return pricing === undefined ? { onboardingDone } : { onboardingDone, pricing }
+    },
+
+    /**
+     * Preço informado pela pessoa (RAGX-0186). Só enum de moeda e número: recusa chave desconhecida, moeda fora do
+     * conjunto e preço fora de `0 < p <= 10000`; `null` limpa. Não é tarefa da fila nem abre processo.
+     */
+    setPricing(pricingUnknown: unknown): void {
+      const current = deps.readSettings()
+      if (pricingUnknown === null) {
+        const { pricing: _removed, ...rest } = current
+        void _removed
+        deps.writeSettings(rest)
+        return
+      }
+      if (typeof pricingUnknown !== 'object' || Array.isArray(pricingUnknown)) {
+        throw rejected('preço precisa ser um objeto ou null')
+      }
+      for (const key of Object.keys(pricingUnknown as object)) {
+        if (!PRICING_KEYS.has(key)) throw rejected(`campo desconhecido: ${key}`)
+      }
+      const pricing = parsePricing(pricingUnknown)
+      if (pricing === null) throw rejected('moeda ou preço inválido')
+      deps.writeSettings({ ...current, pricing })
     },
 
     setOnboardingDone(doneUnknown: unknown): void {

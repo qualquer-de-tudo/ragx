@@ -23,7 +23,7 @@ Desempenho: com 12 projetos o painel dispara ~290 processos `git` por minuto (2 
 | [RAGX-0183](RAGX-0183-paleta-ctrl-k-e-atalhos.md) | Paleta Ctrl+K e atalhos | P2 | 1d | `done` |
 | [RAGX-0184](RAGX-0184-detalhe-do-projeto-em-dia-economia-agente-usando.md) | Detalhe do projeto: em dia, economia, agente usando | P2 | 0,5d | `done` |
 | [RAGX-0185](RAGX-0185-acessibilidade-grafico-por-teclado-e-setas-nos-grupos.md) | Acessibilidade: gráfico por teclado e setas nos grupos | P2 | 0,5d | `done` |
-| [RAGX-0186](RAGX-0186-economia-em-moeda-configuravel.md) | Economia em moeda configurável | P2 | 0,75d | `todo` |
+| [RAGX-0186](RAGX-0186-economia-em-moeda-configuravel.md) | Economia em moeda configurável | P2 | 0,75d | `done` |
 | [RAGX-0187](RAGX-0187-preview-do-build-context-no-detalhe-do-projeto.md) | Preview do `build_context` no detalhe do projeto | P2 | 1,25d | `todo` |
 | [RAGX-0188](RAGX-0188-linha-do-tempo-de-sessoes-na-atividade.md) | Linha do tempo de sessões na Atividade | P2 | 1d | `todo` |
 | [RAGX-0189](RAGX-0189-saude-do-indice-com-tendencia.md) | Saúde do índice com tendência | P2 | 0,5d | `todo` |

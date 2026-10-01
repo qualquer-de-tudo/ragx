@@ -278,6 +278,18 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Economia em dinheiro
+
+O painel converte a economia de tokens em dinheiro com um preço que **a pessoa informa** (RAGX-0186): "Configurar
+preço" no card de Economia abre um diálogo com a moeda (BRL, USD ou EUR) e o preço por 1 milhão de tokens de
+ENTRADA. O RAGX não embute tabela de preços, não busca câmbio e não usa rede. O preço fica em `settings.json` do
+painel (`pricing`, validado na leitura: moeda do conjunto, preço finito e `0 < preço <= 10000`; o resto vira ausente)
+e chega ao renderer por `getSettings`; a gravação é o canal `ragx:setPricing` (só `currency` e `perMTokInput`, `null`
+limpa). Fórmula: `max(0, baseline - delivered) / 1.000.000 x preço` (`src/money.ts`). Valor entre 0 e 0,005 aparece
+como "menos de R$ 0,01". Aparece no card de Economia, na nota de "Tokens economizados" em Projetos e em Atividade,
+sempre com "estimativa": é só o preço de entrada, sobre o baseline estimado, sem considerar leitura de cache de
+prompt (que custa menos). Sem preço, nenhuma tela mostra dinheiro, só o convite.
+
 ## Acessibilidade
 
 O gráfico de economia responde ao teclado (RAGX-0185): o `<svg>` é um `role="group"` e cada dia é um item focável

@@ -84,3 +84,31 @@ describe('writeSettings', () => {
     expect(leftover).toEqual([])
   })
 })
+
+describe('pricing (RAGX-0186)', () => {
+  it('arquivo antigo, sem o campo, abre igual a antes', () => {
+    const dir = mkTmp()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true })
+  })
+
+  it('pricing válido sobrevive a reabrir e não apaga os outros campos', () => {
+    const dir = mkTmp()
+    writeSettings(dir, { onboardingDone: true, ollamaMode: 'native' })
+    updateSettings(dir, { pricing: { currency: 'BRL', perMTokInput: 15 } })
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, ollamaMode: 'native', pricing: { currency: 'BRL', perMTokInput: 15 } })
+  })
+
+  it.each([
+    ['moeda fora do conjunto', { currency: 'XYZ', perMTokInput: 3 }],
+    ['preço zero', { currency: 'USD', perMTokInput: 0 }],
+    ['preço negativo', { currency: 'USD', perMTokInput: -1 }],
+    ['preço acima do teto', { currency: 'USD', perMTokInput: 10001 }],
+    ['preço em texto', { currency: 'USD', perMTokInput: '3' }],
+    ['não é objeto', 'BRL'],
+  ])('%s vira ausente', (_n, pricing) => {
+    const dir = mkTmp()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, pricing }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true })
+  })
+})

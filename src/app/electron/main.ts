@@ -346,6 +346,7 @@ handleIpc('ragx:pickFolder', () => handlers.pickFolder())
 handleIpc('ragx:discover', (token: unknown) => handlers.discover(token))
 handleIpc('ragx:getSettings', () => handlers.getSettings())
 handleIpc('ragx:setOnboardingDone', (done: unknown) => handlers.setOnboardingDone(done))
+handleIpc('ragx:setPricing', (pricing: unknown) => handlers.setPricing(pricing))
 // Sem argumentos: o que vier do renderer é descartado aqui.
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
 handleIpc('ragx:getClaudeIntegration', () => handlers.getClaudeIntegration())

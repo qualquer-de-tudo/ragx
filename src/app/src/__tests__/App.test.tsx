@@ -26,6 +26,7 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
     discover: vi.fn(),
     getSettings: vi.fn().mockResolvedValue(settings),
     setOnboardingDone: vi.fn(),
+    setPricing: vi.fn(),
     runOllamaBenchmark: vi.fn(),
     getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true }),
     setClaudeIntegration: vi.fn(),

@@ -1,9 +1,32 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+/** Moedas aceitas no preço informado pela pessoa (RAGX-0186). */
+export const CURRENCIES = ['BRL', 'USD', 'EUR'] as const
+export type Currency = (typeof CURRENCIES)[number]
+
+/** Preço por 1 milhão de tokens de ENTRADA, informado pela pessoa: o RAGX não embute tabela de preços. */
+export interface Pricing {
+  currency: Currency
+  perMTokInput: number
+}
+
+export const MAX_PRICE = 10_000
+
+/** Moeda do conjunto, preço finito e `0 < preço <= 10000`. Qualquer outra coisa é `null`. */
+export function parsePricing(raw: unknown): Pricing | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+  const { currency, perMTokInput } = raw as { currency?: unknown; perMTokInput?: unknown }
+  if (typeof currency !== 'string' || !(CURRENCIES as readonly string[]).includes(currency)) return null
+  if (typeof perMTokInput !== 'number' || !Number.isFinite(perMTokInput) || perMTokInput <= 0 || perMTokInput > MAX_PRICE) return null
+  return { currency: currency as Currency, perMTokInput }
+}
+
 /** O que o renderer vê de `getSettings()`: nada além disso sai do processo principal. */
 export interface RendererSettings {
   onboardingDone: boolean
+  /** Ausente por padrão: sem preço, nenhuma tela mostra valor em dinheiro. */
+  pricing?: Pricing
 }
 
 export interface PanelSettings extends RendererSettings {
@@ -27,10 +50,12 @@ function filePath(dir: string): string {
 export function readSettings(dir: string): PanelSettings {
   try {
     const raw = fs.readFileSync(filePath(dir), 'utf-8')
-    const parsed = JSON.parse(raw) as { onboardingDone?: unknown; ollamaMode?: unknown } | null
+    const parsed = JSON.parse(raw) as { onboardingDone?: unknown; ollamaMode?: unknown; pricing?: unknown } | null
     const settings: PanelSettings = { onboardingDone: parsed?.onboardingDone === true }
     const mode = parsed?.ollamaMode
     if (mode === 'docker' || mode === 'native') settings.ollamaMode = mode
+    const pricing = parsePricing(parsed?.pricing)
+    if (pricing !== null) settings.pricing = pricing
     return settings
   } catch {
     return { ...DEFAULT_SETTINGS }

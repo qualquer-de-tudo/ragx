@@ -2,6 +2,7 @@ import { afterEach } from 'vitest'
 import { cleanup, configure } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { CACHE_KEY, resetCacheThrottle } from '../snapshotCache'
+import { resetPricing } from '../hooks/usePricing'
 
 // Com a suíte inteira em paralelo o `findBy*` de 1 s (padrão) estourava em máquina carregada.
 configure({ asyncUtilTimeout: 4000 })
@@ -32,4 +33,5 @@ afterEach(() => {
     /* ambiente sem localStorage */
   }
   resetCacheThrottle()
+  resetPricing()
 })

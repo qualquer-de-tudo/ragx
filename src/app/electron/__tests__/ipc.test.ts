@@ -875,3 +875,44 @@ describe('createHandlers - getConnectionsLight (RAGX-0173)', () => {
     expect(checkAll).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('createHandlers - setPricing (RAGX-0186)', () => {
+  const ok = { currency: 'BRL', perMTokInput: 3 }
+
+  it('grava o preço válido sem apagar os outros campos', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true, ollamaMode: 'native' }) }))
+    handlers.setPricing(ok)
+    expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true, ollamaMode: 'native', pricing: ok })
+  })
+
+  it('null limpa o preço', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true, pricing: ok as never }) }))
+    handlers.setPricing(null)
+    expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true })
+  })
+
+  it.each([
+    ['chave extra', { ...ok, extra: 1 }],
+    ['moeda XYZ', { currency: 'XYZ', perMTokInput: 3 }],
+    ['NaN', { currency: 'BRL', perMTokInput: NaN }],
+    ['Infinity', { currency: 'BRL', perMTokInput: Infinity }],
+    ['-1', { currency: 'BRL', perMTokInput: -1 }],
+    ['0', { currency: 'BRL', perMTokInput: 0 }],
+    ['10001', { currency: 'BRL', perMTokInput: 10001 }],
+    ['texto', { currency: 'BRL', perMTokInput: '3' }],
+    ['não é objeto', 'BRL'],
+    ['lista', [ok]],
+  ])('recusa %s e não grava nada', (_n, bad) => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings }))
+    expect(() => handlers.setPricing(bad)).toThrow(/pedido recusado/)
+    expect(writeSettings).not.toHaveBeenCalled()
+  })
+
+  it('getSettings devolve o preço ao renderer quando existe, e só onboardingDone quando não', () => {
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, pricing: ok as never, ollamaMode: 'docker' }) })).getSettings()).toEqual({ onboardingDone: true, pricing: ok })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
+  })
+})

@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import type { SavingsDay, SavingsSeries } from '../../../electron/data/types'
 import { formatNumber, formatPercent } from '../../format'
+import { formatMoney, savedMoney } from '../../money'
+import { usePricing } from '../../hooks/usePricing'
+import { Badge } from '../shell/Badge'
+import { PricingDialog } from './PricingDialog'
 import { TrialEstimate } from '../EstimatePanel'
 import { EmptyState } from '../ui/EmptyState'
 
@@ -199,6 +203,8 @@ export function TokenSavings({
   savings: SavingsSeries | undefined
 }) {
   const titleId = useId()
+  const { pricing, save } = usePricing()
+  const [pricingOpen, setPricingOpen] = useState(false)
   const has = savings !== undefined && savings.calls > 0
   const economy = has ? saved(savings) : 0
 
@@ -241,6 +247,22 @@ export function TokenSavings({
               </div>
             </dl>
           </div>
+          <div className="savings-money">
+            {pricing ? (
+              <p className="savings-money-line">
+                <span>Economia em dinheiro</span>{' '}
+                <strong>{formatMoney(savedMoney(savings.baseline - savings.delivered, pricing.perMTokInput), pricing.currency)}</strong>{' '}
+                <Badge tone="muted">estimativa</Badge>
+              </p>
+            ) : (
+              <p className="dim">
+                Informe quanto você paga por milhão de tokens de entrada para ver a economia em dinheiro.
+              </p>
+            )}
+            <button type="button" className="btn btn-quiet btn-sm" onClick={() => setPricingOpen(true)}>
+              Configurar preço
+            </button>
+          </div>
           <Chart days={savings.days} />
           <details className="savings-table">
             <summary>Ver em tabela</summary>
@@ -271,7 +293,9 @@ export function TokenSavings({
             "Arquivos inteiros" é o tamanho, em tokens, dos arquivos de onde cada contexto saiu, lido do índice: um limite
             superior, porque um agente com busca não leria todos eles. A economia mostrada é uma estimativa contra esse
             limite, não a economia real. Conta só as chamadas de build_context; registros anteriores a esta versão
-            estimavam o tamanho em ~4 caracteres por token.
+            estimavam o tamanho em ~4 caracteres por token. O valor em dinheiro é uma estimativa: usa só o preço de
+            entrada que você informou, sobre esse mesmo limite estimado, e não considera a leitura de cache de prompt, que
+            custa menos.
           </p>
         </>
       ) : (
@@ -282,6 +306,7 @@ export function TokenSavings({
       )}
 
       <TrialEstimate projectId={projectId} projectPath={projectPath} />
+      {pricingOpen && <PricingDialog current={pricing} onSave={save} onClose={() => setPricingOpen(false)} />}
     </section>
   )
 }

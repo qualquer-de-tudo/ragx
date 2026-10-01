@@ -13,6 +13,8 @@ import { formatCompact, formatNumber, formatPercent, formatRelative, formatTime 
 import { Section, Stat } from '../components/shell/Card'
 import { sourceLabel } from '../indexSource'
 import { useClock } from '../hooks/useClock'
+import { usePricing } from '../hooks/usePricing'
+import { formatMoney, savedMoney } from '../money'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Segmented } from '../components/ui/Segmented'
 import { Tooltip } from '../components/ui/Tooltip'
@@ -89,6 +91,9 @@ export function ActivityPage({
     return projects.filter((p) => ids.has(p.id)).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
   }, [events, projects])
   const economia = t.baseline > 0 ? 1 - t.delivered / t.baseline : null
+  const { pricing } = usePricing()
+  const money =
+    pricing && economia !== null ? formatMoney(savedMoney(t.baseline - t.delivered, pricing.perMTokInput), pricing.currency) : null
 
   return (
     <section className="page activity">
@@ -109,7 +114,11 @@ export function ActivityPage({
         <Stat
           label="Tokens economizados"
           value={formatCompact(Math.max(0, t.baseline - t.delivered))}
-          note={economia === null ? 'sem medição ainda' : `${formatPercent(economia)} menos que ler os arquivos`}
+          note={
+            economia === null
+              ? 'sem medição ainda'
+              : `${formatPercent(economia)} menos que ler os arquivos${money ? ` · ${money} (estimativa)` : ''}`
+          }
         />
         <Stat label="Projetos em uso" value={formatNumber(t.projects)} note={`de ${formatNumber(projects.length)}`} />
       </div>

@@ -35,6 +35,7 @@ describe('useSnapshot', () => {
       discover: vi.fn(),
       getSettings: vi.fn(),
       setOnboardingDone: vi.fn(),
+      setPricing: vi.fn(),
       runOllamaBenchmark: vi.fn(),
       getClaudeIntegration: vi.fn(),
       setClaudeIntegration: vi.fn(),

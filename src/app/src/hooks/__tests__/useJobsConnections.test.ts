@@ -24,6 +24,7 @@ function bridge(over: Partial<RagxBridge> = {}): RagxBridge {
     discover: vi.fn(),
     getSettings: vi.fn(),
     setOnboardingDone: vi.fn(),
+    setPricing: vi.fn(),
     runOllamaBenchmark: vi.fn(),
     getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true }),
     setClaudeIntegration: vi.fn(),

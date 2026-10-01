@@ -48,6 +48,7 @@ export function installBridge(over: Partial<RagxBridge> = {}): RagxBridge {
     discover: vi.fn().mockResolvedValue({ items: [], truncated: false }),
     getSettings: vi.fn().mockResolvedValue({ onboardingDone: true }),
     setOnboardingDone: vi.fn().mockResolvedValue(undefined),
+    setPricing: vi.fn().mockResolvedValue(undefined),
     runOllamaBenchmark: vi.fn(),
     getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true }),
     setClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true }),

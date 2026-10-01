@@ -724,6 +724,41 @@ kbd {
   overflow-wrap: anywhere;
 }
 
+/* Economia em dinheiro e o diálogo de preço (RAGX-0186). */
+.savings-money {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.savings-money-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+.pricing-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-12);
+}
+
+.pricing-field {
+  display: grid;
+  gap: var(--sp-4);
+  font-size: var(--fs-md);
+}
+
+.pricing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sp-8);
+}
+
 /* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
 .skeleton {
   display: block;

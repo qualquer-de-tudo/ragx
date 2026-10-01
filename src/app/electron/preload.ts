@@ -8,6 +8,7 @@ import type {
   JobView,
   OllamaBenchmark,
   PanelSettings,
+  Pricing,
   RagxBridge,
   SecurityScanResult,
   Snapshot,
@@ -51,6 +52,7 @@ const ragx: RagxBridge = {
   discover: (token: string): Promise<DiscoverResult> => ipcRenderer.invoke('ragx:discover', token),
   getSettings: (): Promise<PanelSettings> => ipcRenderer.invoke('ragx:getSettings'),
   setOnboardingDone: (done: boolean): Promise<void> => ipcRenderer.invoke('ragx:setOnboardingDone', done),
+  setPricing: (pricing: Pricing | null): Promise<void> => ipcRenderer.invoke('ragx:setPricing', pricing),
   // Sem argumentos de propósito: nada que o renderer passe chega ao processo principal.
   runOllamaBenchmark: (): Promise<OllamaBenchmark> => ipcRenderer.invoke('ragx:run-ollama-benchmark'),
   getClaudeIntegration: (): Promise<ClaudeIntegration> => ipcRenderer.invoke('ragx:getClaudeIntegration'),
