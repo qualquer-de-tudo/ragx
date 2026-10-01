@@ -62,6 +62,7 @@ Comando: `uv run python scripts/medir_knowledge_estavel.py <pasta-do-clone>` (cr
 ## Notas
 
 - Confirmado em `src/ragx/sync/serialize.py:57-70,209,304`, `src/ragx/dictionary/builder.py:66,357-363,366-372` (`stable_digest` já ignora `generated_at`: o digest do dicionário não muda, o **arquivo** muda), `src/ragx/federation/slice.py:72,158-162` e `src/ragx/tasks/serialize.py:135`. O `generated_at` do `serialize.py` está na linha 304, não na 247 (a auditoria apontou o comentário do grafo).
+- Leitura do título ("sem timestamp"): o objetivo é nenhum timestamp **volátil** sujando o Git, e isso se cumpre mantendo o campo e só o atualizando quando o conteúdo muda. Remover o campo é a alternativa; se a pessoa preferir, `vscode-plugin/src/rag/McpClient.ts:295` passa a ler a data de `.ragx/status.json` (`index.finished_at`). A RAGX-0131 (Fora de escopo) cita "tirar `generated_at`" como parte desta; decidir na hora e registrar em Andamento.
 - Hipótese a verificar, não afirmada: `evidence_chunk_id` e `chunk_id` mudam quando o chunk editado muda de id (o id é função do conteúdo), e cada função é evidência de várias relações (`calls`, `mentions`) espalhadas pelos 16 shards porque o shard sai do hash do `id` da relação. Se for isso, agrupar por documento resolve; senão, seguir o diagnóstico.
 - `_check_artifacts` e `files_written` fazem `rglob` do `knowledge/` inteiro a cada sync; não mexer aqui.
 - Windows: comparar bytes, não texto (CRLF), e escrever sempre com `newline="\n"`, como hoje. `.gitattributes` já tem `* text=auto eol=lf`.
