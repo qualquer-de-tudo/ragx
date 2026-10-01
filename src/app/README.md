@@ -194,8 +194,15 @@ CLI deixa o `ragx` instalado.
 O processo principal lê, para cada projeto do hub, `.ragx/status.json`; se o
 arquivo não existir, cai para contagens lidas direto de
 `.ragx/knowledge.db` (SQLite, via `sql.js`) como aproximação. A branch e o
-commit atuais vêm de `git --no-optional-locks`, para nunca disputar o
-`.git/index` com um `git` do usuário rodando ao mesmo tempo. O painel monta
+commit atuais vêm dos **arquivos do git** (`.git/HEAD`, a ref solta ou
+`.git/packed-refs`, e `.git/commondir` em worktree e submódulo; só metadado,
+nenhum objeto nem conteúdo de código), sem criar processo: o snapshot rodava
+`git rev-parse` e `git symbolic-ref` por projeto a cada 5 s (~290 processos
+por minuto com 12 projetos). O resultado fica em cache por projeto (assinatura
+de `mtime` e tamanho dos três arquivos) e devolve o mesmo objeto enquanto nada
+muda. O `git --no-optional-locks` só roda como último recurso (`reftable`,
+formato de ref desconhecido, pasta que não existe), para nunca disputar o
+`.git/index` com um `git` do usuário. O painel monta
 esse retrato (o "snapshot") por polling a cada 5 segundos e também logo
 depois que uma tarefa termina, sem esperar o próximo tick. Um `running` em
 `status.json` só conta enquanto o processo dono (`pid`) existe: um índice
@@ -211,8 +218,10 @@ histórico de indexações) só é pedida para o projeto aberto no momento na
 tela de Detalhe, nunca para todos de uma vez.
 
 Leitura de arquivo do projeto do usuário fica restrita a
-`.ragx/status.json`, `.ragx/knowledge.db`, `.ragx/logs/mcp.jsonl` e à
-existência de `ragx.toml` e `.git` (a busca de "Adicionar projeto" também
+`.ragx/status.json`, `.ragx/knowledge.db`, `.ragx/logs/mcp.jsonl`, aos
+arquivos de metadado do git (`.git/HEAD`, `.git/refs/**`, `.git/packed-refs`,
+`.git/commondir`, `.git/config` só para detectar `reftable`; no máximo 64 KB
+cada) e à existência de `ragx.toml` e `.git` (a busca de "Adicionar projeto" também
 oferece repositórios git sem `ragx.toml`, marcados "novo"); nenhum conteúdo
 de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o

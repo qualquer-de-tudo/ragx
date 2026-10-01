@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **O painel lê branch e commit dos arquivos do git, sem criar processo.** O snapshot rodava `git
+  rev-parse HEAD` e `git symbolic-ref` por projeto a cada 5 s: **~290 processos `git` por minuto** com 12
+  projetos, mesmo com a janela minimizada. Agora lê `.git/HEAD`, a ref solta ou `.git/packed-refs` (e
+  `commondir` em worktree e submódulo; só metadado, até 64 KB por arquivo, nenhum conteúdo de código), com
+  cache por assinatura de `mtime` e tamanho que devolve o mesmo objeto enquanto nada muda. O `git` só roda
+  como último recurso (`reftable`, formato desconhecido). Medido com o amostrador da RAGX-0177: **`git` de
+  290,8 para 0 por minuto**, `buildSnapshot` de **141,9 para 2,9 ms**, e o tempo de processos filhos de
+  16,8 para 6,5 s por minuto (RAGX-0172).
 - **O painel mede o próprio consumo (opt-in).** A auditoria só tinha comandos isolados: "o Electron real não
   foi aberto". Com `RAGX_PANEL_METRICS=<arquivo.jsonl>` o painel amostra, a cada 5 s, RAM e CPU de cada
   processo (`app.getAppMetrics()`) e os processos filhos que ele cria por executável (`git`, `ragx`,
