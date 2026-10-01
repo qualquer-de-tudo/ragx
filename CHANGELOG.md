@@ -60,6 +60,27 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   artefatos do workflow (30 dias), não na página. O "Source code (zip/tar.gz)"
   que o GitHub acrescenta a toda release não tem como ser desligado.
 
+### Corrigido
+
+- **Junction do Windows não escapa mais da raiz do projeto.** `mklink /J` (o que o
+  pnpm cria, e que não exige privilégio) não é symlink para o Python, então passava
+  pela guarda anti-escape do walker e a pasta de **fora** do projeto era percorrida e
+  indexada (reproduzido: `linkout/notes.md` entrava). Agora junction conta como link:
+  não é seguida por padrão e, com `index.follow_symlinks = true`, só se resolver para
+  dentro da raiz; o `IgnoreEngine` também não lê `.gitignore` de dentro dela. **Muda o
+  comportamento:** junctions *dentro* do projeto deixam de ser indexadas pelo padrão,
+  como os symlinks. `ragx sync` também recusa `rel_path` absoluto, com `..` ou que
+  resolva para fora ao reidratar o conteúdo (reproduzido: `../fora.txt` era lido)
+  (RAGX-0149).
+- **Arquivo travado no momento do save não some mais do índice.** No Windows, o
+  antivírus ou o editor seguram o arquivo logo depois do save, que é quando o hook
+  dispara; um `OSError` ao abri-lo fazia o walker simplesmente não entregá-lo e o
+  pipeline o apagava como "removido" (medido: documentos 1 e chunks 20 viravam 0 e 0
+  até a rodada seguinte). Agora o arquivo é `unreadable`: nada é regravado, a rodada
+  mostra `unreadable` no `--json` e no resumo, e uma pasta que não abriu protege o que
+  estava sob ela. Só "não existe" significa removido; o nome sensível continua sendo
+  bloqueado sem abrir o arquivo (RAGX-0133).
+
 ## [1.0.0-beta.5] — 2026-09-30
 
 ### Adicionado
@@ -371,14 +392,6 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
-- **Arquivo travado no momento do save não some mais do índice.** No Windows, o
-  antivírus ou o editor seguram o arquivo logo depois do save, que é quando o hook
-  dispara; um `OSError` ao abri-lo fazia o walker simplesmente não entregá-lo e o
-  pipeline o apagava como "removido" (medido: documentos 1 e chunks 20 viravam 0 e 0
-  até a rodada seguinte). Agora o arquivo é `unreadable`: nada é regravado, a rodada
-  mostra `unreadable` no `--json` e no resumo, e uma pasta que não abriu protege o que
-  estava sob ela. Só "não existe" significa removido; o nome sensível continua sendo
-  bloqueado sem abrir o arquivo (RAGX-0133).
 - **Indexar um monorepo pnpm travava por mais de 20 minutos a cada commit.** A
   busca pelos arquivos de ignore fazia três `rglob` pela árvore inteira, e o do
   Python 3.12 entra nas junctions do `node_modules` do pnpm sem lembrar onde já

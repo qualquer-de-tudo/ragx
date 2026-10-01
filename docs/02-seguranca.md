@@ -14,7 +14,7 @@
 | A5 | Segredo servido a um agente | Ferramenta MCP devolve trecho sensível | MCP lê apenas do store; store não contém segredo |
 | A6 | Segredo exportado no `.rag` | Pacote compartilhado com o time | Re-scan obrigatório no export |
 | A7 | Segredo no próprio relatório de segurança | Log com o valor detectado | `Redactor`: guarda-se `sha256` + máscara, nunca o valor |
-| A8 | Path traversal / symlink para fora do projeto | `link -> /home/user/.ssh` | Walker recusa symlink que escapa da raiz |
+| A8 | Path traversal / symlink ou junction para fora do projeto | `link -> /home/user/.ssh`; `mklink /J linkout C:\fora` | Walker recusa symlink **e junction do Windows** que escapam da raiz; `sync` recusa `rel_path` absoluto, com `..` ou que resolva para fora |
 | A9 | Segredo reintroduzido após índice antigo | Arquivo já indexado vira sensível | Re-scan no `sync`; chunks órfãos são purgados |
 
 Fora do escopo do MVP: proteção contra usuário local malicioso com acesso de escrita

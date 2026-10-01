@@ -138,6 +138,19 @@ def _rechunk(cfg: Config, rel: str, lines: list[str]) -> dict[str, str]:
     return {c.id: c.content for c in chunk_document(rel, text, parsed, opts)}
 
 
+def _dentro_da_raiz(root: Path, rel: str) -> Path | None:
+    """`root / rel`, ou `None` se `rel` não aponta para um arquivo DENTRO da raiz."""
+    if Path(rel).is_absolute() or ".." in Path(rel.replace("\\", "/")).parts:
+        return None
+    path = root / rel
+    try:
+        if not path.resolve().is_relative_to(root.resolve()):
+            return None
+    except (OSError, RuntimeError):
+        return None
+    return path
+
+
 _BLOCKED: list[str] = []  # sentinela: arquivo existe mas foi bloqueado pelo gate
 
 
@@ -146,7 +159,12 @@ def _lines(
 ) -> list[str] | None:
     if rel in cache:
         return cache[rel]
-    path = root / rel
+    path = _dentro_da_raiz(root, rel)
+    if path is None:
+        # `rel` vem de knowledge/documents/*.json, que é conteúdo do repositório:
+        # `..`, caminho absoluto ou link que sai da raiz não é "arquivo do projeto".
+        cache[rel] = None
+        return None
     try:
         raw = path.read_bytes()
     except OSError:

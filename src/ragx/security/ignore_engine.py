@@ -15,6 +15,8 @@ from pathlib import Path
 
 from pathspec import GitIgnoreSpec
 
+from ragx.security.links import is_junction
+
 RULES_DIR = Path(__file__).parent / "rules"
 _IGNORE_FILES = (".gitignore", ".dockerignore", ".ragignore")
 
@@ -118,7 +120,12 @@ class IgnoreEngine:
 
             for entry in entries:
                 try:
-                    if entry.is_symlink() or not entry.is_dir() or entry.name == ".git":
+                    if (
+                        entry.is_symlink()
+                        or not entry.is_dir()
+                        or entry.name == ".git"
+                        or is_junction(entry.path)  # junction do Windows (A8)
+                    ):
                         continue
                     filho = f"{scope + '/' if scope else ''}{entry.name}"
                     if self.can_prune(filho):

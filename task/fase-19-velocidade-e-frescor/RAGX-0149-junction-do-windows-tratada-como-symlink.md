@@ -7,7 +7,7 @@
 | **Estimativa** | 0,25d |
 | **Depende de** | — |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (I-13) · [25-spec-v2.md](../../docs/25-spec-v2.md) (princípio 1) · [02-seguranca.md](../../docs/02-seguranca.md) (ameaça A8) · [04-indexacao.md](../../docs/04-indexacao.md) · [ADR-0008](../../docs/adr/ADR-0008-security-gate-antes-do-parser.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,12 +15,12 @@ A guarda anti-escape do walker só vale para `is_symlink()`. No Windows uma **ju
 
 ## Entregáveis
 
-- [ ] **Reproduzir primeiro** com um teste que falha: junction para pasta fora da raiz, com `index.follow_symlinks` falso e verdadeiro; registrar o resultado atual em Medição
-- [ ] `src/ragx/security/links.py` (novo, só stdlib, tipado para o `mypy --strict` do pacote): `is_link(path)` verdadeiro para symlink **ou** junction. Em Python ≥ 3.12 usa `os.path.isjunction`/`DirEntry.is_junction`; em 3.11 (`requires-python = ">=3.11"`, `pyproject.toml:9`), no Windows, `os.lstat(path).st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT`. **Não** tratar qualquer reparse point como link: pastas do OneDrive (arquivos sob demanda) e `AppExecLink` também são reparse points e não são junctions
-- [ ] `src/ragx/walk.py:161-167` (`_walk`): trocar `entry.is_symlink()` por `is_link(entry)`, só consultar junction quando `is_dir()` (poucas pastas, nenhum syscall extra por arquivo). Com `follow_symlinks=False` (padrão) a junction é pulada; com `True` segue só se `entry.resolve()` ficar dentro da raiz, como o symlink
-- [ ] `src/ragx/security/ignore_engine.py:102,121` (`_descobrir`): mesma troca, para que `.gitignore` de dentro de uma junction para fora da raiz não seja lido
-- [ ] `src/ragx/sync/rehydrate.py:143-158` (`_lines`): lê `root / rel`, com `rel` vindo de `knowledge/documents/*.json`, **sem** checar que o caminho fica dentro da raiz. Recusar `rel` absoluto, com `..` ou que resolva (symlink/junction) para fora, tratando como arquivo ausente. É achado lateral: **reproduzir com teste antes de mexer** e, se não reproduzir, registrar em Andamento
-- [ ] Documentar o comportamento em `docs/02-seguranca.md` (A8 cobre junction) e `docs/04-indexacao.md` (`index.follow_symlinks` e junction), com o aviso de que junctions **dentro** da raiz também deixam de ser indexadas por padrão
+- [x] **Reproduzir primeiro** com um teste que falha: junction para pasta fora da raiz, com `index.follow_symlinks` falso e verdadeiro; registrar o resultado atual em Medição
+- [x] `src/ragx/security/links.py` (novo, só stdlib, tipado para o `mypy --strict` do pacote): `is_link(path)` verdadeiro para symlink **ou** junction. Em Python ≥ 3.12 usa `os.path.isjunction`/`DirEntry.is_junction`; em 3.11 (`requires-python = ">=3.11"`, `pyproject.toml:9`), no Windows, `os.lstat(path).st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT`. **Não** tratar qualquer reparse point como link: pastas do OneDrive (arquivos sob demanda) e `AppExecLink` também são reparse points e não são junctions
+- [x] `src/ragx/walk.py:161-167` (`_walk`): trocar `entry.is_symlink()` por `is_link(entry)`, só consultar junction quando `is_dir()` (poucas pastas, nenhum syscall extra por arquivo). Com `follow_symlinks=False` (padrão) a junction é pulada; com `True` segue só se `entry.resolve()` ficar dentro da raiz, como o symlink
+- [x] `src/ragx/security/ignore_engine.py:102,121` (`_descobrir`): mesma troca, para que `.gitignore` de dentro de uma junction para fora da raiz não seja lido
+- [x] `src/ragx/sync/rehydrate.py:143-158` (`_lines`): lê `root / rel`, com `rel` vindo de `knowledge/documents/*.json`, **sem** checar que o caminho fica dentro da raiz. Recusar `rel` absoluto, com `..` ou que resolva (symlink/junction) para fora, tratando como arquivo ausente. É achado lateral: **reproduzir com teste antes de mexer** e, se não reproduzir, registrar em Andamento
+- [x] Documentar o comportamento em `docs/02-seguranca.md` (A8 cobre junction) e `docs/04-indexacao.md` (`index.follow_symlinks` e junction), com o aviso de que junctions **dentro** da raiz também deixam de ser indexadas por padrão
 
 ## Fora de escopo
 
@@ -31,28 +31,28 @@ A guarda anti-escape do walker só vale para `is_symlink()`. No Windows uma **ju
 
 ## Critérios de aceite
 
-- [ ] Junction para fora da raiz: **nenhum** arquivo de lá entra em `documents` nem em `chunks`, com `follow_symlinks` falso **e** verdadeiro (antes: indexado)
-- [ ] Symlink para fora da raiz: idem, em Linux e macOS (hoje sem teste)
-- [ ] Junction para dentro da raiz: não indexada duas vezes (padrão) e seguida uma vez só com `follow_symlinks = true`
-- [ ] Pasta com reparse point de outro tipo (simulado) continua indexada
-- [ ] `uv run pytest tests/security` e `uv run mypy src/ragx/core src/ragx/security` verdes
+- [x] Junction para fora da raiz: **nenhum** arquivo de lá entra em `documents` nem em `chunks`, com `follow_symlinks` falso **e** verdadeiro (antes: indexado)
+- [x] Symlink para fora da raiz: idem, em Linux e macOS (hoje sem teste)
+- [x] Junction para dentro da raiz: não indexada duas vezes (padrão) e seguida uma vez só com `follow_symlinks = true`
+- [x] Pasta com reparse point de outro tipo (simulado) continua indexada
+- [x] `uv run pytest tests/security` e `uv run mypy src/ragx/core src/ragx/security` verdes
 
 ### Medição
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| Arquivos de fora da raiz indexados via junction | 1 (`linkout/notes.md`) | |
-| Teste de symlink/junction em `tests/security` | 0 | |
+| Arquivos de fora da raiz indexados via junction | 1 (`linkout/notes.md`; reproduzido, com `follow_symlinks` falso e verdadeiro) | **0** |
+| Teste de symlink/junction em `tests/security` | 0 | **7** em `test_walker_links.py` (+ 5 em `tests/unit/test_links.py`) |
 
 Comando: `uv run pytest tests/security/test_walker_links.py -q`.
 
 ## Testes
 
-- [ ] `tests/security/test_walker_links.py` (novo): junction (`_winapi.CreateJunction`, só Windows; como `_link_dir` em `tests/unit/test_ignore_engine.py:59-66`) e symlink (POSIX) para pasta fora da raiz, com `follow_symlinks` falso e verdadeiro: o arquivo de fora não entra e a pasta de dentro continua indexada
-- [ ] `tests/security/test_walker_links.py`: junction para dentro da raiz (padrão: não indexa duas vezes; `follow_symlinks = true`: uma vez)
-- [ ] `tests/unit/test_links.py` (novo): `is_link` em diretório comum, symlink e junction; reparse point que não é `MOUNT_POINT` (monkeypatch de `os.lstat` com `st_reparse_tag` de cloud files) devolve falso; caminho inexistente devolve falso sem lançar
-- [ ] `tests/unit/test_ignore_engine.py`: `.gitignore` dentro de junction para fora da raiz não vira fonte; o teste de visita única continua verde
-- [ ] `tests/security/test_walker_links.py` ou `tests/integration/test_sync.py`: `knowledge/documents/x.json` com `rel_path` `../fora.txt`, absoluto e via junction → `_lines` devolve `None`, `report.missing` conta, nada fora da raiz é lido
+- [x] `tests/security/test_walker_links.py` (novo): junction (`_winapi.CreateJunction`, só Windows; como `_link_dir` em `tests/unit/test_ignore_engine.py:59-66`) e symlink (POSIX) para pasta fora da raiz, com `follow_symlinks` falso e verdadeiro: o arquivo de fora não entra e a pasta de dentro continua indexada
+- [x] `tests/security/test_walker_links.py`: junction para dentro da raiz (padrão: não indexa duas vezes; `follow_symlinks = true`: uma vez)
+- [x] `tests/unit/test_links.py` (novo): `is_link` em diretório comum, symlink e junction; reparse point que não é `MOUNT_POINT` (monkeypatch de `os.lstat` com `st_reparse_tag` de cloud files) devolve falso; caminho inexistente devolve falso sem lançar
+- [x] `tests/unit/test_ignore_engine.py`: `.gitignore` dentro de junction para fora da raiz não vira fonte; o teste de visita única continua verde
+- [x] `tests/security/test_walker_links.py` ou `tests/integration/test_sync.py`: `knowledge/documents/x.json` com `rel_path` `../fora.txt`, absoluto e via junction → `_lines` devolve `None`, `report.missing` conta, nada fora da raiz é lido
 
 ## Notas
 
@@ -64,14 +64,23 @@ Comando: `uv run pytest tests/security/test_walker_links.py -q`.
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
-- [ ] Documentação confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0149)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [x] Testes escritos e verdes (Windows rodado aqui, com junction de verdade via `_winapi.CreateJunction`; Linux e macOS pelo CI, com symlink)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
+- [x] Documentação confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0149)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+2026-09-30. Reproduzido primeiro: 5 testes vermelhos (junction para fora indexada nos dois modos de `follow_symlinks`;
+junction interna indexada por padrão; `.gitignore` dentro de junction para fora lido; `_lines(raiz, "../fora.txt")` devolveu
+`['segredo-de-fora']`, ou seja, o achado lateral de `sync/rehydrate` SE CONFIRMOU). Implementado: `ragx/security/links.py`
+(`is_link`, `is_junction`; só `IO_REPARSE_TAG_MOUNT_POINT`, via `os.lstat().st_reparse_tag`, igual no 3.11 e no 3.12+; o ambiente
+roda Python 3.13); `walk._walk` usa `entry.is_symlink() or (entry.is_dir() and is_junction(entry))` (nenhum syscall a mais por
+arquivo; fora do Windows `is_junction` devolve falso sem syscall); `IgnoreEngine._descobrir` pula junction; `rehydrate._dentro_da_raiz`
+recusa `rel` absoluto, com `..` ou que resolva para fora. Docs: `02-seguranca.md` (A8) e `04-indexacao.md` (a frase antiga dizia que
+symlink interno era seguido por padrão; na verdade só com `follow_symlinks = true`, corrigido). CHANGELOG: o aviso de mudança de
+comportamento (junction interna deixa de ser indexada por padrão) está registrado. Fast suite, `tests/security`, `ruff`, `mypy` verdes.
+Correção colateral: as entradas de CHANGELOG da 0133 e desta tinham caído na seção da beta.4; movidas para `[Não lançado]`.

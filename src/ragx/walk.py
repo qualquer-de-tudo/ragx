@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ragx.core.models import GateDecision, Verdict
 from ragx.security.gate import SecurityGate
+from ragx.security.links import is_junction
 
 _BINARY_PROBE = 8192
 
@@ -216,10 +217,14 @@ def _walk(
             continue
         for entry in sorted(entries):
             try:
-                if entry.is_symlink():
+                # Junction do Windows não é symlink para o Python: sem isto ela
+                # passava pela guarda e a pasta de fora era percorrida (A8). Só se
+                # pergunta por pasta; em arquivo não há syscall a mais.
+                eh_link = entry.is_symlink() or (entry.is_dir() and is_junction(entry))
+                if eh_link:
                     if not follow_symlinks:
                         continue
-                    # Symlink que escapa da raiz é recusado (ameaça A8).
+                    # Link que escapa da raiz é recusado (ameaça A8).
                     target = entry.resolve()
                     if not target.is_relative_to(root):
                         continue

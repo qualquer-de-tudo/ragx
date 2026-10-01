@@ -21,8 +21,13 @@ ragx index ./src --dry-run   # só relatório, não escreve
 Responsabilidades e limites:
 
 - Caminha a partir da raiz do projeto (a que contém `ragx.toml`).
-- **Recusa symlinks que apontam para fora da raiz** (ameaça A8). Symlink interno é
-  seguido uma vez; ciclos detectados por `inode`/`st_ino` visitado.
+- **Recusa symlinks e junctions que apontam para fora da raiz** (ameaça A8). Por
+  padrão (`index.follow_symlinks = false`) links de pasta **não são seguidos**, nem os
+  que ficam dentro da raiz; com `true`, só os que resolvem para dentro dela, uma vez
+  cada (ciclos detectados por `inode`/`st_ino` visitado). No Windows, **junction**
+  (`mklink /J`, o que o pnpm cria) conta como link: o Python não a chama de symlink, e
+  antes dela a pasta de fora era percorrida (RAGX-0149). Só `MOUNT_POINT` é junction;
+  OneDrive e outros reparse points continuam sendo percorridos.
 - Pula arquivos acima de `index.max_file_bytes` (padrão **1 MiB**) → `skipped:too_large`.
 - Detecta binário: se os primeiros 8 KiB contêm `\x00`, o arquivo é binário → `skipped:binary`.
 - Decodifica como UTF-8; em falha, tenta `utf-8-sig`, depois `latin-1`;
