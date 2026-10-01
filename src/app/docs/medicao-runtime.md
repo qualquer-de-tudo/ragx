@@ -57,3 +57,22 @@ Ressalvas: fixture (12 repositórios `git init` em pasta temporária, projetos p
 
 - **visible** (47 amostras, 235 s): filhos/min: docker 2, tasklist 0.3, powershell 0.3, ragx 0.5; ms de filhos/min: docker 263, tasklist 43, powershell 810, ragx 237; CPU média/p95 por tipo: Browser 0/0.1, GPU 0/0, Utility 0/0, Tab 0/0; custo médio do amostrador: 0.68 ms
 
+## depois-0171-pollers-pausaveis
+
+- Data: 2026-10-01T12:43:10.484Z
+- Máquina: Windows_NT 10.0.26200 (win32 x64), 20 núcleos lógicos, 13th Gen Intel(R) Core(TM) i5-13600KF, 31.8 GB de RAM
+- Painel 1.0.0-beta.5, Electron 33.4.11 (não empacotado: `electron dist-electron/main.js`, casca de produção)
+- Projetos no hub: 12 (fixture: 12 repositórios `git init` em pasta temporária)
+- Plano: `visible:2,minimized:2,hidden:1` (5 min); amostra a cada 5 s; a 1ª amostra de cada execução é descartada (`warmup`)
+- Amostras: 60 (JSONL em %TEMP%, não versionado)
+- Convenção de CPU: `percentCPUUsage` do `app.getAppMetrics()`, medido desde a chamada anterior; **por núcleo** (pode passar de 100), somado entre os processos do painel
+
+| Estado | Amostras | RAM working set (média / pico MB) | RAM privada (média / pico MB) | CPU soma (média / p95) | `git`/min | filhos (ms/min) | snapshot (ms) |
+|---|---|---|---|---|---|---|---|
+| visible | 23 | 411 / 418.3 | 211.9 / 220 | 0 / 0.1 | 0 | 1428 | 3 |
+| minimized | 24 | 408.7 / 415.9 | 209.2 / 228.2 | 0 / 0 | 0 | 225 | 3.8 |
+| hidden | 12 | 407.3 / 407.3 | 206.7 / 206.7 | 0 / 0 | 0 | 0 | 5 |
+
+- **visible** (23 amostras, 115 s): filhos/min: docker 2.1, tasklist 0.5, powershell 0.5, ragx 1; ms de filhos/min: docker 409, tasklist 94, powershell 292, ragx 633; CPU média/p95 por tipo: Browser 0/0.1, GPU 0/0, Utility 0/0, Tab 0/0; custo médio do amostrador: 3 ms
+- **minimized** (24 amostras, 120 s): filhos/min: docker 0.5; ms de filhos/min: docker 225; CPU média/p95 por tipo: Browser 0/0, GPU 0/0, Utility 0/0, Tab 0/0; custo médio do amostrador: 0.67 ms
+- **hidden** (12 amostras, 60 s): filhos/min: nenhum; ms de filhos/min: nenhum; CPU média/p95 por tipo: Browser 0/0, GPU 0/0, Utility 0/0, Tab 0/0; custo médio do amostrador: 0.67 ms

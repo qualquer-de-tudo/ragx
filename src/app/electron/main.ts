@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, powerMonitor } from 'electron'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -11,6 +11,9 @@ import { checkAll, defaultCheckDeps, resetRagxVersionCache } from './connections
 import { resetRagxCache, resolveRagx } from './system/ragx-exe'
 import { execFileText } from './system/exec'
 import { createRuntimeSampler, metricsFileFromEnv } from './system/runtime-metrics'
+import { createPausablePoller, type PausablePoller } from './system/pausable-poller'
+import { watchWindowActivity, type PowerLike, type WindowLike } from './system/window-activity'
+import { acquireSingleInstance } from './single-instance'
 import { parsePlan, type PanelState } from './system/runtime-summary'
 import { findBundleDir, loadBundle, uvCommand } from './bootstrap/bundle'
 import { afterRagxInstall } from './bootstrap/post-install'
@@ -57,9 +60,15 @@ const ACTIVITY_POLL_MS = 1500
 const JOBS_THROTTLE_MS = 250
 
 let mainWindow: BrowserWindow | null = null
-let snapshotTimer: ReturnType<typeof setInterval> | null = null
-let connectionsTimer: ReturnType<typeof setInterval> | null = null
-let activityTimer: ReturnType<typeof setInterval> | null = null
+// RAGX-0171: os três pollers pausam com a janela fora da vista (minimizada, oculta, tela bloqueada, suspenso)
+let snapshotPoller: PausablePoller | null = null
+let connectionsPoller: PausablePoller | null = null
+let activityPoller: PausablePoller | null = null
+let stopWatchingActivity: (() => void) | null = null
+/** O painel está sendo visto? Com `false`, o fim de uma tarefa só marca o snapshot como sujo. */
+let panelActive = true
+/** Algo mudou (uma tarefa terminou) enquanto o painel estava fora da vista: reconstrói na volta. */
+let snapshotStale = false
 const activity = new ActivityTail()
 
 // Último snapshot/checagens conhecidos - fonte de verdade para validar
@@ -219,22 +228,28 @@ function onJobsChange(jobs: JobView[]): void {
   // rodando, não dispara outra em paralelo - marca "dirty" pra rodar mais
   // uma assim que essa terminar, porque ela pode ter começado antes da
   // tarefa terminar de verdade e não refletir o resultado final (MINOR 2).
-  if (justFinished) pushSnapshotNow({ markDirtyIfBusy: true })
+  // Com a janela fora da vista (RAGX-0171) não reconstrói: marca o snapshot como sujo e a volta o atualiza.
+  // A fila e as tarefas NÃO pausam.
+  if (justFinished) {
+    if (panelActive) void pushSnapshotNow({ markDirtyIfBusy: true })
+    else snapshotStale = true
+  }
 }
 
 let snapshotDirtyAfterInFlight = false
 
-function pushSnapshotNow(opts: { markDirtyIfBusy?: boolean } = {}): void {
+function pushSnapshotNow(opts: { markDirtyIfBusy?: boolean } = {}): Promise<void> {
   if (inFlightSnapshot) {
     if (opts.markDirtyIfBusy) snapshotDirtyAfterInFlight = true
-    return // já tem uma reconstrução em andamento - a batida de polling/o "dirty" acima cobre isso
+    return Promise.resolve() // já tem uma reconstrução em andamento - a batida de polling/o "dirty" acima cobre isso
   }
-  refreshSnapshot()
-    .then((snapshot) => {
+  return refreshSnapshot()
+    .then(async (snapshot) => {
+      snapshotStale = false
       mainWindow?.webContents.send('ragx:snapshot', snapshot)
       if (snapshotDirtyAfterInFlight) {
         snapshotDirtyAfterInFlight = false
-        pushSnapshotNow()
+        await pushSnapshotNow()
       }
     })
     .catch((err) => console.error('buildSnapshot() falhou apos tarefa terminar:', err))
@@ -418,10 +433,15 @@ async function runUninstallHeadless(): Promise<number> {
 // -- polling ---------------------------------------------------------------
 
 function startSnapshotPolling(): void {
-  if (snapshotTimer) return
+  if (snapshotPoller) return
   // git pode ser lento - `pushSnapshotNow` já pula a batida se a anterior
   // ainda não terminou, para nunca rodar `git` em paralelo para o mesmo projeto.
-  snapshotTimer = setInterval(pushSnapshotNow, SNAPSHOT_POLL_MS)
+  snapshotPoller = createPausablePoller({
+    intervalMs: SNAPSHOT_POLL_MS,
+    run: () => pushSnapshotNow(),
+    onError: (err) => console.error('polling do snapshot falhou:', err),
+  })
+  snapshotPoller.start()
 }
 
 /**
@@ -440,25 +460,44 @@ function pollActivity(): void {
 }
 
 function startActivityPolling(): void {
-  if (activityTimer) return
-  activityTimer = setInterval(() => {
-    try {
-      pollActivity()
-    } catch (err) {
-      console.error('pollActivity() falhou:', err)
-    }
-  }, ACTIVITY_POLL_MS)
+  if (activityPoller) return
+  activityPoller = createPausablePoller({
+    intervalMs: ACTIVITY_POLL_MS,
+    run: () => pollActivity(),
+    onError: (err) => console.error('pollActivity() falhou:', err),
+  })
+  activityPoller.start()
 }
 
 function startConnectionsPolling(): void {
-  if (connectionsTimer) return
+  if (connectionsPoller) return
   // Único poller de conexões: `getConnections` já junta chamadas que chegam
   // no meio de uma checagem, e cada resultado vai para o renderer por
   // `ragx:connections` (`publishConnections`).
-  connectionsTimer = setInterval(() => {
+  connectionsPoller = createPausablePoller({
+    intervalMs: CONNECTIONS_POLL_MS,
     // tick de fundo: a checagem LEVE (RAGX-0173); "Verificar agora", startup e fim de tarefa seguem completos
-    handlers.getConnectionsLight().catch((err) => console.error('getConnectionsLight() falhou no polling:', err))
-  }, CONNECTIONS_POLL_MS)
+    run: () => handlers.getConnectionsLight(),
+    onError: (err) => console.error('getConnectionsLight() falhou no polling:', err),
+  })
+  connectionsPoller.start()
+}
+
+/**
+ * RAGX-0171: liga os pollers à visibilidade da janela. Fora da vista nada roda; na volta, um snapshot na
+ * hora (se algo mudou ou já passou o intervalo), conexões só se a última tem mais de 30 s e uma passada de
+ * atividade (cada poller decide pelo próprio intervalo ao ser reativado).
+ */
+function watchPanelActivity(win: BrowserWindow): void {
+  stopWatchingActivity?.()
+  // o `on` do Electron é sobrecarregado por evento: o tipo estreito `WindowLike` pede um cast
+  stopWatchingActivity = watchWindowActivity(win as unknown as WindowLike, powerMonitor as unknown as PowerLike, (active) => {
+    panelActive = active
+    snapshotPoller?.setActive(active)
+    connectionsPoller?.setActive(active)
+    activityPoller?.setActive(active)
+    if (active && snapshotStale) snapshotPoller?.runNow()
+  })
 }
 
 // -- medição de consumo (RAGX-0177) ----------------------------------------
@@ -522,6 +561,8 @@ function createWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // RAGX-0171: o Chromium reduz o trabalho do renderer com a janela fora da vista (explícito, não o padrão implícito)
+      backgroundThrottling: true,
     },
   })
   mainWindow = win
@@ -546,6 +587,7 @@ function createWindow(): void {
     startSnapshotPolling()
     startConnectionsPolling()
     startActivityPolling()
+    watchPanelActivity(win)
     startRuntimeMeasurement()
     // Fix round 1 (MINOR 4): a primeira checagem de conexão roda logo depois
     // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`
@@ -574,16 +616,36 @@ function createWindow(): void {
   })
 
   win.on('closed', () => {
-    if (snapshotTimer) clearInterval(snapshotTimer)
-    if (connectionsTimer) clearInterval(connectionsTimer)
-    if (activityTimer) clearInterval(activityTimer)
-    snapshotTimer = null
-    connectionsTimer = null
+    stopWatchingActivity?.()
+    stopWatchingActivity = null
+    snapshotPoller?.stop()
+    connectionsPoller?.stop()
+    activityPoller?.stop()
+    snapshotPoller = null
+    connectionsPoller = null
+    activityPoller = null
     mainWindow = null
   })
 }
 
+/** Uma segunda abertura do painel foca a janela que já existe (RAGX-0171). */
+function focusExistingWindow(): void {
+  const win = mainWindow
+  if (win === null) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
+// Os modos `--bootstrap` e `--uninstall-cli` do instalador NÃO pegam a trava; `RAGX_PANEL_ALLOW_MULTI=1` a desliga.
+const GOT_SINGLE_INSTANCE = acquireSingleInstance(app, {
+  headless: HEADLESS,
+  allowMulti: process.env.RAGX_PANEL_ALLOW_MULTI === '1',
+  onSecondInstance: focusExistingWindow,
+})
+
 app.whenReady().then(async () => {
+  if (!GOT_SINGLE_INSTANCE) return
   // sql.js carrega seu modulo WASM de forma assincrona; precisa terminar
   // antes de qualquer chamada a readProjectStats (via buildSnapshot), que
   // acontece a partir do polling ou do handler ragx:getSnapshot — ambos

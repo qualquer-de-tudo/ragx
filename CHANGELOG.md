@@ -11,6 +11,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **O painel para de trabalhar quando ninguém o está vendo, e abre uma só vez.** Os três pollers (snapshot
+  a cada 5 s, conexões a cada 30 s, atividade a cada 1,5 s) rodavam também com a janela minimizada, oculta,
+  com a tela bloqueada ou o computador suspendendo (~290 processos `git` por minuto, medido na RAGX-0177).
+  Agora pausam nesses estados e retomam na volta (um snapshot na hora se algo mudou ou já passou o
+  intervalo); uma tarefa que termina com a janela fora da vista só marca o snapshot como sujo, e a fila não
+  pausa. Medido com 12 projetos: janela minimizada de **~284 para 0,5 filho por minuto** (e 0 `git`), oculta
+  **0**. O painel agora é de **instância única** (abrir de novo foca a janela existente; os modos do
+  instalador `--bootstrap` e `--uninstall-cli` não pegam a trava, e `RAGX_PANEL_ALLOW_MULTI=1` a desliga) e o
+  `win.on('closed')` passou a zerar também o poller de atividade (RAGX-0171).
 - **Checagem de conexões barata no tick de 30 s.** A cada 30 s o painel rodava `ragx --version`, `docker
   --version`, `docker info`, `docker ps -a` e `tasklist` (~2,8 s de processos filhos por minuto). Agora a
   versão do `ragx` fica em cache pela assinatura do executável, o Docker é consultado por UM `docker ps`, e o

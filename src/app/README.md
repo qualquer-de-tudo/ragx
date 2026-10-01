@@ -212,6 +212,16 @@ As conexões (RAGX CLI, Claude Code, Ollama) também são checadas só pelo
 processo principal: a cada 30 segundos, no startup, logo depois de uma
 correção de conexão e no "Verificar agora". Cada resultado vai ao renderer
 pelo evento `ragx:connections`; checagens pedidas ao mesmo tempo viram uma só.
+Os três pollers (snapshot a cada 5 s, conexões a cada 30 s, atividade a cada
+1,5 s) **pausam com a janela fora da vista**: minimizada, oculta, tela
+bloqueada ou computador suspendendo (`powerMonitor` e os eventos `show`,
+`hide`, `minimize`, `restore`). Fora da vista nada roda; na volta, um snapshot
+na hora (se algo mudou ou já passou o intervalo) e uma passada de atividade, e
+conexões só se a última checagem tem mais de 30 s. Uma tarefa que termina com
+a janela fora da vista só marca o snapshot como sujo; a fila e as tarefas
+**não** pausam. O painel é de **instância única**: abrir de novo foca a janela
+que já existe (`RAGX_PANEL_ALLOW_MULTI=1` desliga a trava, para dev e medição;
+`--bootstrap` e `--uninstall-cli`, chamados pelo instalador, nunca a pegam).
 O tick de 30 s é **leve** (um handler interno do processo principal, sem canal
 de IPC): a versão do `ragx` fica em cache pela assinatura (`mtime` e tamanho)
 do executável, o Docker é consultado por UM `docker ps` (não mais `--version`,
