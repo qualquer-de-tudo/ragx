@@ -25,6 +25,7 @@ import yaml
 
 from ragx.config import Config
 from ragx.context import compress as compressor
+from ragx.context import format as fmt_mod
 from ragx.context.budget import allocate
 from ragx.context.dedup import dedupe_literal, dedupe_near, mmr
 from ragx.core.models import SearchResult
@@ -51,6 +52,7 @@ class ContextFragment:
     symbol: str | None = None
     heading_path: str | None = None
     strategy: str = "none"
+    chunk_id: str = ""
 
 
 @dataclass
@@ -152,19 +154,27 @@ def build_context(
     fragments = _to_fragments(selected, query, budget, cfg, force_compress=not plan.selected)
     t_compress = (time.perf_counter() - t0) * 1000
 
-    total = sum(f.tokens for f in fragments)
-    # Garantia dura: o pack fecha ABAIXO do teto, sempre.
-    while total > budget and fragments:
-        removed = fragments[-1]
-        fragments = fragments[:-1]
-        dropped.append((f"{removed.document_path}:{removed.start_line}", "budget:overflow"))
-        total = sum(f.tokens for f in fragments)
-
     pack.fragments = tuple(fragments)
-    pack.estimated_tokens = total
     pack.sources = tuple(dict.fromkeys(f.document_path for f in fragments))
     pack.dropped = tuple(dropped)
+    # Garantia dura: o TEXTO que sai (cabeçalhos e rodapé inclusos) fecha abaixo do
+    # teto, sempre. Antes `estimated_tokens` somava só o conteúdo e ignorava ~33
+    # tokens de cabeçalho por fragmento (RAGX-0154).
+    total = _rendered_tokens(pack)
+    while total > budget and pack.fragments:
+        removed = pack.fragments[-1]
+        pack.fragments = pack.fragments[:-1]
+        dropped.append((f"{removed.document_path}:{removed.start_line}", "budget:overflow"))
+        pack.dropped = tuple(dropped)
+        pack.sources = tuple(dict.fromkeys(f.document_path for f in pack.fragments))
+        total = _rendered_tokens(pack)
+    fragments = list(pack.fragments)
+
+    pack.estimated_tokens = total
+    content_tokens = sum(f.tokens for f in fragments)
     pack.stats = {
+        "content_tokens": content_tokens,
+        "overhead_tokens": total - content_tokens,
         "candidates": len(candidates),
         "raw_tokens": raw_tokens,
         "kept": len(fragments),
@@ -181,6 +191,30 @@ def build_context(
     if use_cache and not _indexando(cfg) and _index_version(cfg) == version:
         _cache_write(cfg, cache_key, pack)
     return pack
+
+
+def _rendered_tokens(pack: ContextPack) -> int:
+    """Tokens do markdown que o agente recebe (sem o título), por ponto fixo.
+
+    O rodapé traz o próprio `estimated_tokens`, então o número entra no texto que
+    ele mede: começa pelo pior caso (`budget`, mesma quantidade de dígitos) e
+    reitera até estabilizar.
+    """
+    parts = [
+        (fmt_mod.header(i, f.document_path, f.start_line, f.end_line,
+                        f.heading_path or f.symbol, f.compressed), f.content)
+        for i, f in enumerate(pack.fragments, start=1)
+    ]
+    estimado = pack.budget
+    n = estimado
+    for _ in range(4):
+        n = count_tokens(fmt_mod.markdown(
+            parts, len(pack.sources), estimado, pack.budget, len(pack.dropped)
+        ))
+        if n == estimado:
+            break
+        estimado = n
+    return n
 
 
 # ── etapas ──────────────────────────────────────────────────────────────
@@ -236,7 +270,13 @@ def _to_fragments(
     if not selected:
         return []
     frags: list[ContextFragment] = []
-    usable = int(budget * (1.0 - cfg.context.reserve_ratio))
+    # O alvo de compressão desconta o que o texto gasta em cabeçalhos e rodapé:
+    # sem isso o fragmento comprimido "cabia" no conteúdo e estourava no texto.
+    overhead = fmt_mod.footer_cost(budget) + sum(
+        fmt_mod.header_cost(r.document_path, r.start_line, r.end_line, r.heading_path or r.symbol)
+        for r in selected
+    )
+    usable = max(int(budget * (1.0 - cfg.context.reserve_ratio)) - overhead, 48)
     natural = sum(count_tokens(r.content) for r in selected)
 
     # `allocate` já escolheu um conjunto que cabe. Comprimir por padrão depois
@@ -256,6 +296,7 @@ def _to_fragments(
             c = compressor.Compressed(r.content, False, "none", 0)
         frags.append(
             ContextFragment(
+                chunk_id=r.chunk_id,
                 document_path=r.document_path,
                 start_line=r.start_line,
                 end_line=r.end_line,
@@ -329,7 +370,7 @@ def _tok(r: SearchResult) -> int:
 
 # ── cache ───────────────────────────────────────────────────────────────
 #: Muda sempre que o formato do arquivo de cache muda; entrada de outro formato é miss.
-CACHE_FORMAT = 1
+CACHE_FORMAT = 2
 _CACHE_MAX_FILES = 200
 _CACHE_MAX_BYTES = 32 * 1024 * 1024
 

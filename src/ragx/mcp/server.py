@@ -462,22 +462,28 @@ class KnowledgeAPI:
             "estimated_tokens": pack.estimated_tokens,
             "budget": pack.budget,
             "sources": list(pack.sources),
-            "fragments": [
+        }
+        # UMA representação do conteúdo, nunca duas: o markdown e os fragmentos
+        # carregavam o mesmo texto, e um pedido de 3.000 tokens chegava a ~8.000
+        # (RAGX-0154). `estimated_tokens` conta o markdown que sai, sem o título.
+        if req.format == "json":
+            payload["fragments"] = [
                 {
                     "project": project if req.scope != "current" else f.project,
+                    "chunk_id": f.chunk_id,
                     "document_path": f.document_path,
                     "lines": [f.start_line, f.end_line],
                     "symbol": f.symbol,
                     "heading_path": f.heading_path,
                     "compressed": f.compressed,
+                    "tokens": f.tokens,
                     "content": f.content,
                 }
                 for f in pack.fragments
-            ],
-        }
+            ]
+        else:
+            payload["markdown"] = render(pack, "markdown", title=False)
         payload["baseline_tokens"] = self._baseline_tokens(pack.sources, other_cfg)
-        if req.format == "markdown":
-            payload["markdown"] = render(pack, "markdown")
         return cap(ok(payload), self.cfg.mcp.max_response_bytes)
 
     def _baseline_tokens(self, sources: tuple[str, ...], cfg: Config | None = None) -> int:

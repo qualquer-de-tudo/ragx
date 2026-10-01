@@ -95,16 +95,26 @@ densidade = score_final / max(token_count, 1)
 Reservas fixas antes da alocação:
 
 ```text
-overhead de formatação (cabeçalhos, separadores)     ~5%
+overhead de formatação (cabeçalhos, rodapé)          o texto REAL, medido (ver abaixo)
 reserva mínima por fonte distinta                    1 trecho de cada um dos top-3 documentos
 ```
 
+O cabeçalho de cada fragmento (`## [i] caminho:linhas › nome`) custa ~33 tokens, e não os
+12 que o orçamento antigo assumia: `allocate` agora conta o cabeçalho real de cada
+candidato (`context/format.py`) e reserva o rodapé uma vez. Antes, um pedido de 3.000
+tokens chegava ao agente com ~8.000 (o conteúdo ia duas vezes na resposta MCP e
+`estimated_tokens` ignorava cabeçalhos).
 A reserva por fonte existe para evitar o modo de falha clássico: 3.000 tokens todos
 vindos de um único arquivo, sem a documentação que explica o porquê.
 
 Contagem de tokens: `TokenCounter` abstrato, implementação padrão `tiktoken`
 (`cl100k_base`). Contagem é **estimativa** — o `ContextPack` sempre reporta
 `estimated_tokens` e garante `estimated_tokens <= budget`, com margem de 3%.
+
+**`estimated_tokens` conta o que sai:** os tokens do markdown entregue (cabeçalhos,
+conteúdo e rodapé, sem o título `# Contexto — <consulta>`, que só a CLI imprime). É um
+ponto fixo, porque o rodapé traz o próprio número. `stats` separa `content_tokens` de
+`overhead_tokens`.
 
 ## Contrato de saída
 
@@ -120,6 +130,7 @@ class ContextFragment:
     score: float
     compressed: bool
     reason: str          # "hybrid" | "graph:calls" | "graph:documented_by"
+    chunk_id: str        # o id do chunk de origem (necessário ao dedupe e ao plugin)
 
 @dataclass(frozen=True)
 class ContextPack:

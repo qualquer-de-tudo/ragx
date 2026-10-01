@@ -191,7 +191,8 @@ def test_build_context_respeita_orcamento(api: KnowledgeAPI) -> None:
     assert out["ok"]
     assert out["data"]["estimated_tokens"] <= 800
     assert out["data"]["markdown"]
-    for f in out["data"]["fragments"]:
+    out_json = api.build_context(BuildContextRequest(query="autenticacao", tokens=800, format="json"))
+    for f in out_json["data"]["fragments"]:
         assert f["document_path"] and f["lines"][0] > 0
 
 
@@ -525,3 +526,24 @@ def test_resposta_de_busca_so_traz_partial_quando_o_indice_e_parcial(
     conn.close()
     parcial = api.search(SearchRequest(query="AuthService token", limit=5), mode="hybrid")
     assert "vetores parciais" in parcial["data"]["partial"]
+
+
+def test_build_context_uma_representacao(api: KnowledgeAPI) -> None:
+    """O conteúdo ia duas vezes na resposta (`fragments` e `markdown`): ~2,6x o orçamento."""
+    md = api.build_context(BuildContextRequest(query="autenticacao", tokens=800, format="markdown"))
+    assert md["ok"]
+    assert "markdown" in md["data"] and "fragments" not in md["data"]
+    assert "# Contexto" not in md["data"]["markdown"]  # o agente já sabe a consulta
+
+    js = api.build_context(BuildContextRequest(query="autenticacao", tokens=800, format="json"))
+    assert js["ok"]
+    assert "fragments" in js["data"] and "markdown" not in js["data"]
+    assert all(f["chunk_id"] and f["tokens"] > 0 and f["content"] for f in js["data"]["fragments"])
+
+
+def test_estimated_tokens_do_mcp_bate_com_o_markdown_entregue(api: KnowledgeAPI) -> None:
+    from ragx.tokens import count_tokens
+
+    out = api.build_context(BuildContextRequest(query="autenticacao", tokens=800))
+    assert out["data"]["estimated_tokens"] == count_tokens(out["data"]["markdown"])
+    assert out["data"]["estimated_tokens"] <= 800

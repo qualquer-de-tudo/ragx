@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from ragx.context import format as fmt_mod
 from ragx.core.models import SearchResult
 from ragx.tokens import count_tokens
 
@@ -34,20 +35,31 @@ def allocate(
     budget: int,
     reserve_ratio: float = 0.05,
     min_sources: int = 3,
-    per_fragment_overhead: int = 12,
+    per_fragment_overhead: int | None = None,
 ) -> BudgetPlan:
-    """Seleciona fragmentos por densidade `score / tokens`, com reserva por fonte."""
+    """Seleciona fragmentos por densidade `score / tokens`, com reserva por fonte.
+
+    O custo de cada fragmento inclui o seu cabeçalho REAL (`## [i] caminho:linhas ›
+    nome`) e o rodapé é reservado uma vez; `per_fragment_overhead` fixo só existe
+    para quem quer o comportamento antigo (RAGX-0154).
+    """
     if budget <= 0 or not candidates:
         return BudgetPlan((), tuple((c, "budget") for c in candidates), 0, budget, 0)
 
     usable = int(budget * (1.0 - reserve_ratio - SAFETY_MARGIN))
+    if per_fragment_overhead is None:
+        usable -= fmt_mod.footer_cost(budget)
     selected: list[SearchResult] = []
     dropped: list[tuple[SearchResult, str]] = []
     used = 0
     chosen_ids: set[str] = set()
 
     def cost(r: SearchResult) -> int:
-        return _tokens(r) + per_fragment_overhead
+        if per_fragment_overhead is not None:
+            return _tokens(r) + per_fragment_overhead
+        return _tokens(r) + fmt_mod.header_cost(
+            r.document_path, r.start_line, r.end_line, r.heading_path or r.symbol
+        )
 
     # 1) Reserva: o melhor fragmento de cada um dos top-N documentos distintos.
     #    Garante que o contexto não colapse numa fonte só.

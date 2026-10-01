@@ -49,7 +49,7 @@ store, por construção, não tem segredo dentro.
 | `get_chunk` | `chunk_id` | conteúdo completo de um chunk | Fase 1 |
 | `get_entity` | `name` ou `id` | entidade + relações diretas (com `confidence`, `source` e `tier`) | Fase 3 |
 | `search_graph` | `query`, `depth?` | subgrafo relevante | Fase 3 |
-| `build_context` | `query`, `tokens`, `format?` | `ContextPack` pronto | Fase 4 |
+| `build_context` | `query`, `tokens`, `format?` | o contexto pronto, em **uma** representação: `markdown` (padrão: só `markdown`, sem `fragments`) ou `json` (só `fragments`, com `chunk_id` e `tokens`, sem `markdown`). `estimated_tokens` conta o markdown entregue | Fase 4 |
 | `list_projects` | — | projetos no hub, estado e integrações | Fase 11 |
 | `get_contract` | `kind`, `name` | contrato de endpoint/evento + projeto que o provê | Fase 11 |
 | `list_base_sources` | — | fontes `@base/` ativas nesta máquina | Fase 12 |

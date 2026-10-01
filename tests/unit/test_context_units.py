@@ -251,3 +251,20 @@ def test_cache_despeja_os_mais_antigos(tmp_path, monkeypatch) -> None:  # type: 
     restantes = sorted(p.stem for p in eng._cache_dir(cfg).glob("*.json"))
     assert len(restantes) <= 5
     assert "k11" in restantes and "k00" not in restantes
+
+
+def test_caminho_longo_custa_mais_orcamento_que_caminho_curto() -> None:
+    """O cabeçalho do fragmento (`## [i] caminho:linhas › nome`) é gasto de verdade; o
+    orçamento antigo assumia 12 tokens para todos (RAGX-0154)."""
+    def _r(i: int, caminho: str) -> SearchResult:
+        return SearchResult(
+            chunk_id=f"c{i:02d}", document_path=caminho, kind=ChunkKind.FUNCTION, start_line=1,
+            end_line=9, content="x " * 20, score=1.0 - i * 0.01, matched_by=("keyword",),
+            metadata={"token_count": 20}, symbol="funcao_com_nome_bem_comprido",
+        )
+
+    curtos = [_r(i, f"a{i}.py") for i in range(30)]
+    longos = [_r(i, "src/ragx/modulo/muito/profundo/outro/nivel/arquivo_" + f"{i}.py") for i in range(30)]
+    n_curtos = len(allocate(curtos, 600).selected)
+    n_longos = len(allocate(longos, 600).selected)
+    assert n_longos < n_curtos

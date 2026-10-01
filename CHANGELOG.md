@@ -18,6 +18,20 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **`build_context` entrega uma só representação do conteúdo, e `estimated_tokens` conta
+  o que sai.** A resposta MCP trazia o mesmo texto em `fragments` e em `markdown`
+  (e o SDK ainda o repete em `structuredContent`), e `estimated_tokens` somava só o
+  conteúdo, ignorando ~33 tokens de cabeçalho por fragmento (o orçamento assumia 12).
+  Medido com `scripts/medir_fio.py` (novo; tiktoken, este repositório): um pedido de
+  3.000 tokens chegava como **7.983 tokens** no texto da resposta (declarado: 2.471);
+  agora **3.004** (S1 pedia ≤ 3.200), e `estimated_tokens` é exatamente o que o
+  agente recebe. `format: "markdown"` (padrão) devolve só `markdown`, sem título (o
+  agente já sabe a consulta); `format: "json"` devolve só `fragments`, agora com
+  `chunk_id` e `tokens`. **Muda o formato:** quem lia `fragments` com o formato
+  padrão deve pedir `format: "json"`; o plugin do VS Code já pede. O orçamento
+  (`allocate`) conta o cabeçalho real de cada candidato e reserva o rodapé; o alvo de
+  compressão desconta esse custo (RAGX-0154).
+
 - **`refresh` do MCP é incremental de verdade.** A descrição, o playbook e o hint diziam
   "barato quando nada mudou", mas ele rodava `sync` completo: reidratava o projeto
   inteiro só para um relatório descartado, refazia grafo, dicionário e federação e

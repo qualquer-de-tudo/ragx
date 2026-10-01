@@ -639,10 +639,12 @@ export class McpRagClient implements RagClient {
   }
 
   async buildContext(query: string, tokens: number): Promise<RagResult<ContextPack>> {
+    // `json`, e não `markdown`: o servidor devolve UMA representação por formato
+    // (RAGX-0154) e o Context Builder monta o markdown a partir dos fragmentos.
     const r = await this.call<Json>('build_context', {
       query,
       tokens,
-      format: 'markdown',
+      format: 'json',
     });
     if (!r.ok) return propagate<ContextPack>(r);
     const frags = ((r.data?.fragments as Json[]) ?? []).map((f) => ({

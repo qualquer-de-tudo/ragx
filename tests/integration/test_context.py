@@ -323,3 +323,33 @@ def test_run_aberta_nao_grava_no_cache_e_depois_grava(tmp_path: Path) -> None:
         lock.release(cfg.state_dir)
     build_context(cfg, "sessao redis", budget=500)
     assert arquivos() == 1
+
+
+# ── RAGX-0154: `estimated_tokens` conta o que SAI ───────────────────────
+@pytest.mark.parametrize("budget", [500, 1000, 3000])
+def test_estimated_tokens_conta_o_que_sai(proj: Path, budget: int) -> None:
+    """Antes: `estimated_tokens` somava só o `content` dos fragmentos e ignorava os
+    cabeçalhos (~33 tokens cada, contra os 12 que `allocate` assumia) e o rodapé."""
+    from ragx.tokens import count_tokens
+
+    pack = build_context(load_config(proj), "autenticacao sessao redis", budget=budget,
+                         use_cache=False)
+    assert pack.fragments
+    saiu = count_tokens(render(pack, "markdown", title=False))
+    assert saiu <= budget, f"saiu {saiu} > orçamento {budget}"
+    assert pack.estimated_tokens == saiu, (pack.estimated_tokens, saiu)
+    assert pack.stats["content_tokens"] + pack.stats["overhead_tokens"] == pack.estimated_tokens
+
+
+def test_render_sem_titulo_nao_imprime_a_consulta(proj: Path) -> None:
+    pack = build_context(load_config(proj), "consulta muito especifica xyz", budget=900,
+                         use_cache=False)
+    assert "# Contexto" in render(pack, "markdown")
+    assert "# Contexto" not in render(pack, "markdown", title=False)
+    assert "xyz" not in render(pack, "markdown", title=False)
+
+
+def test_fragmento_carrega_o_chunk_id(proj: Path) -> None:
+    pack = build_context(load_config(proj), "autenticacao sessao", budget=900, use_cache=False)
+    assert pack.fragments and all(len(f.chunk_id) == 32 for f in pack.fragments)
+    assert '"chunk_id"' in render(pack, "json")

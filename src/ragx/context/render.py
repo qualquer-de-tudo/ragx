@@ -9,38 +9,35 @@ from __future__ import annotations
 import json
 from xml.sax.saxutils import escape
 
+from ragx.context import format as fmt_mod
 from ragx.context.engine import ContextPack
 from ragx.security.redactor import safe_echo
 
 
-def render(pack: ContextPack, fmt: str = "markdown") -> str:
+def render(pack: ContextPack, fmt: str = "markdown", title: bool = True) -> str:
+    """`title=False` omite `# Contexto — <consulta>`: o MCP o desliga, porque o
+    agente já sabe a consulta (que pode ter 2.000 caracteres)."""
     if fmt == "json":
         return _json(pack)
     if fmt == "xml":
         return _xml(pack)
-    return _markdown(pack)
+    return _markdown(pack, title)
 
 
 def _label(f) -> str:  # type: ignore[no-untyped-def]
-    loc = f"{f.document_path}:{f.start_line}-{f.end_line}"
-    name = f.heading_path or f.symbol
-    return f"{loc} › {name}" if name else loc
+    return fmt_mod.label(f.document_path, f.start_line, f.end_line, f.heading_path or f.symbol)
 
 
-def _markdown(pack: ContextPack) -> str:
-    lines = [f"# Contexto — {safe_echo(pack.query)}", ""]
-    for i, f in enumerate(pack.fragments, start=1):
-        marca = "  (comprimido)" if f.compressed else ""
-        lines.append(f"## [{i}] {_label(f)}{marca}")
-        lines.append("")
-        lines.append(f.content)
-        lines.append("")
-    lines.append("---")
-    extra = f" · {len(pack.dropped)} candidatos descartados" if pack.dropped else ""
-    lines.append(
-        f"{len(pack.sources)} fonte(s) · ~{pack.estimated_tokens} / {pack.budget} tokens{extra}"
+def _markdown(pack: ContextPack, title: bool = True) -> str:
+    parts = [
+        (fmt_mod.header(i, f.document_path, f.start_line, f.end_line,
+                        f.heading_path or f.symbol, f.compressed), f.content)
+        for i, f in enumerate(pack.fragments, start=1)
+    ]
+    return fmt_mod.markdown(
+        parts, len(pack.sources), pack.estimated_tokens, pack.budget, len(pack.dropped),
+        title=safe_echo(pack.query) if title else None,
     )
-    return "\n".join(lines)
 
 
 def _xml(pack: ContextPack) -> str:
@@ -73,6 +70,7 @@ def _json(pack: ContextPack) -> str:
             "fragments": [
                 {
                     "project": f.project,
+                    "chunk_id": f.chunk_id,
                     "document_path": f.document_path,
                     "lines": [f.start_line, f.end_line],
                     "symbol": f.symbol,

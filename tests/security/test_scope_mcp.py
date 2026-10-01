@@ -105,7 +105,8 @@ def test_path_glob_perigoso_e_recusado_em_scope_all(mundo: dict[str, Path]) -> N
 # ── build_context ───────────────────────────────────────────────────────
 def test_build_context_com_project_monta_o_pack_do_outro_projeto(mundo: dict[str, Path]) -> None:
     resp = _api(mundo).build_context(
-        BuildContextRequest(query="cobranca pagamento", tokens=800, scope="project:payment-service")
+        BuildContextRequest(query="cobranca pagamento", tokens=800, scope="project:payment-service",
+                            format="json")
     )
     assert resp["ok"], resp
     data = resp["data"]
