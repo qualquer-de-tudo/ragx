@@ -8,9 +8,12 @@ Ver docs/07-context-engine.md.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
+import os
 import re
+import sqlite3
 import time
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -93,7 +96,8 @@ def build_context(
     pack = ContextPack(query=query, budget=budget, intent=str(intent["id"]))
     t_start = time.perf_counter()
 
-    cache_key = _cache_key(cfg, query, budget, include_graph, depth)
+    version = _index_version(cfg) if use_cache else ""
+    cache_key = _cache_key(cfg, query, budget, include_graph, depth, filters, version)
     if use_cache:
         hit = _cache_read(cfg, cache_key)
         if hit is not None:
@@ -172,7 +176,9 @@ def build_context(
         **expansion_stats,
     }
 
-    if use_cache:
+    # Pack calculado durante uma indexação, ou com o índice mudando por baixo,
+    # é parcial: não entra no cache (RAGX-0135).
+    if use_cache and not _indexando(cfg) and _index_version(cfg) == version:
         _cache_write(cfg, cache_key, pack)
     return pack
 
@@ -315,31 +321,89 @@ def _tok(r: SearchResult) -> int:
 
 
 # ── cache ───────────────────────────────────────────────────────────────
+#: Muda sempre que o formato do arquivo de cache muda; entrada de outro formato é miss.
+CACHE_FORMAT = 1
+_CACHE_MAX_FILES = 200
+_CACHE_MAX_BYTES = 32 * 1024 * 1024
+
+
+@lru_cache(maxsize=1)
+def _intents_hash() -> str:
+    return hashlib.sha256(INTENTS_PATH.read_bytes()).hexdigest()[:16]
+
+
 def _cache_key(
-    cfg: Config, query: str, budget: int, include_graph: bool, depth: int | None
+    cfg: Config,
+    query: str,
+    budget: int,
+    include_graph: bool,
+    depth: int | None,
+    filters: SearchFilters | None = None,
+    version: str | None = None,
 ) -> str:
+    """Tudo que, se mudar, muda o pack.
+
+    Antes a chave não tinha `filters`, os pesos de busca e do grafo, `reserve_ratio`,
+    `min_sources` nem `work_paths`: `lang=markdown` e depois `lang=python`, mesma
+    consulta, devolviam o MESMO pack com `cached=True` (RAGX-0135).
+    """
     fingerprint = json.dumps(
         {
+            "fmt": CACHE_FORMAT,
             "q": query, "b": budget, "g": include_graph, "d": depth,
-            "dedup": cfg.context.dedup_threshold, "mmr": cfg.context.mmr_lambda,
-            "compress": cfg.context.compress, "model": cfg.embedding.model,
-            "db": _db_version(cfg),
+            "f": None if filters is None else {
+                k: getattr(filters, k) for k in ("lang", "kind", "path_glob", "min_score")
+            },
+            "context": cfg.context.model_dump(),
+            "search": cfg.search.model_dump(),
+            "graph": cfg.graph.model_dump(),
+            "emb": [cfg.embedding.provider, cfg.embedding.model, cfg.embedding.dim,
+                    cfg.embedding.versioned_dim, cfg.embedding.rescore],
+            "work": cfg.index.work_paths, "test": cfg.index.test_paths,
+            "intents": _intents_hash(),
+            "v": version if version is not None else _index_version(cfg),
         },
         sort_keys=True,
+        default=str,
     )
     return hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:32]
 
 
-def _db_version(cfg: Config) -> str:
-    """O id do último run invalida o cache assim que o índice muda."""
+def _index_version(cfg: Config) -> str:
+    """A versão do índice: geração dos vetores + a última indexação TERMINADA.
+
+    Só run com `finished_at` e sem erro conta: uma run aberta já aparecia no
+    `MAX(id)` e o pack parcial de uma indexação em andamento entrava no cache
+    sob o id final. `vec_gen` (RAGX-0134) cobre o que muda vetores sem run.
+    """
     if not cfg.db_path.exists():
-        return "0"
+        return "0:0"
+    # Conexão mínima, e não `open_db`: o acerto de cache só precisa de duas leituras
+    # e `open_db` roda PRAGMAs e checagens (~5 ms) que aqui não servem a nada.
     try:
-        with open_db(cfg.db_path, read_only=True) as conn:
-            row = conn.execute("SELECT MAX(id) AS v FROM index_runs").fetchone()
-            return str(row["v"] if row and row["v"] else 0)
+        conn = sqlite3.connect(f"file:{cfg.db_path.as_posix()}?mode=ro", uri=True, timeout=5)
+        try:
+            run = conn.execute(
+                "SELECT MAX(id) FROM index_runs WHERE finished_at IS NOT NULL AND error IS NULL"
+            ).fetchone()
+            gen = conn.execute("SELECT value FROM meta WHERE key = 'vec_gen'").fetchone()
+            return f"{gen[0] if gen else '0'}:{run[0] if run and run[0] else 0}"
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return "0:0"
+
+
+def _indexando(cfg: Config) -> bool:
+    """Há uma indexação em curso neste projeto (trava com dono vivo)."""
+    from ragx.indexing import lock
+
+    try:
+        dono = lock.holder(cfg.state_dir)
+        pid = dono.get("pid") if dono else None
+        return isinstance(pid, int) and lock.pid_alive(pid)
     except Exception:
-        return "0"
+        return False
 
 
 def _cache_dir(cfg: Config) -> Path:
@@ -352,27 +416,32 @@ def _cache_read(cfg: Config, key: str) -> ContextPack | None:
         return None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    return ContextPack(
-        query=data["query"],
-        fragments=tuple(ContextFragment(**f) for f in data["fragments"]),
-        estimated_tokens=data["estimated_tokens"],
-        budget=data["budget"],
-        sources=tuple(data["sources"]),
-        dropped=tuple(tuple(d) for d in data["dropped"]),  # type: ignore[misc]
-        intent=data.get("intent", "general"),
-        stats=data.get("stats", {}),
-    )
+        if data.get("format") != CACHE_FORMAT or data.get("key") != key:
+            return None
+        return ContextPack(
+            query=data["query"],
+            fragments=tuple(ContextFragment(**f) for f in data["fragments"]),
+            estimated_tokens=data["estimated_tokens"],
+            budget=data["budget"],
+            sources=tuple(data["sources"]),
+            dropped=tuple(tuple(d) for d in data["dropped"]),  # type: ignore[misc]
+            intent=data.get("intent", "general"),
+            stats=data.get("stats", {}),
+        )
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None  # truncado, de outro formato ou de outra versão: é miss, nunca erro
 
 
 def _cache_write(cfg: Config, key: str, pack: ContextPack) -> None:
     path = _cache_dir(cfg) / f"{key}.json"
+    tmp = path.with_name(f".{key}.{os.getpid()}.tmp")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
+        tmp.write_text(
             json.dumps(
                 {
+                    "format": CACHE_FORMAT,
+                    "key": key,
                     "query": pack.query,
                     "fragments": [f.__dict__ if hasattr(f, "__dict__") else _asdict(f)
                                   for f in pack.fragments],
@@ -387,8 +456,37 @@ def _cache_write(cfg: Config, key: str, pack: ContextPack) -> None:
             ),
             encoding="utf-8",
         )
+        os.replace(tmp, path)  # atômico: ninguém lê um JSON pela metade
     except OSError:
         pass  # cache é otimização, nunca motivo de falha
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
+    _cache_evict(cfg)
+
+
+def _cache_evict(cfg: Config) -> None:
+    """No máximo `_CACHE_MAX_FILES` arquivos e `_CACHE_MAX_BYTES`; os mais antigos saem."""
+    try:
+        entradas = []
+        for p in _cache_dir(cfg).glob("*.json"):
+            st = p.stat()
+            entradas.append((st.st_mtime, st.st_size, p))
+    except OSError:
+        return
+    total = sum(e[1] for e in entradas)
+    restantes = len(entradas)
+    if restantes <= _CACHE_MAX_FILES and total <= _CACHE_MAX_BYTES:
+        return
+    for _mtime, size, p in sorted(entradas):  # do mais antigo para o mais novo
+        if restantes <= _CACHE_MAX_FILES and total <= _CACHE_MAX_BYTES:
+            break
+        try:
+            p.unlink()
+        except OSError:
+            continue
+        restantes -= 1
+        total -= size
 
 
 def _asdict(f: ContextFragment) -> dict[str, Any]:

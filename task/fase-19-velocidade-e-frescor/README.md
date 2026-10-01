@@ -14,7 +14,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 | [RAGX-0132](RAGX-0132-ollama-em-127-0-0-1-adeus-2-s-por-requisicao-no-windows.md) | Ollama em `127.0.0.1` (adeus 2 s por requisição no Windows) | P0 | 0,25d | `done` |
 | [RAGX-0133](RAGX-0133-arquivo-travado-no-momento-do-save-nao-some-do-indice.md) | Arquivo travado no momento do save não some do índice | P0 | 0,5d | `done` |
 | [RAGX-0134](RAGX-0134-load-index-vetorizado-e-cacheado-por-geracao-vec-gen.md) | `load_index` vetorizado e cacheado por geração (`vec_gen`) | P0 | 0,5d | `done` |
-| [RAGX-0135](RAGX-0135-cache-do-build-context-com-chave-completa-e-versao-confiavel.md) | Cache do `build_context` com chave completa e versão confiável | P0 | 0,5d | `todo` |
+| [RAGX-0135](RAGX-0135-cache-do-build-context-com-chave-completa-e-versao-confiavel.md) | Cache do `build_context` com chave completa e versão confiável | P0 | 0,5d | `done` |
 | [RAGX-0136](RAGX-0136-busca-usa-o-modelo-configurado-e-avisa-vetor-parcial.md) | Busca usa o modelo configurado e avisa vetor parcial | P1 | 0,5d | `todo` |
 | [RAGX-0137](RAGX-0137-scope-do-mcp-honrado-ou-recusado-nunca-ignorado.md) | `scope` do MCP honrado ou recusado, nunca ignorado | P1 | 0,5d | `todo` |
 | [RAGX-0138](RAGX-0138-replace-for-document-por-diff-de-chunk-embeddings-e-grafo-sobrevivem-a-uma-edicao.md) | `replace_for_document` por diff de chunk: embeddings e grafo sobrevivem a uma edição | P1 | 1d | `todo` |

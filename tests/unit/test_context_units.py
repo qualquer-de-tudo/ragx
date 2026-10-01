@@ -198,3 +198,56 @@ def test_compressao_reduz_de_fato() -> None:
 )
 def test_deteccao_de_intencao(query: str, esperado: str) -> None:
     assert detect_intent(query)["id"] == esperado
+
+
+# ── RAGX-0135: gravação atômica, despejo e entrada inválida ─────────────
+def _pack():  # type: ignore[no-untyped-def]
+    from ragx.context.engine import ContextPack
+
+    return ContextPack(query="q", budget=100, estimated_tokens=1, intent="general")
+
+
+def _cfg_tmp(tmp_path):  # type: ignore[no-untyped-def]
+    from ragx.config import load_config
+
+    (tmp_path / "ragx.toml").write_text('[project]\nname = "t"\nid = "t"\n', encoding="utf-8")
+    return load_config(tmp_path)
+
+
+def test_cache_write_e_atomico_e_nao_deixa_tmp(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from ragx.context.engine import _cache_dir, _cache_read, _cache_write
+
+    cfg = _cfg_tmp(tmp_path)
+    _cache_write(cfg, "chave1", _pack())
+    assert list(_cache_dir(cfg).glob("*.tmp")) == []
+    assert _cache_read(cfg, "chave1") is not None
+
+
+def test_cache_entrada_com_chave_errada_ou_corrompida_e_miss(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from ragx.context.engine import _cache_dir, _cache_read, _cache_write
+
+    cfg = _cfg_tmp(tmp_path)
+    _cache_write(cfg, "chave1", _pack())
+    arq = _cache_dir(cfg) / "chave1.json"
+    arq.write_text(arq.read_text(encoding="utf-8").replace('"chave1"', '"outra"'), encoding="utf-8")
+    assert _cache_read(cfg, "chave1") is None  # `key` de dentro não bate com o nome
+    arq.write_text('{"query": "q", "fragm', encoding="utf-8")  # JSON truncado
+    assert _cache_read(cfg, "chave1") is None
+    arq.write_text('{"format": 0, "key": "chave1"}', encoding="utf-8")  # formato velho
+    assert _cache_read(cfg, "chave1") is None
+
+
+def test_cache_despeja_os_mais_antigos(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import os
+
+    import ragx.context.engine as eng
+
+    cfg = _cfg_tmp(tmp_path)
+    monkeypatch.setattr(eng, "_CACHE_MAX_FILES", 5)
+    for i in range(12):
+        eng._cache_write(cfg, f"k{i:02d}", _pack())
+        p = eng._cache_dir(cfg) / f"k{i:02d}.json"
+        os.utime(p, (1000 + i, 1000 + i))  # mtime crescente: k00 é o mais antigo
+    restantes = sorted(p.stem for p in eng._cache_dir(cfg).glob("*.json"))
+    assert len(restantes) <= 5
+    assert "k11" in restantes and "k00" not in restantes

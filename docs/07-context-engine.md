@@ -167,10 +167,29 @@ declarada, não mágica — e o `--explain` mostra qual intenção foi inferida.
 
 ## Cache
 
-`ContextPack` é caro de montar. Cache por
-`sha256(query + budget + config_fingerprint + db_version)` em `.ragx/cache/context/`.
-Invalida automaticamente quando o índice muda (`index_runs.id` mais recente entra
-no `db_version`).
+`ContextPack` é caro de montar (~70-80 ms quente, 2 s+ frio). O cache fica em
+`.ragx/cache/context/<chave>.json`, e a chave é o `sha256` de **tudo que altera o
+resultado**:
+
+- a consulta, o orçamento, `include_graph`, `depth` e os **filtros** (`lang`, `kind`,
+  `path_glob`, `min_score`);
+- as seções `context`, `search` e `graph` da configuração, o modelo de embedding
+  (`provider`, `model`, `dim`, `versioned_dim`, `rescore`), `index.work_paths` e
+  `index.test_paths`;
+- `CACHE_FORMAT` e o hash de `intents.yaml`;
+- a **versão do índice**: a geração dos vetores (`meta('vec_gen')`, RAGX-0134) e a
+  última indexação **terminada e sem erro** (`index_runs`). Uma run em andamento não
+  conta.
+
+Antes de RAGX-0135 a chave não tinha os filtros nem os pesos: `lang=markdown` e depois
+`lang=python`, mesma consulta, devolviam o mesmo pack com `cached=True`.
+
+**Quando não grava:** com uma indexação em curso (trava com dono vivo) ou se a versão do
+índice mudou durante o cálculo, porque o pack seria parcial. Ler continua permitido.
+**Como grava:** arquivo temporário e `os.replace` (ninguém lê JSON pela metade); o JSON
+leva `format` e `key`, e entrada com formato ou chave diferente, truncada ou ilegível é
+*miss*, nunca erro. **Despejo:** no máximo 200 arquivos e 32 MB; saem os mais antigos
+por `mtime`.
 
 ## Critério de aceite da Fase 4
 

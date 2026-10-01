@@ -73,6 +73,18 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **O cache do `build_context` não devolve mais o pack de outra consulta.** A chave
+  não tinha os filtros, os pesos de busca e do grafo, `reserve_ratio`, `min_sources` nem
+  `work_paths`, e a versão do índice já contava uma indexação em andamento: `lang=markdown`
+  e depois `lang=python`, mesma consulta, devolviam o mesmo pack com `cached=True`
+  (demonstrado), e o pack parcial de uma indexação rodando entrava no cache sob o id
+  final. Agora a chave leva tudo que altera o resultado, a versão do índice é
+  `vec_gen` + a última run terminada e sem erro, nada é gravado com indexação em curso, a
+  gravação é atômica (`os.replace`), entrada com `format`/`key` errados vira miss e o
+  diretório despeja os mais antigos acima de 200 arquivos ou 32 MB. Num teste de
+  propriedade com 200 combinações (semente fixa) de consulta, orçamento, filtros, grafo e
+  configuração, **0 acertos incorretos**. Acerto de cache: **p50 6,0 ms** (máx. 7,9),
+  sem regressão no miss (65-88 ms quente) (RAGX-0135).
 - **Junction do Windows não escapa mais da raiz do projeto.** `mklink /J` (o que o
   pnpm cria, e que não exige privilégio) não é symlink para o Python, então passava
   pela guarda anti-escape do walker e a pasta de **fora** do projeto era percorrida e
