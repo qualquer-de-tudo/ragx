@@ -272,6 +272,26 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Atalhos
+
+| Tecla | O que faz |
+|---|---|
+| `Ctrl K` (ou `Cmd K`) | abre e fecha a paleta de comandos (vale até com foco num campo) |
+| `/` | vai para a busca de projetos da barra superior |
+| `?` | mostra a ajuda de atalhos |
+| `Ctrl 1` a `Ctrl 4` | Projetos, Atividade, Conexões, Como funciona |
+| `Esc` | fecha a janela aberta e devolve o foco |
+
+`/` e `?` não disparam com foco em `input`, `textarea`, `select` ou `contenteditable`. Não há atalho no onboarding. Nenhum
+atalho usa `Alt` (no Windows ele abre a barra de menu) nem `Ctrl 0`, `Ctrl =` e `Ctrl -` (zoom do menu Exibir).
+
+A paleta (`ui/CommandPalette`, padrão combobox: `aria-activedescendant`, lista `role="listbox"`, contagem em região
+`aria-live`) só procura em memória, sem acento nem maiúscula, no máximo 8 resultados: páginas, "Abrir <projeto>",
+"Atualizar <projeto>" (`update`), "Gerar embeddings em <projeto>" (`embed`, só onde faltam), "Verificar conexões agora"
+e "Refazer a configuração inicial". Os únicos `kind` de tarefa que ela enfileira são `update` e `embed`
+(`PALETTE_JOB_KINDS`, em `src/commands.ts`), sempre como `{ kind, projectId }` e para projeto do snapshot; nada
+destrutivo (reindexar do zero, remover do hub, hooks) passa por ela. Projeto sem pasta aparece desabilitado.
+
 ## Primeira pintura
 
 O painel não espera o snapshot (RAGX-0182). Com as preferências lidas e sem dado, a casca (barra lateral e superior)

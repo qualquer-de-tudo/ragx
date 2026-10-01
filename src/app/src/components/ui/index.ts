@@ -1,3 +1,4 @@
+export { CommandPalette, ShortcutsHelp } from './CommandPalette'
 export { EmptyState } from './EmptyState'
 export { Icon } from './Icon'
 export { IconButton } from './IconButton'

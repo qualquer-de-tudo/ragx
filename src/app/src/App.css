@@ -606,6 +606,95 @@
   color: var(--ink-2);
 }
 
+/* Dica do atalho no campo de busca (Ctrl K). */
+.search-kbd {
+  position: absolute;
+  top: 50%;
+  right: var(--sp-8);
+  transform: translateY(-50%);
+  padding: var(--sp-2) var(--sp-6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  color: var(--ink-3);
+  font: var(--fs-xs) var(--mono);
+  pointer-events: none;
+}
+
+.search-input:focus-visible ~ .search-kbd {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .search-kbd {
+    display: none;
+  }
+}
+
+/* Paleta de comandos (ui/CommandPalette) e ajuda de atalhos. */
+.palette {
+  display: grid;
+  gap: var(--sp-8);
+  min-width: 0;
+}
+
+.palette-input {
+  padding-left: var(--sp-12);
+}
+
+.palette-list {
+  max-height: min(50vh, 360px);
+  overflow-y: auto;
+}
+
+.palette-item {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-8) var(--sp-12);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.palette-item.is-active {
+  background: var(--accent-wash);
+}
+
+.palette-item.is-disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.palette-hint {
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
+.palette-empty {
+  padding: var(--sp-8) var(--sp-12);
+}
+
+.shortcuts {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.shortcut-row {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-12);
+}
+
+kbd {
+  display: inline-block;
+  margin-right: var(--sp-4);
+  padding: var(--sp-2) var(--sp-6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: var(--fs-sm) var(--mono);
+}
+
 /* Esperas (ui/Skeleton): o brilho some com prefers-reduced-motion (index.css). */
 .skeleton {
   display: block;

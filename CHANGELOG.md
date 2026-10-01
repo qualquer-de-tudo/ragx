@@ -11,6 +11,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Paleta de comandos (Ctrl K) e atalhos no painel.** Ir de um projeto a outro ou disparar "Atualizar" exigia vários
+  cliques. Agora `Ctrl K` abre uma paleta (sem acento nem maiúscula) que navega e enfileira só `update` e `embed`,
+  `/` foca a busca, `?` mostra a ajuda e `Ctrl 1` a `Ctrl 4` trocam de tela. Nada destrutivo passa pela paleta, e
+  nenhum atalho usa Alt (RAGX-0183).
 - **Primeira pintura do painel sem esperar o snapshot, com cache e erro.** O painel abria numa tela cheia de
   "Carregando…" até o primeiro snapshot (um `git` por projeto) e, se `getSnapshot()` falhasse, ela nunca saía. Agora a
   casca aparece com skeletons em 115 ms, o último snapshot (guardado em `localStorage`, sem o estado de conexões) é

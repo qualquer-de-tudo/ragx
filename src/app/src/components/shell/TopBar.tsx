@@ -48,6 +48,7 @@ export function TopBar({
       <div className="search">
         <Icon name="search" className="search-icon" />
         <input
+          id="topbar-search"
           type="search"
           className="search-input"
           placeholder="Buscar projeto"
@@ -57,6 +58,9 @@ export function TopBar({
           spellCheck={false}
           autoComplete="off"
         />
+        <kbd className="search-kbd" aria-hidden="true">
+          Ctrl K
+        </kbd>
       </div>
 
       <div className="topbar-end">

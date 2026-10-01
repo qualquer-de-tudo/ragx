@@ -9,6 +9,11 @@ import { ipcErrorMessage } from './ipcError'
 import { notify } from './toast'
 import { Toaster } from './components/ui/Toaster'
 import { SkeletonCard, SkeletonRegion } from './components/ui/Skeleton'
+import { CommandPalette, ShortcutsHelp } from './components/ui/CommandPalette'
+import { useShortcuts } from './hooks/useShortcuts'
+import { buildCommands, type Command } from './commands'
+import { enqueue } from './jobs'
+import type { ShortcutAction } from './shortcuts'
 import { formatClock } from './format'
 import { useLiveIds } from './hooks/useClock'
 import { ActivityPage } from './pages/ActivityPage'
@@ -104,6 +109,30 @@ function App() {
   }, [])
 
   const openProject = useCallback((id: string) => setRoute({ page: 'project', id }), [])
+
+  // Paleta de comandos e ajuda de atalhos (RAGX-0183).
+  const [overlay, setOverlay] = useState<'palette' | 'help' | null>(null)
+  const commands = useMemo(() => buildCommands(projects), [projects])
+  const runCommand = useCallback(
+    (c: Command) => {
+      const a = c.action
+      if (a.type === 'route') setRoute(a.route)
+      else if (a.type === 'job') void enqueue(a.kind, a.projectId).then((j) => j && notify.success(`Adicionado à fila: ${c.label}`))
+      else void refresh()
+    },
+    [refresh],
+  )
+  const onShortcut = useCallback(
+    (a: ShortcutAction) => {
+      if (a.type === 'palette') setOverlay((o) => (o === 'palette' ? null : 'palette'))
+      else if (overlay !== null) return // com uma janela aberta só o Ctrl+K age (para fechar)
+      else if (a.type === 'help') setOverlay('help')
+      else if (a.type === 'search') document.getElementById('topbar-search')?.focus()
+      else setRoute(a.route)
+    },
+    [overlay],
+  )
+  useShortcuts(route !== null && route.page !== 'onboarding', onShortcut)
 
   const onCancelJob = useCallback((id: string) => {
     window.ragx.cancelJob(id).catch((err: unknown) => {
@@ -238,6 +267,8 @@ function App() {
           </div>
         </main>
       </div>
+      {overlay === 'palette' && <CommandPalette commands={commands} onRun={runCommand} onClose={() => setOverlay(null)} />}
+      {overlay === 'help' && <ShortcutsHelp onClose={() => setOverlay(null)} />}
       <Toaster />
     </div>
   )
