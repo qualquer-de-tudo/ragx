@@ -7,7 +7,7 @@
 | **Estimativa** | 0,25d |
 | **Depende de** | — |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (I-03) · [25-spec-v2.md](../../docs/25-spec-v2.md) · [15-configuracao.md](../../docs/15-configuracao.md) · [ADR-0004](../../docs/adr/ADR-0004-embeddings.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -15,14 +15,14 @@ O endereço padrão do Ollama é `http://localhost:11434` (`config.py:62`, `embe
 
 ## Entregáveis
 
-- [ ] **Medir primeiro** (só se o Ollama estiver rodando; senão registrar "não medido" e validar só pelos testes): tempo de `GET /api/tags` e de um `POST /api/embed` com `localhost` e com `127.0.0.1`.
-- [ ] `resolve_base_url(url: str) -> str` em `src/ragx/embeddings/ollama.py`: troca o host `localhost` (qualquer caixa) por `127.0.0.1`, preservando esquema, porta e caminho; acrescenta `http://` se faltar esquema; **não mexe** em outro host (IP, `[::1]`, nome de rede).
-- [ ] `OllamaEmbedder.__init__` (`ollama.py:36`) aplica `resolve_base_url`; o padrão do parâmetro (linha 28) e `EmbeddingCfg.base_url` (`config.py:62`) passam a `http://127.0.0.1:11434`.
-- [ ] `OLLAMA_HOST` (`config.py:260-261`) passa pelo mesmo normalizador.
-- [ ] `_chave` do cache de embedder (`embeddings/__init__.py:28-36`) usa a URL resolvida, para duas grafias da mesma URL não criarem duas instâncias.
-- [ ] `ragx doctor` (`cli/commands/doctor.py:168,179,196`) usa a URL resolvida nas requisições e na mensagem de erro.
-- [ ] Documentação: `docs/15-configuracao.md` (linhas 56 e 299) e `docs/GUIA-DE-USO.md` (linha 123) dizem `127.0.0.1` e explicam que `localhost` é convertido.
-- [ ] CHANGELOG com o número antes/depois.
+- [x] **Medir primeiro** (só se o Ollama estiver rodando; senão registrar "não medido" e validar só pelos testes): tempo de `GET /api/tags` e de um `POST /api/embed` com `localhost` e com `127.0.0.1`.
+- [x] `resolve_base_url(url: str) -> str` em `src/ragx/embeddings/ollama.py`: troca o host `localhost` (qualquer caixa) por `127.0.0.1`, preservando esquema, porta e caminho; acrescenta `http://` se faltar esquema; **não mexe** em outro host (IP, `[::1]`, nome de rede).
+- [x] `OllamaEmbedder.__init__` (`ollama.py:36`) aplica `resolve_base_url`; o padrão do parâmetro (linha 28) e `EmbeddingCfg.base_url` (`config.py:62`) passam a `http://127.0.0.1:11434`.
+- [x] `OLLAMA_HOST` (`config.py:260-261`) passa pelo mesmo normalizador.
+- [x] `_chave` do cache de embedder (`embeddings/__init__.py:28-36`) usa a URL resolvida, para duas grafias da mesma URL não criarem duas instâncias.
+- [x] `ragx doctor` (`cli/commands/doctor.py:168,179,196`) usa a URL resolvida nas requisições e na mensagem de erro.
+- [x] Documentação: `docs/15-configuracao.md` (linhas 56 e 299) e `docs/GUIA-DE-USO.md` (linha 123) dizem `127.0.0.1` e explicam que `localhost` é convertido.
+- [x] CHANGELOG com o número antes/depois.
 
 ## Fora de escopo
 
@@ -33,20 +33,20 @@ O endereço padrão do Ollama é `http://localhost:11434` (`config.py:62`, `embe
 
 ## Critérios de aceite
 
-- [ ] Nenhuma requisição do RAGX ao Ollama usa o host `localhost` (teste que captura a URL das requisições do embedder e do `doctor`).
-- [ ] `base_url = "http://[::1]:11434"` explícito no `ragx.toml` continua valendo (quem tem Ollama só em IPv6 não perde a escolha).
-- [ ] Com Ollama real: `/api/tags` ≤ 50 ms e `embed_query` ≤ 100 ms (a auditoria mediu 6–12 ms e 23–44 ms).
-- [ ] Por chunk em batch 32 ≤ 15 ms (a auditoria mediu 9,8–12,3 ms).
-- [ ] Projeto antigo com `base_url = "http://localhost:11434"` no `ragx.toml` ganha a correção sem editar o arquivo.
+- [x] Nenhuma requisição do RAGX ao Ollama usa o host `localhost` (teste que captura a URL das requisições do embedder e do `doctor`).
+- [x] `base_url = "http://[::1]:11434"` explícito no `ragx.toml` continua valendo (quem tem Ollama só em IPv6 não perde a escolha).
+- [x] Com Ollama real: `/api/tags` ≤ 50 ms e `embed_query` ≤ 100 ms (a auditoria mediu 6–12 ms e 23–44 ms).
+- [x] Por chunk em batch 32 ≤ 15 ms (a auditoria mediu 9,8–12,3 ms).
+- [x] Projeto antigo com `base_url = "http://localhost:11434"` no `ragx.toml` ganha a correção sem editar o arquivo.
 
 ## Medição
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| `GET /api/tags` | 2,05–2,1 s | |
-| `POST /api/embed`, 1 texto | 2,06 s | |
-| Embedding por chunk, batch 32 | 87,5 ms | |
-| Embedding por chunk, batch 1 | 2.085 ms | |
+| `GET /api/tags` | 2,05–2,1 s | 3–48 ms (3 ms em regime) |
+| `POST /api/embed`, 1 texto | 2,06 s | 14 ms (a 1ª chamada, 1,4 s, é o modelo subindo na GPU) |
+| Embedding por chunk, batch 32 | 87,5 ms | 6,8–7,2 ms |
+| Embedding por chunk, batch 1 | 2.085 ms | 10–21 ms |
 
 Comando (cada host 5 vezes, num script temporário fora do repo):
 
@@ -60,11 +60,11 @@ for h in ("localhost", "127.0.0.1") * 5:
 
 ## Testes
 
-- [ ] `tests/unit/test_ollama_url.py` (novo): tabela de `resolve_base_url` (`http://localhost:11434`, `HTTP://LOCALHOST:11434/`, `localhost:11434`, `http://localhost.exemplo.com`, `http://127.0.0.1:11434`, `http://[::1]:11434`, `http://host:11434/api`). **Falha antes do conserto.**
-- [ ] `tests/unit/test_embeddings.py`: `OllamaEmbedder(base_url="http://localhost:11434").base_url == "http://127.0.0.1:11434"`; com `urllib.request.urlopen` espiado, `embed_query` e `available` batem em `127.0.0.1`.
-- [ ] `tests/unit/test_embedder_cache.py`: duas grafias da mesma URL compartilham a instância.
-- [ ] `tests/unit/test_doctor_ollama_processador.py`: a fixture usa `localhost` (linha 27); afirmar que `chamadas` contém só URLs em `127.0.0.1`.
-- [ ] Teste de config: `RAGX_EMBEDDING_BASE_URL` e `OLLAMA_HOST=localhost:11434` resultam em `http://127.0.0.1:11434`.
+- [x] `tests/unit/test_ollama_url.py` (novo): tabela de `resolve_base_url` (`http://localhost:11434`, `HTTP://LOCALHOST:11434/`, `localhost:11434`, `http://localhost.exemplo.com`, `http://127.0.0.1:11434`, `http://[::1]:11434`, `http://host:11434/api`). **Falha antes do conserto.**
+- [x] `tests/unit/test_embeddings.py`: `OllamaEmbedder(base_url="http://localhost:11434").base_url == "http://127.0.0.1:11434"`; com `urllib.request.urlopen` espiado, `embed_query` e `available` batem em `127.0.0.1`.
+- [x] `tests/unit/test_embedder_cache.py`: duas grafias da mesma URL compartilham a instância.
+- [x] `tests/unit/test_doctor_ollama_processador.py`: a fixture usa `localhost` (linha 27); afirmar que `chamadas` contém só URLs em `127.0.0.1`.
+- [x] Teste de config: `RAGX_EMBEDDING_BASE_URL` e `OLLAMA_HOST=localhost:11434` resultam em `http://127.0.0.1:11434`.
 
 ## Notas
 
@@ -75,14 +75,20 @@ for h in ("localhost", "127.0.0.1") * 5:
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
-- [ ] Documentação confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0132)` na branch `feat/v2`
+- [x] Todos os critérios de aceite acima verificados (rodando, não supondo)
+- [x] Testes escritos e verdes (Windows rodado aqui; Linux e macOS pelo CI)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração, com o número antes/depois
+- [x] Documentação confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0132)` na branch `feat/v2`
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+2026-09-30. `resolve_base_url` ficou em `src/ragx/config.py` (e não em `embeddings/ollama.py`,
+como a task sugeria) porque `config.py` não pode importar `ragx.embeddings` (ciclo); `ollama.py`
+a reexporta. Ela roda como `field_validator` de `EmbeddingCfg.base_url`, então toml, `RAGX_EMBEDDING_BASE_URL`,
+`OLLAMA_HOST`, o cache do embedder e o `doctor` recebem a URL já resolvida; o `doctor` também resolve
+por conta própria (defensivo). Medido com o Ollama real desta máquina: ver a tabela de Medição.
+Fast suite verde, `tests/security` verde, `ruff` e `mypy` limpos.
+Pendência declarada na task e não feita aqui: o painel Electron (RAGX-0173).

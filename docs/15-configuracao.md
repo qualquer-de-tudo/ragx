@@ -53,7 +53,7 @@ scan_content    = true
 provider  = "ollama"            # ollama | fastembed | hashing(testes)
 model     = "nomic-embed-text"
 dim       = 768                 # dimensão nativa, usada localmente (float32)
-base_url  = "http://localhost:11434"
+base_url  = "http://127.0.0.1:11434"  # "localhost" é convertido para 127.0.0.1 (no Windows custava ~2 s por requisição)
 batch     = 32
 timeout_s = 60
 cache     = true
@@ -296,7 +296,7 @@ ragx doctor
   Config            ragx.toml (12 overrides)                 ok
   Ruleset           builtin@1 — 48 regras, 0 desabilitadas   ok
   Embedder          ollama:nomic-embed-text (768d)           FALHA
-                    → conexão recusada em http://localhost:11434
+                    → conexão recusada em http://127.0.0.1:11434
                     → inicie o daemon: ollama serve
                     → ou use: ragx config set embedding.provider fastembed
   Escrita em .ragx/                                          ok

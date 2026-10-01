@@ -10,7 +10,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from ragx.config import CONFIG_NAME, load_config
+from ragx.config import CONFIG_NAME, load_config, resolve_base_url
 
 console = Console()
 
@@ -165,7 +165,7 @@ def _embedder_status(cfg, _row) -> bool:  # type: ignore[no-untyped-def]
         import urllib.request
 
         try:
-            with urllib.request.urlopen(f"{cfg.embedding.base_url}/api/tags", timeout=2) as r:
+            with urllib.request.urlopen(f"{resolve_base_url(cfg.embedding.base_url)}/api/tags", timeout=2) as r:
                 body = r.read().decode("utf-8", "replace")
             if cfg.embedding.model.split(":")[0] in body:
                 ok = _row("Embedder", label, True)
@@ -176,7 +176,7 @@ def _embedder_status(cfg, _row) -> bool:  # type: ignore[no-untyped-def]
                 f"modelo ausente: ollama pull {cfg.embedding.model}"])
         except (urllib.error.URLError, OSError, TimeoutError):
             return _row("Embedder", label, False, [
-                f"conexão recusada em {cfg.embedding.base_url}",
+                f"conexão recusada em {resolve_base_url(cfg.embedding.base_url)}",
                 "inicie o daemon: ollama serve",
                 "ou use: ragx config set embedding.provider fastembed",
             ])
@@ -193,7 +193,7 @@ def _processador_do_ollama(cfg) -> str:  # type: ignore[no-untyped-def]
 
     indisponivel = "não foi possível consultar o processador"
     try:
-        with urllib.request.urlopen(f"{cfg.embedding.base_url}/api/ps", timeout=2) as r:
+        with urllib.request.urlopen(f"{resolve_base_url(cfg.embedding.base_url)}/api/ps", timeout=2) as r:
             dados = json.loads(r.read().decode("utf-8", "replace"))
         modelos = dados["models"]
         if not isinstance(modelos, list):

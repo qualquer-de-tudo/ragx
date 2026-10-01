@@ -9,11 +9,38 @@ Nenhuma chave de API é lida do TOML — credencial vem só de variável de ambi
 from __future__ import annotations
 
 import os
+import re
 import tomllib
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+_LOCALHOST_NETLOC = re.compile(r"^(?P<auth>[^@]*@)?localhost(?P<porta>:\d+)?$", re.IGNORECASE)
+
+
+def resolve_base_url(url: str) -> str:
+    """Troca o host `localhost` por `127.0.0.1`; nada mais é alterado.
+
+    No Windows, `localhost` resolve para `::1` antes de `127.0.0.1` e o Ollama
+    escuta só em IPv4: cada requisição esperava ~2 s até cair no endereço certo
+    (medido: 2,05 s contra 3-17 ms). Quem escreve outro host (IP, `[::1]`,
+    nome de rede) mantém a escolha. Acrescenta `http://` quando falta o
+    esquema, porque `OLLAMA_HOST` costuma vir como `localhost:11434`.
+    """
+    texto = url.strip()
+    if not texto:
+        return texto
+    if "://" not in texto:
+        texto = "http://" + texto
+    partes = urlsplit(texto)
+    achado = _LOCALHOST_NETLOC.match(partes.netloc)
+    if not achado:
+        return texto
+    netloc = (achado.group("auth") or "") + "127.0.0.1" + (achado.group("porta") or "")
+    return urlunsplit((partes.scheme, netloc, partes.path, partes.query, partes.fragment))
+
 
 CONFIG_NAME = "ragx.toml"
 STATE_DIR = ".ragx"
@@ -59,7 +86,7 @@ class EmbeddingCfg(BaseModel):
     provider: str = "ollama"  # ollama | fastembed | hashing
     model: str = "nomic-embed-text"
     dim: int = 768
-    base_url: str = "http://localhost:11434"
+    base_url: str = "http://127.0.0.1:11434"
     batch: int = 32
     timeout_s: int = 60
     cache: bool = True
@@ -67,6 +94,11 @@ class EmbeddingCfg(BaseModel):
     versioned_dim: int = 256
     versioned_quant: str = "int8"
     rescore: bool = True
+
+    @field_validator("base_url")
+    @classmethod
+    def _resolver_localhost(cls, valor: str) -> str:
+        return resolve_base_url(valor)
 
 
 class SearchCfg(BaseModel):

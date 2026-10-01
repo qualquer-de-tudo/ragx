@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
+from ragx.config import resolve_base_url
 from ragx.core.errors import EnvError
 from ragx.embeddings.base import l2_normalize
 
@@ -25,7 +26,7 @@ class OllamaEmbedder:
         self,
         model: str = "nomic-embed-text",
         dim: int = 768,
-        base_url: str = "http://localhost:11434",
+        base_url: str = "http://127.0.0.1:11434",
         batch: int = 32,
         timeout_s: int = 60,
         retries: int = 3,
@@ -33,7 +34,7 @@ class OllamaEmbedder:
         self.id = f"ollama:{model}"
         self.model = model
         self.dim = dim
-        self.base_url = base_url.rstrip("/")
+        self.base_url = resolve_base_url(base_url).rstrip("/")
         self.batch = batch
         self.timeout_s = timeout_s
         self.retries = retries

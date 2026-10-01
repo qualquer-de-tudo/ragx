@@ -18,6 +18,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **Ollama em `127.0.0.1`: fim dos ~2 s por requisição no Windows.** `localhost`
+  resolve para `::1` antes de `127.0.0.1` e o Ollama escuta só em IPv4, então
+  cada chamada esperava o tempo de falha do IPv6. Medido nesta máquina:
+  `GET /api/tags` **2.040–2.110 ms → 3–17 ms**; embedding de 1 texto por
+  chamada **2.085 ms → 10–21 ms** (batch 1) e **7 ms** (batch 32).
+  O padrão passa a `http://127.0.0.1:11434` e `localhost` é convertido onde quer
+  que apareça (`ragx.toml`, `RAGX_EMBEDDING_BASE_URL`, `OLLAMA_HOST`, `ragx
+  doctor`); outro host, inclusive `http://[::1]:11434`, continua valendo
+  (RAGX-0132).
+
 - **A release publica só o instalador e o guia.** Antes, a página trazia o
   `.exe`, o wheel, o sdist, o `.vsix`, `install.sh`, `install.ps1` e o
   `SHA256SUMS.txt`, e quem procurava o instalador encontrava um monte de

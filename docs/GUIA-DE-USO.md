@@ -120,7 +120,7 @@ teste: não são vazamento.
 O painel confere as três a cada 30 segundos; **Verificar agora** força uma
 checagem.
 
-**Ollama: Docker ou local.** O RAGX fala com `http://localhost:11434`, seja um
+**Ollama: Docker ou local.** O RAGX fala com `http://127.0.0.1:11434` (`localhost` é convertido: no Windows ele custava ~2 s por requisição), seja um
 container ou uma instalação na máquina. O card mostra o modo detectado, o
 processador (GPU ou CPU) e recomenda um modo com o motivo. **Medir velocidade**
 mostra quantos chunks por segundo a sua máquina embeda. Em GPU AMD, prefira o

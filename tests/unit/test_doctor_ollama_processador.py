@@ -157,3 +157,12 @@ def test_outro_provider_nao_consulta_nada(monkeypatch: pytest.MonkeyPatch) -> No
     rows, row = _linhas()
     assert _embedder_status(_cfg("fastembed"), row) is True
     assert not [r for r in rows if r[0] == "Ollama"]
+
+
+def test_doctor_nao_chama_localhost(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A fixture usa `localhost`; o doctor tem de converter antes de conectar (RAGX-0132)."""
+    chamadas = _rede(monkeypatch, {"models": []})
+    _, row = _linhas()
+    _embedder_status(_cfg(), row)
+    assert chamadas, "o doctor deveria ter consultado o Ollama"
+    assert all(u.startswith("http://127.0.0.1:11434/") for u in chamadas), chamadas
