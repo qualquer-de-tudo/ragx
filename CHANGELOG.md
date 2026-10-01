@@ -18,6 +18,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **`load_index` vetorizado e cacheado por geração: `search_hybrid` quente de 100 ms
+  para 18 ms.** A matriz de vetores era reconstruída a cada busca, linha a linha em
+  laço Python, e a documentação prometia um cache que não existia. Agora é uma
+  operação de matriz (7.285 vetores: **53,5 ms → 17,4 ms** frio) e fica em cache por
+  processo, invalidado pela geração `meta('vec_gen')`, que gatilhos em `embeddings`
+  incrementam em qualquer INSERT, UPDATE ou DELETE (inclusive em cascata): **0,013 ms**
+  com o cache quente. `search_hybrid` quente, p50 de 10 consultas: **100,1 ms →
+  17,9 ms**. Nova migração `0007_vec_gen.sql` (`SCHEMA_VERSION` 7). O resultado é o
+  mesmo (diferença máxima ~6e-8 na matriz grosseira, igual byte a byte na float32);
+  o `VectorIndex` compartilhado é somente leitura (RAGX-0134).
+
 - **Indexação sem mudança não carrega o modelo de embedding nem chama o `git` 7
   vezes.** `embed_pending` construía o embedder (e sondava o Ollama) antes de saber
   se havia chunk pendente; agora o nome e a dimensão do modelo vêm da configuração

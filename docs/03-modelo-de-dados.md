@@ -33,10 +33,13 @@ o schema é pequeno e explícito.
 | `0002_documents.sql` | 1 | `documents`, `chunks`, `chunks_fts` |
 | `0003_embeddings.sql` | 2 | `embeddings`, `embedding_models` |
 | `0004_graph.sql` | 3 | `entities`, `relations` |
-| `0005_dictionary.sql` | 5 | `dictionary_artifacts` |
-| `0006_agents.sql` | 7 | `agent_profiles`, `agent_evaluations` |
-| `0007_sync.sql` | 9 | `sync_state` |
-| `0008_federation.sql` | 11 | `federation_surface` (no banco do projeto) |
+| `0005_federation.sql` | 11 | federação (superfície pública do projeto) |
+| `0006_run_provenance.sql` | 9 | `index_runs`: `git_branch`, `git_commit`, `git_dirty`, `source` |
+| `0007_vec_gen.sql` | 19 | `meta('vec_gen')` e gatilhos em `embeddings` (geração dos vetores, RAGX-0134) |
+
+> A tabela de migrações acima foi corrigida contra os arquivos em
+> `src/ragx/storage/migrations/` (listava `0005_dictionary`, `0006_agents`, `0007_sync` e
+> `0008_federation`, que nunca existiram com esses nomes). `SCHEMA_VERSION` é **7**.
 
 Migrações do hub ficam em `migrations/hub/NNNN_*.sql`, com `user_version` próprio.
 

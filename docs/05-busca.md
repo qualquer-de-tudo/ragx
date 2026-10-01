@@ -55,7 +55,7 @@ diferença seja um número publicado e não uma suposição.
 Custo real: 200k chunks × 768 dims × 4 bytes = ~600 MB. Por isso o limiar de upgrade
 para índice aproximado (`sqlite-vec` / HNSW) é **100k chunks**, definido em
 [ADR-0003](adr/ADR-0003-busca-vetorial.md). Abaixo disso, força bruta é mais simples
-e mais precisa. A matriz é carregada uma vez por processo e cacheada por `mtime` do banco.
+e mais precisa. A matriz é carregada uma vez por processo e cacheada pela **geração `vec_gen`** (`meta`), mantida por gatilhos em `embeddings`: `mtime` do banco não é confiável sob WAL. O carregamento é vetorizado (7,3 mil vetores: ~17 ms frio, ~0,01 ms com o cache quente) e o `VectorIndex` devolvido é compartilhado e somente leitura.
 
 Assimetria de query/documento importa: `nomic-embed-text` exige os prefixos
 `search_query:` e `search_document:`. Isso é responsabilidade do provider, não do
