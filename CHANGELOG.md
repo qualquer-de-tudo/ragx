@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Tokens de design completos e contraste AA no painel.** O `index.css` só tinha cor, raio e fonte, e 8 pares de
+  cor ficavam abaixo de 4,5:1 (texto de apoio, botão primário e perigo, selos azul e vermelho). Agora há tokens de
+  espaço, tipografia, camadas, movimento e estado semântico completo, o contraste passa AA (calculado por teste, por
+  tema), `App.css` não tem mais cor literal (15 → 0) e os tamanhos de fonte caíram de 16 para 8 da escala (mais o
+  10 px da logo). O hover dos botões ficou 6% mais claro em vez de 12%, para continuar AA. Travas: `contrast`,
+  `no-hardcoded-color` e `css-ratchet` (RAGX-0178).
 - **CSP restritiva, menu mínimo e DevTools desligadas no painel de produção.** O renderer não tinha
   Content-Security-Policy e o Electron usava o menu padrão (Alt abria Recarregar e Ferramentas do desenvolvedor).
   Agora o build de produção injeta uma política `default-src 'none'` (sem `unsafe-eval`, sem `unsafe-inline` em script

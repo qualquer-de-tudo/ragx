@@ -272,6 +272,19 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Tokens de design e contraste
+
+Toda cor, tamanho de fonte, camada e duração do renderer vem de um token em `src/index.css` (`:root`): superfícies e
+tinta (`--bg`, `--surface*`, `--ink*`), estado semântico com variantes de texto, preenchimento, fundo e borda
+(`--accent-text/-solid/-wash/-line`, `--good-*`, `--warning-*`, `--critical-*`), `--scrim`, `--line-control` (borda de
+campo, seletor e interruptor, >= 3:1), `--series-*` (gráfico), escala de espaço `--sp-2..32`, de tipografia
+`--fs-xs..stat`, de camadas `--z-*` e `--dur`. Botão primário e perigo usam `--accent-solid` e `--critical-solid`
+com texto branco (>= 4,5:1); texto colorido usa `--accent-text` e `--critical-text`. Quatro testes seguram isso:
+`contrast.test.ts` (matriz WCAG AA calculada a partir do CSS, por tema, com `src/test/wcag.ts`),
+`no-hardcoded-color.test.ts` (nenhum `#hex` nem `rgb()` fora do `:root`), `no-em-dash.test.ts` e
+`css-ratchet.test.ts` (`gap`/`padding`/`margin` com `px` literal só podem diminuir; baixe o número em
+`css-ratchet.json` ao migrar mais para `--sp-*`). Só o rótulo da logo (`.brand-name`, 10 px) fica fora da escala.
+
 ## Segurança do renderer
 
 O painel não carrega nada de fora (um teste, `no-remote-resources.test.ts`, falha se aparecer `http(s)://`, `ws://`

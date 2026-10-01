@@ -10,15 +10,57 @@
   --line-strong: #34343a;
   --ink: #f2f2f3;
   --ink-2: #a3a3ab;
-  --ink-3: #74747c;
+  --ink-3: #8a8a93;
   --accent: #3b82f6;
   --accent-ink: #ffffff;
+  /* Preenchimento que leva texto branco (>= 4,5:1) e cor de texto sobre superfície escura (selo incluído). */
+  --accent-solid: #2563eb;
+  --accent-text: #5b9bf8;
   --accent-wash: rgba(59, 130, 246, 0.14);
+  --accent-line: rgba(59, 130, 246, 0.35);
   --good: #22c55e;
+  --good-wash: rgba(34, 197, 94, 0.12);
+  --good-line: rgba(34, 197, 94, 0.35);
   --warning: #f5a524;
+  --warning-wash: rgba(245, 165, 36, 0.12);
+  --warning-line: rgba(245, 165, 36, 0.35);
   --critical: #f04848;
+  --critical-solid: #dc2626;
+  --critical-text: #f56565;
+  --critical-wash: rgba(240, 72, 72, 0.12);
+  --critical-line: rgba(240, 72, 72, 0.35);
+  --scrim: rgba(0, 0, 0, 0.72);
+  /* Borda de controle (campo, seletor, interruptor): >= 3:1 (WCAG 1.4.11). --line e --line-strong só separam. */
+  --line-control: #6a6a73;
+  /* Séries do gráfico de economia, validadas no tema escuro (superfície #0c0c0e). */
+  --series-delivered: #3987e5;
+  --series-baseline: #d95926;
   --radius: 12px;
   --radius-sm: 8px;
+  --radius-xs: 4px;
+  /* Espaço, tipografia, camadas e movimento. Sem sombra: a elevação é borda e camada (ver o cabeçalho do App.css). */
+  --sp-2: 2px;
+  --sp-4: 4px;
+  --sp-6: 6px;
+  --sp-8: 8px;
+  --sp-12: 12px;
+  --sp-16: 16px;
+  --sp-20: 20px;
+  --sp-24: 24px;
+  --sp-32: 32px;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 14px;
+  --fs-h3: 18px;
+  --fs-h2: 22px;
+  --fs-h1: 24px;
+  --fs-stat: 32px;
+  --z-sticky: 2;
+  --z-popover: 20;
+  --z-modal: 50;
+  --z-toast: 60;
+  --dur: 120ms;
   --sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
   --mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
@@ -47,7 +89,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 14px/1.5 var(--sans);
+  font: var(--fs-lg)/1.5 var(--sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -73,7 +115,7 @@ code {
   font-family: var(--mono);
   font-size: 0.9em;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--surface-3);
   color: var(--ink);
 }
@@ -95,7 +137,7 @@ button:disabled {
 }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.35);
+  background: var(--accent-line);
 }
 
 :focus-visible {
