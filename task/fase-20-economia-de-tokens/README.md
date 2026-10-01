@@ -9,7 +9,7 @@ Um `build_context` de 3.000 tokens entrega **7.684** no fio (2,6×): o conteúdo
 | ID | Tarefa | Prio | Est. | Status |
 |---|---|---|---|---|
 | [RAGX-0154](RAGX-0154-build-context-uma-so-representacao-do-conteudo-e-contagem-do-que-realmente-sai.md) | `build_context`: uma só representação do conteúdo e contagem do que realmente sai | P0 | 1d | `done` |
-| [RAGX-0155](RAGX-0155-respostas-mcp-compactas-sem-indentacao-sem-repeticao-sem-outputschema-inutil.md) | Respostas MCP compactas (sem indentação, sem repetição, sem `outputSchema` inútil) | P0 | 1d | `todo` |
+| [RAGX-0155](RAGX-0155-respostas-mcp-compactas-sem-indentacao-sem-repeticao-sem-outputschema-inutil.md) | Respostas MCP compactas (sem indentação, sem repetição, sem `outputSchema` inútil) | P0 | 1d | `done` |
 | [RAGX-0156](RAGX-0156-telemetria-honesta-ok-err-code-resp-chars-tokens-reais.md) | Telemetria honesta: `ok`, `err_code`, `resp_chars`, tokens reais | P1 | 0,5d | `todo` |
 | [RAGX-0157](RAGX-0157-perfil-slim-do-mcp-6-ferramentas-full-continua-disponivel.md) | Perfil `slim` do MCP: 6 ferramentas (`full` continua disponível) | P0 | 2d | `todo` |
 | [RAGX-0158](RAGX-0158-instructions-ate-2-kb-descricoes-para-tool-search-e-lista-estavel.md) | `instructions` ≤ 2 KB, descrições para Tool Search e lista estável | P1 | 0,5d | `todo` |

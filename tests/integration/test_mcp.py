@@ -53,19 +53,26 @@ def test_toda_resposta_tem_envelope(api: KnowledgeAPI) -> None:
 
 
 def test_erro_nao_vaza_stack_trace(api: KnowledgeAPI) -> None:
-    out = api.get_chunk("nao-existe")
+    out = api.get_chunk("0" * 12)  # hexadecimal válido que não existe
     assert out["ok"] is False
     assert out["error"]["code"] == "not_found"
     assert "Traceback" not in json.dumps(out)
+    # entrada que nem é um id: erro de quem chamou, também sem stack trace
+    ruim = api.get_chunk("nao-existe")
+    assert ruim["error"]["code"] == "invalid_id" and "Traceback" not in json.dumps(ruim)
 
 
 # ── atribuição obrigatória ──────────────────────────────────────────────
 def test_todo_resultado_carrega_project(api: KnowledgeAPI) -> None:
-    """Conhecimento sem origem identificada não é entregue."""
+    """Conhecimento sem origem identificada não é entregue.
+
+    No projeto atual a origem vai UMA vez, em `data.project`, e não repetida em cada
+    hit (RAGX-0155); na busca federada cada hit tem a sua e a carrega.
+    """
     out = api.search(SearchRequest(query="sessao"), mode="hybrid")
+    assert out["data"]["project"] == "demo"
     assert out["data"]["results"]
-    for hit in out["data"]["results"]:
-        assert hit["project"] == "demo"
+    assert all("project" not in hit for hit in out["data"]["results"])
 
 
 # ── a fronteira ─────────────────────────────────────────────────────────
@@ -381,7 +388,8 @@ def test_cli_e_mcp_concordam(api: KnowledgeAPI) -> None:
     """Mesmo serviço por baixo: divergência viraria bug relatado por agente."""
     from ragx.search.service import search
 
-    cli = [r.chunk_id for r in search(api.cfg, "autenticacao", mode="hybrid", limit=5).results]
+    # o fio carrega os 12 primeiros hex do id (RAGX-0155); a CLI, o id completo
+    cli = [r.chunk_id[:12] for r in search(api.cfg, "autenticacao", mode="hybrid", limit=5).results]
     mcp = [
         h["chunk_id"]
         for h in api.search(SearchRequest(query="autenticacao", limit=5), mode="hybrid")["data"][
@@ -547,3 +555,48 @@ def test_estimated_tokens_do_mcp_bate_com_o_markdown_entregue(api: KnowledgeAPI)
     out = api.build_context(BuildContextRequest(query="autenticacao", tokens=800))
     assert out["data"]["estimated_tokens"] == count_tokens(out["data"]["markdown"])
     assert out["data"]["estimated_tokens"] <= 800
+
+
+# ── RAGX-0155: chunk_id de 12 hex no fio, get_chunk por prefixo ─────────
+def test_hit_traz_id_curto_e_get_chunk_aceita_o_prefixo(api: KnowledgeAPI) -> None:
+    hit = api.search(SearchRequest(query="sessao"), mode="hybrid")["data"]["results"][0]
+    assert len(hit["chunk_id"]) == 12
+    por_prefixo = api.get_chunk(hit["chunk_id"])
+    assert por_prefixo["ok"] and por_prefixo["data"]["content"]
+    assert len(por_prefixo["data"]["chunk_id"]) == 12
+    # o id completo continua valendo
+    completo = api.cfg and __import__("sqlite3").connect(api.cfg.db_path).execute(
+        "SELECT id FROM chunks WHERE id LIKE ?", (hit["chunk_id"] + "%",)
+    ).fetchone()[0]
+    assert api.get_chunk(completo)["data"]["content"] == por_prefixo["data"]["content"]
+
+
+def test_get_chunk_prefixo_curto_demais_ou_nao_hex_e_invalido(api: KnowledgeAPI) -> None:
+    assert api.get_chunk("abc123")["error"]["code"] == "invalid_id"  # < 8 chars
+    assert api.get_chunk("zzzzzzzzzzzz")["error"]["code"] == "invalid_id"  # não é hex
+    assert api.get_chunk("0" * 12)["error"]["code"] == "not_found"
+
+
+def test_get_chunk_prefixo_ambiguo_e_recusado(api: KnowledgeAPI) -> None:
+    import sqlite3
+
+    conn = sqlite3.connect(api.cfg.db_path)
+    conn.row_factory = sqlite3.Row
+    colunas = [r["name"] for r in conn.execute("PRAGMA table_info(chunks)")]
+    antigo = conn.execute("SELECT id FROM chunks LIMIT 1").fetchone()[0]
+    novo = antigo[:12] + ("0" if antigo[12] != "0" else "1") * 20
+    lista = ",".join(colunas)
+    seleciona = ",".join(
+        f"'{novo}'" if c == "id" else ("ordinal + 1000" if c == "ordinal" else c) for c in colunas
+    )
+    conn.execute(f"INSERT INTO chunks ({lista}) SELECT {seleciona} FROM chunks WHERE id = ?", (antigo,))
+    conn.commit()
+    try:
+        r = api.get_chunk(antigo[:12])
+        assert not r["ok"] and r["error"]["code"] == "invalid_id"
+        assert "ambíguo" in r["error"]["message"]
+        assert api.get_chunk(antigo)["ok"]  # o completo desambigua
+    finally:
+        conn.execute("DELETE FROM chunks WHERE id = ?", (novo,))
+        conn.commit()
+        conn.close()

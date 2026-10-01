@@ -369,3 +369,38 @@ def test_superficie_hub(indexado: Path, tmp_path: Path, monkeypatch) -> None:
     )
     conn.close()
     assert leaked(blob) == [], "segredo materializado no hub"
+
+
+def test_superficie_mcp_no_fio(indexado: Path) -> None:
+    """RAGX-0155. O mesmo laço de `test_superficie_mcp`, mas passando por
+    `build_server(...).call_tool`: a serialização compacta (`dump`/`compact`) e a ausência
+    de `structuredContent` também precisam estar livres de segredo."""
+    import asyncio
+
+    from ragx.config import load_config
+    from ragx.mcp.server import build_server
+
+    cfg = load_config(indexado.parent.parent)
+    cfg.mcp.rate_per_min = 100_000
+    server = build_server(cfg, allow_write=False)
+
+    chamadas = [
+        ("get_dictionary", {}),
+        ("search_hybrid", {"query": "{probe}"}),
+        ("search_knowledge", {"query": "{probe}"}),
+        ("get_chunk", {"chunk_id": "{probe}"}),
+        ("get_entity", {"name": "{probe}"}),
+        ("search_graph", {"query": "{probe}"}),
+        ("build_context", {"query": "{probe}", "tokens": 500}),
+        ("build_context", {"query": "{probe}", "tokens": 500, "format": "json"}),
+        ("get_document", {"path": "{probe}"}),
+        ("list_projects", {}),
+    ]
+    for secret in SECRETS_UNDER_TEST:
+        probe = secret[:40]
+        for nome, args in chamadas:
+            args = {k: (probe if v == "{probe}" else v) for k, v in args.items()}
+            r = asyncio.run(server.call_tool(nome, args))
+            texto = "".join(b.text for b in r.content)
+            assert getattr(r, "structured_content", None) is None
+            assert leaked(texto) == [], f"{nome} vazou ao receber {secret[:12]}…"

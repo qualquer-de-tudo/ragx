@@ -261,6 +261,30 @@ hub e os stores dos projetos registrados, nunca o filesystem deles. Projeto marc
 `visibility = "private"` é invisível a qualquer `scope`, inclusive `project:<nome>`
 explícito.
 
+## Formato das respostas
+
+Tudo que o agente lê custa token, então o fio é enxuto (RAGX-0155, `response_format: 2`,
+declarado em `get_playbook`):
+
+- **JSON compacto**, sem indentação e com acentos como estão. As ferramentas são
+  registradas com `structured_output=False`: o SDK não repete a resposta em
+  `structuredContent` nem anexa `outputSchema` a cada ferramenta (o `tools/list` perdeu
+  ~830 tokens, e cada resposta, a metade que vinha duplicada).
+- **Ausência significa `null`.** Chaves nulas (`symbol`, `heading_path`, `degraded`...) não
+  vão no fio; `0`, `false`, `""` e `[]` vão.
+- **`project` uma vez**, em `data.project`, e não repetido em cada hit. A busca federada
+  (`scope` diferente de `current`) mantém `project` por hit, porque lá cada um tem a sua origem.
+- **`score` com 4 casas** e **`chunk_id` de 12 hex** (o id completo tem 32). `get_chunk`
+  aceita o id completo ou um prefixo hexadecimal de **8 caracteres ou mais**; prefixo
+  ambíguo devolve `invalid_id`.
+- `build_context` entrega **uma** representação por `format` (ver acima) e o texto do
+  markdown sem o título.
+
+Medido com `scripts/medir_fio.py` (tiktoken, este repositório; antes → depois, texto da resposta,
+sem contar o `structuredContent` que deixou de existir): `search_hybrid` (10 hits) 11.864 → 9.679
+chars (−18,4%); `get_dictionary` 36.713 → 21.530 (−41,4%); `get_document` 2.610 → 1.436 (−45%);
+`get_entity` 23.679 → 17.419 (−26,4%); `build_context(3000)` 7.983 → 2.947 tokens.
+
 ## Execução
 
 ```bash

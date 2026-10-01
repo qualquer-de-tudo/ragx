@@ -125,6 +125,21 @@ class ChunkRepo:
         ).fetchone()
         return dict(r) if r else None
 
+    def get_by_prefix(self, prefix: str) -> tuple[dict[str, Any] | None, bool]:
+        """`(chunk, ambíguo)`. O id completo tem 32 hex; no fio ele vai com 12.
+
+        `prefix` precisa ser hexadecimal (o chamador valida): vira `LIKE 'xxxx%'` sem
+        caractere especial. Mais de um chunk com o prefixo é ambiguidade, não escolha.
+        """
+        rows = self.conn.execute(
+            """SELECT c.*, d.rel_path FROM chunks c JOIN documents d ON d.id = c.document_id
+               WHERE c.id LIKE ? LIMIT 2""",
+            (prefix + "%",),
+        ).fetchall()
+        if len(rows) > 1:
+            return None, True
+        return (dict(rows[0]) if rows else None), False
+
     def neighbors(self, chunk_id: str) -> list[dict[str, Any]]:
         row = self.get(chunk_id)
         if not row:

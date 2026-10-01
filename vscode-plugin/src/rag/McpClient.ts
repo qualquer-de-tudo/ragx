@@ -348,7 +348,10 @@ export class McpRagClient implements RagClient {
     if (!r.ok) return propagate<SearchResponse>(r);
 
     const raw = (r.data?.results as Json[]) ?? [];
-    let results = raw.map(toHit);
+    // O servidor manda a origem UMA vez em `data.project` e só a repete por hit na busca
+    // federada (RAGX-0155): o hit sem `project` herda a do envelope.
+    const origem = str(r.data?.project) || 'current';
+    let results = raw.map((h) => toHit({ project: origem, ...h }));
     if (filters?.minScore) {
       results = results.filter((h) => h.score >= filters.minScore!);
     }

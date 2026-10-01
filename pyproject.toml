@@ -24,10 +24,10 @@ dependencies = [
 # sao o proposito do RAGX, nao acessorios — e um `ragx mcp serve` que falha com
 # ModuleNotFoundError depois de uma instalacao bem-sucedida e o pior tipo de
 # surpresa. Os extras individuais continuam existindo para quem quer o minimo.
-all = ["fastembed>=0.3", "mcp>=1.2", "tiktoken>=0.7"]
+all = ["fastembed>=0.3", "mcp>=2.0", "tiktoken>=0.7"]
 embed = ["fastembed>=0.3"]
 parse = ["markdown-it-py>=3.0", "tree-sitter-language-pack>=0.2", "sqlparse>=0.5", "ruamel.yaml>=0.18"]
-mcp = ["mcp>=1.2"]
+mcp = ["mcp>=2.0"]
 tokens = ["tiktoken>=0.7"]
 dev = [
     "pytest>=8.2",

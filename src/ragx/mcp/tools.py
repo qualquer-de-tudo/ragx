@@ -75,12 +75,43 @@ def validate_path(value: str) -> str | None:
     return normalized
 
 
+#: Tamanho do `chunk_id` no fio. O id completo tem 32 hex; 48 bits bastam para
+#: distinguir chunks de um projeto, e 20 caracteres a menos em cada hit, cada
+#: fragmento e cada relação são token que o agente não paga (RAGX-0155).
+WIRE_ID_LEN = 12
+MIN_ID_PREFIX = 8
+
+
+def wire_id(chunk_id: str) -> str:
+    return chunk_id[:WIRE_ID_LEN]
+
+
+def dump(payload: Any) -> str:
+    """JSON compacto, com acentos como estão: é o que o cliente lê, e cada espaço
+    e cada `\u00e7` é token. O SDK reindentava (`indent=2`) o `dict` e ainda o
+    repetia em `structuredContent` (RAGX-0155)."""
+    import json as _json
+
+    return _json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
+def compact(value: Any) -> Any:
+    """Remove chaves de dict com valor `None`, em qualquer profundidade.
+
+    Ausência significa `null`. Listas não perdem elementos; só os dicts dentro
+    delas são limpos. `0`, `False`, `""` e `[]` NÃO são nulos e ficam.
+    """
+    if isinstance(value, dict):
+        return {k: compact(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [compact(v) for v in value]
+    return value
+
+
 def cap(payload: dict[str, Any], max_bytes: int = MAX_RESPONSE_BYTES) -> dict[str, Any]:
     """Resposta grande demais é recusada com orientação — nunca truncada em
     silêncio, que faria o agente acreditar que viu tudo."""
-    import json as _json
-
-    size = len(_json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+    size = len(dump(payload).encode("utf-8"))
     if size <= max_bytes:
         return payload
     return err(

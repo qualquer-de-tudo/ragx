@@ -53,7 +53,8 @@ def _api(mundo: dict[str, Path]) -> KnowledgeAPI:
 
 def _projetos(resp: dict) -> set[str]:
     assert resp["ok"], resp
-    return {h["project"] for h in resp["data"]["results"]}
+    # `current` leva a origem em `data.project`; o federado, em cada hit
+    return {h.get("project", resp["data"].get("project")) for h in resp["data"]["results"]}
 
 
 def _privar(mundo: dict[str, Path]) -> None:

@@ -18,6 +18,23 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **Respostas MCP compactas: sem indentação, sem duplicar em `structuredContent`, sem
+  `outputSchema`, sem repetição.** Toda resposta saía com `indent=2` (o SDK reindentava o
+  `dict`), era repetida em `structuredContent` (o JSON ia duas vezes no fio) e cada uma das 33
+  ferramentas anunciava um `outputSchema` que não serve ao modelo. Agora o servidor devolve
+  JSON compacto (`dump`) uma vez só, as chaves nulas somem (`compact`; ausência = `null`), `project`
+  vai uma vez em `data.project` (o federado mantém por hit), `score` tem 4 casas, `chunk_id` vai com
+  12 hex e `get_chunk` aceita prefixo de 8+. Medido (tiktoken, texto da resposta, antes → depois):
+  `search_hybrid` com 10 hits **3.547 → 2.915 tokens** (−18,4% em chars) e a mesma quantidade a
+  menos em `structuredContent`; `get_dictionary` **9.548 → 6.225** (−41,4% em chars);
+  `get_document` **808 → 492**; `get_entity` **8.079 → 6.207**; `build_context(3000)` **2.947**;
+  `tools/list` **4.141 → 3.310** (-831, sem `outputSchema`). **Muda o formato:** quem lia `project`
+  em cada hit deve usar `data.project`; cliente que validava `outputSchema` deixa de ter o que
+  validar. O plugin do VS Code já herda a origem do envelope. O piso do pacote `mcp` subiu de
+  `>=1.2` para `>=2.0`: o código importa `mcp.server.mcpserver`, que só existe a partir da 2.0.0
+  (verificado nos wheels; na 1.x o módulo é `fastmcp`), então um `ragx mcp serve` com `mcp` 1.x
+  falhava com `ModuleNotFoundError` depois de uma instalação "bem-sucedida" (RAGX-0155).
+
 - **`build_context` entrega uma só representação do conteúdo, e `estimated_tokens` conta
   o que sai.** A resposta MCP trazia o mesmo texto em `fragments` e em `markdown`
   (e o SDK ainda o repete em `structuredContent`), e `estimated_tokens` somava só o

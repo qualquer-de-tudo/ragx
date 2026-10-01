@@ -12,6 +12,7 @@ construção, não tem segredo dentro.
 
 from __future__ import annotations
 
+import functools
 import time
 from collections import deque
 from typing import Any
@@ -25,13 +26,17 @@ from ragx.mcp.operations import WriteAPI
 from ragx.mcp.orchestration import OrchestrationAPI
 from ragx.mcp.playbook import playbook, short_instructions
 from ragx.mcp.tools import (
+    MIN_ID_PREFIX,
     BuildContextRequest,
     SearchRequest,
     cap,
+    compact,
+    dump,
     err,
     ok,
     safe_echo,
     validate_path,
+    wire_id,
 )
 from ragx.storage.db import utcnow
 
@@ -167,15 +172,17 @@ class KnowledgeAPI:
         return None
 
     def _hit(self, r: Any) -> dict[str, Any]:
+        # Sem `project` por hit: ele vai UMA vez em `data.project` (a busca federada
+        # o acrescenta de volta, porque lá cada hit tem a sua origem). Nulos somem no
+        # fio (`compact`) e o score tem 4 casas: o resto era ruído em cada um dos 10 hits.
         return {
-            "project": self.project,
-            "chunk_id": r.chunk_id,
+            "chunk_id": wire_id(r.chunk_id),
             "document_path": r.document_path,
             "symbol": r.symbol,
             "heading_path": r.heading_path,
             "kind": r.kind.value,
             "lines": [r.start_line, r.end_line],
-            "score": round(r.score, 6),
+            "score": round(r.score, 4),
             "content": r.content,
             "matched_by": list(r.matched_by),
         }
@@ -205,6 +212,7 @@ class KnowledgeAPI:
         return cap(
             ok(
                 {
+                    "project": self.project,
                     "mode": out.mode,
                     "degraded": out.degraded,
                     # só aparece quando existe: não acrescenta `null` ao fio
@@ -325,18 +333,36 @@ class KnowledgeAPI:
             return blocked
         if not chunk_id or len(chunk_id) > 64:
             return err("invalid_id", "chunk_id inválido")
+        eh_hex = all(c in "0123456789abcdef" for c in chunk_id.lower())
+        if not eh_hex or len(chunk_id) < MIN_ID_PREFIX:
+            return err(
+                "invalid_id",
+                f"chunk_id é hexadecimal, com no mínimo {MIN_ID_PREFIX} caracteres "
+                "(o fio traz 12; o id completo tem 32)",
+            )
 
         from ragx.storage.db import open_db
         from ragx.storage.repositories import ChunkRepo
 
         with open_db(self.cfg.db_path, read_only=True) as conn:
-            row = ChunkRepo(conn).get(chunk_id)
+            repo = ChunkRepo(conn)
+            if len(chunk_id) == 32:
+                row = repo.get(chunk_id.lower())
+                ambiguo = False
+            else:
+                row, ambiguo = repo.get_by_prefix(chunk_id.lower())
+            if ambiguo:
+                return err(
+                    "invalid_id",
+                    f"prefixo ambíguo: mais de um chunk começa com {safe_echo(chunk_id)}; "
+                    "use mais caracteres",
+                )
             if row is None:
                 return err("not_found", f"chunk não encontrado: {safe_echo(chunk_id)}")
         return ok(
             {
                 "project": self.project,
-                "chunk_id": row["id"],
+                "chunk_id": wire_id(row["id"]),
                 "document_path": row["rel_path"],
                 "symbol": row["symbol"],
                 "heading_path": row["heading_path"],
@@ -412,6 +438,7 @@ class KnowledgeAPI:
         return cap(
             ok(
                 {
+                    "project": self.project,
                     "seeds": out.seeds,
                     "expanded": len(out.expansion.scores),
                     "truncated": out.expansion.truncated,
@@ -470,7 +497,7 @@ class KnowledgeAPI:
             payload["fragments"] = [
                 {
                     "project": project if req.scope != "current" else f.project,
-                    "chunk_id": f.chunk_id,
+                    "chunk_id": wire_id(f.chunk_id),
                     "document_path": f.document_path,
                     "lines": [f.start_line, f.end_line],
                     "symbol": f.symbol,
@@ -632,17 +659,37 @@ def build_server(
         instructions=short_instructions(write_enabled) + " " + _ORDER_HINT,
     )
 
-    @server.tool(description="Como operar o RAGX: ordem das ferramentas, quando reindexar e o que o índice NÃO faz. Leia uma vez no início da sessão.")
+    def _tool(description: str) -> Any:
+        """Registra a ferramenta devolvendo TEXTO JSON compacto.
+
+        Sem isto o SDK reindenta o `dict` (`indent=2`), o repete em
+        `structuredContent` e anexa um `outputSchema` a cada ferramenta: tudo isso
+        é custo em tokens para o agente e nada para o modelo. `_guarded` continua
+        devolvendo `dict` (é o que os testes e a CLI chamam); o texto é montado
+        aqui, uma vez, na borda (RAGX-0155).
+        """
+        def deco(fn: Any) -> Any:
+            @functools.wraps(fn)
+            def wrapper(*args: Any, **kwargs: Any) -> str:
+                return dump(compact(fn(*args, **kwargs)))
+
+            server.tool(description=description, structured_output=False)(wrapper)
+            return fn
+
+        return deco
+
+    @_tool(description="Como operar o RAGX: ordem das ferramentas, quando reindexar e o que o índice NÃO faz. Leia uma vez no início da sessão.")
     def get_playbook() -> dict[str, Any]:
         return _guarded(
-            lambda: ok(playbook(cfg, write_enabled)), "get_playbook", cfg
+            lambda: ok({**playbook(cfg, write_enabled), "response_format": 2}),
+            "get_playbook", cfg,
         )
 
-    @server.tool(description="Mapa barato do projeto: tecnologias, serviços, módulos, convenções. Comece por aqui.")
+    @_tool(description="Mapa barato do projeto: tecnologias, serviços, módulos, convenções. Comece por aqui.")
     def get_dictionary(section: str | None = None) -> dict[str, Any]:
         return _guarded(lambda: api.get_dictionary(section), "get_dictionary", cfg)
 
-    @server.tool(description="Busca semântica no conhecimento indexado.")
+    @_tool(description="Busca semântica no conhecimento indexado.")
     def search_knowledge(
         query: str, limit: int = 10, lang: str | None = None,
         kind: str | None = None, path_glob: str | None = None, scope: str = "current",
@@ -656,7 +703,7 @@ def build_server(
             "search_knowledge", cfg,
         )
 
-    @server.tool(description="Busca híbrida (semântica + palavra-chave). O modo padrão para localizar.")
+    @_tool(description="Busca híbrida (semântica + palavra-chave). O modo padrão para localizar.")
     def search_hybrid(
         query: str, limit: int = 10, lang: str | None = None,
         kind: str | None = None, path_glob: str | None = None, scope: str = "current",
@@ -670,11 +717,11 @@ def build_server(
             "search_hybrid", cfg,
         )
 
-    @server.tool(description="Metadados e lista de chunks de um documento JÁ INDEXADO (caminho relativo).")
+    @_tool(description="Metadados e lista de chunks de um documento JÁ INDEXADO (caminho relativo).")
     def get_document(path: str) -> dict[str, Any]:
         return _guarded(lambda: api.get_document(path), "get_document", cfg)
 
-    @server.tool(description="Inventário do índice: documentos e de que origem vêm (@base/... é conhecimento compartilhado). Metadado, sem conteúdo.")
+    @_tool(description="Inventário do índice: documentos e de que origem vêm (@base/... é conhecimento compartilhado). Metadado, sem conteúdo.")
     def list_documents(
         path_glob: str | None = None, lang: str | None = None,
         kind: str | None = None, limit: int = 200,
@@ -683,22 +730,22 @@ def build_server(
             lambda: api.list_documents(path_glob, lang, kind, limit), "list_documents", cfg,
         )
 
-    @server.tool(description="Conteúdo completo de um chunk pelo seu id.")
+    @_tool(description="Conteúdo completo de um chunk pelo seu id.")
     def get_chunk(chunk_id: str) -> dict[str, Any]:
         return _guarded(lambda: api.get_chunk(chunk_id), "get_chunk", cfg)
 
-    @server.tool(description="Entidade do grafo e suas relações diretas.")
+    @_tool(description="Entidade do grafo e suas relações diretas.")
     def get_entity(name: str, depth: int = 1) -> dict[str, Any]:
         return _guarded(lambda: api.get_entity(name, depth), "get_entity", cfg)
 
-    @server.tool(description="Busca combinando vetor e grafo: acha o que está LIGADO ao assunto.")
+    @_tool(description="Busca combinando vetor e grafo: acha o que está LIGADO ao assunto.")
     def search_graph(query: str, limit: int = 10, depth: int = 1) -> dict[str, Any]:
         return _guarded(
             lambda: api.search_graph(SearchRequest(query=query, limit=limit), depth),
             "search_graph", cfg,
         )
 
-    @server.tool(description="Monta o contexto de trabalho dentro de um orçamento de tokens.")
+    @_tool(description="Monta o contexto de trabalho dentro de um orçamento de tokens.")
     def build_context(
         query: str, tokens: int = 3000, format: str = "markdown",
         include_graph: bool = True, scope: str = "current",
@@ -713,15 +760,15 @@ def build_server(
             "build_context", cfg,
         )
 
-    @server.tool(description="Projetos disponíveis, integrações e divergências. Comece por aqui em ambiente multirrepositório.")
+    @_tool(description="Projetos disponíveis, integrações e divergências. Comece por aqui em ambiente multirrepositório.")
     def list_projects() -> dict[str, Any]:
         return _guarded(lambda: api.list_projects(), "list_projects", cfg)
 
-    @server.tool(description="Contrato de um endpoint ou evento e o projeto que o provê. Funciona para projeto não clonado.")
+    @_tool(description="Contrato de um endpoint ou evento e o projeto que o provê. Funciona para projeto não clonado.")
     def get_contract(name: str, kind: str = "http") -> dict[str, Any]:
         return _guarded(lambda: api.get_contract(kind, name), "get_contract", cfg)
 
-    @server.tool(description="Fontes de conhecimento base (@base/...) ativas nesta máquina.")
+    @_tool(description="Fontes de conhecimento base (@base/...) ativas nesta máquina.")
     def list_base_sources() -> dict[str, Any]:
         return _guarded(lambda: ops.base_sources(), "list_base_sources", cfg)
 
@@ -729,86 +776,86 @@ def build_server(
     # Registradas SEMPRE, mesmo em modo leitura. Uma ferramenta ausente faz o
     # agente concluir que a operação não existe; uma ferramenta que responde
     # `write_disabled` diz a verdade — existe, está desligada, eis como ligar.
-    @server.tool(description="Reindexa o que mudou no disco desde a última vez (incremental, ~1 s quando nada mudou). Chame no INÍCIO de uma tarefa. Só reindexa: não regrava knowledge/ (isso é sync).")
+    @_tool(description="Reindexa o que mudou no disco desde a última vez (incremental, ~1 s quando nada mudou). Chame no INÍCIO de uma tarefa. Só reindexa: não regrava knowledge/ (isso é sync).")
     def refresh() -> dict[str, Any]:
         return _guarded(lambda: ops.refresh(), "refresh", cfg)
 
-    @server.tool(description="Reindexa o projeto. Incremental por padrão; full=true só quando chunker ou modelo de embedding mudou.")
+    @_tool(description="Reindexa o projeto. Incremental por padrão; full=true só quando chunker ou modelo de embedding mudou.")
     def reindex(full: bool = False, embed: bool = True) -> dict[str, Any]:
         return _guarded(lambda: ops.reindex(full=full, embed=embed), "reindex", cfg)
 
-    @server.tool(description="Sincronização completa: reidrata, reindexa, reconstrói grafo e dicionário e regrava knowledge/. Operação CARA — use após mudanças estruturais.")
+    @_tool(description="Sincronização completa: reidrata, reindexa, reconstrói grafo e dicionário e regrava knowledge/. Operação CARA — use após mudanças estruturais.")
     def sync(full: bool = False, write_knowledge: bool = True) -> dict[str, Any]:
         return _guarded(
             lambda: ops.sync(full=full, write_knowledge=write_knowledge), "sync", cfg
         )
 
-    @server.tool(description="Reconstrói o grafo de entidades e relações.")
+    @_tool(description="Reconstrói o grafo de entidades e relações.")
     def rebuild_graph() -> dict[str, Any]:
         return _guarded(lambda: ops.rebuild_graph(), "rebuild_graph", cfg)
 
-    @server.tool(description="Regenera o Knowledge Dictionary a partir do grafo atual.")
+    @_tool(description="Regenera o Knowledge Dictionary a partir do grafo atual.")
     def generate_dictionary() -> dict[str, Any]:
         return _guarded(lambda: ops.generate_dictionary(), "generate_dictionary", cfg)
 
-    @server.tool(description="Instala o conhecimento base que o projeto DECLARA e falta nesta máquina. A origem vem de arquivo versionado, não do agente.")
+    @_tool(description="Instala o conhecimento base que o projeto DECLARA e falta nesta máquina. A origem vem de arquivo versionado, não do agente.")
     def base_sync() -> dict[str, Any]:
         return _guarded(lambda: ops.base_sync(), "base_sync", cfg)
 
-    @server.tool(description="Republica a superfície pública deste projeto (rotas, eventos, clientes) no hub da máquina.")
+    @_tool(description="Republica a superfície pública deste projeto (rotas, eventos, clientes) no hub da máquina.")
     def publish_contract() -> dict[str, Any]:
         return _guarded(lambda: ops.publish_contract(), "publish_contract", cfg)
 
     # ── orquestração de tarefas (Fase 13) ───────────────────────────────
-    @server.tool(description="Classifica uma solicitação: executar agora ou documentar e decompor antes. NÃO escreve nada.")
+    @_tool(description="Classifica uma solicitação: executar agora ou documentar e decompor antes. NÃO escreve nada.")
     def analyze_request(request: str) -> dict[str, Any]:
         return _guarded(lambda: orq.analyze_request(request), "analyze_request", cfg)
 
-    @server.tool(description="Monta o plano de trabalho (documentos, tarefas, dependências). apply=true cria o projeto.")
+    @_tool(description="Monta o plano de trabalho (documentos, tarefas, dependências). apply=true cria o projeto.")
     def plan_work(request: str, apply: bool = False) -> dict[str, Any]:
         return _guarded(lambda: orq.plan_work(request, apply), "plan_work", cfg)
 
-    @server.tool(description="Lista tarefas, com filtro por projeto e estado.")
+    @_tool(description="Lista tarefas, com filtro por projeto e estado.")
     def list_tasks(project_id: str | None = None, status: str | None = None, limit: int = 50) -> dict[str, Any]:
         return _guarded(lambda: orq.list_tasks(project_id, status, limit), "list_tasks", cfg)
 
-    @server.tool(description="Detalhe de uma tarefa: critérios, escopo, dependências e último resultado.")
+    @_tool(description="Detalhe de uma tarefa: critérios, escopo, dependências e último resultado.")
     def get_task(task_id: str) -> dict[str, Any]:
         return _guarded(lambda: orq.get_task(task_id), "get_task", cfg)
 
-    @server.tool(description="O DAG de tarefas do projeto: nós e arestas.")
+    @_tool(description="O DAG de tarefas do projeto: nós e arestas.")
     def task_graph(project_id: str | None = None) -> dict[str, Any]:
         return _guarded(lambda: orq.task_graph(project_id), "task_graph", cfg)
 
-    @server.tool(description="A próxima tarefa executável, SEM reivindicar. Use para decidir antes de pegar.")
+    @_tool(description="A próxima tarefa executável, SEM reivindicar. Use para decidir antes de pegar.")
     def next_task(project_id: str | None = None) -> dict[str, Any]:
         return _guarded(lambda: orq.next_task(project_id), "next_task", cfg)
 
-    @server.tool(description="Painel: tarefas por estado, projetos, conhecimento e agendamentos.")
+    @_tool(description="Painel: tarefas por estado, projetos, conhecimento e agendamentos.")
     def task_status() -> dict[str, Any]:
         return _guarded(lambda: orq.task_status(), "task_status", cfg)
 
-    @server.tool(description="Reivindica uma tarefa com lease e devolve o CONTEXTO já montado. É assim que o agente pega trabalho.")
+    @_tool(description="Reivindica uma tarefa com lease e devolve o CONTEXTO já montado. É assim que o agente pega trabalho.")
     def claim_task(task_id: str | None = None, project_id: str | None = None, tokens: int | None = None) -> dict[str, Any]:
         return _guarded(lambda: orq.claim_task(task_id, project_id, tokens), "claim_task", cfg)
 
-    @server.tool(description="Entrega o resultado da tarefa. Dispara validação determinística e libera as dependentes.")
+    @_tool(description="Entrega o resultado da tarefa. Dispara validação determinística e libera as dependentes.")
     def report_task_result(task_id: str, result: dict[str, Any]) -> dict[str, Any]:
         return _guarded(lambda: orq.report_task_result(task_id, result), "report_task_result", cfg)
 
-    @server.tool(description="Devolve uma tarefa reivindicada sem executá-la.")
+    @_tool(description="Devolve uma tarefa reivindicada sem executá-la.")
     def release_task(task_id: str, reason: str = "") -> dict[str, Any]:
         return _guarded(lambda: orq.release_task(task_id, reason), "release_task", cfg)
 
-    @server.tool(description="Muda o estado de uma tarefa (blocked, cancelled, ready...). A matriz de transições é respeitada.")
+    @_tool(description="Muda o estado de uma tarefa (blocked, cancelled, ready...). A matriz de transições é respeitada.")
     def set_task_status(task_id: str, status: str, reason: str = "") -> dict[str, Any]:
         return _guarded(lambda: orq.set_task_status(task_id, status, reason), "set_task_status", cfg)
 
-    @server.tool(description="Cria uma dependência entre tarefas. Ciclo é recusado com o caminho completo.")
+    @_tool(description="Cria uma dependência entre tarefas. Ciclo é recusado com o caminho completo.")
     def add_task_dependency(task_id: str, depends_on: str, kind: str = "depends_on") -> dict[str, Any]:
         return _guarded(lambda: orq.add_task_dependency(task_id, depends_on, kind), "add_task_dependency", cfg)
 
-    @server.tool(description="Um ciclo do worker: expira leases, promove prontas, aplica retry, dispara agendamentos. Não executa tarefa.")
+    @_tool(description="Um ciclo do worker: expira leases, promove prontas, aplica retry, dispara agendamentos. Não executa tarefa.")
     def run_worker() -> dict[str, Any]:
         return _guarded(lambda: orq.run_worker(), "run_worker", cfg)
 
