@@ -73,6 +73,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **O `scope` do MCP deixou de ser ignorado em silêncio.** `search_hybrid`,
+  `search_knowledge` e `build_context` aceitavam `scope` e o descartavam:
+  `scope="all"` consultava só o projeto atual e o agente acreditava ter consultado o
+  conjunto. Agora `all` e `project:<nome>` cruzam projetos (a resposta ganha `scope` e
+  `projects`, e `path_glob` é respeitado), `build_context(scope="project:<nome>")` monta o
+  pack com o índice e a configuração do outro projeto, e `build_context(scope="all")` é
+  recusado com `scope_unsupported` e o motivo. Projeto privado ou inexistente continuam
+  indistinguíveis (`not_found` igual), e o privado segue invisível em qualquer escopo.
+  Corrigidos também `docs/09-mcp.md` e `docs/17-multiprojeto-e-federacao.md`, que
+  prometiam `scope` em `search_graph`, `get_dictionary` e `ragx context --scope all`
+  (RAGX-0137).
 - **A busca usa o modelo de embedding configurado, e avisa quando o índice vetorial é
   parcial.** `load_index` escolhia o modelo mais recente do banco: com outra dimensão a
   busca estourava `ValueError: matmul`, e com a mesma dimensão devolvia resultado

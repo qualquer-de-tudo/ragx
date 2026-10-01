@@ -113,9 +113,21 @@ O que a escrita **não** concede: ler o filesystem, escapar do Security Gate,
 indexar fora da raiz do projeto, executar comando arbitrário, ou escolher a
 origem de uma fonte base — essa vem de arquivo versionado, revisado por humano.
 
-A partir da Fase 11, toda ferramenta de consulta aceita `scope`
-(`current` — padrão · `all` · `project:<nome>`) e **todo item de resposta carrega
-`project`**. Detalhes em [17 — Multiprojeto](17-multiprojeto-e-federacao.md).
+A partir da Fase 11, `search_knowledge`, `search_hybrid` e `build_context` aceitam
+`scope` (`current` — padrão · `all` · `project:<nome>`) e **todo item de resposta carrega
+`project`**. `search_graph`, `get_dictionary` e as demais **não** têm `scope`. Detalhes em
+[17 — Multiprojeto](17-multiprojeto-e-federacao.md).
+
+O `scope` é **honrado ou recusado, nunca ignorado** (RAGX-0137):
+
+| Ferramenta | `all` | `project:<nome>` |
+|---|---|---|
+| `search_hybrid`, `search_knowledge` | busca em todos os projetos visíveis; a resposta ganha `scope` e `projects` | restringe ao projeto |
+| `build_context` | `scope_unsupported` (modelos de embedding diferentes não se combinam num pack) | monta o pack com o índice e a configuração DESSE projeto |
+
+`project:<nome>` inexistente **ou privado** devolve o mesmo `not_found`; projeto registrado só
+por federação (sem clone local) devolve `scope_unsupported` em `build_context`, porque só tem
+contratos (use `get_contract`).
 
 ### Orquestração de tarefas (Fase 13)
 

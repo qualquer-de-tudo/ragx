@@ -30,6 +30,9 @@ class ScopedOutcome:
     projects: list[str] = field(default_factory=list)
     degraded: dict[str, str] = field(default_factory=dict)
     scope: str = "current"
+    #: `project:<nome>` que não existe ou é privado: indistinguíveis, e quem
+    #: consome (o MCP) responde `not_found` igual nos dois casos
+    found: bool = True
 
 
 def parse_scope(scope: str) -> tuple[str, str | None]:
@@ -70,6 +73,7 @@ def search_scoped(
     if target and not registry:
         # Projeto privado ou inexistente: indistinguíveis de propósito.
         out.projects = []
+        out.found = False
         return out
 
     collected: list[SearchResult] = []

@@ -194,6 +194,10 @@ class KnowledgeAPI:
             if path_glob is None:
                 return err("invalid_path", "path_glob não pode ser absoluto nem conter '..'")
 
+        if req.scope != "current":
+            # `scope` era aceito e ignorado: `all` consultava só o projeto atual
+            return self._search_scoped(req, mode, path_glob)
+
         out = run(
             self.cfg, req.query, mode=mode, limit=req.limit,
             filters=SearchFilters(lang=req.lang, kind=req.kind, path_glob=path_glob),
@@ -427,18 +431,40 @@ class KnowledgeAPI:
         from ragx.context.engine import build_context as run
         from ragx.context.render import render
 
-        pack = run(
-            self.cfg, req.query, budget=req.tokens, include_graph=req.include_graph
-        )
+        project = self.project
+        other_cfg: Config | None = None
+        if req.scope != "current":
+            from ragx.core.errors import UsageError
+            from ragx.federation.context import (
+                ScopeNotFoundError,
+                ScopeUnsupportedError,
+                build_scoped_context,
+            )
+
+            try:
+                pack, project, used_cfg = build_scoped_context(
+                    self.cfg, req.scope, req.query, req.tokens, req.include_graph
+                )
+            except ScopeNotFoundError as exc:
+                return err("not_found", str(exc).splitlines()[0])
+            except ScopeUnsupportedError as exc:
+                return err("scope_unsupported", str(exc).splitlines()[0])
+            except UsageError as exc:
+                return err("invalid_scope", str(exc).splitlines()[0])
+            other_cfg = None if used_cfg is self.cfg else used_cfg
+        else:
+            pack = run(
+                self.cfg, req.query, budget=req.tokens, include_graph=req.include_graph
+            )
         payload: dict[str, Any] = {
-            "project": self.project,
+            "project": project,
             "intent": pack.intent,
             "estimated_tokens": pack.estimated_tokens,
             "budget": pack.budget,
             "sources": list(pack.sources),
             "fragments": [
                 {
-                    "project": f.project,
+                    "project": project if req.scope != "current" else f.project,
                     "document_path": f.document_path,
                     "lines": [f.start_line, f.end_line],
                     "symbol": f.symbol,
@@ -449,12 +475,12 @@ class KnowledgeAPI:
                 for f in pack.fragments
             ],
         }
-        payload["baseline_tokens"] = self._baseline_tokens(pack.sources)
+        payload["baseline_tokens"] = self._baseline_tokens(pack.sources, other_cfg)
         if req.format == "markdown":
             payload["markdown"] = render(pack, "markdown")
         return cap(ok(payload), self.cfg.mcp.max_response_bytes)
 
-    def _baseline_tokens(self, sources: tuple[str, ...]) -> int:
+    def _baseline_tokens(self, sources: tuple[str, ...], cfg: Config | None = None) -> int:
         """Tokens que o agente gastaria lendo INTEIROS os arquivos de onde o
         contexto saiu — o "sem RAGX" do gráfico de economia do painel.
 
@@ -466,7 +492,7 @@ class KnowledgeAPI:
         from ragx.storage.db import open_db
 
         try:
-            with open_db(self.cfg.db_path, read_only=True) as conn:
+            with open_db((cfg or self.cfg).db_path, read_only=True) as conn:
                 marks = ",".join("?" * len(sources))
                 row = conn.execute(
                     f"SELECT COALESCE(SUM(size_bytes), 0) FROM documents WHERE rel_path IN ({marks})",
@@ -551,16 +577,28 @@ class KnowledgeAPI:
         blocked = self._guard()
         if blocked:
             return blocked
+        path_glob = None
+        if req.path_glob:
+            path_glob = validate_path(req.path_glob)
+            if path_glob is None:
+                return err("invalid_path", "path_glob não pode ser absoluto nem conter '..'")
+        return self._search_scoped(req, mode, path_glob)
+
+    def _search_scoped(self, req: SearchRequest, mode: str, path_glob: str | None) -> dict[str, Any]:
         from ragx.federation.search import search_scoped as run
         from ragx.search.service import SearchFilters
 
         try:
             out = run(
                 self.cfg, req.query, scope=req.scope, mode=mode, limit=req.limit,
-                filters=SearchFilters(lang=req.lang, kind=req.kind),
+                filters=SearchFilters(lang=req.lang, kind=req.kind, path_glob=path_glob),
             )
         except Exception as exc:
             return err("invalid_scope", str(exc).splitlines()[0])
+        if not out.found:
+            # Projeto privado ou inexistente: a MESMA resposta, de propósito.
+            target = req.scope.split(":", 1)[1] if ":" in req.scope else req.scope
+            return err("not_found", f"projeto não encontrado: {target}")
         return cap(
             ok(
                 {

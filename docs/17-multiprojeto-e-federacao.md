@@ -221,7 +221,6 @@ mantidos por outro time.
 ```bash
 ragx search "como criar um pagamento" --scope all
 ragx search "..." --scope project:payment-service
-ragx context "integrar checkout com pagamento" --scope all --tokens 6000
 ragx hub graph order-service --depth 2
 ```
 
@@ -316,8 +315,9 @@ Ferramentas ganham escopo de projeto, e duas novas entram:
 
 | Ferramenta | Mudança |
 |------------|---------|
-| `search_knowledge`, `search_hybrid`, `search_graph`, `build_context` | parâmetro `scope`: `current` (padrão) · `all` · `project:<nome>` |
-| `get_dictionary` | parâmetro `scope`; `all` devolve o dicionário de workspace |
+| `search_knowledge`, `search_hybrid` | parâmetro `scope`: `current` (padrão) · `all` · `project:<nome>` |
+| `build_context` | parâmetro `scope`: `current` (padrão) · `project:<nome>`; `all` devolve `scope_unsupported` (RAGX-0137) |
+| `search_graph`, `get_dictionary` | **sem** `scope` (o doc antigo prometia; nunca existiu no código) |
 | `list_projects` | **nova** — projetos registrados, estado (clonado/federação) e integrações |
 | `get_contract` | **nova** — contrato de um endpoint/evento, com o projeto que o provê |
 
