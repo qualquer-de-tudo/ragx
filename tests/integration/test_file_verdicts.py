@@ -14,6 +14,8 @@ pytestmark = pytest.mark.integration
 
 TOML = '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n'
 
+_LEITURAS_DE_SISTEMA = {"ragx.toml", "patterns.yaml", "filenames.yaml", "default_ignore.txt"}
+
 
 @pytest.fixture()
 def proj(tmp_path: Path) -> Path:
@@ -43,7 +45,7 @@ def leituras(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     original = Path.read_bytes
 
     def espia(self: Path) -> bytes:
-        if self.name != "ragx.toml":  # `load_config` também lê o TOML
+        if self.name not in _LEITURAS_DE_SISTEMA:  # o TOML (`load_config`) e as regras (hash do contexto)
             lidos.append(self.name)
         return original(self)
 

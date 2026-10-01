@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -25,9 +24,13 @@ BLOCKED = "blocked"
 CACHED_SKIPS = frozenset({"unsupported", "binary", "undecodable"})
 
 
-@lru_cache(maxsize=1)
 def _rules_digest() -> str:
-    """`sha256` dos arquivos de regra empacotados: `RULESET_VERSION` não tem bump confiável."""
+    """`sha256` dos arquivos de regra empacotados: `RULESET_VERSION` não tem bump confiável.
+
+    Sem cache de processo, de propósito: o servidor MCP e o `watch` vivem horas, e um hash
+    congelado deixaria o contexto do veredito guardado defasado em relação às regras em disco.
+    São três arquivos pequenos por rodada.
+    """
     from ragx.security import rules as rules_pkg
 
     pasta = Path(rules_pkg.__file__).parent

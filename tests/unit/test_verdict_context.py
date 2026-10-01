@@ -62,9 +62,20 @@ def test_digest_das_regras_cobre_os_tres_arquivos(monkeypatch: pytest.MonkeyPatc
         lidos.append(self.name)
         return original(self)
 
-    verdicts._rules_digest.cache_clear()
     monkeypatch.setattr(Path, "read_bytes", espia)
     verdicts._rules_digest()
-    verdicts._rules_digest.cache_clear()
     assert {"patterns.yaml", "filenames.yaml", "default_ignore.txt"} <= set(lidos)
     assert Path(rules.__file__).parent.is_dir()
+
+
+def test_hash_das_regras_nao_fica_congelado_no_processo(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Um processo longo (MCP, watch) enxerga a mudança dos arquivos de regra."""
+    from ragx.security import rules
+
+    copia = tmp_path / "rules"
+    copia.mkdir()
+    (copia / "patterns.yaml").write_text("a: 1" + chr(10), encoding="utf-8")
+    monkeypatch.setattr(rules, "__file__", str(copia / "__init__.py"))
+    antes = verdicts._rules_digest()
+    (copia / "patterns.yaml").write_text("a: 2" + chr(10), encoding="utf-8")
+    assert verdicts._rules_digest() != antes
