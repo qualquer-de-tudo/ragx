@@ -188,9 +188,15 @@ explícito:
 
 | Hook | Faz | Quando |
 |------|-----|--------|
-| `post-checkout` | `ragx index --source hook:post-checkout` destacado | só em troca de branch (flag 1) |
+| `post-checkout` | `ragx index --source hook:post-checkout` destacado | só em troca de branch (flag 1), decidido **no shell do hook** (`[ "$3" = "1" ]`): `git checkout -- arquivo` não sobe Python nenhum |
 | `post-commit` | `ragx index --source hook:post-commit` destacado | todo commit |
 | `post-merge` | `ragx index --source hook:post-merge` destacado | todo merge e pull |
+
+O bloco chama `ragx hook-run`, que entra pelo ponto de entrada leve (`ragx.entry`, só stdlib): a parte
+síncrona do hook (disparar a indexação destacada e devolver o terminal) leva **~110 ms** em vez de
+**~510 ms**, e o commit deixa de esperar a CLI inteira. Hooks instalados antes dessa mudança continuam
+funcionando, mas sem a guarda de shell do `post-checkout`: `ragx hooks status` avisa e `ragx hooks
+install` reescreve o bloco.
 
 Os hooks nunca rodam `ragx sync`, que regrava os arquivos versionados em
 `knowledge/`; eles só disparam `ragx index` destacado, em segundo plano, para

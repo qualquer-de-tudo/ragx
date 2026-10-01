@@ -12,12 +12,18 @@ erro e uma mensagem genérica.
 from __future__ import annotations
 
 import json
+import time
 import traceback
 import uuid
 from pathlib import Path
 from typing import Any
 
-from ragx.storage.db import utcnow
+from ragx.origin import claude_origin
+
+
+def utcnow() -> str:
+    """O mesmo formato de `ragx.storage.db.utcnow`, sem importar o banco (hooks leves, RAGX-0143)."""
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 MAX_BYTES = 2 * 1024 * 1024
 
@@ -94,8 +100,6 @@ def log_cli_call(state_dir: Path, entry: dict[str, Any]) -> None:
 
 def _origin() -> dict[str, str]:
     try:
-        from ragx.clients.registry import claude_origin
-
         return claude_origin()
     except Exception:
         return {}

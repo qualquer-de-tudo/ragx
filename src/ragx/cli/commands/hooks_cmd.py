@@ -68,6 +68,11 @@ def status(
     for event, ok in st["events"].items():
         mark = "[green]instalado[/]" if ok else "[dim]ausente[/]"
         console.print(f"  {event:<14} {mark}")
+    if st.get("outdated"):
+        console.print(
+            f"\n[yellow]![/] {', '.join(st['outdated'])}: bloco de formato antigo (sem a guarda de shell "
+            "que evita subir o Python a cada `git checkout -- arquivo`). Rode `ragx hooks install`."
+        )
     console.print()
 
 

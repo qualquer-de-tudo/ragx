@@ -10,15 +10,14 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
-from ragx import gitinfo
+from ragx import gitinfo, hooklight
 from ragx.core.errors import UsageError
 
-EVENTS = ("post-checkout", "post-commit", "post-merge")
+EVENTS = hooklight.EVENTS
 _SHEBANG = "#!/bin/sh\n"
 # `\` entra na lista porque, dentro de `--root "<valor>"` (aspas duplas), uma
 # barra invertida no fim do valor escapa a aspa de fechamento e devolve o
@@ -60,11 +59,21 @@ def command_prefix() -> str:
     return f'"{candidate}" -m ragx.cli.main'
 
 
+#: Em `post-checkout`, o 3º argumento do git é 1 só na troca de branch (0 é checkout de arquivo).
+#: A guarda fica no SHELL do hook: `git checkout -- arquivo` não sobe Python nenhum (RAGX-0143).
+_GUARDA_CHECKOUT = '[ "$3" = "1" ]'
+
+
+def _condicao(event: str) -> str:
+    base = '[ "$RAGX_SKIP_HOOK" != "1" ]'
+    return f"{base} && {_GUARDA_CHECKOUT}" if event == "post-checkout" else base
+
+
 def _block(root: Path, event: str, prefix: str) -> str:
     start, end = _markers(root)
     return (
         f"{start}\n"
-        'if [ "$RAGX_SKIP_HOOK" != "1" ]; then\n'
+        f"if {_condicao(event)}; then\n"
         f'  {prefix} hook-run {event} --root "{_key(root)}" "$@" >/dev/null 2>&1 || true\n'
         "fi\n"
         f"{end}\n"
@@ -185,7 +194,28 @@ def state(root: Path) -> dict[str, Any]:
         "hooks_dir": d.as_posix() if d else None,
         "events": events,
         "installed": bool(d) and all(events.values()),
+        # blocos de formato antigo (sem a guarda de shell): `ragx hooks install` os reescreve
+        "outdated": _desatualizados(d, root, events),
     }
+
+
+def _desatualizados(d: Path | None, root: Path, events: dict[str, bool]) -> list[str]:
+    if d is None:
+        return []
+    start, end = _markers(root)
+    out: list[str] = []
+    for event in EVENTS:
+        path = d / event
+        if not events.get(event) or not path.exists():
+            continue
+        linhas = path.read_text(encoding="utf-8").splitlines()
+        try:
+            bloco = linhas[linhas.index(start) : linhas.index(end)]
+        except ValueError:
+            continue
+        if event == "post-checkout" and not any(_GUARDA_CHECKOUT in linha for linha in bloco):
+            out.append(event)
+    return out
 
 
 def installed(root: Path) -> bool | None:
@@ -195,49 +225,10 @@ def installed(root: Path) -> bool | None:
     return bool(estado["installed"])
 
 
-def should_run(event: str, args: list[str]) -> bool:
-    if event == "post-checkout":
-        # args: HEAD anterior, HEAD novo, flag (1 = troca de branch, 0 = arquivo)
-        return len(args) >= 3 and args[2] == "1"
-    return event in EVENTS
-
-
-def _index_argv(root: Path, event: str) -> list[str]:
-    # NUNCA `shutil.which("ragx")` aqui: isso resolve o PATH de NOVO, no
-    # momento do spawn, e pode achar uma instalação diferente da que rodou
-    # `hook-run` (reproduzido: entrada de PATH velha apontando para um `ragx`
-    # sem `--source`, indexação nunca atualizava, log só dizia "No such
-    # option: --source"). `sys.executable` é o MESMO interpretador que já
-    # está rodando este processo — sempre correto, sem lookup nenhum.
-    return [
-        sys.executable, "-m", "ragx.cli.main",
-        "index", str(root), "--quiet", "--source", f"hook:{event}",
-    ]
-
-
-def spawn_index(root: Path, event: str) -> None:
-    logs = root / ".ragx" / "logs"
-    logs.mkdir(parents=True, exist_ok=True)
-    log = (logs / "hooks.log").open("a", encoding="utf-8")
-    kwargs: dict[str, Any] = {
-        "cwd": root, "stdin": subprocess.DEVNULL, "stdout": log, "stderr": log,
-    }
-    if sys.platform == "win32":
-        # Git for Windows não tem nohup: o hook não pode esperar a indexação
-        # inteira, então ela roda solta (NEW_PROCESS_GROUP + saída no log).
-        # NÃO usar DETACHED_PROCESS: sem console, cada `git` que a indexação
-        # roda ganha uma janela de terminal nova (piscava a cada commit).
-        # CREATE_NO_WINDOW dá um console oculto, herdado pelos filhos.
-        # BREAKAWAY_FROM_JOB pode ser negado pelo job pai; nesse caso tenta sem ele.
-        detached = 0x08000000 | 0x00000200  # CREATE_NO_WINDOW | NEW_PROCESS_GROUP
-        try:
-            subprocess.Popen(_index_argv(root, event),
-                             creationflags=detached | 0x01000000, **kwargs)
-        except OSError:
-            subprocess.Popen(_index_argv(root, event), creationflags=detached, **kwargs)
-    else:
-        subprocess.Popen(_index_argv(root, event), start_new_session=True, **kwargs)
-    log.close()
+# Reexportados de `ragx.hooklight`, que roda sem importar a CLI inteira (RAGX-0143).
+should_run = hooklight.should_run
+_index_argv = hooklight.index_argv
+spawn_index = hooklight.spawn_index
 
 
 def _refresh_status(root: Path) -> None:

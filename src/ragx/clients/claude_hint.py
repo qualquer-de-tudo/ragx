@@ -22,6 +22,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from ragx import hooklight
 from ragx.clients.registry import (
     Client,
     Outcome,
@@ -258,120 +259,15 @@ def has_touch_hook(client: Client) -> bool:
     return any(_eh_nosso_touch(h) for g in grupos if isinstance(g, dict) for h in g.get("hooks") or [])
 
 
-# ── o texto ─────────────────────────────────────────────────────────────
-_FERRAMENTAS = "select:mcp__ragx__search_hybrid,mcp__ragx__build_context,mcp__ragx__get_chunk"
+# ── o texto (uma só fonte: `ragx.hooklight`, que roda sem importar a CLI) ──
+_FERRAMENTAS = hooklight.FERRAMENTAS
 
 
 def hint_text(start: Path | None = None) -> str:
-    """O que o agente lê no início da sessão. Vazio fora de projeto RAGX.
-
-    Usa a MESMA resolução do servidor MCP (`load_config` + `db_path`): uma dica
-    que diz "indexado" onde o servidor responde `not_indexed` seria pior do que
-    nenhuma.
-    """
-    from ragx.config import load_config
-
-    cfg = load_config(start)
-    if cfg.db_path.exists():
-        return _texto_projeto(cfg)
-    return _texto_pasta_pai(cfg)
+    """O que o agente lê no início da sessão. Vazio fora de projeto RAGX."""
+    return hooklight.hint_text(start)
 
 
 def record_session_start(start: Path | None = None) -> None:
-    """Uma sessão do Claude Code abriu num projeto indexado: vira evento na tela de atividade.
-
-    Só quando o próprio Claude Code roda o hook (a origem diz qual perfil e qual
-    sessão); rodar `ragx claude hint` à mão no terminal não é início de sessão.
-    """
-    from ragx.clients.registry import claude_origin
-    from ragx.config import load_config
-    from ragx.diagnostics import log_cli_call
-    from ragx.storage.db import utcnow
-
-    if not claude_origin():
-        return
-    cfg = load_config(start)
-    if not cfg.db_path.exists():
-        return
-    log_cli_call(cfg.state_dir, {
-        "ts": utcnow(),
-        "command": "session_start",
-        "project": cfg.project.name or cfg.root.name,
-    })
-
-
-def _status(cfg: Any) -> dict[str, Any]:
-    try:
-        dados = json.loads((cfg.state_dir / "status.json").read_text(encoding="utf-8"))
-        return dados if isinstance(dados, dict) else {}
-    except (OSError, ValueError):
-        return {}
-
-
-def _texto_projeto(cfg: Any) -> str:
-    st = _status(cfg)
-    nome = cfg.project.name or cfg.root.name
-    docs = (st.get("counts") or {}).get("documents")
-    idx = st.get("index") or {}
-    partes = [f"{docs} documentos" if isinstance(docs, int) else None]
-    if idx.get("finished_at"):
-        quando = str(idx["finished_at"]).replace("T", " ").removesuffix("Z")
-        branch = f", branch {idx['branch']}" if idx.get("branch") else ""
-        partes.append(f"índice de {quando} UTC{branch}")
-    resumo = ", ".join(p for p in partes if p)
-    rodando = " Uma indexação está em andamento agora." if st.get("running") else ""
-    # Regra, não sugestão. A primeira versão dizia "Grep continua certo quando
-    # você já sabe o símbolo", e o agente, que sempre acha que sabe
-    # (`AddJwtBearer` num projeto .NET), usou a brecha em toda pergunta.
-    return (
-        f"RAGX: este projeto ({nome}) está indexado pelo RAGX"
-        f"{' (' + resumo + ')' if resumo else ''}. O índice se atualiza sozinho a cada "
-        f"commit, checkout e merge.{rodando}\n\n"
-        "REGRA DESTE PROJETO: para qualquer pergunta ou tarefa que exija entender ou "
-        "localizar código (\"onde\", \"como funciona\", \"o que chama o quê\", antes de "
-        "implementar ou corrigir), a PRIMEIRA ferramenta é o RAGX, não Grep/Glob/Read:\n"
-        "1. mcp__ragx__build_context(query, tokens=3000): devolve os trechos relevantes, "
-        "com arquivo e linhas, dentro de um orçamento de tokens. Na maioria das vezes "
-        "já responde a pergunta;\n"
-        "2. mcp__ragx__search_hybrid(query) quando quiser só a lista de onde algo está;\n"
-        "3. só então Read/Grep, nos arquivos que o RAGX apontou, para confirmar ou "
-        "aprofundar.\n"
-        f'Se as ferramentas aparecerem só pelo nome (deferred), carregue antes: ToolSearch "{_FERRAMENTAS}".\n'
-        "Pule o RAGX só quando a tarefa já traz o caminho exato do arquivo a abrir. "
-        "Arquivos editados com Edit/Write entram no índice sozinhos; se a resposta trouxer "
-        "`stale_paths`, ou se mexeu por shell ou outro editor, chame mcp__ragx__refresh antes."
-    )
-
-
-def _texto_pasta_pai(cfg: Any) -> str:
-    """Sessão aberta ACIMA dos projetos (ex.: um monorepo com front e back
-    indexados em separado). O servidor responde `not_indexed` para `current`,
-    mas alcança cada projeto por `scope="project:<nome>"`."""
-    try:
-        registro = json.loads((cfg.hub_dir / "registry.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return ""
-    raiz = cfg.root.resolve()
-    abaixo: list[tuple[str, str]] = []
-    for p in (registro or {}).get("projects") or []:
-        try:
-            caminho = Path(str(p.get("path"))).resolve()
-        except (OSError, ValueError):
-            continue
-        if caminho != raiz and caminho.is_relative_to(raiz) and (caminho / ".ragx" / "knowledge.db").exists():
-            abaixo.append((str(p.get("name")), caminho.relative_to(raiz).as_posix()))
-    if not abaixo:
-        return ""
-    lista = "\n".join(f'- {pasta}: scope="project:{nome}"' for nome, pasta in sorted(abaixo, key=lambda x: x[1]))
-    return (
-        "RAGX: esta pasta não tem índice próprio, mas contém projetos indexados pelo RAGX:\n"
-        f"{lista}\n\n"
-        "REGRA DESTA PASTA: para qualquer pergunta ou tarefa que exija entender ou "
-        "localizar código, a PRIMEIRA ferramenta é o RAGX, não Grep/Glob/Read, passando "
-        'o scope do projeto certo (ou scope="all" para buscar em todos):\n'
-        "1. mcp__ragx__build_context(query, tokens=3000, scope=...): os trechos "
-        "relevantes, com arquivo e linhas;\n"
-        "2. mcp__ragx__search_hybrid(query, scope=...) para só localizar;\n"
-        "3. só então Read/Grep, nos arquivos apontados.\n"
-        f'Se as ferramentas aparecerem só pelo nome (deferred), carregue antes: ToolSearch "{_FERRAMENTAS}".'
-    )
+    """Uma sessão do Claude Code abriu num projeto indexado: vira evento na tela de atividade."""
+    hooklight.record_session_start(start)

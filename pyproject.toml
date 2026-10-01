@@ -37,10 +37,10 @@ dev = [
 ]
 
 [project.scripts]
-ragx = "ragx.cli.main:main"
+ragx = "ragx.entry:main"
 # Alias histórico. A documentação usa `ragx`; `rag` continua funcionando para
 # não quebrar script, alias de shell e configuração de MCP já existentes.
-rag = "ragx.cli.main:main"
+rag = "ragx.entry:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ragx"]

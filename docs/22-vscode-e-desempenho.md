@@ -233,6 +233,19 @@ absoluto além da raiz do projeto.
 
 ---
 
+## Hooks: o custo que se paga a cada sessão e a cada commit
+
+O hook de `SessionStart` (`ragx claude hint`) roda em toda sessão, inclusive em cada subagente; o de
+git bloqueia o `git commit` enquanto roda. Os dois pagavam a CLI inteira (typer, rich, pydantic): cerca
+de 480 ms contra 41 a 56 ms de um Python vazio. `ragx.entry` despacha esses comandos para
+`ragx.hooklight` (só stdlib) antes de importar a CLI. `scripts/medir_hooks.py --n 12` reproduz:
+
+| Comando | CLI completa | Entrada leve |
+|---|---|---|
+| `ragx claude hint` (S7, meta 120 ms) | 493 ms | **86 ms** |
+| `hook-run post-commit`, parte síncrona (S8, meta 150 ms) | 509 ms | **114 ms** |
+| `hook-run post-checkout` de arquivo | 481 ms | 90 ms; **0** com a guarda de shell (nem sobe Python) |
+
 ## Medir o peso do RAGX no Claude Code
 
 Tudo acima mede a extensão do VS Code. Para o Claude Code, use `ragx perf`

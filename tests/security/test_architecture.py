@@ -108,7 +108,7 @@ def test_apenas_modulos_autorizados_leem_o_filesystem() -> None:
                       "ragx.context", "ragx.graph", "ragx.sizing", "ragx.indexing",
                       "ragx.federation", "ragx.sync", "ragx.tokens", "ragx.search",
                       "ragx.agents", "ragx.base", "ragx.tasks", "ragx.githooks",
-                      "ragx.perf")
+                      "ragx.perf", "ragx.hooklight")
             # `ragx.perf` lê só os transcripts do próprio Claude Code
             # (`~/.claude/projects/`) e o `.ragx/logs/mcp.jsonl`: nunca o
             # código do projeto-alvo. De cada transcript sai um número (tempo);
@@ -119,6 +119,9 @@ def test_apenas_modulos_autorizados_leem_o_filesystem() -> None:
             # arquivos, o conteúdo lido só é reescrito no lugar ou reduzido a
             # um booleano (`installed()`); nunca chega ao índice, ao MCP, a
             # log nem a stdout.
+            # `ragx.hooklight` (RAGX-0143) lê só artefatos PRÓPRIOS: `ragx.toml`,
+            # `.ragx/status.json` e o `registry.json` do hub, com `read_text`. Um
+            # teste abaixo proíbe nele `read_bytes` e qualquer varredura de pasta.
         ):
             continue
         if _called_names(path) & _READ_CALLS:
@@ -249,3 +252,10 @@ def test_regras_ficam_em_yaml_e_nao_em_python() -> None:
     scanner = (SRC / "security" / "scanner.py").read_text(encoding="utf-8")
     # os únicos regex embutidos no scanner são utilitários, não regras
     assert scanner.count("re.compile") <= 2, "regra de detecção embutida em código"
+
+
+def test_hooklight_nao_le_bytes_nem_varre_pasta() -> None:
+    """A entrada leve dos hooks lê só texto de artefatos próprios e nunca percorre diretório."""
+    path = SRC / "hooklight.py"
+    proibidos = _called_names(path) & {"read_bytes", "rglob", "walk", "scandir", "iterdir", "glob"}
+    assert not proibidos, f"ragx.hooklight chama {sorted(proibidos)}"

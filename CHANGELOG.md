@@ -11,6 +11,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Entrada leve para os hooks.** `ragx claude hint` (roda em toda sessão do Claude Code, até em
+  subagente) levava 493 ms e o `hook-run post-commit` bloqueava o commit por 509 ms, porque o ponto de
+  entrada importava typer, rich, pydantic e 25 módulos de comando antes de olhar o primeiro argumento.
+  `ragx` e `rag` agora apontam para `ragx.entry:main`, que despacha `claude hint`, `touch --stdin-json`
+  e `hook-run` para `ragx.hooklight` (só stdlib): **hint 493 → 86 ms, commit 509 → 114 ms** (mediana
+  de 12; metas S7 120 ms e S8 150 ms). A dica sai idêntica byte a byte; o resto vai para a CLI
+  completa. O `post-checkout` ganhou uma guarda no shell do hook (`[ "$3" = "1" ]`): `git checkout --
+  arquivo` não sobe Python nenhum. **Hooks já instalados:** rode `ragx hooks install` de novo para
+  ganhar a guarda (`ragx hooks status` avisa); instalações editáveis precisam de `uv tool install
+  --editable --force --python 3.12 ".[all]"` para enxergar o novo ponto de entrada (RAGX-0143).
 - **Aquecimento do servidor MCP.** A primeira `search_hybrid` de cada sessão pagava o carregamento do
   modelo de embedding e do `tiktoken` (1.447 ms medidos neste repositório, 3 a 5 s nos logs reais). O
   servidor agora os carrega numa thread em segundo plano ao subir (`[mcp] warmup`, padrão ligado, só em

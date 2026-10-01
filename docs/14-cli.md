@@ -51,6 +51,15 @@ entre `# ragx-hook-start` e `# ragx-hook-end`), respeitam `core.hooksPath` e
 nunca bloqueiam o git: a indexação roda destacada e o log fica em
 `.ragx/logs/hooks.log`. `RAGX_SKIP_HOOK=1` desliga por comando.
 
+**Entrada leve (RAGX-0143).** `ragx` e `rag` apontam para `ragx.entry:main`, que olha o primeiro
+argumento antes de importar a CLI (typer, rich, pydantic e 25 módulos de comando custavam ~480 ms). Três
+comandos, os que os hooks rodam a cada sessão, edição e commit, são atendidos por `ragx.hooklight`, só
+com a stdlib: `ragx claude hint` (**493 → 86 ms**), `ragx touch --stdin-json` e `ragx hook-run EVENTO
+--root PATH` (**509 → 114 ms**). O texto da dica sai idêntico, byte a byte; qualquer variação que a
+entrada leve não reconheça vai para a CLI completa, com as mesmas mensagens de erro. Instalações
+editáveis só enxergam o novo ponto de entrada depois de `uv tool install --editable --force --python 3.12
+".[all]"`; as antigas continuam funcionando pelo caminho lento.
+
 ```bash
 ragx doctor
     # valida: python, sqlite+FTS5, pathspec, embedder acessível, ruleset carregável,

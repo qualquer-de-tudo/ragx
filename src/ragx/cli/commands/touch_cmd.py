@@ -11,31 +11,10 @@ do agente, em qualquer pasta, e a ausência do RAGX nunca é motivo para isso.
 
 from __future__ import annotations
 
-import json
-import sys
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
-
-#: Campos do `tool_input` que carregam o caminho editado.
-_CAMPOS_DE_CAMINHO = ("file_path", "notebook_path", "path")
-
-
-def _ler_stdin() -> list[str]:
-    """Os caminhos editados que o hook descreve no stdin. Entrada lixo vira lista vazia."""
-    try:
-        buffer = getattr(sys.stdin, "buffer", None)
-        bruto = buffer.read().decode("utf-8", errors="replace") if buffer else sys.stdin.read()
-        dados: Any = json.loads(bruto)
-    except Exception:
-        return []
-    if not isinstance(dados, dict):
-        return []
-    entrada = dados.get("tool_input")
-    if not isinstance(entrada, dict):
-        return []
-    return [str(entrada[c]) for c in _CAMPOS_DE_CAMINHO if isinstance(entrada.get(c), str) and entrada[c]]
 
 
 def touch(
@@ -58,6 +37,7 @@ def _executar(
     paths: list[str], stdin_json: bool, root: Path | None, drain: bool, no_drain: bool
 ) -> None:
     from ragx.config import find_root, load_config
+    from ragx.hooklight import ler_stdin
     from ragx.indexing import touchq
 
     if drain:
@@ -67,7 +47,7 @@ def _executar(
                 touchq.drain(cfg, source="touch")
         return
 
-    candidatos = [*paths, *(_ler_stdin() if stdin_json else [])]
+    candidatos = [*paths, *(ler_stdin() if stdin_json else [])]
     # agrupa por projeto: a raiz vem do ARQUIVO editado, não do cwd (a sessão pode estar numa
     # pasta-pai com vários projetos)
     por_raiz: dict[Path, list[str]] = {}
