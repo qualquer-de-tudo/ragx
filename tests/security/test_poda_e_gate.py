@@ -167,3 +167,40 @@ def test_env_ja_indexado_por_engano_e_travado_sai_do_indice(
     with open_db(cfg.db_path) as conn:
         n = conn.execute("SELECT COUNT(*) FROM documents WHERE rel_path = '.env'").fetchone()[0]
     assert n == 0, "o .env travado precisa sair do índice pelo nome"
+
+
+# ── RAGX-0138: o diff de chunks não contorna o Gate ─────────────────────
+def test_arquivo_que_ganha_segredo_e_removido_sem_sobrar_chunk_nem_vetor(tmp_path: Path) -> None:
+    import sqlite3
+
+    from ragx.config import load_config
+    from ragx.indexing.pipeline import index_project
+
+    (tmp_path / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "svc.py").write_text("def limpo():\n    return 1\n\n\ndef outro():\n    return 2\n", encoding="utf-8")
+    cfg = load_config(tmp_path)
+    index_project(cfg)
+    # o mesmo arquivo ganha um segredo em OUTRO trecho; os chunks limpos teriam ids estáveis
+    (tmp_path / "svc.py").write_text(
+        "def limpo():\n    return 1\n\n\ndef outro():\n    return 2\n\n\n"
+        "def vaza():\n    aws_secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'\n",
+        encoding="utf-8",
+    )
+    index_project(cfg)
+
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        assert conn.execute("SELECT COUNT(*) FROM documents WHERE rel_path = 'svc.py'").fetchone()[0] == 0
+        # o `ragx.toml` do projeto também é indexado: conta só o que era do svc.py
+        assert conn.execute("SELECT COUNT(*) FROM chunks WHERE content LIKE '%def %'").fetchone()[0] == 0
+        assert conn.execute(
+            "SELECT COUNT(*) FROM embeddings e JOIN chunks c ON c.id = e.chunk_id "
+            "WHERE c.content LIKE '%def %'"
+        ).fetchone()[0] == 0
+        for (conteudo,) in conn.execute("SELECT content FROM chunks"):
+            assert "wJalrXUtnFEMI" not in conteudo
+    finally:
+        conn.close()

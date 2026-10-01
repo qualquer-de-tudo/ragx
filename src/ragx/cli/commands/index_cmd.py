@@ -125,6 +125,7 @@ def index(
                     "skip_reasons": s.skip_reasons, "blocked": s.blocked,
                     "redacted": s.redacted, "removed": s.removed,
                     "degraded": report.degraded, "unreadable": report.unreadable,
+                    "chunks_kept": report.chunks_kept, "chunks_removed": report.chunks_removed,
                     "duration_ms": s.duration_ms,
                     "embedded": s.embedded, "embed_error": report.embed_error,
                 },

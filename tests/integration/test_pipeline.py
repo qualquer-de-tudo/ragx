@@ -365,3 +365,73 @@ def test_arquivo_realmente_apagado_continua_saindo_do_indice(proj: Path) -> None
     r = index_project(cfg)
     assert r.stats.removed == 1 and r.unreadable == 0
     assert _doc_e_chunks(proj, "src/b.py") == (0, 0)
+
+
+# ── RAGX-0138: editar uma linha reaproveita os chunks e só embute o novo ─
+def test_editar_uma_linha_reaproveita_chunks_e_vetores(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ragx.embeddings.hashing import HashingEmbedder
+
+    cfg = load_config(proj)
+    (proj / "src" / "grande.py").write_text(
+        "".join(f"def f{i}(x):\n    return x + {i}\n\n\n" for i in range(12)), encoding="utf-8"
+    )
+    index_project(cfg)
+
+    def contar(rel: str) -> tuple[int, int]:
+        conn = sqlite3.connect(cfg.db_path)
+        try:
+            n = conn.execute("SELECT COUNT(*) FROM chunks c JOIN documents d ON d.id=c.document_id "
+                             "WHERE d.rel_path=?", (rel,)).fetchone()[0]
+            e = conn.execute("SELECT COUNT(*) FROM embeddings e JOIN chunks c ON c.id=e.chunk_id "
+                             "JOIN documents d ON d.id=c.document_id WHERE d.rel_path=?", (rel,)).fetchone()[0]
+        finally:
+            conn.close()
+        return n, e
+
+    antes = contar("src/grande.py")
+    textos: list[int] = []
+    original = HashingEmbedder.embed_documents
+
+    def espia(self, texts):  # type: ignore[no-untyped-def]
+        textos.append(len(texts))
+        return original(self, texts)
+
+    monkeypatch.setattr(HashingEmbedder, "embed_documents", espia)
+    src = (proj / "src" / "grande.py").read_text(encoding="utf-8")
+    (proj / "src" / "grande.py").write_text(src.replace("return x + 5", "return x + 500"), encoding="utf-8")
+    r = index_project(cfg)
+
+    assert r.chunks_kept >= 1 and r.chunks_removed == 1
+    assert contar("src/grande.py") == antes  # nenhum vetor perdido
+    assert sum(textos) == 1, f"só o chunk editado devia ir ao embedder: {textos}"
+
+
+def test_pontes_do_grafo_dos_chunks_intactos_sobrevivem_a_uma_edicao(proj: Path) -> None:
+    from ragx.graph.service import rebuild
+
+    cfg = load_config(proj)
+    (proj / "src" / "grafo.py").write_text(
+        "".join(f"def g{i}(x):\n    return x * {i}\n\n\n" for i in range(10)), encoding="utf-8"
+    )
+    index_project(cfg)
+    rebuild(cfg)
+
+    def pontes() -> tuple[int, int]:
+        conn = sqlite3.connect(cfg.db_path)
+        try:
+            com = conn.execute("SELECT COUNT(*) FROM entities e JOIN documents d ON d.id=e.document_id "
+                               "WHERE d.rel_path='src/grafo.py' AND e.chunk_id IS NOT NULL").fetchone()[0]
+            sem = conn.execute("SELECT COUNT(*) FROM entities e JOIN documents d ON d.id=e.document_id "
+                               "WHERE d.rel_path='src/grafo.py' AND e.chunk_id IS NULL").fetchone()[0]
+        finally:
+            conn.close()
+        return com, sem
+
+    com0, sem0 = pontes()
+    assert com0 >= 10  # sem0: entidades sem chunk próprio (ex.: o módulo), o ponto de partida
+    src = (proj / "src" / "grafo.py").read_text(encoding="utf-8")
+    (proj / "src" / "grafo.py").write_text(src.replace("return x * 4", "return x * 400"), encoding="utf-8")
+    index_project(cfg)
+    com1, sem1 = pontes()
+    # antes: TODAS as pontes do arquivo viravam NULL até o próximo `sync`; agora só a do chunk editado
+    assert sem1 <= sem0 + 1 and com1 >= com0 - 1

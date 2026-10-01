@@ -154,6 +154,17 @@ Cache de embeddings: `.ragx/cache/emb/<model_id>/<content_hash>.f32`. Chunk que 
 mudou de lugar (arquivo renomeado, função movida) reaproveita o vetor — é o que faz
 a reindexação ficar barata.
 
+**Chunk com o mesmo id sobrevive à edição.** O `chunk.id` é hash de (caminho, conteúdo
+normalizado, versão do chunker), então "mesmo id" quer dizer "mesmo conteúdo".
+`ChunkRepo.replace_for_document` compara os ids antigos com os novos: os que ficam não são
+apagados nem reinseridos (continuam com `created_at`, vetor e as pontes do grafo
+`entities.chunk_id` / `relations.evidence_chunk_id`), só entram os novos e só saem os
+removidos. Quem muda só de posição (`ordinal`) ou de metadado leva um `UPDATE`; se mudou o
+prefixo de contexto (`kind`, `symbol`, `heading_path`, que entra no texto embutido), o vetor
+daquele chunk é descartado e ele volta para a fila do embedder. Antes, editar uma linha
+apagava os vetores e as pontes de TODOS os chunks do arquivo (19 vetores viravam 0 e 19
+pontes viravam 0, até o próximo `sync`).
+
 **Arquivo ilegível não é arquivo removido.** Se o arquivo existe mas não abre agora
 (antivírus ou editor segurando-o logo depois do save, `PermissionError`, violação de
 compartilhamento no Windows), o walker o entrega como `unreadable` e a rodada o conta

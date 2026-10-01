@@ -447,3 +447,10 @@ embeddings sem chunk, entidades sem documento, relações sem entidade.
   por natureza local da máquina e nunca sai dela (não é versionado, não é exportado).
 - Toda tabela do hub referencia `projects(id)`, para que nenhum dado cross-project
   circule sem atribuição de origem.
+
+## Chunk com o mesmo id sobrevive à edição
+
+`chunks.id` é hash de (caminho, conteúdo normalizado, versão do chunker): reindexar um documento
+reaproveita as linhas cujo id não mudou, em vez de apagar e reinserir tudo. Isso preserva
+`embeddings` (`ON DELETE CASCADE` em `chunk_id`) e as pontes do grafo (`entities.chunk_id` e
+`relations.evidence_chunk_id`, `ON DELETE SET NULL`) de tudo que não foi editado (RAGX-0138).

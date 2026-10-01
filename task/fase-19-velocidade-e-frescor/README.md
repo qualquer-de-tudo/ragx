@@ -17,7 +17,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 | [RAGX-0135](RAGX-0135-cache-do-build-context-com-chave-completa-e-versao-confiavel.md) | Cache do `build_context` com chave completa e versão confiável | P0 | 0,5d | `done` |
 | [RAGX-0136](RAGX-0136-busca-usa-o-modelo-configurado-e-avisa-vetor-parcial.md) | Busca usa o modelo configurado e avisa vetor parcial | P1 | 0,5d | `done` |
 | [RAGX-0137](RAGX-0137-scope-do-mcp-honrado-ou-recusado-nunca-ignorado.md) | `scope` do MCP honrado ou recusado, nunca ignorado | P1 | 0,5d | `done` |
-| [RAGX-0138](RAGX-0138-replace-for-document-por-diff-de-chunk-embeddings-e-grafo-sobrevivem-a-uma-edicao.md) | `replace_for_document` por diff de chunk: embeddings e grafo sobrevivem a uma edição | P1 | 1d | `todo` |
+| [RAGX-0138](RAGX-0138-replace-for-document-por-diff-de-chunk-embeddings-e-grafo-sobrevivem-a-uma-edicao.md) | `replace_for_document` por diff de chunk: embeddings e grafo sobrevivem a uma edição | P1 | 1d | `done` |
 | [RAGX-0139](RAGX-0139-veredito-de-arquivo-nao-indexavel-guardado-file-verdicts.md) | Veredito de arquivo não indexável guardado (`file_verdicts`) | P1 | 0,5d | `todo` |
 | [RAGX-0140](RAGX-0140-index-paths-reindexar-so-os-arquivos-tocados.md) | `index_paths`: reindexar só os arquivos tocados | P0 | 1d | `todo` |
 | [RAGX-0141](RAGX-0141-fila-de-toque-hook-posttooluse-e-stale-paths-na-busca.md) | Fila de toque, hook `PostToolUse` e `stale_paths` na busca | P0 | 1,5d | `todo` |

@@ -151,6 +151,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **Editar um arquivo não derruba mais os vetores nem as pontes do grafo dos chunks que não
+  mudaram.** `ChunkRepo.replace_for_document` apagava todos os chunks do documento e
+  reinseria; como `embeddings.chunk_id` é `ON DELETE CASCADE` e `entities.chunk_id` /
+  `relations.evidence_chunk_id` são `ON DELETE SET NULL`, uma linha editada levava embora o vetor
+  e a ponte de TODOS os chunks do arquivo (medido: 19 embeddings viravam 0 e as pontes 18 viravam 0,
+  até o próximo `sync`). Como o `chunk.id` já é hash do conteúdo, o id é o diff: quem tem o mesmo
+  id sobrevive. Reinserir os mesmos 19 chunks: **0 escritas**, 19 vetores e 19 pontes intactos;
+  editar um chunk: só ele sai e entra, os 18 outros mantêm `created_at`, vetor e ponte, e só o novo vai
+  ao embedder. Equivale a apagar-e-reinserir em 200 sequências sorteadas (estado de `chunks` idêntico,
+  FTS com `integrity-check` ok). `ragx index --json` mostra `chunks_kept` e `chunks_removed` (RAGX-0138).
 - **O `scope` do MCP deixou de ser ignorado em silêncio.** `search_hybrid`,
   `search_knowledge` e `build_context` aceitavam `scope` e o descartavam:
   `scope="all"` consultava só o projeto atual e o agente acreditava ter consultado o

@@ -50,6 +50,9 @@ class IndexReport:
     embed_error: str | None = None
     #: arquivos que existem mas não deram para ler agora; ficam como estavam no índice
     unreadable: int = 0
+    #: chunks de documentos modificados que sobreviveram à edição (mesmo id) e os que saíram
+    chunks_kept: int = 0
+    chunks_removed: int = 0
 
 
 MAX_PENDING_RERUNS = 3
@@ -271,7 +274,9 @@ def _index_once(
                     redacted=d.verdict is Verdict.ALLOW_REDACTED,
                 )
                 docs.upsert(doc)
-                chunks.replace_for_document(doc.id, produced)
+                trocou = chunks.replace_for_document(doc.id, produced)
+                report.chunks_kept += trocou.kept
+                report.chunks_removed += trocou.removed
                 events.clear_for(walked.rel_path)
                 events.record(run_id, d.findings)
 

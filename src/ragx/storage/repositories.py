@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ragx.core.models import Chunk, ChunkKind, DocKind, Document, SecurityFinding
@@ -80,12 +81,124 @@ class DocumentRepo:
         return dict(r) if r else None
 
 
+@dataclass
+class ReplaceStats:
+    """O que `ChunkRepo.replace_for_document` fez: quantos chunks ficaram, entraram, saíram
+    e tiveram a linha atualizada (mesmo id, outra posição ou metadado)."""
+
+    kept: int = 0
+    added: int = 0
+    removed: int = 0
+    updated: int = 0
+
+
 class ChunkRepo:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def replace_for_document(self, doc_id: str, chunks: Sequence[Chunk]) -> int:
-        """Delete + insert: reindexar documento modificado não pode duplicar."""
+    def replace_for_document(self, doc_id: str, chunks: Sequence[Chunk]) -> ReplaceStats:
+        """Troca os chunks do documento PRESERVANDO os que não mudaram.
+
+        O `chunk.id` é hash de (caminho, conteúdo normalizado, versão): quem tem o mesmo id
+        tem o mesmo conteúdo e sobrevive. Antes era "apaga tudo e reinsere", e como
+        `embeddings.chunk_id` é `ON DELETE CASCADE` e `entities.chunk_id` /
+        `relations.evidence_chunk_id` são `ON DELETE SET NULL`, editar UMA linha derrubava os
+        vetores e as pontes do grafo de todos os chunks do arquivo (RAGX-0138).
+
+        A ordem importa, porque `UNIQUE (document_id, ordinal)` é checado a cada instrução, e
+        `parent_id` é `ON DELETE CASCADE`:
+        1. sobrevivente cujo pai vai sair: `parent_id = NULL` (senão o cascade o apaga);
+        2. apaga os removidos;
+        3. sobrevivente que muda de `ordinal` vai para um valor negativo provisório;
+        4. insere os novos, na ordem do chunker (pai antes do filho);
+        5. UPDATE final só dos sobreviventes cuja linha mudou (o gatilho `chunks_au` reescreve o
+           FTS por linha, então não se atualiza quem não mudou).
+        """
+        ids = [c.id for c in chunks]
+        if len(set(ids)) != len(ids):
+            # ids repetidos não deviam existir (o chunker desambigua); o caminho antigo é seguro
+            return self._replace_all(doc_id, chunks)
+
+        atuais = {
+            r["id"]: r
+            for r in self.conn.execute(
+                """SELECT id, ordinal, parent_id, kind, symbol, heading_path, start_line,
+                          end_line, content, content_hash, token_count
+                   FROM chunks WHERE document_id = ?""",
+                (doc_id,),
+            )
+        }
+        novos_por_id = {c.id: c for c in chunks}
+        removidos = [i for i in atuais if i not in novos_por_id]
+        sobreviventes = [c for c in chunks if c.id in atuais]
+        adicionados = [c for c in chunks if c.id not in atuais]
+        stats = ReplaceStats(kept=len(sobreviventes), added=len(adicionados), removed=len(removidos))
+
+        # 1) o pai vai sair mas o filho fica: solta o filho antes do DELETE
+        saindo = set(removidos)
+        orfaos = [
+            c.id for c in sobreviventes
+            if atuais[c.id]["parent_id"] is not None and atuais[c.id]["parent_id"] in saindo
+        ]
+        if orfaos:
+            self.conn.executemany("UPDATE chunks SET parent_id = NULL WHERE id = ?", [(i,) for i in orfaos])
+        # 2) removidos
+        if removidos:
+            self.conn.executemany("DELETE FROM chunks WHERE id = ?", [(i,) for i in removidos])
+        # 3) quem muda de ordinal sai do caminho dos outros
+        moveram = [c for c in sobreviventes if atuais[c.id]["ordinal"] != c.ordinal]
+        if moveram:
+            self.conn.executemany(
+                "UPDATE chunks SET ordinal = ? WHERE id = ?",
+                [(-(atuais[c.id]["ordinal"] + 1), c.id) for c in moveram],
+            )
+        # 4) novos
+        now = utcnow()
+        if adicionados:
+            self.conn.executemany(
+                """INSERT INTO chunks
+                   (id, document_id, ordinal, parent_id, kind, symbol, heading_path,
+                    start_line, end_line, content, content_hash, token_count, created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                [
+                    (
+                        c.id, c.document_id, c.ordinal, c.parent_id, c.kind.value, c.symbol,
+                        c.heading_path, c.start_line, c.end_line, c.content, c.content_hash,
+                        c.token_count, now,
+                    )
+                    for c in adicionados
+                ],
+            )
+        # 5) só o que de fato mudou
+        for c in sobreviventes:
+            old = atuais[c.id]
+            novo = (c.ordinal, c.parent_id, c.kind.value, c.symbol, c.heading_path,
+                    c.start_line, c.end_line, c.content, c.content_hash, c.token_count)
+            antigo = (old["ordinal"], old["parent_id"], old["kind"], old["symbol"], old["heading_path"],
+                      old["start_line"], old["end_line"], old["content"], old["content_hash"],
+                      old["token_count"])
+            # A comparação usa o estado de ANTES (`atuais`), inclusive o `parent_id` que o
+            # passo 1 zerou nos órfãos: o pai antigo saiu, então a linha sempre difere.
+            if novo == antigo:
+                continue
+            self.conn.execute(
+                """UPDATE chunks SET ordinal = ?, parent_id = ?, kind = ?, symbol = ?,
+                       heading_path = ?, start_line = ?, end_line = ?, content = ?,
+                       content_hash = ?, token_count = ? WHERE id = ?""",
+                (*novo, c.id),
+            )
+            stats.updated += 1
+            # O prefixo de contexto (`kind`, `symbol`, `heading_path`) entra no texto que foi
+            # embutido: se mudou, o vetor ficou velho e o chunk volta para a fila do embedder.
+            if (old["symbol"], old["heading_path"], old["kind"]) != (c.symbol, c.heading_path, c.kind.value):
+                self.conn.execute("DELETE FROM embeddings WHERE chunk_id = ?", (c.id,))
+        return stats
+
+    def _replace_all(self, doc_id: str, chunks: Sequence[Chunk]) -> ReplaceStats:
+        """O caminho antigo: apaga tudo e reinsere."""
+        antes = int(self.conn.execute(
+            "SELECT COUNT(*) FROM chunks WHERE document_id = ?", (doc_id,)
+        ).fetchone()[0])
         self.conn.execute("DELETE FROM chunks WHERE document_id = ?", (doc_id,))
         now = utcnow()
         self.conn.executemany(
@@ -102,7 +215,7 @@ class ChunkRepo:
                 for c in chunks
             ],
         )
-        return len(chunks)
+        return ReplaceStats(kept=0, added=len(chunks), removed=antes)
 
     def count(self) -> int:
         return int(self.conn.execute("SELECT COUNT(*) FROM chunks").fetchone()[0])
