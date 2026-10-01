@@ -191,9 +191,13 @@ CLI deixa o `ragx` instalado.
 
 ## De onde vêm os dados
 
-O processo principal lê, para cada projeto do hub, `.ragx/status.json`; se o
-arquivo não existir, cai para contagens lidas direto de
-`.ragx/knowledge.db` (SQLite, via `sql.js`) como aproximação. A branch e o
+O processo principal lê, para cada projeto do hub, `.ragx/status.json`. Se o
+arquivo não existir (índice de uma versão antiga do RAGX, ou arquivo apagado), o
+painel **nunca abre o `.ragx/knowledge.db`**: o projeto aparece como "Defasado"
+com o motivo "Sem .ragx/status.json: reindexe este projeto (Atualizar agora)", e
+o botão enfileira um `update`, que gera o arquivo (RAGX-0176; antes o painel
+lia o banco inteiro para a memória a cada 5 s, via `sql.js`, só para três
+`COUNT(*)`). A branch e o
 commit atuais vêm dos **arquivos do git** (`.git/HEAD`, a ref solta ou
 `.git/packed-refs`, e `.git/commondir` em worktree e submódulo; só metadado,
 nenhum objeto nem conteúdo de código), sem criar processo: o snapshot rodava

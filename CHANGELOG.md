@@ -11,6 +11,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **O painel não lê mais o `knowledge.db` e perdeu o `sql.js`.** Sem `.ragx/status.json`, o painel carregava o banco
+  inteiro na memória a cada 5 s só para três `COUNT(*)`. Agora o projeto sem `status.json` aparece como "Defasado",
+  com o motivo e o botão "Atualizar agora" (que gera o arquivo), e a dependência saiu: `app.asar` de **30,3 para
+  9,0 MB**, uma dependência de runtime a menos (RAGX-0176). O estado "Com problema" fica só para `last_error`.
 - **O painel só re-renderiza o que mudou.** Com os dados parados, o renderer refazia tudo a cada 5 s (o snapshot
   chega com `generatedAt` novo e objetos novos, o relógio do `App` e nenhum `memo`). Agora o snapshot, a fila e as
   conexões mantêm a referência quando o conteúdo é o mesmo, o processo principal não manda `ragx:snapshot` repetido,

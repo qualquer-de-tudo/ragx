@@ -350,6 +350,18 @@ describe('ProjectsPage', () => {
     })
   })
 
+  it('projeto sem status.json (sem contagem) é "Defasado" e "Atualizar agora" enfileira update (RAGX-0176)', () => {
+    const b = installBridge()
+    renderPage({
+      projects: [snap({ id: 'old', name: 'Antigo', path: 'C:/antigo', counts: null, hasStatusFile: false, index: null })],
+      jobs: [],
+    })
+    const c = within(card('Antigo'))
+    expect(c.getByText('Defasado')).toBeInTheDocument()
+    fireEvent.click(c.getByRole('button', { name: 'Atualizar agora' }))
+    expect(b.enqueueJob).toHaveBeenCalledWith({ kind: 'update', projectId: 'old' })
+  })
+
   it('não quebra com projeto sem contagem, sem git e sem caminho', () => {
     installBridge()
     renderPage({
@@ -357,7 +369,7 @@ describe('ProjectsPage', () => {
       jobs: [],
     })
     const c = within(card('Cru'))
-    expect(c.getByText('Com problema')).toBeInTheDocument()
+    expect(c.getByText('Defasado')).toBeInTheDocument()
     expect(c.getByText('Embeddings: sem dados')).toBeInTheDocument()
     expect(c.getByText('Sem git')).toBeInTheDocument()
   })

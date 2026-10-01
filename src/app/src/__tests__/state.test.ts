@@ -12,8 +12,8 @@ describe('deriveProjectState', () => {
     expect(deriveProjectState(snap({ running: { source: 'hook:post-commit', startedAt: 'x' } }), none)).toBe('indexing')
     expect(deriveProjectState(snap(), new Set(['p1']))).toBe('indexing')
   })
-  it('erro quando não há contagem ou há last_error', () => {
-    expect(deriveProjectState(snap({ counts: null }), none)).toBe('error')
+  it('sem contagem (sem status.json) é defasado; erro só com last_error', () => {
+    expect(deriveProjectState(snap({ counts: null }), none)).toBe('stale')
     expect(deriveProjectState(snap({ lastError: 'embedder fora' }), none)).toBe('error')
   })
   it('embeddings faltando antes de defasado', () =>

@@ -788,3 +788,17 @@ describe('ProjectPage: abas', () => {
     await screen.findByText('Em dia com o que está no disco')
   })
 })
+
+describe('ProjectPage: projeto sem status.json (RAGX-0176)', () => {
+  it('o detalhe mostra o motivo no lugar dos números', () => {
+    renderPage({
+      project: snap({
+        counts: null,
+        hasStatusFile: false,
+        index: null,
+        countsUnavailableReason: 'Sem .ragx/status.json: reindexe este projeto (Atualizar agora) para o painel mostrar os números.',
+      }),
+    })
+    expect(screen.getByText(/Sem \.ragx\/status\.json: reindexe este projeto/)).toBeInTheDocument()
+  })
+})

@@ -10,17 +10,6 @@ export interface HubProject {
   lastSync: string | null
 }
 
-export interface ProjectStats {
-  documents: number
-  chunks: number
-  embeddings: number
-}
-
-export interface ProjectStatsUnavailable {
-  unavailable: true
-  reason: string
-}
-
 export interface TelemetryCallCount {
   tool: string
   count: number

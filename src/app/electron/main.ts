@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { initSqlWasm } from './data/project-stats'
 import { buildSnapshot } from './data/snapshot'
 import { createSnapshotGate } from './data/snapshot-gate'
 import { runRagxCommand } from './data/run-ragx-command'
@@ -650,14 +649,6 @@ const GOT_SINGLE_INSTANCE = acquireSingleInstance(app, {
 
 app.whenReady().then(async () => {
   if (!GOT_SINGLE_INSTANCE) return
-  // sql.js carrega seu modulo WASM de forma assincrona; precisa terminar
-  // antes de qualquer chamada a readProjectStats (via buildSnapshot), que
-  // acontece a partir do polling ou do handler ragx:getSnapshot — ambos
-  // disparados so depois que a janela carrega (ver Ruling D, Task 2).
-  await initSqlWasm().catch((err) => {
-    console.error('initSqlWasm falhou; stats de projetos ficarão indisponíveis:', err)
-  })
-
   if (HEADLESS) {
     const code = BOOTSTRAP ? await runBootstrapHeadless() : await runUninstallHeadless()
     app.exit(code)

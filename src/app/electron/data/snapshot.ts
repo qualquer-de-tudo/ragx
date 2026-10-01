@@ -1,12 +1,12 @@
 import fs from 'node:fs'
 import { readHubRegistry } from './hub'
-import { readProjectStats } from './project-stats'
+import path from 'node:path'
 import { readTelemetry } from './telemetry'
 import { readStatusFile } from './status-file'
 import type { StatusFile } from './status-file'
 import { readGitHead } from './git'
 import type { GitHead } from './git'
-import type { HubProject, ProjectStats, ProjectStatsUnavailable, TelemetrySummary } from './types'
+import type { HubProject, TelemetrySummary } from './types'
 import type { IndexInfo, ProjectSnapshot, Snapshot } from '../../src/types/ragx-bridge'
 
 const TELEMETRY_WINDOW_HOURS = 24
@@ -14,7 +14,6 @@ const TELEMETRY_WINDOW_HOURS = 24
 export interface SnapshotDeps {
   readRegistry: () => HubProject[]
   readStatus: (projectPath: string) => StatusFile | null
-  readStats: (projectPath: string) => ProjectStats | ProjectStatsUnavailable
   readTelemetry: (projectPath: string, sinceHours: number) => TelemetrySummary
   readGit: (projectPath: string) => Promise<GitHead | null>
   exists: (projectPath: string) => boolean
@@ -44,12 +43,15 @@ export function isPidAlive(pid: number, kill: KillFn = (p, sig) => process.kill(
 const REAL_DEPS: SnapshotDeps = {
   readRegistry: readHubRegistry,
   readStatus: readStatusFile,
-  readStats: readProjectStats,
   readTelemetry,
   readGit: readGitHead,
   exists: (p) => fs.existsSync(p),
   isPidAlive: (pid) => isPidAlive(pid),
 }
+
+/** Há banco mas não há `status.json` (índice de uma versão antiga do RAGX ou arquivo apagado). */
+export const NO_STATUS_REASON =
+  'Sem .ragx/status.json: reindexe este projeto (Atualizar agora) para o painel mostrar os números.'
 
 const EMPTY_TELEMETRY: TelemetrySummary = { callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null }
 
@@ -135,22 +137,11 @@ async function buildProjectSnapshot(proj: HubProject, d: SnapshotDeps): Promise<
       pendingEmbeddings: status.counts.pending_embeddings,
     }
   } else {
-    try {
-      const stats = d.readStats(projectPath)
-      if ('unavailable' in stats) {
-        countsUnavailableReason = stats.reason
-      } else {
-        counts = {
-          documents: stats.documents,
-          chunks: stats.chunks,
-          embeddings: stats.embeddings,
-          pendingEmbeddings: Math.max(stats.chunks - stats.embeddings, 0),
-        }
-      }
-    } catch (err) {
-      console.error(`readProjectStats falhou para o projeto "${proj.name}":`, err)
-      countsUnavailableReason = 'falha ao ler estatísticas do projeto'
-    }
+    // O painel NUNCA abre o `knowledge.db` (RAGX-0176): lê-lo inteiro a cada 5 s era um pico de memória do tamanho do
+    // banco. Sem `status.json`, só a CLI sabe os números: reindexar gera o arquivo.
+    countsUnavailableReason = d.exists(path.join(projectPath, '.ragx', 'knowledge.db'))
+      ? NO_STATUS_REASON
+      : 'projeto ainda não foi indexado (.ragx/knowledge.db ausente)'
   }
 
   let telemetry: TelemetrySummary = EMPTY_TELEMETRY

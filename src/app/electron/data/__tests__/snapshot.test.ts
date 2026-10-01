@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildSnapshot, type SnapshotDeps } from '../snapshot'
+import { NO_STATUS_REASON, buildSnapshot, type SnapshotDeps } from '../snapshot'
 import type { HubProject } from '../types'
 import type { StatusFile } from '../status-file'
 import type { GitHead } from '../git'
@@ -46,7 +46,6 @@ function baseDeps(over: Partial<SnapshotDeps> = {}): SnapshotDeps {
   return {
     readRegistry: () => [project()],
     readStatus: () => null,
-    readStats: () => ({ documents: 1, chunks: 2, embeddings: 1 }),
     readTelemetry: () => ({ callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null }),
     readGit: async () => ({ branch: 'main', commit: 'c1' }),
     exists: () => true,
@@ -71,24 +70,20 @@ describe('buildSnapshot', () => {
     expect(snap.projects[0].hasStatusFile).toBe(true)
   })
 
-  it('(b) projeto sem status.json cai para readStats e calcula pendingEmbeddings', async () => {
-    const snap = await buildSnapshot(
-      baseDeps({ readStatus: () => null, readStats: () => ({ documents: 3, chunks: 10, embeddings: 4 }) }),
-    )
-    expect(snap.projects[0].counts).toEqual({ documents: 3, chunks: 10, embeddings: 4, pendingEmbeddings: 6 })
+  it('(b) projeto sem status.json: counts null e o motivo que manda reindexar (o banco nunca é aberto)', async () => {
+    const snap = await buildSnapshot(baseDeps({ readStatus: () => null }))
+    expect(snap.projects[0].counts).toBeNull()
+    expect(snap.projects[0].countsUnavailableReason).toBe(NO_STATUS_REASON)
     expect(snap.projects[0].index).toBeNull()
     expect(snap.projects[0].hasStatusFile).toBe(false)
   })
 
-  it('(b2) readStats indisponível devolve counts null com o motivo', async () => {
+  it('(b2) sem status.json e sem .ragx/knowledge.db: o motivo é "ainda não foi indexado"', async () => {
     const snap = await buildSnapshot(
-      baseDeps({
-        readStatus: () => null,
-        readStats: () => ({ unavailable: true, reason: 'projeto ainda não foi indexado' }),
-      }),
+      baseDeps({ readStatus: () => null, exists: (p) => !p.endsWith('knowledge.db') }),
     )
     expect(snap.projects[0].counts).toBeNull()
-    expect(snap.projects[0].countsUnavailableReason).toBe('projeto ainda não foi indexado')
+    expect(snap.projects[0].countsUnavailableReason).toBe('projeto ainda não foi indexado (.ragx/knowledge.db ausente)')
   })
 
   it('(c) pasta ausente: exists false, sem chamar readGit nem readStatus', async () => {
