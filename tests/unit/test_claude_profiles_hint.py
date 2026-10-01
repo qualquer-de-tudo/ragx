@@ -152,7 +152,7 @@ def test_dica_em_projeto_indexado(tmp_path: Path) -> None:
     projeto = _indexado(tmp_path / "loja", "loja")
     (projeto / "src").mkdir()
     texto = hint_text(projeto / "src")  # sessão aberta numa subpasta
-    assert "(loja)" in texto and "42 documentos" in texto and "branch main" in texto
+    assert "projeto loja indexado" in texto and "documentos" not in texto  # sem o resumo do índice (RAGX-0164)
     assert "build_context" in texto and "ToolSearch" in texto
 
 
@@ -184,9 +184,9 @@ def test_comando_hint_escreve_no_stdout_e_nunca_falha(tmp_path: Path, monkeypatc
     monkeypatch.chdir(projeto)
     r = runner.invoke(app, ["claude", "hint"])
     assert r.exit_code == 0
-    assert "RAGX: este projeto (loja)" in r.output
+    assert "RAGX: projeto loja indexado" in r.output
 
-    monkeypatch.setattr("ragx.clients.claude_hint.hint_text", lambda *a, **k: 1 / 0)
+    monkeypatch.setattr("ragx.hooklight.texto_projeto", lambda *a, **k: 1 / 0)
     r = runner.invoke(app, ["claude", "hint"])
     assert r.exit_code == 0 and r.output == ""
 

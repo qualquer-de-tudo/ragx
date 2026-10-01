@@ -11,6 +11,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Dica de início de sessão enxuta e uma vez por sessão.** `ragx claude hint` custava ~349 tokens
+  (tiktoken) e repetia em cada subagente, inflando também a contagem de sessões do painel. O texto agora
+  tem **~140 tokens** (a regra, as três ferramentas e a linha de ToolSearch; sai o resumo de documentos,
+  data e branch do índice, que `stale_paths` substitui onde importa) e sai **uma vez por sessão**: o
+  hook lê `session_id` e `source` do stdin, marca a entrega em `.ragx/cache/hint/<session_id>` e, na
+  repetição, cala e não grava o `session_start`. `source` igual a `clear` ou `compact` reentrega. Sem
+  `session_id` (uso manual, stdin vazio ou inválido) a dica sai sempre (RAGX-0164).
 - **Dedupe de sessão no `build_context` do MCP (desligado por padrão).** Com `[context] session_dedupe =
   true`, o chunk que a sessão já recebeu volta como referência (`caminho:linhas [id]`, reabrível com
   `get_chunk`) em vez do conteúdo inteiro, e `get_chunk` continua devolvendo o conteúdo íntegro. O

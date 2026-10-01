@@ -21,10 +21,13 @@ O texto da dica tem UMA fonte, esta: `ragx.clients.claude_hint.hint_text` delega
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import re
 import subprocess
 import sys
+import threading
 import time
 import tomllib
 from pathlib import Path
@@ -105,46 +108,21 @@ def hint_text(start: Path | None = None) -> str:
     return texto_pasta_pai(cfg)
 
 
-def _status(cfg: Any) -> dict[str, Any]:
-    try:
-        dados = json.loads((cfg.state_dir / "status.json").read_text(encoding="utf-8"))
-        return dados if isinstance(dados, dict) else {}
-    except (OSError, ValueError):
-        return {}
-
-
 def texto_projeto(cfg: Any) -> str:
-    st = _status(cfg)
-    nome = cfg.nome
-    docs = (st.get("counts") or {}).get("documents")
-    idx = st.get("index") or {}
-    partes = [f"{docs} documentos" if isinstance(docs, int) else None]
-    if idx.get("finished_at"):
-        quando = str(idx["finished_at"]).replace("T", " ").removesuffix("Z")
-        branch = f", branch {idx['branch']}" if idx.get("branch") else ""
-        partes.append(f"índice de {quando} UTC{branch}")
-    resumo = ", ".join(p for p in partes if p)
-    rodando = " Uma indexação está em andamento agora." if st.get("running") else ""
-    # Regra, não sugestão. A primeira versão dizia "Grep continua certo quando
-    # você já sabe o símbolo", e o agente, que sempre acha que sabe
-    # (`AddJwtBearer` num projeto .NET), usou a brecha em toda pergunta.
+    """O que o agente lê ao abrir uma sessão num projeto indexado: a regra e as três ferramentas.
+
+    Curto de propósito (~100 tokens, era ~285): roda em toda sessão. Sai o resumo de documentos, data e
+    branch do índice (o frescor volta onde importa: `stale_paths` na busca) e o aviso sobre `refresh`.
+    A primeira versão deixava uma brecha ("Grep continua certo quando você já sabe o símbolo") e o
+    agente, que sempre acha que sabe, a usou em toda pergunta: por isso é regra, não sugestão.
+    """
     return (
-        f"RAGX: este projeto ({nome}) está indexado pelo RAGX"
-        f"{' (' + resumo + ')' if resumo else ''}. O índice se atualiza sozinho a cada "
-        f"commit, checkout e merge.{rodando}\n\n"
-        "REGRA DESTE PROJETO: para qualquer pergunta ou tarefa que exija entender ou "
-        "localizar código (\"onde\", \"como funciona\", \"o que chama o quê\", antes de "
-        "implementar ou corrigir), a PRIMEIRA ferramenta é o RAGX, não Grep/Glob/Read:\n"
-        "1. mcp__ragx__build_context(query, tokens=3000): devolve os trechos relevantes, "
-        "com arquivo e linhas, dentro de um orçamento de tokens. Na maioria das vezes "
-        "já responde a pergunta;\n"
-        "2. mcp__ragx__search_hybrid(query) quando quiser só a lista de onde algo está;\n"
-        "3. só então Read/Grep, nos arquivos que o RAGX apontou, para confirmar ou "
-        "aprofundar.\n"
-        f'Se as ferramentas aparecerem só pelo nome (deferred), carregue antes: ToolSearch "{FERRAMENTAS}".\n'
-        "Pule o RAGX só quando a tarefa já traz o caminho exato do arquivo a abrir. "
-        "Arquivos editados com Edit/Write entram no índice sozinhos; se a resposta trouxer "
-        "`stale_paths`, ou se mexeu por shell ou outro editor, chame mcp__ragx__refresh antes."
+        f"RAGX: projeto {cfg.nome} indexado. Para \"onde está\", \"como funciona\", "
+        "\"o que chama o quê\", use o RAGX ANTES de Grep/Glob/Read:\n"
+        "- mcp__ragx__build_context(query): monta o contexto da tarefa;\n"
+        "- mcp__ragx__search_hybrid(query): localiza;\n"
+        "- mcp__ragx__get_chunk(id): abre um trecho.\n"
+        f'Se as ferramentas aparecerem só pelo nome, carregue: ToolSearch "{FERRAMENTAS}".'
     )
 
 
@@ -169,21 +147,77 @@ def texto_pasta_pai(cfg: Any) -> str:
         return ""
     lista = "\n".join(f'- {pasta}: scope="project:{nome}"' for nome, pasta in sorted(abaixo, key=lambda x: x[1]))
     return (
-        "RAGX: esta pasta não tem índice próprio, mas contém projetos indexados pelo RAGX:\n"
-        f"{lista}\n\n"
-        "REGRA DESTA PASTA: para qualquer pergunta ou tarefa que exija entender ou "
-        "localizar código, a PRIMEIRA ferramenta é o RAGX, não Grep/Glob/Read, passando "
-        'o scope do projeto certo (ou scope="all" para buscar em todos):\n'
-        "1. mcp__ragx__build_context(query, tokens=3000, scope=...): os trechos "
-        "relevantes, com arquivo e linhas;\n"
-        "2. mcp__ragx__search_hybrid(query, scope=...) para só localizar;\n"
-        "3. só então Read/Grep, nos arquivos apontados.\n"
-        f'Se as ferramentas aparecerem só pelo nome (deferred), carregue antes: ToolSearch "{FERRAMENTAS}".'
+        f"RAGX: esta pasta contém projetos indexados:\n{lista}\n"
+        "Para entender ou localizar código, use o RAGX ANTES de Grep/Glob/Read, com o scope do projeto "
+        '(ou scope="all"): mcp__ragx__build_context(query, scope), mcp__ragx__search_hybrid(query, scope), '
+        "mcp__ragx__get_chunk(id).\n"
+        f'Se as ferramentas aparecerem só pelo nome, carregue: ToolSearch "{FERRAMENTAS}".'
     )
 
 
 def _utcnow() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def _ler_json(espera_s: float = 0.5) -> dict[str, Any]:
+    """O JSON que o Claude Code entrega no stdin do hook, ou `{}`.
+
+    Nunca bloqueia: com o stdin num terminal (uso manual de `ragx claude hint`) nem tenta, e com um pipe
+    que não fecha desiste depois de `espera_s`. Entrada inválida ou que não é um objeto vira `{}`.
+    """
+    try:
+        if sys.stdin is None or sys.stdin.isatty():
+            return {}
+    except Exception:
+        return {}
+    resultado: list[Any] = []
+
+    def ler() -> None:
+        try:
+            buffer = getattr(sys.stdin, "buffer", None)
+            bruto = buffer.read().decode("utf-8", errors="replace") if buffer else sys.stdin.read()
+            resultado.append(json.loads(bruto))
+        except Exception:
+            pass
+
+    fio = threading.Thread(target=ler, daemon=True)
+    fio.start()
+    fio.join(espera_s)
+    dados = resultado[0] if resultado else {}
+    return dados if isinstance(dados, dict) else {}
+
+
+#: Valores de `source` do SessionStart em que o contexto do agente foi perdido: a dica volta.
+REENTREGA = ("clear", "compact")
+
+
+def _sanear_sessao(valor: Any) -> str:
+    """`session_id` vira nome de arquivo: só `[A-Za-z0-9_-]`, até 64 (nada de `..`, `\\`, `:`)."""
+    return re.sub(r"[^A-Za-z0-9_-]", "", str(valor or ""))[:64]
+
+
+def primeira_vez(pasta: Path, sessao: str, source: str | None) -> bool:
+    """A dica desta sessão ainda não foi entregue? Marca a entrega, de forma atômica (`O_EXCL`).
+
+    Sem `session_id` não há como saber: entrega (o uso manual segue igual). Depois de `clear` ou
+    `compact` entrega de novo e renova o marcador. Qualquer erro de disco entrega: perder a dica é pior
+    do que repeti-la.
+    """
+    if not sessao:
+        return True
+    try:
+        pasta.mkdir(parents=True, exist_ok=True)
+        fd = os.open(pasta / sessao, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        if source in REENTREGA:
+            with contextlib.suppress(OSError):
+                os.utime(pasta / sessao)
+            return True
+        return False
+    except OSError:
+        return True
+    os.close(fd)
+    return True
 
 
 def record_session_start(start: Path | None = None) -> None:
@@ -208,23 +242,35 @@ def record_session_start(start: Path | None = None) -> None:
 
 
 def run_hint() -> int:
-    """`ragx claude hint`. Nunca falha e nunca escreve nada se der erro."""
+    """`ragx claude hint`. Nunca falha e nunca escreve nada se der erro.
+
+    Uma vez por sessão: o Claude Code roda o hook de `SessionStart` também em subagentes, e repetir
+    ~100 tokens (e contar de novo a sessão no painel) a cada um não ajuda ninguém. O marcador fica em
+    `.ragx/cache/hint/<session_id>` (na pasta do hub, quando a pasta não tem índice próprio).
+    """
     try:
-        texto = hint_text()
+        dados = _ler_json()
+        cfg = carregar()
+        indexado = cfg.db_path.exists()
+        texto = texto_projeto(cfg) if indexado else texto_pasta_pai(cfg)
+        if not texto:
+            return 0
+        pasta = (cfg.state_dir if indexado else cfg.hub_dir) / ("cache/hint" if indexado else "hint")
+        if not primeira_vez(pasta, _sanear_sessao(dados.get("session_id")), dados.get("source")):
+            return 0
         record_session_start()
     except Exception:
         return 0
-    if texto:
-        # Direto no stdout, sem Rich: o texto vai para o contexto do agente. Bytes UTF-8: no
-        # Windows, stdout em pipe sai em cp1252 e os acentos chegariam ao agente como lixo.
-        dados = (texto + "\n").encode("utf-8")
-        buffer = getattr(sys.stdout, "buffer", None)
-        if buffer is not None:
-            sys.stdout.flush()
-            buffer.write(dados)
-            buffer.flush()
-        else:
-            sys.stdout.write(texto + "\n")
+    # Direto no stdout, sem Rich: o texto vai para o contexto do agente. Bytes UTF-8: no
+    # Windows, stdout em pipe sai em cp1252 e os acentos chegariam ao agente como lixo.
+    dados_saida = (texto + "\n").encode("utf-8")
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is not None:
+        sys.stdout.flush()
+        buffer.write(dados_saida)
+        buffer.flush()
+    else:
+        sys.stdout.write(texto + "\n")
     return 0
 
 

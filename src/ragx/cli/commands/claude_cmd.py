@@ -188,31 +188,13 @@ def status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
 def hint() -> None:
     """Texto que o hook de início de sessão entrega ao agente. Vazio fora de projeto RAGX.
 
-    Nunca falha: um erro aqui atrasaria ou sujaria o início de TODA sessão do
-    Claude Code, em qualquer pasta.
+    Entrega UMA vez por sessão (o stdin traz `session_id` e `source`) e nunca falha: um erro aqui
+    atrasaria ou sujaria o início de TODA sessão do Claude Code, em qualquer pasta. A lógica vive em
+    `ragx.hooklight`, a mesma que `ragx.entry` roda sem importar a CLI.
     """
-    import sys
+    from ragx.hooklight import run_hint
 
-    try:
-        from ragx.clients.claude_hint import hint_text, record_session_start
-
-        texto = hint_text()
-        record_session_start()
-    except Exception:
-        return
-    if texto:
-        # Direto no stdout, sem Rich: o texto vai para o contexto do agente, e
-        # quebra de linha ou markup do terminal viraria ruído lá. Bytes UTF-8:
-        # no Windows, stdout em pipe sai em cp1252 e os acentos chegariam ao
-        # agente como lixo.
-        dados = (texto + "\n").encode("utf-8")
-        buffer = getattr(sys.stdout, "buffer", None)
-        if buffer is not None:
-            sys.stdout.flush()
-            buffer.write(dados)
-            buffer.flush()
-        else:
-            sys.stdout.write(texto + "\n")
+    run_hint()
 
 
 # ── perfis adicionados à mão ────────────────────────────────────────────

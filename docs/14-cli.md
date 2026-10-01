@@ -404,13 +404,24 @@ desligue antes com `off --profile`.
 **Dica de início de sessão.** Registrar o servidor não basta: as ferramentas do
 RAGX chegam ao agente como *deferred* (só o nome), e Grep/Read já estão
 carregados. `on` instala, no `settings.json` de cada perfil, um hook
-`SessionStart` que roda `ragx claude hint`. Num projeto indexado, o agente lê que
-há índice (quantos documentos, de quando), quando usar `search_hybrid` e
-`build_context` e como carregá-las com ToolSearch. Numa pasta acima de projetos
-indexados (um monorepo com front e back separados), a dica lista o
-`scope="project:<nome>"` de cada um. Fora de projeto RAGX, não diz nada. O hook
+`SessionStart` que roda `ragx claude hint`. Num projeto indexado, o agente lê a regra (RAGX antes
+de Grep/Glob/Read para "onde está", "como funciona", "o que chama o quê"), as três ferramentas
+(`build_context`, `search_hybrid`, `get_chunk`) e como carregá-las com ToolSearch: **~140 tokens**
+(eram ~350 com o resumo de documentos, data e branch do índice; o frescor agora vem na própria busca,
+com `stale_paths`). Numa pasta acima de projetos indexados (um monorepo com front e back separados),
+a dica lista o `scope="project:<nome>"` de cada um. Fora de projeto RAGX, não diz nada. O hook
 nunca falha: um erro ali atrasaria toda sessão. `off` remove só esse hook; os
 seus ficam. `--no-hint` liga o MCP sem a dica.
+
+**Uma vez por sessão (RAGX-0164).** O Claude Code roda o hook de `SessionStart` também em subagentes, e
+repetir a dica (e contar a sessão de novo no painel) a cada um só gasta token. O hook lê o JSON do stdin
+(`session_id`, `source`), cria um marcador `.ragx/cache/hint/<session_id>` de forma atômica (`O_EXCL`;
+na pasta do hub, quando a pasta não tem índice próprio) e, na repetição da mesma sessão, não imprime
+nada e não grava o evento `session_start`. Com `source` igual a `clear` ou `compact` (o contexto foi
+perdido) a dica volta e o marcador é renovado. O `session_id` vira nome de arquivo só com
+`[A-Za-z0-9_-]` (até 64): um id hostil não escapa da pasta. Sem `session_id` (uso manual no terminal, stdin
+vazio ou inválido) a dica sai sempre. O stdin nunca bloqueia o hook (espera até 0,5 s). Os marcadores
+não são podados (um arquivo vazio por sessão).
 
 **Aviso de edição (`ragx touch`, RAGX-0141).** O índice só via uma edição não commitada no
 `refresh` (26 a 91 s) ou no próximo commit. `on` instala também um hook `PostToolUse`
