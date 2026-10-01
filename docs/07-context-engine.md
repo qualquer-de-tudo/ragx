@@ -240,6 +240,15 @@ por `mtime`.
 5. Pelo menos 2 documentos distintos representados quando existem 2 relevantes.
 6. `--explain` justifica cada fragmento incluído e cada descartado.
 
+## A/B versus trial (RAGX-0162)
+
+O `ragx trial` abaixo usa **proxies**: os baselines são arquivos lidos inteiros e um "Grep + Read"
+simulado, e a economia é calculada sobre o que o RAGX entrega, não sobre o que um agente real consome. O
+`ragx ab` é a medição que falta: as mesmas tarefas rodadas por `claude -p` com e sem o MCP, comparando o
+consumo que o próprio Claude Code reporta (ver [14-cli.md](14-cli.md)). Enquanto ninguém o executar com
+chamadas reais, a economia real contra `Grep` segue **desconhecida** (S14); o dedupe de sessão, o perfil
+`slim` e o subagente `ragx-explorer` também só têm efeito mensurável por ele.
+
 ## Trial — economia de tokens (honesta)
 
 ```bash

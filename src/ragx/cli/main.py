@@ -8,6 +8,7 @@ import typer
 from rich.console import Console
 
 from ragx.cli.commands import (
+    ab_cmd,
     agent_cmd,
     base_cmd,
     claude_cmd,
@@ -52,6 +53,7 @@ app.command("runs")(index_cmd.runs)
 app.command("search")(search_cmd.search)
 app.command("context")(context_cmd.context)
 app.command("trial")(trial_cmd.trial_cmd)
+app.command("ab")(ab_cmd.ab)
 app.command("perf")(perf_cmd.perf)
 app.command("eval")(eval_cmd.eval_cmd)
 app.command("trial")(trial_cmd.trial_cmd)

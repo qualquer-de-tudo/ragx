@@ -175,7 +175,33 @@ ragx trial "<query>"
     --scope sources|project basal: só os arquivos usados, ou o projeto inteiro
     --path GLOB             basal explícito (repetível)
     --json
+
+ragx ab                             # só o PLANO (padrão): nada é executado
+    --arms without,full,slim  --reps N  --limit N  --model M  --max-turns N  --isolate
+    --queries FILE  --out DIR  --json
+    --simulate              roda o harness com números SINTÉTICOS (marcados `simulated`)
+    --execute --max-calls N roda `claude -p` DE VERDADE (exige RAGX_AB_REAL=1)
 ```
+
+**`ragx ab` (RAGX-0162, S14).** "O RAGX economiza X%" não é afirmável: o baseline do painel e do `trial` é o
+arquivo inteiro, e um agente com `Grep` não leria 16 arquivos inteiros. A única medição honesta é um **A/B**:
+as mesmas tarefas por `claude -p` em três braços (`without`: sem MCP, com `--strict-mcp-config` e nenhum
+servidor; `full` e `slim`: o servidor do RAGX em cada perfil, por `RAGX_MCP_PROFILE`), com o mesmo modelo,
+as mesmas ferramentas nativas e a ordem dos braços girando por tarefa. Cada tarefa pede os caminhos dos
+arquivos relevantes; **a economia só conta onde os dois braços acharam o arquivo certo**, e o relatório
+traz tokens faturáveis (`input + cache_creation + output`, a manchete), a soma bruta, custo e turnos, a
+mediana e os quartis dos deltas pareados, o intervalo de 95% por bootstrap e o rótulo **inconclusivo**
+(menos de 10 tarefas ou intervalo que cruza zero). O prompt vai pelo stdin (sem aspas no `claude.cmd` do
+Windows) e o texto da resposta **nunca é gravado**: só `hit`, os caminhos citados e contagens. O
+relatório vai para `.ragx/ab/<data>.json` e `latest.json`.
+
+**Custo.** Por padrão `ragx ab` não executa nada: imprime as chamadas planejadas e o total. `--execute`
+gasta a cota da sua conta e só vale com `RAGX_AB_REAL=1` **e** `--max-calls N` (recusa se o plano passar do
+teto, dizendo quantas chamadas seriam). `--simulate` serve para testar o harness: tudo sai marcado
+`simulated` e nunca é apresentado como economia real. Confundidor: se o `CLAUDE.md`/`AGENTS.md` do projeto
+manda usar o RAGX, o braço `without` fica sem a ferramenta mas com o texto pedindo-a (é o caso deste
+repositório); meça num projeto cujo `CLAUDE.md` não cite o RAGX, ou use `--isolate` (`--bare`, sem hooks
+nem `CLAUDE.md`; exige `ANTHROPIC_API_KEY`).
 
 `ragx trial` compara o contexto montado com **dois baselines** (os arquivos certos lidos
 inteiros, o oráculo; e um "Grep + Read" simulado, `--grep-files K`) e mostra a economia

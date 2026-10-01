@@ -11,6 +11,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **`ragx ab`: harness de A/B de economia.** "O RAGX economiza X%" não era afirmável (o baseline do painel
+  e do `trial` é o arquivo inteiro). `ragx ab` planeja as mesmas tarefas por `claude -p` em três braços
+  (`without`, `full`, `slim`), com o mesmo modelo e ferramentas, ordem girando por tarefa, e compara o
+  `usage` real (tokens faturáveis, custo, turnos) **só onde os dois braços acharam o arquivo certo**,
+  com quartis, intervalo por bootstrap e o rótulo "inconclusivo" (menos de 10 tarefas ou intervalo que
+  cruza zero). Por padrão só imprime o plano (nada é executado); `--simulate` roda com números sintéticos
+  marcados `simulated`; `--execute` roda de verdade e exige `RAGX_AB_REAL=1` e `--max-calls N` (gasta cota
+  da conta). Não grava o texto das respostas. **Nenhuma chamada real foi feita**: a economia segue
+  desconhecida até uma pessoa executá-lo (RAGX-0162).
 - **Subagente `ragx-explorer` instalável (opt-in).** `ragx claude agent install` (ou `ragx claude on
   --agent`) grava `<perfil>/agents/ragx-explorer.md`: um explorador só de leitura (RAGX, `Read`, `Grep`,
   `Glob`) que usa o RAGX primeiro e **responde curto**, para a exploração não encher o contexto do
