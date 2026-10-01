@@ -472,12 +472,13 @@ export function createHandlers(deps: HandlerDeps) {
 
     /** Só `onboardingDone` sai para o renderer; o resto das configurações fica aqui. */
     getSettings(): RendererSettings {
-      const { onboardingDone, pricing, tray, notifyStale } = deps.readSettings()
+      const { onboardingDone, pricing, tray, notifyStale, autoUpdate } = deps.readSettings()
       return {
         onboardingDone,
         ...(pricing === undefined ? {} : { pricing }),
         ...(tray === true ? { tray } : {}),
         ...(notifyStale === true ? { notifyStale } : {}),
+        ...(autoUpdate === true ? { autoUpdate } : {}),
       }
     },
 

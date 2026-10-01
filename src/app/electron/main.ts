@@ -9,6 +9,8 @@ import { buildMenuTemplate } from './menu'
 import { busyProjectIds, deriveProjectState } from './project-state'
 import { StaleNotifier } from './stale-notifier'
 import { createTray, summarizeStates, type RagxTray } from './tray'
+import { createUpdater } from './updater'
+import { autoUpdater } from 'electron-updater'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
 import { computeAdoption } from './data/adoption'
@@ -191,6 +193,17 @@ function applyPreferences(): void {
   if (prefs.notifyStale !== true) staleNotifier.reset()
   snapshotPoller?.setBackgroundInterval(prefs.notifyStale === true ? BACKGROUND_SNAPSHOT_MS : null)
 }
+
+// -- atualização do painel (RAGX-0192) -------------------------------------
+// Desligada por padrão: sem `autoUpdate`, ou fora do painel empacotado, nenhuma chamada de rede.
+
+const updater = createUpdater({
+  autoUpdater: autoUpdater as never,
+  isPackaged: app.isPackaged,
+  version: app.getVersion(),
+  enabled: () => currentPrefs().autoUpdate === true,
+  onState: (state) => mainWindow?.webContents.send('ragx:update', state),
+})
 
 // -- Ollama ------------------------------------------------------------
 
@@ -429,7 +442,13 @@ handleIpc('ragx:setPricing', (pricing: unknown) => handlers.setPricing(pricing))
 handleIpc('ragx:setPreference', (key: unknown, value: unknown) => {
   handlers.setPreference(key, value)
   applyPreferences()
+  // ligar a atualização confere na hora; desligar não faz nada (e nunca chama a rede)
+  if (key === 'autoUpdate' && value === true) void updater.check()
 })
+handleIpc('ragx:getUpdateState', () => updater.getState())
+handleIpc('ragx:checkForUpdates', () => updater.check())
+handleIpc('ragx:downloadUpdate', () => updater.download())
+handleIpc('ragx:installUpdate', () => updater.install())
 // Sem argumentos: o que vier do renderer é descartado aqui.
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
 handleIpc('ragx:getClaudeIntegration', () => handlers.getClaudeIntegration())
@@ -681,6 +700,7 @@ function createWindow(): void {
     startActivityPolling()
     watchPanelActivity(win)
     startRuntimeMeasurement()
+    void updater.check() // no startup, só se `autoUpdate` estiver ligado e o painel empacotado
     // Fix round 1 (MINOR 4): a primeira checagem de conexão roda logo depois
     // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`
     // já constrói um snapshot se ainda não houver nenhum (decisão 2 da Task 6).
@@ -740,6 +760,7 @@ app.whenReady().then(async () => {
   if (!GOT_SINGLE_INSTANCE) return
   // O Windows mostra este nome nas notificações (também em dev): é o `appId` de electron-builder.yml.
   app.setAppUserModelId('com.ragx.painel')
+  updater.init()
   if (HEADLESS) {
     const code = BOOTSTRAP ? await runBootstrapHeadless() : await runUninstallHeadless()
     app.exit(code)

@@ -1021,3 +1021,13 @@ describe('createHandlers - setPreference (RAGX-0191)', () => {
     expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
   })
 })
+
+describe('createHandlers - autoUpdate como preferência (RAGX-0192)', () => {
+  it('setPreference aceita autoUpdate e getSettings o devolve só quando ligado', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true }) }))
+    handlers.setPreference('autoUpdate', true)
+    expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true, autoUpdate: true })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, autoUpdate: true }) })).getSettings()).toStrictEqual({ onboardingDone: true, autoUpdate: true })
+  })
+})

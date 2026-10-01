@@ -1,4 +1,11 @@
 appId: com.ragx.painel
+# Atualização pelo GitHub Releases (RAGX-0192). Quem PUBLICA é o `softprops/action-gh-release` do release.yml: o script
+# `package` roda com `--publish never`. O updater só lê (`latest.yml`) e fica desligado por padrão.
+publish:
+  provider: github
+  owner: qualquer-de-tudo
+  repo: ragx
+  channel: latest
 productName: RAGX Painel
 directories:
   output: release

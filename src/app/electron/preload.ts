@@ -15,6 +15,7 @@ import type {
   SecurityScanResult,
   Snapshot,
   TrialResult,
+  UpdateState,
 } from '../src/types/ragx-bridge'
 
 const ragx: RagxBridge = {
@@ -58,7 +59,17 @@ const ragx: RagxBridge = {
   getSettings: (): Promise<PanelSettings> => ipcRenderer.invoke('ragx:getSettings'),
   setOnboardingDone: (done: boolean): Promise<void> => ipcRenderer.invoke('ragx:setOnboardingDone', done),
   setPricing: (pricing: Pricing | null): Promise<void> => ipcRenderer.invoke('ragx:setPricing', pricing),
-  setPreference: (key: 'tray' | 'notifyStale', value: boolean): Promise<void> => ipcRenderer.invoke('ragx:setPreference', key, value),
+  setPreference: (key: 'tray' | 'notifyStale' | 'autoUpdate', value: boolean): Promise<void> =>
+    ipcRenderer.invoke('ragx:setPreference', key, value),
+  getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke('ragx:getUpdateState'),
+  checkForUpdates: (): Promise<UpdateState> => ipcRenderer.invoke('ragx:checkForUpdates'),
+  downloadUpdate: (): Promise<UpdateState> => ipcRenderer.invoke('ragx:downloadUpdate'),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('ragx:installUpdate'),
+  onUpdate: (cb: (state: UpdateState) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, state: UpdateState) => cb(state)
+    ipcRenderer.on('ragx:update', listener)
+    return () => ipcRenderer.removeListener('ragx:update', listener)
+  },
   onOpenProject: (cb: (projectId: string) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, projectId: string) => cb(projectId)
     ipcRenderer.on('ragx:openProject', listener)

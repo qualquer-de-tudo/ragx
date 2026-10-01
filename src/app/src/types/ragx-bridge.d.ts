@@ -2,6 +2,9 @@ import type { ActivityEvent, AdoptionSummary, ContextPreview, TelemetrySummary }
 
 export type { ActivityEvent, AdoptionSummary, ContextPreview }
 import type { Pricing, RendererSettings } from '../../electron/settings'
+import type { UpdateState } from '../../electron/updater'
+
+export type { UpdateState }
 
 export type { Pricing }
 
@@ -277,7 +280,13 @@ export interface RagxBridge {
   /** Preço por milhão de tokens de entrada que a pessoa informa (RAGX-0186); `null` limpa. */
   setPricing: (pricing: Pricing | null) => Promise<void>
   /** Liga ou desliga a bandeja ou a notificação de defasagem (RAGX-0191): chave de lista fechada, valor booleano. */
-  setPreference: (key: 'tray' | 'notifyStale', value: boolean) => Promise<void>
+  setPreference: (key: 'tray' | 'notifyStale' | 'autoUpdate', value: boolean) => Promise<void>
+  /** Atualização do painel (RAGX-0192): estado, verificar, baixar e instalar. Sem argumentos; desligada = zero rede. */
+  getUpdateState: () => Promise<UpdateState>
+  checkForUpdates: () => Promise<UpdateState>
+  downloadUpdate: () => Promise<UpdateState>
+  installUpdate: () => Promise<void>
+  onUpdate: (cb: (state: UpdateState) => void) => () => void
   /** O clique numa notificação pede para abrir o detalhe de um projeto (só o `projectId`, nunca caminho). */
   onOpenProject: (cb: (projectId: string) => void) => () => void
   /** Mede embeddings/s no Ollama em uso; o modelo é escolhido pelo processo principal. Sem argumentos. */

@@ -130,3 +130,15 @@ describe('tray e notifyStale (RAGX-0191)', () => {
     expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, ollamaMode: 'docker', notifyStale: true, tray: true })
   })
 })
+
+describe('autoUpdate (RAGX-0192)', () => {
+  it('padrão desligado; valor inválido descartado; true sobrevive', () => {
+    const dir = mkTmp()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true }))
+    expect(readSettings(dir).autoUpdate).toBeUndefined()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, autoUpdate: 'sim' }))
+    expect(readSettings(dir).autoUpdate).toBeUndefined()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, autoUpdate: true }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, autoUpdate: true })
+  })
+})

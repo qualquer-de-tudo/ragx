@@ -52,3 +52,62 @@ describe('PreferencesPage', () => {
     expect(screen.getByRole('switch', { name: 'Ícone na bandeja do sistema' })).toHaveAttribute('aria-checked', 'false')
   })
 })
+
+describe('PreferencesPage: Atualizações (RAGX-0192)', () => {
+  const state = (over: Record<string, unknown> = {}) => ({ status: 'idle', currentVersion: '1.0.0-beta.5', version: null, progress: null, error: null, ...over })
+
+  it('o aviso de assinatura aparece sempre, com a versão atual, e a atualização entra desligada', async () => {
+    installBridge({ getUpdateState: vi.fn().mockResolvedValue(state()) })
+    render(<PreferencesPage />)
+    expect(screen.getByText(/O instalador não é assinado: o Windows pode mostrar o aviso do SmartScreen ao atualizar/)).toBeInTheDocument()
+    expect(await screen.findByText(/Versão atual: 1\.0\.0-beta\.5/)).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Verificar atualizações do painel' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('button', { name: 'Verificar agora' })).toBeDisabled() // desligada: nada de rede
+    expect(screen.queryByRole('button', { name: 'Instalar e reiniciar' })).not.toBeInTheDocument()
+  })
+
+  it('ligar grava a preferência; verificar agora chama a ponte quando ligada', async () => {
+    const b = installBridge({ getSettings: vi.fn().mockResolvedValue({ onboardingDone: true, autoUpdate: true }) })
+    render(<PreferencesPage />)
+    await act(async () => {})
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Verificar agora' }))
+    })
+    expect(b.checkForUpdates).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('switch', { name: 'Verificar atualizações do painel' }))
+    })
+    expect(b.setPreference).toHaveBeenCalledWith('autoUpdate', false)
+  })
+
+  it('"Instalar e reiniciar" só aparece com a atualização baixada; "Baixar" só com versão disponível', async () => {
+    let push: (s: unknown) => void = () => {}
+    const b = installBridge({
+      getSettings: vi.fn().mockResolvedValue({ onboardingDone: true, autoUpdate: true }),
+      onUpdate: vi.fn((cb: (s: never) => void) => {
+        push = cb as (s: unknown) => void
+        return () => {}
+      }),
+    })
+    render(<PreferencesPage />)
+    await act(async () => {})
+    act(() => push(state({ status: 'available', version: '1.1.0' })))
+    expect(screen.getByText(/versão 1\.1\.0 disponível/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Instalar e reiniciar' })).not.toBeInTheDocument()
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Baixar atualização' }))
+    })
+    expect(b.downloadUpdate).toHaveBeenCalled()
+    act(() => push(state({ status: 'downloaded', version: '1.1.0', progress: 100 })))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Instalar e reiniciar' }))
+    })
+    expect(b.installUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('erro da atualização aparece em português', async () => {
+    installBridge({ getUpdateState: vi.fn().mockResolvedValue(state({ status: 'error', error: 'Não foi possível falar com o servidor de atualizações. Confira a conexão e tente de novo.' })) })
+    render(<PreferencesPage />)
+    expect(await screen.findByText(/Não foi possível falar com o servidor de atualizações/)).toBeInTheDocument()
+  })
+})

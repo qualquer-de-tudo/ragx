@@ -6,8 +6,9 @@ name: Release
 #
 # Ou manualmente, pela aba Actions, informando a versão.
 #
-# A release publica DOIS arquivos: o instalador do painel (.exe) e o guia de
-# uso (GUIA-DE-USO.md). O wheel, o sdist e a extensão do VS Code continuam
+# A release publica o instalador do painel (.exe), o guia de uso (GUIA-DE-USO.md) e
+# DOIS arquivos de metadados do atualizador do painel (`latest.yml` e o
+# `.exe.blockmap`, RAGX-0192: o painel só os lê se a pessoa ligar a atualização). O wheel, o sdist e a extensão do VS Code continuam
 # sendo construídos e testados, mas ficam como artefatos do workflow (aba da
 # execução), não na página da release. O GitHub acrescenta sozinho o "Source
 # code (zip/tar.gz)" a toda release: isso não dá para desligar.
@@ -323,7 +324,10 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: painel-windows
-          path: src/app/release/*Setup*.exe
+          path: |
+            src/app/release/*Setup*.exe
+            src/app/release/*Setup*.exe.blockmap
+            src/app/release/latest*.yml
           retention-days: 7
 
   # ── 5. publicar ───────────────────────────────────────────────────────
@@ -347,6 +351,9 @@ jobs:
           # extensão ficam nos artefatos do workflow (retenção maior abaixo).
           mkdir -p release
           cp baixados/painel-windows/*.exe release/
+          # metadados do atualizador do painel (RAGX-0192): hash do instalador e mapa de blocos
+          cp baixados/painel-windows/*.blockmap release/
+          cp baixados/painel-windows/latest*.yml release/
           cp docs/GUIA-DE-USO.md release/
           cd release
           ls -la
@@ -402,7 +409,9 @@ jobs:
           __SHA__
           ```
 
-          Para atualizar, rode o instalador da versão nova por cima.
+          Para atualizar, rode o instalador da versão nova por cima. Os arquivos
+          `latest.yml` e `*.blockmap` em *Assets* são metadados do atualizador do
+          painel (desligado por padrão, em Preferências): você não precisa baixá-los.
 
           ## Novidades desta versão
 

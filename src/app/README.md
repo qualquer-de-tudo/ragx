@@ -278,6 +278,21 @@ de código-fonte é lido. Depois de um `add-project`, `name` e `visibility`
 da seção `[project]` do `ragx.toml` são lidos só para explicar por que o
 projeto não entrou no hub (colisão de nome ou projeto privado).
 
+## Atualização do painel
+
+Atualizar o painel ainda é rodar o instalador novo por cima, mas o painel agora pode conferir sozinho (RAGX-0192) com o
+`electron-updater` contra o GitHub Releases (`qualquer-de-tudo/ragx`, canal `latest`). **Desligado por padrão**
+(Preferências, "Verificar atualizações do painel"): desligado, ou fora do painel empacotado, **zero chamadas de rede**.
+Ligado, confere ao abrir e em "Verificar agora"; `autoDownload` e `autoInstallOnAppQuit` ficam falsos, então só baixa
+("Baixar atualização") e instala ("Instalar e reiniciar", só com a atualização baixada) quando a pessoa manda. O `.exe`
+**não é assinado** (RAGX-0124 adiada): o Windows pode mostrar o SmartScreen ao atualizar, e sem `publisherName` o updater
+não confere assinatura; a proteção é o `sha512` do `latest.yml`, servido pelo mesmo GitHub (a tela diz isso sempre).
+O `release.yml` anexa à release `latest.yml` e o `.exe.blockmap` (metadados do updater; wheel, sdist e vsix continuam fora)
+e o script `package` roda com `--publish never`: quem publica é o `softprops/action-gh-release`. Os estados são
+`idle | checking | available | downloading | downloaded | error` (`electron/updater.ts`, sem importar `electron`),
+com mensagem de erro em português que não repete URLs. **Não foi testada uma atualização real** (exige duas versões
+publicadas); ver a tarefa RAGX-0192.
+
 ## Bandeja e notificação de defasagem
 
 Duas preferências, **desligadas por padrão**, na página Preferências (RAGX-0191): "Ícone na bandeja do sistema" e

@@ -31,10 +31,12 @@ export interface RendererSettings {
   tray?: boolean
   /** Notificação do sistema quando um índice continua defasado (RAGX-0191). Ausente = desligado. */
   notifyStale?: boolean
+  /** Atualização do painel pelo GitHub Releases (RAGX-0192). Ausente = desligada: zero chamadas de rede. */
+  autoUpdate?: boolean
 }
 
 /** As únicas preferências booleanas que o renderer pode alterar (`ragx:setPreference`). */
-export const PREFERENCE_KEYS = ['tray', 'notifyStale'] as const
+export const PREFERENCE_KEYS = ['tray', 'notifyStale', 'autoUpdate'] as const
 export type PreferenceKey = (typeof PREFERENCE_KEYS)[number]
 
 export interface PanelSettings extends RendererSettings {

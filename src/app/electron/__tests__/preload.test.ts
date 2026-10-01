@@ -61,6 +61,11 @@ describe('preload', () => {
         'setPricing',
         'setPreference',
         'onOpenProject',
+        'getUpdateState',
+        'checkForUpdates',
+        'downloadUpdate',
+        'installUpdate',
+        'onUpdate',
         'previewContext',
       ].sort(),
     )

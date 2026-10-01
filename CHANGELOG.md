@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Atualização do painel pelo GitHub Releases, desligada por padrão.** Atualizar era baixar o instalador novo e rodá-lo
+  por cima, sem aviso de que existe uma versão nova. Agora Preferências tem "Verificar atualizações do painel"
+  (`electron-updater`): desligado não faz nenhuma chamada de rede, ligado confere ao abrir e quando você pede, e só
+  baixa e instala quando você manda. A release passa a anexar `latest.yml` e o `.exe.blockmap`. O `.exe` não é
+  assinado: o Windows pode alertar, e a tela diz isso. Falta testar uma atualização real entre duas versões
+  (RAGX-0192, em revisão).
 - **Bandeja com estado e notificação de defasagem no painel (desligadas por padrão).** O painel só avisava que um
   índice ficou defasado a quem estivesse olhando. Agora a página Preferências (nova) liga um ícone na bandeja com o
   estado geral em texto e uma notificação do sistema quando um projeto continua defasado por mais de 2 minutos, uma vez

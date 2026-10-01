@@ -7,7 +7,7 @@
 | **Estimativa** | 1d |
 | **Depende de** | RAGX-0171 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (U-14, seção 7.4) · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-P11, seção 4.2) · [src/app/README.md](../../src/app/README.md) |
-| **Status** | `todo` |
+| **Status** | `review` |
 
 ## Objetivo
 
@@ -15,14 +15,14 @@ Hoje atualizar o painel é baixar o instalador novo na página da release e rod�
 
 ## Entregáveis
 
-- [ ] `electron-updater` em `dependencies` de `src/app/package.json` (runtime, não `devDependencies`), versão **6.3.0 ou posterior** por causa da CVE-2024-39698 (auditoria 24, seção 7.4); conferir compatibilidade com o `electron-builder` 25.1.8 já instalado.
-- [ ] `src/app/electron-builder.yml`: bloco `publish` com `provider: github`, `owner` e `repo` do remoto (`git remote -v` hoje: `qualquer-de-tudo/ragx`; conferir de novo) e `channel: latest` explícito.
-- [ ] `src/app/package.json:17`: o script `package` passa a chamar `electron-builder --publish never`. Com `publish` configurado, o `electron-builder` em CI de tag tentaria publicar sozinho; quem publica é o `softprops/action-gh-release`.
-- [ ] `src/app/electron/updater.ts` (novo): módulo com dependências injetadas (o `autoUpdater` e o relógio) e estados `idle | checking | available | downloading | downloaded | error`. `autoDownload = false`, `autoInstallOnAppQuit = false`, `channel = 'latest'` e `allowPrerelease` definido por código (verdadeiro enquanto a versão do painel tiver `-beta`; a release beta sai marcada como prerelease em `release.yml`). Não faz nada se `!app.isPackaged`.
-- [ ] Configuração `autoUpdate` (padrão `false`) em `electron/settings.ts`, validada em `readSettings` (monta o objeto campo a campo e descartaria um campo novo) e exposta ao renderer. Desligada: **zero** chamadas de rede.
-- [ ] IPC sem argumentos: `ragx:getUpdateState`, `ragx:checkForUpdates`, `ragx:installUpdate`, mais `ragx:update` (evento de estado) em `electron/main.ts`, `preload.ts` e `RagxBridge`. Instalar só roda se o estado for `downloaded`.
-- [ ] Seção "Atualizações" na página "Preferências" (`src/pages/PreferencesPage.tsx`; a primeira das tarefas 0191, 0192 e 0193 a rodar cria a página, as outras acrescentam seção): interruptor, versão atual, "Verificar agora", e o aviso fixo "O instalador não é assinado: o Windows pode mostrar o aviso do SmartScreen ao atualizar".
-- [ ] `.github/workflows/release.yml` anexa os metadados do updater **sem voltar a publicar wheel, sdist nem vsix**: (1) o upload do artefato `painel-windows` (hoje `path: src/app/release/*Setup*.exe`, linhas 323-327) inclui o `*.yml` do updater e o `*.exe.blockmap`; (2) o passo "Reunir os artefatos" (linhas 341-355) os copia para `release/`; (3) o comentário do cabeçalho (linhas 9-13) e as ressalvas das notas passam a dizer que dois arquivos extras são metadados de atualização. `fail_on_unmatched_files: true` e o `exe="$(ls *Setup*.exe | head -1)"` continuam valendo.
+- [x] `electron-updater` em `dependencies` de `src/app/package.json` (runtime, não `devDependencies`), versão **6.3.0 ou posterior** por causa da CVE-2024-39698 (auditoria 24, seção 7.4); conferir compatibilidade com o `electron-builder` 25.1.8 já instalado.
+- [x] `src/app/electron-builder.yml`: bloco `publish` com `provider: github`, `owner` e `repo` do remoto (`git remote -v` hoje: `qualquer-de-tudo/ragx`; conferir de novo) e `channel: latest` explícito.
+- [x] `src/app/package.json:17`: o script `package` passa a chamar `electron-builder --publish never`. Com `publish` configurado, o `electron-builder` em CI de tag tentaria publicar sozinho; quem publica é o `softprops/action-gh-release`.
+- [x] `src/app/electron/updater.ts` (novo): módulo com dependências injetadas (o `autoUpdater` e o relógio) e estados `idle | checking | available | downloading | downloaded | error`. `autoDownload = false`, `autoInstallOnAppQuit = false`, `channel = 'latest'` e `allowPrerelease` definido por código (verdadeiro enquanto a versão do painel tiver `-beta`; a release beta sai marcada como prerelease em `release.yml`). Não faz nada se `!app.isPackaged`.
+- [x] Configuração `autoUpdate` (padrão `false`) em `electron/settings.ts`, validada em `readSettings` (monta o objeto campo a campo e descartaria um campo novo) e exposta ao renderer. Desligada: **zero** chamadas de rede.
+- [x] IPC sem argumentos: `ragx:getUpdateState`, `ragx:checkForUpdates`, `ragx:installUpdate`, mais `ragx:update` (evento de estado) em `electron/main.ts`, `preload.ts` e `RagxBridge`. Instalar só roda se o estado for `downloaded`.
+- [x] Seção "Atualizações" na página "Preferências" (`src/pages/PreferencesPage.tsx`; a primeira das tarefas 0191, 0192 e 0193 a rodar cria a página, as outras acrescentam seção): interruptor, versão atual, "Verificar agora", e o aviso fixo "O instalador não é assinado: o Windows pode mostrar o aviso do SmartScreen ao atualizar".
+- [x] `.github/workflows/release.yml` anexa os metadados do updater **sem voltar a publicar wheel, sdist nem vsix**: (1) o upload do artefato `painel-windows` (hoje `path: src/app/release/*Setup*.exe`, linhas 323-327) inclui o `*.yml` do updater e o `*.exe.blockmap`; (2) o passo "Reunir os artefatos" (linhas 341-355) os copia para `release/`; (3) o comentário do cabeçalho (linhas 9-13) e as ressalvas das notas passam a dizer que dois arquivos extras são metadados de atualização. `fail_on_unmatched_files: true` e o `exe="$(ls *Setup*.exe | head -1)"` continuam valendo.
 
 ## Fora de escopo
 
@@ -33,18 +33,18 @@ Hoje atualizar o painel é baixar o instalador novo na página da release e rod�
 
 ## Critérios de aceite
 
-- [ ] Depois de `npm run package` (em `src/app`), `release/` contém o `.exe`, o `.exe.blockmap` e o `*.yml` do updater; o nome do `.yml` conferido de verdade (o `electron-builder` 25.1.8 usa `channel || "latest"` para GitHub em `app-builder-lib/out/publish/updateInfoBuilder.js:37-39`, ou seja `latest.yml`) e a `url`/`path` dentro dele bate com `artifactName` (`RAGX-Painel-Setup-${version}.exe`, `electron-builder.yml:45`).
-- [ ] `release.yml` continua YAML válido (carregar com `yaml.safe_load` ou `actionlint`, o que houver na máquina) e a lista de `files:` do passo "Publicar" não inclui wheel, sdist nem vsix (conferir com `git diff`).
-- [ ] Com `autoUpdate` desligado, teste com `autoUpdater` simulado comprova 0 chamadas a `checkForUpdates`; com `app.isPackaged` falso, idem, mesmo ligado.
-- [ ] Máquina de estados: `available` não baixa sozinho; `installUpdate` fora de `downloaded` é recusado; erro de rede vira `error` com mensagem em português e não derruba o painel.
-- [ ] Status final da tarefa: `review`, com o que falta (atualização real em duas versões) escrito em Notas.
+- [ ] Depois de `npm run package` (NÃO executado: demorado, e a execução foi interrompida pela pessoa; conferir `latest.yml` e `.exe.blockmap` na próxima vez) (em `src/app`), `release/` contém o `.exe`, o `.exe.blockmap` e o `*.yml` do updater; o nome do `.yml` conferido de verdade (o `electron-builder` 25.1.8 usa `channel || "latest"` para GitHub em `app-builder-lib/out/publish/updateInfoBuilder.js:37-39`, ou seja `latest.yml`) e a `url`/`path` dentro dele bate com `artifactName` (`RAGX-Painel-Setup-${version}.exe`, `electron-builder.yml:45`).
+- [x] `release.yml` continua YAML válido (carregar com `yaml.safe_load` ou `actionlint`, o que houver na máquina) e a lista de `files:` do passo "Publicar" não inclui wheel, sdist nem vsix (conferir com `git diff`).
+- [x] Com `autoUpdate` desligado, teste com `autoUpdater` simulado comprova 0 chamadas a `checkForUpdates`; com `app.isPackaged` falso, idem, mesmo ligado.
+- [x] Máquina de estados: `available` não baixa sozinho; `installUpdate` fora de `downloaded` é recusado; erro de rede vira `error` com mensagem em português e não derruba o painel.
+- [x] Status final da tarefa: `review`, com o que falta (atualização real em duas versões) escrito em Notas.
 
 ## Testes
 
-- [ ] `src/app/electron/__tests__/updater.test.ts` (novo): estados, `autoDownload` falso, guarda `isPackaged`, padrão desligado, canal e prerelease.
-- [ ] `src/app/electron/__tests__/settings.test.ts` (existente): `autoUpdate` com padrão `false` e valor inválido descartado.
-- [ ] `src/app/electron/__tests__/preload.test.ts`: acrescentar os métodos novos à lista exata; atualizar os quatro mocks completos de `RagxBridge` (`src/test/snap.ts`, `App.test.tsx`, `useSnapshot.test.ts`, `useJobsConnections.test.ts`).
-- [ ] `src/app/src/pages/__tests__/PreferencesPage.test.tsx`: o aviso de assinatura aparece sempre, e o botão "Instalar e reiniciar" só quando `downloaded`.
+- [x] `src/app/electron/__tests__/updater.test.ts` (novo): estados, `autoDownload` falso, guarda `isPackaged`, padrão desligado, canal e prerelease.
+- [x] `src/app/electron/__tests__/settings.test.ts` (existente): `autoUpdate` com padrão `false` e valor inválido descartado.
+- [x] `src/app/electron/__tests__/preload.test.ts`: acrescentar os métodos novos à lista exata; atualizar os quatro mocks completos de `RagxBridge` (`src/test/snap.ts`, `App.test.tsx`, `useSnapshot.test.ts`, `useJobsConnections.test.ts`).
+- [x] `src/app/src/pages/__tests__/PreferencesPage.test.tsx`: o aviso de assinatura aparece sempre, e o botão "Instalar e reiniciar" só quando `downloaded`.
 
 ## Notas
 
@@ -56,14 +56,19 @@ Hoje atualizar o painel é baixar o instalador novo na página da release e rod�
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo)
-- [ ] Testes escritos e verdes
-- [ ] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
-- [ ] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
-- [ ] CHANGELOG atualizado na MESMA alteração
-- [ ] Documentação (`src/app/README.md`) confere com o comportamento implementado
-- [ ] Commit `tipo(escopo): descrição (RAGX-0192)` na branch `feat/v2`
+- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo) (todos menos o `npm run package` e a atualização real)
+- [x] Testes escritos e verdes
+- [x] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
+- [x] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
+- [x] CHANGELOG atualizado na MESMA alteração
+- [x] Documentação (`src/app/README.md`) confere com o comportamento implementado
+- [x] Commit `tipo(escopo): descrição (RAGX-0192)` na branch `feat/v2`
 
 ## Andamento
 
 _(o loop registra aqui o que fez, com datas e medições)_
+
+- 2026-10-01 — Implementado: `electron-updater` ^6.8.9 em `dependencies` (acima da 6.3.0 da CVE-2024-39698); `publish` github (`qualquer-de-tudo/ragx`, canal `latest`) em `electron-builder.yml`; script `package` com `--publish never`; `electron/updater.ts` (`createUpdater` com o `autoUpdater` injetado: `autoDownload` e `autoInstallOnAppQuit` falsos, canal `latest`, `allowPrerelease` só com `-beta`, estados `idle | checking | available | downloading | downloaded | error`, instalar fora de `downloaded` é recusado, mensagens de erro em português sem URL); `autoUpdate` como mais uma preferência de lista fechada (`tray`, `notifyStale`, `autoUpdate`) validada em `readSettings`; IPC `ragx:getUpdateState`, `ragx:checkForUpdates`, `ragx:installUpdate` e o evento `ragx:update`, **mais `ragx:downloadUpdate`** (o roteiro não listava o download, mas sem ele um `autoDownload` falso nunca baixaria); seção "Atualizações" em `PreferencesPage` com o aviso de assinatura sempre à vista; `release.yml` anexa `latest*.yml` e `*.blockmap` (o `files: release/*` do passo Publicar já os pega; wheel, sdist e vsix seguem fora; YAML válido por `yaml.safe_load`); texto das notas da release atualizado.
+- Conferido no código do pacote: `GitHubProvider` usa `updater.channel || options.channel`, então fixar `channel: latest` no código e no builder resolve a dúvida do `beta.yml`. `acquireSingleInstance` já deixa passar `headless`, que é o `--bootstrap` do instalador (segunda instância).
+- Testes novos: `updater.test.ts` (11), `settings` e `ipc` (autoUpdate), `PreferencesPage.test.tsx` (+4: aviso de assinatura, desligada sem rede, Baixar só com `available`, Instalar só com `downloaded`, erro em português), `preload.test.ts` (5 métodos novos). Painel: 1890 testes verdes, `lint` e `tsc` limpos.
+- **O que falta (por isso `review`)**: (1) rodar `npm run package` e conferir `latest.yml` e `.exe.blockmap` em `release/`, e que a `url`/`path` do `latest.yml` bate com `artifactName` (`RAGX-Painel-Setup-${version}.exe`); (2) uma atualização real entre duas versões publicadas (o loop não faz push, tag nem release); (3) conferir à mão se `quitAndInstall` com instalador assistido (`oneClick: false`) se comporta como se espera; (4) decidir ligar: o `.exe` não é assinado e o Windows pode alertar.

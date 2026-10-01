@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import type { UpdateState } from '../types/ragx-bridge'
 import { Section } from '../components/shell/Card'
 import { Switch } from '../components/ui/Switch'
 import { ipcErrorMessage } from '../ipcError'
 import { notify } from '../toast'
 
-type Prefs = { tray: boolean; notifyStale: boolean }
+type Prefs = { tray: boolean; notifyStale: boolean; autoUpdate: boolean }
 type Key = keyof Prefs
 
 /**
@@ -14,6 +15,7 @@ type Key = keyof Prefs
  */
 export function PreferencesPage() {
   const [prefs, setPrefs] = useState<Prefs | null>(null)
+  const [update, setUpdate] = useState<UpdateState | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -21,17 +23,47 @@ export function PreferencesPage() {
       .then(() => window.ragx.getSettings())
       .then(
         (s) => {
-          if (!cancelled) setPrefs({ tray: s.tray === true, notifyStale: s.notifyStale === true })
+          if (!cancelled) setPrefs({ tray: s.tray === true, notifyStale: s.notifyStale === true, autoUpdate: s.autoUpdate === true })
         },
         (err: unknown) => {
           console.error('getSettings() falhou:', err)
-          if (!cancelled) setPrefs({ tray: false, notifyStale: false })
+          if (!cancelled) setPrefs({ tray: false, notifyStale: false, autoUpdate: false })
         },
       )
     return () => {
       cancelled = true
     }
   }, [])
+
+  // Estado da atualização (RAGX-0192): lê no mount e acompanha o evento do processo principal.
+  useEffect(() => {
+    let cancelled = false
+    Promise.resolve()
+      .then(() => window.ragx.getUpdateState())
+      .then(
+        (u) => {
+          if (!cancelled) setUpdate(u)
+        },
+        (err: unknown) => console.error('getUpdateState() falhou:', err),
+      )
+    const off = window.ragx.onUpdate((u) => setUpdate(u))
+    return () => {
+      cancelled = true
+      off()
+    }
+  }, [])
+
+  const updateAction = (run: () => Promise<UpdateState | void>) => {
+    run().then(
+      (u) => {
+        if (u) setUpdate(u)
+      },
+      (err: unknown) => {
+        console.error('ação de atualização falhou:', err)
+        notify.error(`Não foi possível atualizar: ${ipcErrorMessage(err)}`)
+      },
+    )
+  }
 
   const change = (key: Key, value: boolean) => {
     window.ragx.setPreference(key, value).then(
@@ -75,6 +107,57 @@ export function PreferencesPage() {
             disabled={prefs === null}
             onChange={(v) => change('notifyStale', v)}
           />
+        </div>
+      </Section>
+      <Section title="Atualizações">
+        <div className="pref-row">
+          <div>
+            <p className="pref-title" id="pref-update">
+              Verificar atualizações do painel
+            </p>
+            <p className="hint">
+              Desligado por padrão: com ele desligado o painel não faz nenhuma chamada de rede. Ligado, confere o GitHub
+              Releases ao abrir e quando você pede, e só baixa e instala quando você manda.
+            </p>
+          </div>
+          <Switch
+            checked={prefs?.autoUpdate === true}
+            labelledBy="pref-update"
+            disabled={prefs === null}
+            onChange={(v) => change('autoUpdate', v)}
+          />
+        </div>
+        <p className="hint" role="note">
+          O instalador não é assinado: o Windows pode mostrar o aviso do SmartScreen ao atualizar. A integridade do arquivo
+          baixado é conferida pelo hash do <code>latest.yml</code>.
+        </p>
+        <p className="update-status" role="status">
+          Versão atual: {update?.currentVersion ?? '…'}
+          {update?.status === 'checking' && ' · verificando…'}
+          {update?.status === 'available' && ` · versão ${update.version ?? 'nova'} disponível`}
+          {update?.status === 'downloading' && ` · baixando${update.progress !== null ? ` (${update.progress}%)` : ''}…`}
+          {update?.status === 'downloaded' && ` · versão ${update.version ?? 'nova'} baixada, pronta para instalar`}
+          {update?.status === 'error' && ` · ${update.error ?? 'erro ao atualizar'}`}
+        </p>
+        <div className="pricing-actions">
+          <button
+            type="button"
+            className="btn"
+            disabled={prefs?.autoUpdate !== true || update?.status === 'checking' || update?.status === 'downloading'}
+            onClick={() => updateAction(() => window.ragx.checkForUpdates())}
+          >
+            Verificar agora
+          </button>
+          {update?.status === 'available' && (
+            <button type="button" className="btn" onClick={() => updateAction(() => window.ragx.downloadUpdate())}>
+              Baixar atualização
+            </button>
+          )}
+          {update?.status === 'downloaded' && (
+            <button type="button" className="btn btn-primary" onClick={() => updateAction(() => window.ragx.installUpdate())}>
+              Instalar e reiniciar
+            </button>
+          )}
         </div>
       </Section>
     </section>
