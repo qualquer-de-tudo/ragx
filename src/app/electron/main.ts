@@ -7,7 +7,7 @@ import { initSqlWasm } from './data/project-stats'
 import { buildSnapshot } from './data/snapshot'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
-import { checkAll, defaultCheckDeps } from './connections/checks'
+import { checkAll, defaultCheckDeps, resetRagxVersionCache } from './connections/checks'
 import { resetRagxCache, resolveRagx } from './system/ragx-exe'
 import { execFileText } from './system/exec'
 import { createRuntimeSampler, metricsFileFromEnv } from './system/runtime-metrics'
@@ -26,7 +26,7 @@ import { FolderTokens } from './projects/tokens'
 import { discoverProjects } from './projects/discovery'
 import { readSettings, updateSettings, writeSettings } from './settings'
 import { createHandlers } from './ipc'
-import { defaultEnvDeps, detectOllama } from './ollama/environment'
+import { defaultEnvDeps, detectOllama, detectOllamaLight, type LightState } from './ollama/environment'
 import { defaultBenchDeps, runOllamaBenchmark } from './ollama/benchmark'
 import { resetOllamaCache } from './ollama/paths'
 import {
@@ -112,7 +112,15 @@ function refreshSnapshot(): Promise<Snapshot> {
 // Último ambiente detectado: alimenta o catálogo (`CatalogContext.ollamaEnv`).
 // Atualizado a cada checagem de conexões (startup, polling de 30 s, fim de
 // tarefa) e a cada condição de passo da fila, que sempre detecta de novo.
-const ollamaEnv = createOllamaEnvCache(() => detectOllama(defaultEnvDeps()))
+// A detecção LEVE (tick de 30 s) lembra quando o `docker ps` rodou pela última vez (RAGX-0173).
+const lightState: LightState = { lastDockerProbeAt: null }
+const ollamaEnv = createOllamaEnvCache(
+  async () => {
+    lightState.lastDockerProbeAt = Date.now()
+    return detectOllama(defaultEnvDeps())
+  },
+  (previous) => detectOllamaLight(defaultEnvDeps(), previous, lightState),
+)
 
 function userDataDir(): string {
   return app.getPath('userData')
@@ -195,6 +203,7 @@ function onJobsChange(jobs: JobView[]): void {
   if (finished.some((j) => j.kind === 'ragx-install' && j.state === 'done')) {
     // O `ragx.exe` acabou de aparecer: refaz o cache do caminho e o PATH do
     // usuário ANTES de conferir as conexões, para o card já sair verde.
+    resetRagxVersionCache() // o executável acabou de ser (re)instalado: a versão guardada é velha
     afterRagxInstall(postInstallDeps())
       .catch((err) => console.error('pos-instalacao do ragx falhou:', err))
       .then(() => handlers.recheckConnections())
@@ -237,11 +246,11 @@ const handlers = createHandlers({
   buildSnapshot: refreshSnapshot,
   getCachedSnapshot: () => (latestSnapshot ? withConnectionsHealth(latestSnapshot) : null),
   runRagxCommand,
-  checkAll: async (snapshot) => {
+  checkAll: async (snapshot, opts) => {
     // Uma detecção do ambiente do Ollama por ciclo (`getConnections` já
     // garante um ciclo por vez); o card usa esse mesmo ambiente, sem um
     // segundo `docker ps`. `handlers` só é lido aqui, depois de criado.
-    const env = await ollamaEnv.fresh().catch((err: unknown) => {
+    const env = await (opts?.light ? ollamaEnv.light() : ollamaEnv.fresh()).catch((err: unknown) => {
       console.error('detectOllama() falhou:', err)
       return null
     })
@@ -447,7 +456,8 @@ function startConnectionsPolling(): void {
   // no meio de uma checagem, e cada resultado vai para o renderer por
   // `ragx:connections` (`publishConnections`).
   connectionsTimer = setInterval(() => {
-    handlers.getConnections().catch((err) => console.error('getConnections() falhou no polling:', err))
+    // tick de fundo: a checagem LEVE (RAGX-0173); "Verificar agora", startup e fim de tarefa seguem completos
+    handlers.getConnectionsLight().catch((err) => console.error('getConnectionsLight() falhou no polling:', err))
   }, CONNECTIONS_POLL_MS)
 }
 

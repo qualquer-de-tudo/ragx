@@ -6,10 +6,10 @@ import type { OllamaEnvironment } from '../../../src/types/ragx-bridge'
 
 const ok = (stdout = ''): ExecResult => ({ code: 0, stdout, stderr: '' })
 const fail: ExecResult = { code: 1, stdout: '', stderr: 'erro' }
+/** Comando que não existe na máquina (ENOENT): o padrão de tudo que o teste não definiu. */
+const NOT_FOUND: ExecResult = { code: -1, stdout: '', stderr: 'ENOENT', notFound: true }
 
 const PS_GPU = 'powershell -NoProfile -NonInteractive -Command (Get-CimInstance Win32_VideoController).Name'
-const DOCKER_VERSION = 'docker --version'
-const DOCKER_INFO = 'docker info --format {{.ServerVersion}}'
 const DOCKER_PS = 'docker ps -a --filter name=^ollama$ --format {{.State}}'
 const TASKLIST = 'tasklist /FI IMAGENAME eq ollama.exe /FO CSV /NH'
 const PGREP = 'pgrep -x ollama'
@@ -26,7 +26,7 @@ interface Opts {
 
 function deps(o: Opts = {}): EnvDeps {
   const map = o.responses ?? {}
-  const exec: ExecFn = async (file, args) => map[[file, ...args].join(' ')] ?? fail
+  const exec: ExecFn = async (file, args) => map[[file, ...args].join(' ')] ?? NOT_FOUND
   return {
     exec,
     httpGetJson: async () => (o.api === undefined ? null : o.api),
@@ -129,7 +129,8 @@ describe('recommend', () => {
 })
 
 describe('detectOllama', () => {
-  const dockerUp = { [DOCKER_VERSION]: ok('Docker version 27'), [DOCKER_INFO]: ok('27.0.1') }
+  // um único `docker ps` responde por tudo (RAGX-0173): o daemon de pé é o `docker ps` com código 0
+  const dockerUp: Record<string, ExecResult> = {}
 
   it('Docker ausente', async () => {
     const env = await detectOllama(deps({ responses: { [PS_GPU]: ok('NVIDIA GeForce RTX 4070\r\n') } }))
@@ -142,7 +143,7 @@ describe('detectOllama', () => {
   })
 
   it('Docker instalado mas parado', async () => {
-    const env = await detectOllama(deps({ responses: { [DOCKER_VERSION]: ok('Docker version 27') } }))
+    const env = await detectOllama(deps({ responses: { [DOCKER_PS]: fail } }))
     expect(env.docker).toEqual({ installed: true, running: false })
     expect(env.container.exists).toBe(false)
     expect(env.recommendation.mode).toBe('docker')
@@ -207,11 +208,7 @@ describe('detectOllama', () => {
   })
 
   describe('Linux: processo do próprio container não conta como Ollama local', () => {
-    const dockerUpLinux = {
-      [DOCKER_VERSION]: ok('Docker version 27'),
-      [DOCKER_INFO]: ok('27.0.1'),
-      [DOCKER_PS]: ok('running\n'),
-    }
+    const dockerUpLinux = { [DOCKER_PS]: ok('running\n') }
     const DOCKER_CG = '0::/system.slice/docker-3f1c2a9b.scope\n'
     const CONTAINERD_CG = '12:pids:/system.slice/containerd.service/kubepods-besteffort.slice\n'
     const KUBE_CG = '0::/kubepods.slice/kubepods-pod1.slice/cri-containerd-9a.scope\n'

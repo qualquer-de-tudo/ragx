@@ -845,3 +845,33 @@ describe('createHandlers - perfis do Claude Code', () => {
     await expect(handlers.removeClaudeProfile('claude-code')).rejects.toThrow(/adicionado à mão/)
   })
 })
+
+describe('createHandlers - getConnectionsLight (RAGX-0173)', () => {
+  it('chama a checagem com `light` e NÃO é um canal de IPC (o renderer nunca a pede)', async () => {
+    const checkAll = vi.fn(async () => [])
+    const handlers = createHandlers(makeDeps({ checkAll, getCachedSnapshot: () => SNAPSHOT }))
+    await handlers.getConnectionsLight()
+    expect(checkAll).toHaveBeenCalledWith(SNAPSHOT, { light: true })
+    // a checagem completa continua sem o segundo argumento
+    await handlers.getConnections()
+    expect(checkAll).toHaveBeenLastCalledWith(SNAPSHOT)
+  })
+
+  it('com uma checagem completa em andamento, a leve se junta a ela em vez de rodar outra', async () => {
+    let liberar: () => void = () => {}
+    const checkAll = vi.fn(
+      (_s: unknown, opts?: { light?: boolean }) =>
+        new Promise<never[]>((resolve) => {
+          if (opts?.light) return resolve([])
+          liberar = () => resolve([])
+        }),
+    )
+    const handlers = createHandlers(makeDeps({ checkAll: checkAll as never, getCachedSnapshot: () => SNAPSHOT }))
+    const completa = handlers.getConnections()
+    await Promise.resolve()
+    const leve = handlers.getConnectionsLight()
+    liberar()
+    await Promise.all([completa, leve])
+    expect(checkAll).toHaveBeenCalledTimes(1)
+  })
+})

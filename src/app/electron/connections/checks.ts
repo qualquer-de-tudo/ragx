@@ -25,6 +25,19 @@ export interface CheckDeps {
   homeDir: string
   /** O `.exe` traz o pacote de instalação da CLI? Sem ele, o card só orienta. */
   canInstallRagx?: () => boolean
+  /**
+   * `mtime` e tamanho do arquivo (RAGX-0173). Com ela, `ragx --version` roda UMA vez por assinatura do
+   * executável; sem ela (testes antigos), roda a cada checagem, como antes.
+   */
+  stat?: (p: string) => { mtimeMs: number; size: number } | null
+}
+
+/** A versão do `ragx` da última checagem que deu certo: `ragx --version` leva 0,9 a 1,7 s e o executável quase nunca muda. */
+let ragxVersionCache: { path: string; mtimeMs: number; size: number; stdout: string } | null = null
+
+/** Esquece a versão guardada (a tarefa `ragx-install` acabou de trocar o executável, ou o usuário pediu "Verificar agora"). */
+export function resetRagxVersionCache(): void {
+  ragxVersionCache = null
 }
 
 interface ClaudeMcpEntry {
@@ -114,7 +127,20 @@ export async function checkRagx(d: CheckDeps): Promise<ConnectionCheck> {
       }
     }
 
-    const result = await d.exec(ragxPath, ['--version'])
+    const signature = d.stat?.(ragxPath) ?? null
+    const cached = ragxVersionCache
+    const result =
+      cached !== null &&
+      signature !== null &&
+      cached.path === ragxPath &&
+      cached.mtimeMs === signature.mtimeMs &&
+      cached.size === signature.size
+        ? { code: 0, stdout: cached.stdout, stderr: '' }
+        : await d.exec(ragxPath, ['--version'])
+    // só resposta com código 0 entra no cache: uma falha passageira não pode ficar
+    if (result.code === 0 && signature !== null) {
+      ragxVersionCache = { path: ragxPath, mtimeMs: signature.mtimeMs, size: signature.size, stdout: result.stdout }
+    }
     if (result.code === 0) {
       return {
         id,
@@ -693,6 +719,14 @@ export function defaultCheckDeps(): CheckDeps {
       }
     },
     exists: (p) => fs.existsSync(p),
+    stat: (p) => {
+      try {
+        const st = fs.statSync(p)
+        return { mtimeMs: st.mtimeMs, size: st.size }
+      } catch {
+        return null
+      }
+    },
     httpGetJson,
     homeDir: os.homedir(),
     canInstallRagx: () => findBundleDir() !== null,

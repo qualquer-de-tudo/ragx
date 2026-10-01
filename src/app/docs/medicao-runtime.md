@@ -41,3 +41,19 @@ Ressalvas: fixture (12 repositórios `git init` em pasta temporária, projetos p
 
 - **visible** (35 amostras, 175 s): filhos/min: docker 6.2, tasklist 2.1, powershell 0.3, ragx 2.4; ms de filhos/min: docker 2606, tasklist 870, powershell 1599, ragx 1467; CPU média/p95 por tipo: Browser 0.1/0.2, GPU 0/0, Utility 0/0, Tab 0/0; custo médio do amostrador: 1.66 ms
 
+## depois-0173-conexoes-leves
+
+- Data: 2026-10-01T12:23:15.235Z
+- Máquina: Windows_NT 10.0.26200 (win32 x64), 20 núcleos lógicos, 13th Gen Intel(R) Core(TM) i5-13600KF, 31.8 GB de RAM
+- Painel 1.0.0-beta.5, Electron 33.4.11 (não empacotado: `electron dist-electron/main.js`, casca de produção)
+- Projetos no hub: 12 (fixture: 12 repositórios `git init` em pasta temporária)
+- Plano: `visible:4` (4 min); amostra a cada 5 s; a 1ª amostra de cada execução é descartada (`warmup`)
+- Amostras: 48 (JSONL em %TEMP%, não versionado)
+- Convenção de CPU: `percentCPUUsage` do `app.getAppMetrics()`, medido desde a chamada anterior; **por núcleo** (pode passar de 100), somado entre os processos do painel
+
+| Estado | Amostras | RAM working set (média / pico MB) | RAM privada (média / pico MB) | CPU soma (média / p95) | `git`/min | filhos (ms/min) | snapshot (ms) |
+|---|---|---|---|---|---|---|---|
+| visible | 47 | 330.4 / 336.7 | 212.1 / 220 | 0 / 0.1 | 0 | 1353 | 3 |
+
+- **visible** (47 amostras, 235 s): filhos/min: docker 2, tasklist 0.3, powershell 0.3, ragx 0.5; ms de filhos/min: docker 263, tasklist 43, powershell 810, ragx 237; CPU média/p95 por tipo: Browser 0/0.1, GPU 0/0, Utility 0/0, Tab 0/0; custo médio do amostrador: 0.68 ms
+

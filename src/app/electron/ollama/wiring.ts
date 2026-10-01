@@ -87,6 +87,11 @@ export interface OllamaEnvCache {
   get: () => OllamaEnvironment | null
   /** Sempre detecta de novo (condições da fila, checagem de conexões). */
   fresh: () => Promise<OllamaEnvironment>
+  /**
+   * Detecção LEVE do tick de fundo (RAGX-0173): parte do último ambiente conhecido e evita processos. Sem
+   * detecção anterior, ou sem `detectLight`, é a completa. Só `fresh()` e `shared()` servem a decisões.
+   */
+  light: () => Promise<OllamaEnvironment>
   /** Junta-se à detecção em andamento, se houver (pedidos do renderer). */
   shared: () => Promise<OllamaEnvironment>
   /**
@@ -101,16 +106,19 @@ export interface OllamaEnvCache {
  * Guarda o último `OllamaEnvironment`. Uma detecção que começou antes e
  * termina depois de outra mais nova não sobrescreve o resultado mais novo.
  */
-export function createOllamaEnvCache(detect: () => Promise<OllamaEnvironment>): OllamaEnvCache {
+export function createOllamaEnvCache(
+  detect: () => Promise<OllamaEnvironment>,
+  detectLight?: (previous: OllamaEnvironment | null) => Promise<OllamaEnvironment>,
+): OllamaEnvCache {
   let latest: OllamaEnvironment | null = null
   let started = 0
   let applied = 0
   let inFlight: Promise<OllamaEnvironment> | null = null
 
-  function fresh(): Promise<OllamaEnvironment> {
+  function run_(source: () => Promise<OllamaEnvironment>): Promise<OllamaEnvironment> {
     const seq = ++started
     const run: Promise<OllamaEnvironment> = Promise.resolve()
-      .then(() => detect())
+      .then(() => source())
       .then((env) => {
         if (seq > applied) {
           applied = seq
@@ -125,9 +133,13 @@ export function createOllamaEnvCache(detect: () => Promise<OllamaEnvironment>): 
     return run
   }
 
+  const fresh = (): Promise<OllamaEnvironment> => run_(detect)
+
   return {
     get: () => latest,
     fresh,
+    // o tick leve nunca atropela uma detecção completa em andamento: junta-se a ela
+    light: () => inFlight ?? run_(() => (detectLight ? detectLight(latest) : detect())),
     shared: () => inFlight ?? fresh(),
     invalidate: () => {
       inFlight = null

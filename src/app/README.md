@@ -212,6 +212,17 @@ As conexões (RAGX CLI, Claude Code, Ollama) também são checadas só pelo
 processo principal: a cada 30 segundos, no startup, logo depois de uma
 correção de conexão e no "Verificar agora". Cada resultado vai ao renderer
 pelo evento `ragx:connections`; checagens pedidas ao mesmo tempo viram uma só.
+O tick de 30 s é **leve** (um handler interno do processo principal, sem canal
+de IPC): a versão do `ragx` fica em cache pela assinatura (`mtime` e tamanho)
+do executável, o Docker é consultado por UM `docker ps` (não mais `--version`,
+`info` e `ps -a`), a API do Ollama é consultada primeiro (HTTP, sem processo) e
+`docker ps`/`tasklist` só rodam quando precisam: `docker ps` se o Docker estava
+de pé na última detecção completa (senão, no máximo a cada 5 minutos) e
+`tasklist` só com suspeita de conflito (API no ar e container rodando) ou com a
+API fora do ar e um Ollama nativo instalado; com a API no ar e nenhum container
+rodando, "Ollama local rodando" é inferido. A detecção **completa** continua no
+startup, no fim de tarefa, no "Verificar agora" e em toda condição de passo da
+fila: o dado inferido nunca decide uma tarefa.
 
 A resposta completa de `ragx status --json` (com os motivos de defasagem e o
 histórico de indexações) só é pedida para o projeto aberto no momento na

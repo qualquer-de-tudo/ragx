@@ -11,6 +11,15 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Checagem de conexões barata no tick de 30 s.** A cada 30 s o painel rodava `ragx --version`, `docker
+  --version`, `docker info`, `docker ps -a` e `tasklist` (~2,8 s de processos filhos por minuto). Agora a
+  versão do `ragx` fica em cache pela assinatura do executável, o Docker é consultado por UM `docker ps`, e o
+  tick de fundo usa uma detecção **leve** (API do Ollama primeiro; `docker ps` só se o Docker estava de pé,
+  senão a cada 5 min; `tasklist` só com suspeita de conflito; "Ollama local rodando" inferido com a API no
+  ar e sem container). Início do app, fim de tarefa, "Verificar agora" e as condições da fila seguem com a
+  detecção completa. Medido: de ~300 para **~3 processos filhos por minuto** (com a RAGX-0172) e de ~17 s
+  para **1,35 s por minuto** de tempo de filhos. `localhost` e `127.0.0.1` não diferem no Electron e não
+  foram trocados (RAGX-0173).
 - **O painel lê branch e commit dos arquivos do git, sem criar processo.** O snapshot rodava `git
   rev-parse HEAD` e `git symbolic-ref` por projeto a cada 5 s: **~290 processos `git` por minuto** com 12
   projetos, mesmo com a janela minimizada. Agora lê `.git/HEAD`, a ref solta ou `.git/packed-refs` (e

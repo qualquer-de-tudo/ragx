@@ -46,7 +46,8 @@ export interface HandlerDeps {
   /** Último snapshot já construído (pelo polling ou por uma chamada anterior a `buildSnapshot`), sem reconstruir. */
   getCachedSnapshot: () => Snapshot | null
   runRagxCommand: (cwd: string, args: string[], opts?: { timeoutMs?: number }) => Promise<unknown>
-  checkAll: (snapshot: Snapshot) => Promise<ConnectionCheck[]>
+  /** `light`: o tick de fundo (RAGX-0173), que evita processos; sem a opção, a checagem completa. */
+  checkAll: (snapshot: Snapshot, opts?: { light?: boolean }) => Promise<ConnectionCheck[]>
   /**
    * Avisa o renderer (`ragx:connections`) a cada checagem terminada, venha
    * ela do polling de 30 s, do startup, de uma tarefa de conexão que terminou
@@ -193,16 +194,25 @@ export function createHandlers(deps: HandlerDeps) {
     return result
   }
 
-  async function runConnectionChecks(): Promise<ConnectionCheck[]> {
+  async function runConnectionChecks(light = false): Promise<ConnectionCheck[]> {
     deps.resetRagxCache()
     let snapshot = deps.getCachedSnapshot()
     if (snapshot === null) snapshot = await deps.buildSnapshot()
-    const checks = await deps.checkAll(snapshot)
+    const checks = light ? await deps.checkAll(snapshot, { light: true }) : await deps.checkAll(snapshot)
     deps.publishConnections?.(checks)
     return checks
   }
 
-  const connections = createCoalescedRun(runConnectionChecks)
+  let fullChecksRunning = 0
+  const connections = createCoalescedRun(async () => {
+    fullChecksRunning += 1
+    try {
+      return await runConnectionChecks()
+    } finally {
+      fullChecksRunning -= 1
+    }
+  })
+  const lightConnections = createCoalescedRun(() => runConnectionChecks(true))
 
   let claudeChain: Promise<unknown> = Promise.resolve()
 
@@ -344,6 +354,14 @@ export function createHandlers(deps: HandlerDeps) {
      */
     getConnections(): Promise<ConnectionCheck[]> {
       return connections.join()
+    },
+
+    /**
+     * A checagem LEVE do tick de fundo (30 s): interna, NÃO é um canal de IPC (o renderer nunca a pede).
+     * Com uma checagem completa em andamento, junta-se a ela em vez de rodar outra.
+     */
+    getConnectionsLight(): Promise<ConnectionCheck[]> {
+      return fullChecksRunning > 0 ? connections.join() : lightConnections.join()
     },
 
     /**

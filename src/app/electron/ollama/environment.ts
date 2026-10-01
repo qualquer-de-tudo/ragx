@@ -131,20 +131,23 @@ export function onceGpuNames(query: () => Promise<string[] | null>): () => Promi
   }
 }
 
+/**
+ * UM `docker ps` basta (RAGX-0173): eram três (`--version`, `info` e `ps -a`), e o `docker info` era o mais
+ * caro (0,8 a 1,4 s). Executável inexistente (ENOENT) = Docker não instalado; código diferente de zero =
+ * instalado com o daemon parado; código zero = daemon de pé, com o estado do container `ollama`.
+ */
 async function detectDocker(d: EnvDeps): Promise<{
   docker: OllamaEnvironment['docker']
   container: OllamaEnvironment['container']
 }> {
-  const version = await d.exec('docker', ['--version'])
-  if (version.code !== 0) {
+  const ps = await d.exec('docker', ['ps', '-a', '--filter', 'name=^ollama$', '--format', '{{.State}}'])
+  if (ps.notFound === true) {
     return { docker: { installed: false, running: false }, container: { exists: false, running: false } }
   }
-  const info = await d.exec('docker', ['info', '--format', '{{.ServerVersion}}'])
-  if (info.code !== 0) {
+  if (ps.code !== 0) {
     return { docker: { installed: true, running: false }, container: { exists: false, running: false } }
   }
-  const ps = await d.exec('docker', ['ps', '-a', '--filter', 'name=^ollama$', '--format', '{{.State}}'])
-  const state = ps.code === 0 ? (lines(ps.stdout)[0] ?? '') : ''
+  const state = lines(ps.stdout)[0] ?? ''
   return {
     docker: { installed: true, running: true },
     container: { exists: state !== '', running: state === 'running' },
@@ -204,20 +207,88 @@ function toSupportedPlatform(p: NodeJS.Platform): OllamaEnvironment['platform'] 
   return p === 'win32' || p === 'darwin' ? p : 'linux'
 }
 
+const NO_DOCKER = {
+  docker: { installed: false, running: false },
+  container: { exists: false, running: false },
+}
+
 /** Nunca lança: qualquer falha vira o campo "ausente". */
 export async function detectOllama(d: EnvDeps): Promise<OllamaEnvironment> {
-  const platform = toSupportedPlatform(d.platform)
   const [gpuNames, dockerInfo, nativePath, isNativeRunning, json] = await Promise.all([
     safe(() => gpuNamesOf(d), [] as string[]),
-    safe(() => detectDocker(d), {
-      docker: { installed: false, running: false },
-      container: { exists: false, running: false },
-    }),
+    safe(() => detectDocker(d), NO_DOCKER),
     safe(() => d.resolveNativePath(), null),
     safe(() => nativeRunning(d), false),
     safe(() => d.httpGetJson(TAGS_URL, 3000), null),
   ])
+  return assemble(d, gpuNames, dockerInfo, nativePath, isNativeRunning, json)
+}
 
+/** Quanto esperar para repetir um `docker ps` quando o Docker não estava de pé (ou não existe). */
+export const DOCKER_RETRY_MS = 5 * 60_000
+
+/** O que a detecção leve lembra entre um tick e outro. */
+export interface LightState {
+  /** Quando o último `docker ps` rodou (detecção completa ou leve). */
+  lastDockerProbeAt: number | null
+}
+
+/**
+ * Detecção LEVE para o tick de fundo (a cada 30 s, RAGX-0173): a mesma resposta da completa para os mesmos
+ * fatos, com menos processos.
+ *
+ * - A API do Ollama é consultada primeiro (HTTP, nenhum processo).
+ * - `docker ps` só roda se o Docker estava instalado e com o daemon de pé na detecção anterior; senão, no
+ *   máximo a cada `DOCKER_RETRY_MS` (um ENOENT é barato, mas ainda é um processo).
+ * - `tasklist`/`pgrep` só quando há suspeita de conflito (API no ar E container rodando) ou a API está fora
+ *   do ar com um Ollama nativo instalado. Com a API no ar e nenhum container rodando, `native.running` é
+ *   INFERIDO `true`; com a API fora do ar e nada instalado, `false`.
+ *
+ * O resultado inferido NUNCA decide condição de passo da fila (`conditionFrom` sempre usa a completa).
+ * Sem detecção anterior, cai na completa. Nunca lança.
+ */
+export async function detectOllamaLight(
+  d: EnvDeps,
+  previous: OllamaEnvironment | null,
+  state: LightState,
+  now: () => number = () => Date.now(),
+): Promise<OllamaEnvironment> {
+  if (previous === null) {
+    state.lastDockerProbeAt = now()
+    return detectOllama(d)
+  }
+  const [gpuNames, nativePath, json] = await Promise.all([
+    safe(() => gpuNamesOf(d), [] as string[]),
+    safe(() => d.resolveNativePath(), null),
+    safe(() => d.httpGetJson(TAGS_URL, 3000), null),
+  ])
+  const apiUp = json !== null
+
+  const dockerStandingBy = previous.docker.installed && previous.docker.running
+  const due = state.lastDockerProbeAt === null || now() - state.lastDockerProbeAt >= DOCKER_RETRY_MS
+  let dockerInfo = { docker: previous.docker, container: previous.container }
+  if (dockerStandingBy || due) {
+    dockerInfo = await safe(() => detectDocker(d), NO_DOCKER)
+    state.lastDockerProbeAt = now()
+  }
+
+  let running: boolean
+  if (apiUp && !dockerInfo.container.running) running = true
+  else if (!apiUp && nativePath === null) running = false
+  else running = await safe(() => nativeRunning(d), false)
+
+  return assemble(d, gpuNames, dockerInfo, nativePath, running, json)
+}
+
+function assemble(
+  d: EnvDeps,
+  gpuNames: string[],
+  dockerInfo: { docker: OllamaEnvironment['docker']; container: OllamaEnvironment['container'] },
+  nativePath: string | null,
+  isNativeRunning: boolean,
+  json: unknown | null,
+): OllamaEnvironment {
+  const platform = toSupportedPlatform(d.platform)
   const gpu = classifyGpu(gpuNames, d.platform, d.arch)
   const { docker, container } = dockerInfo
   const native = { installed: nativePath !== null, path: nativePath, running: isNativeRunning }
