@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **`ragx gold build`: conjunto-ouro derivado do git.** A mensagem do commit é a consulta e os arquivos alterados são os documentos
+  relevantes: 134 consultas geradas em 1 s dos 251 commits deste repositório, sem mão-de-obra e crescendo sozinhas, com IC95% do
+  recall@5 de 0,15 a 0,17 nos três modos (antes, com 26 consultas manuais, ~0,33). Só hash, assunto e caminhos saem do git (nunca autor,
+  e-mail nem corpo), assunto com segredo é descartado, e a saída é byte-idêntica entre execuções. Resultado: keyword 0,72, hybrid 0,60,
+  semantic 0,49, o mesmo ordenamento do conjunto manual (RAGX-0167). `tests/eval/` saiu do índice do próprio repositório (o gabarito
+  indexado deixava a busca achar a pergunta).
 - **Prefixo de contexto determinístico no FTS e no embedding.** O prefixo que o `docs/04` prometia existia só no embedding; o FTS não
   via o caminho do arquivo, as palavras de `AuthService` nem a assinatura. Agora cada chunk guarda `context` (caminho, `tipo símbolo`,
   palavras do símbolo, assinatura, primeira frase do docstring), indexado como 4ª coluna do FTS (peso 0,5) e usado no texto embutido;

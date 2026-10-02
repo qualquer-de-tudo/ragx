@@ -1,0 +1,1590 @@
+# Conjunto-ouro derivado do git (RAGX-0167): a mensagem do commit é a consulta e os arquivos alterados,
+# os documentos relevantes. Gerado por `ragx gold build`; não edite à mão.
+# HEAD de origem: 442b2ba
+
+- query: "workflows de teste e release; versão 1.0.0"
+  class: git
+  difficulty: hard
+  commit: 3a23c93
+  kind: mixed
+  note: "derivado de 3a23c93"
+  relevant_paths:
+    - "install/README.md"
+    - "pyproject.toml"
+    - "scripts/release.py"
+
+- query: "o comando único não instalava"
+  class: git
+  difficulty: hard
+  commit: 1a054a1
+  kind: mixed
+  note: "derivado de 1a054a1"
+  relevant_paths:
+    - "install/README.md"
+    - "tests/unit/test_documentacao.py"
+
+- query: "instalar a partir dos arquivos baixados"
+  class: git
+  difficulty: hard
+  commit: a89e226
+  kind: mixed
+  note: "derivado de a89e226"
+  relevant_paths:
+    - "README.md"
+    - "install/README.md"
+    - "tests/unit/test_documentacao.py"
+
+- query: "registro global seguro e erro claro fora de um projeto"
+  class: git
+  difficulty: hard
+  commit: c1c3715
+  kind: code
+  note: "derivado de c1c3715"
+  relevant_paths:
+    - "src/ragx/mcp/server.py"
+    - "tests/integration/test_mcp.py"
+    - "tests/unit/test_documentacao.py"
+
+- query: "impede regra tokens de bloquear codigo fonte legitimo"
+  class: git
+  difficulty: hard
+  commit: dd6ee7b
+  kind: doc
+  note: "derivado de dd6ee7b"
+  relevant_paths:
+    - "src/ragx/security/rules/filenames.yaml"
+
+- query: "LICENSE, AGENTS.md, SECURITY.md, e fecha lacunas de documentacao (#2)"
+  class: git
+  difficulty: hard
+  commit: 8ae6e89
+  kind: doc
+  note: "derivado de 8ae6e89"
+  relevant_paths:
+    - "AGENTS.md"
+    - "SECURITY.md"
+    - "docs/09-mcp.md"
+    - "docs/README.md"
+
+- query: "registra o processo de CHANGELOG e planeja os 3 proximos itens de engenharia"
+  class: git
+  difficulty: hard
+  commit: 1beb924
+  kind: doc
+  note: "derivado de 1beb924"
+  relevant_paths:
+    - "AGENTS.md"
+    - "docs/superpowers/plans/2026-09-17-confianca-do-grafo.md"
+    - "docs/superpowers/plans/2026-09-17-instalador-multi-cliente-mcp.md"
+    - "docs/superpowers/plans/2026-09-17-ragx-trial.md"
+
+- query: "compara tokens de build_context contra o baseline de ler o arquivo inteiro"
+  class: git
+  difficulty: hard
+  commit: 476659d
+  kind: code
+  note: "derivado de 476659d"
+  relevant_paths:
+    - "src/ragx/search/trial.py"
+    - "tests/integration/test_trial.py"
+
+- query: "adiciona ragx trial"
+  class: git
+  difficulty: hard
+  commit: b42a8f0
+  kind: mixed
+  note: "derivado de b42a8f0"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "src/ragx/cli/commands/trial_cmd.py"
+    - "src/ragx/cli/main.py"
+    - "tests/e2e/test_cli_trial.py"
+
+- query: "protege a chave caveat do ragx trial --json com teste"
+  class: git
+  difficulty: hard
+  commit: fea0a80
+  kind: code
+  note: "derivado de fea0a80"
+  relevant_paths:
+    - "src/ragx/cli/commands/trial_cmd.py"
+    - "tests/e2e/test_cli_trial.py"
+
+- query: "documenta ragx trial e seus limites"
+  class: git
+  difficulty: hard
+  commit: 9ff1dff
+  kind: doc
+  note: "derivado de 9ff1dff"
+  relevant_paths:
+    - "AGENTS.md"
+    - "docs/07-context-engine.md"
+
+- query: "escapa markup do Rich e sinaliza relevant_paths ausente no ragx trial"
+  class: git
+  difficulty: hard
+  commit: 6f392d4
+  kind: code
+  note: "derivado de 6f392d4"
+  relevant_paths:
+    - "src/ragx/cli/commands/trial_cmd.py"
+    - "src/ragx/search/trial.py"
+    - "tests/e2e/test_cli_trial.py"
+    - "tests/integration/test_trial.py"
+
+- query: "registra ragx trial no changelog e ajusta números/tom desatualizados"
+  class: git
+  difficulty: hard
+  commit: 4e70583
+  kind: doc
+  note: "derivado de 4e70583"
+  relevant_paths:
+    - "AGENTS.md"
+    - "README.md"
+    - "docs/07-context-engine.md"
+
+- query: "documenta os novos clientes MCP suportados Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
+  class: git
+  difficulty: hard
+  commit: 4fd2156
+  kind: doc
+  note: "derivado de 4fd2156"
+  relevant_paths:
+    - "install/README.md"
+
+- query: "corrige aspas no exemplo TOML do Codex CLI"
+  class: git
+  difficulty: hard
+  commit: a6be346
+  kind: doc
+  note: "derivado de a6be346"
+  relevant_paths:
+    - "install/README.md"
+
+- query: "registra MCP em mais clientes (Cursor, Windsurf, Gemini CLI, Codex CLI) (#3)"
+  class: git
+  difficulty: hard
+  commit: c857e58
+  kind: doc
+  note: "derivado de c857e58"
+  relevant_paths:
+    - "install/README.md"
+
+- query: "documenta clientes suportados e fixa contrato do Codex CLI no teste"
+  class: git
+  difficulty: hard
+  commit: 6d92e32
+  kind: mixed
+  note: "derivado de 6d92e32"
+  relevant_paths:
+    - "install/README.md"
+    - "tests/unit/test_documentacao.py"
+
+- query: "expõe source e tier extracted/inferred no get_entity"
+  class: git
+  difficulty: hard
+  commit: 65dceb7
+  kind: code
+  note: "derivado de 65dceb7"
+  relevant_paths:
+    - "src/ragx/graph/store.py"
+    - "src/ragx/graph/traversal.py"
+    - "src/ragx/mcp/server.py"
+    - "tests/unit/test_graph_confidence.py"
+
+- query: "ragx graph show mostra o tier extracted/inferred junto da confianca"
+  class: git
+  difficulty: hard
+  commit: 716f47b
+  kind: code
+  note: "derivado de 716f47b"
+  relevant_paths:
+    - "src/ragx/cli/commands/graph_cmd.py"
+
+- query: "documenta o modelo de confianca extracted/inferred do grafo"
+  class: git
+  difficulty: hard
+  commit: 9758f0d
+  kind: doc
+  note: "derivado de 9758f0d"
+  relevant_paths:
+    - "docs/06-grafo.md"
+    - "docs/09-mcp.md"
+
+- query: "para de descartar confidence/source/tier do get_entity"
+  class: git
+  difficulty: hard
+  commit: 8545118
+  kind: code
+  note: "derivado de 8545118"
+  relevant_paths:
+    - "vscode-plugin/src/rag/McpClient.ts"
+    - "vscode-plugin/src/rag/types.ts"
+    - "vscode-plugin/tests/unit/graph-confidence.test.ts"
+
+- query: "corrige achados da revisao final de confianca do grafo"
+  class: git
+  difficulty: hard
+  commit: ab5a3fb
+  kind: mixed
+  note: "derivado de ab5a3fb"
+  relevant_paths:
+    - "docs/06-grafo.md"
+    - "src/ragx/graph/store.py"
+    - "tests/e2e/test_cli_fase0.py"
+    - "tests/integration/test_mcp.py"
+    - "vscode-plugin/tests/unit/graph-confidence.test.ts"
+
+- query: "o gate bloqueava o código-fonte do próprio RAGX"
+  class: git
+  difficulty: hard
+  commit: 1106309
+  kind: mixed
+  note: "derivado de 1106309"
+  relevant_paths:
+    - "src/ragx/security/rules/filenames.yaml"
+    - "src/ragx/security/scanner.py"
+
+- query: "a suíte deixa de ler o $HOME da máquina"
+  class: git
+  difficulty: hard
+  commit: 942b036
+  kind: code
+  note: "derivado de 942b036"
+  relevant_paths:
+    - "tests/conftest.py"
+
+- query: "uma conexão sobe um processo, e a queda é percebida na hora"
+  class: git
+  difficulty: hard
+  commit: bf1bc75
+  kind: code
+  note: "derivado de bf1bc75"
+  relevant_paths:
+    - "vscode-plugin/src/extension.ts"
+    - "vscode-plugin/src/rag/McpClient.ts"
+    - "vscode-plugin/tests/unit/connection.test.ts"
+
+- query: "`ragx mcp install` registra o RAGX em seis clientes"
+  class: git
+  difficulty: hard
+  commit: 132cb36
+  kind: code
+  note: "derivado de 132cb36"
+  relevant_paths:
+    - "src/ragx/cli/commands/mcp_cmd.py"
+    - "src/ragx/clients/__init__.py"
+    - "src/ragx/clients/registry.py"
+    - "tests/integration/test_mcp_install.py"
+    - "tests/unit/test_documentacao.py"
+
+- query: "`ragx trial` estima a economia de contexto — como estimativa"
+  class: git
+  difficulty: hard
+  commit: d3fdca8
+  kind: code
+  note: "derivado de d3fdca8"
+  relevant_paths:
+    - "src/ragx/cli/commands/trial_cmd.py"
+    - "src/ragx/cli/main.py"
+    - "tests/integration/test_trial.py"
+
+- query: "LICENSE, SECURITY.md, AGENTS.md e a documentação que se verifica"
+  class: git
+  difficulty: hard
+  commit: 4e4f814
+  kind: mixed
+  note: "derivado de 4e4f814"
+  relevant_paths:
+    - "AGENTS.md"
+    - "README.md"
+    - "SECURITY.md"
+    - "docs/09-mcp.md"
+    - "docs/14-cli.md"
+    - "docs/22-vscode-e-desempenho.md"
+    - "docs/README.md"
+    - "tests/unit/test_documentacao_mcp.py"
+
+- query: "auditoria do RAG, com os números que faltavam"
+  class: git
+  difficulty: hard
+  commit: d63160f
+  kind: doc
+  note: "derivado de d63160f"
+  relevant_paths:
+    - "docs/23-auditoria-e-evolucao-do-rag.md"
+    - "docs/README.md"
+
+- query: "a troca de modelo deixa de ser hipótese"
+  class: git
+  difficulty: hard
+  commit: d13a286
+  kind: doc
+  note: "derivado de d13a286"
+  relevant_paths:
+    - "docs/23-auditoria-e-evolucao-do-rag.md"
+
+- query: "construir o modelo uma vez por processo, não por busca"
+  class: git
+  difficulty: hard
+  commit: 5ccb245
+  kind: mixed
+  note: "derivado de 5ccb245"
+  relevant_paths:
+    - "src/ragx/embeddings/__init__.py"
+    - "task/fase-14-evolucao-do-rag/RAGX-0097-cachear-o-embedder-por-processo.md"
+    - "tests/unit/test_embedder_cache.py"
+
+- query: "nDCG passava de 1,0 e premiava fragmentar o contexto"
+  class: git
+  difficulty: hard
+  commit: ddb934b
+  kind: mixed
+  note: "derivado de ddb934b"
+  relevant_paths:
+    - "src/ragx/cli/commands/eval_cmd.py"
+    - "src/ragx/search/evaluation.py"
+    - "task/fase-14-evolucao-do-rag/RAGX-0098-corrigir-a-metrica-ndcg.md"
+    - "task/fase-14-evolucao-do-rag/RAGX-0100-reportar-intervalo-de-confianca-no-ragx-eval.md"
+    - "tests/unit/test_metricas_avaliacao.py"
+
+- query: "pesar a camada do documento — conhecimento, trabalho ou teste"
+  class: git
+  difficulty: hard
+  commit: b1d8d49
+  kind: mixed
+  note: "derivado de b1d8d49"
+  relevant_paths:
+    - "src/ragx/config.py"
+    - "src/ragx/search/ranking.py"
+    - "src/ragx/search/service.py"
+    - "src/ragx/tiers.py"
+    - "task/fase-14-evolucao-do-rag/RAGX-0102-separar-conhecimento-de-registro-de-trabalho-no-indice.md"
+    - "tests/unit/test_tiers.py"
+
+- query: "spec do painel desktop (telemetria MCP + app Electron)"
+  class: git
+  difficulty: hard
+  commit: deda976
+  kind: doc
+  note: "derivado de deda976"
+  relevant_paths:
+    - "docs/superpowers/specs/2026-09-21-painel-desktop-design.md"
+
+- query: "planos de implementacao do painel desktop (backlog)"
+  class: git
+  difficulty: hard
+  commit: 442c2a1
+  kind: doc
+  note: "derivado de 442c2a1"
+  relevant_paths:
+    - "docs/superpowers/plans/2026-09-21-painel-desktop-electron.md"
+    - "docs/superpowers/plans/2026-09-21-telemetria-mcp.md"
+
+- query: "loga cada chamada MCP em .ragx/logs/mcp.jsonl Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
+  class: git
+  difficulty: hard
+  commit: dc0207e
+  kind: code
+  note: "derivado de dc0207e"
+  relevant_paths:
+    - "src/ragx/diagnostics.py"
+    - "src/ragx/mcp/server.py"
+    - "tests/integration/test_mcp_telemetry.py"
+
+- query: "registra o projeto no hub automaticamente"
+  class: git
+  difficulty: hard
+  commit: bb11df2
+  kind: code
+  note: "derivado de bb11df2"
+  relevant_paths:
+    - "src/ragx/cli/commands/init.py"
+    - "tests/e2e/test_cli_fase0.py"
+
+- query: "registro no hub e realmente best-effort, sem depender de --force no teste"
+  class: git
+  difficulty: hard
+  commit: c5b4a6d
+  kind: code
+  note: "derivado de c5b4a6d"
+  relevant_paths:
+    - "src/ragx/cli/commands/init.py"
+    - "tests/e2e/test_cli_fase0.py"
+
+- query: "telemetria MCP real e registro automatico no hub"
+  class: git
+  difficulty: hard
+  commit: b3e79d4
+  kind: doc
+  note: "derivado de b3e79d4"
+  relevant_paths:
+    - "docs/09-mcp.md"
+    - "docs/14-cli.md"
+    - "docs/17-multiprojeto-e-federacao.md"
+
+- query: "leitura de hub, knowledge.db e mcp.jsonl no processo principal (sql.js em vez de better-sqlite3 — ver ledger do controller)"
+  class: git
+  difficulty: hard
+  commit: 64dd361
+  kind: mixed
+  note: "derivado de 64dd361"
+  relevant_paths:
+    - "src/app/electron/data/__tests__/hub.test.ts"
+    - "src/app/electron/data/__tests__/telemetry.test.ts"
+    - "src/app/electron/data/hub.ts"
+    - "src/app/electron/data/telemetry.ts"
+    - "src/app/electron/data/types.ts"
+    - "src/app/package.json"
+
+- query: "expoe snapshot de projetos via IPC, com polling a cada 5s"
+  class: git
+  difficulty: hard
+  commit: bc742f4
+  kind: code
+  note: "derivado de bc742f4"
+  relevant_paths:
+    - "src/app/electron/main.ts"
+    - "src/app/electron/preload.ts"
+    - "src/app/src/types/ragx-bridge.d.ts"
+
+- query: "UI de lista de projetos + painel de detalhe"
+  class: git
+  difficulty: hard
+  commit: 23f39f0
+  kind: mixed
+  note: "derivado de 23f39f0"
+  relevant_paths:
+    - "src/app/package.json"
+    - "src/app/src/App.tsx"
+    - "src/app/src/hooks/__tests__/useSnapshot.test.ts"
+    - "src/app/src/hooks/useSnapshot.ts"
+    - "src/app/src/test/setup.ts"
+    - "src/app/vite.config.ts"
+
+- query: "separa vitest.config.ts para destravar npm run build"
+  class: git
+  difficulty: hard
+  commit: 9f263c2
+  kind: code
+  note: "derivado de 9f263c2"
+  relevant_paths:
+    - "src/app/src/hooks/__tests__/useSnapshot.test.ts"
+    - "src/app/vite.config.ts"
+    - "src/app/vitest.config.ts"
+
+- query: "economia estimada e achados de seguranca sob demanda"
+  class: git
+  difficulty: hard
+  commit: eac14f5
+  kind: code
+  note: "derivado de eac14f5"
+  relevant_paths:
+    - "src/app/electron/data/__tests__/run-ragx-command.test.ts"
+    - "src/app/electron/data/run-ragx-command.ts"
+    - "src/app/electron/main.ts"
+    - "src/app/electron/preload.ts"
+    - "src/app/src/hooks/__tests__/useSnapshot.test.ts"
+    - "src/app/src/types/ragx-bridge.d.ts"
+
+- query: "empacota o painel como instalador .exe (electron-builder)"
+  class: git
+  difficulty: hard
+  commit: 1dd38e3
+  kind: doc
+  note: "derivado de 1dd38e3"
+  relevant_paths:
+    - "src/app/electron-builder.yml"
+    - "src/app/tsconfig.electron.json"
+
+- query: "scan/trial resolvem com JSON mesmo em saida nao-zero, isola falhas por projeto, corrige vazamento de estado entre projetos"
+  class: git
+  difficulty: hard
+  commit: f0a9189
+  kind: mixed
+  note: "derivado de f0a9189"
+  relevant_paths:
+    - "src/app/README.md"
+    - "src/app/electron/data/__tests__/run-ragx-command.test.ts"
+    - "src/app/electron/data/run-ragx-command.ts"
+    - "src/app/electron/data/telemetry.ts"
+    - "src/app/electron/main.ts"
+    - "src/app/package.json"
+    - "src/app/src/App.tsx"
+    - "src/app/src/hooks/useSnapshot.ts"
+
+- query: "spec do painel v2 e do indice que acompanha a branch"
+  class: git
+  difficulty: hard
+  commit: 6c5b90e
+  kind: doc
+  note: "derivado de 6c5b90e"
+  relevant_paths:
+    - "docs/superpowers/specs/2026-09-23-painel-v2-indice-por-branch-design.md"
+
+- query: "spec do painel v2 inclui travessoes visiveis na Parte B"
+  class: git
+  difficulty: hard
+  commit: 0d04df1
+  kind: doc
+  note: "derivado de 0d04df1"
+  relevant_paths:
+    - "docs/superpowers/specs/2026-09-23-painel-v2-indice-por-branch-design.md"
+
+- query: "refina a UI do painel (lista comparativa, aviso de embeddings, achados de seguranca)"
+  class: git
+  difficulty: hard
+  commit: cab12b7
+  kind: code
+  note: "derivado de cab12b7"
+  relevant_paths:
+    - "src/app/electron/main.ts"
+    - "src/app/src/App.tsx"
+    - "src/app/src/components/EstimatePanel.tsx"
+    - "src/app/src/components/SecurityPanel.tsx"
+    - "src/app/src/format.ts"
+    - "src/app/src/onDemandCache.ts"
+
+- query: "plano da Parte A (indice que acompanha a branch)"
+  class: git
+  difficulty: hard
+  commit: eaff17f
+  kind: doc
+  note: "derivado de eaff17f"
+  relevant_paths:
+    - "docs/superpowers/plans/2026-09-23-indice-acompanha-branch.md"
+
+- query: "registra branch, commit e origem de cada indexacao"
+  class: git
+  difficulty: hard
+  commit: f0ce6ee
+  kind: code
+  note: "derivado de f0ce6ee"
+  relevant_paths:
+    - "src/ragx/gitinfo.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "src/ragx/storage/migrations/0006_run_provenance.sql"
+    - "src/ragx/storage/repositories.py"
+    - "tests/integration/test_provenance.py"
+    - "tests/unit/test_gitinfo.py"
+
+- query: "trava entre processos com reexecucao do pedido pendente"
+  class: git
+  difficulty: hard
+  commit: 64327b7
+  kind: code
+  note: "derivado de 64327b7"
+  relevant_paths:
+    - "src/ragx/core/errors.py"
+    - "src/ragx/indexing/lock.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "tests/integration/test_index_lock_pipeline.py"
+    - "tests/unit/test_index_lock.py"
+
+- query: "corrige corridas na trava e reexecucao de pendencia orfa"
+  class: git
+  difficulty: hard
+  commit: f8e1501
+  kind: mixed
+  note: "derivado de f8e1501"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "src/ragx/core/errors.py"
+    - "src/ragx/indexing/lock.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "tests/integration/test_index_lock_pipeline.py"
+    - "tests/unit/test_index_lock.py"
+
+- query: "nao engole Ctrl+C na redrenagem e cobre falhas de SO na trava"
+  class: git
+  difficulty: hard
+  commit: 78d6287
+  kind: code
+  note: "derivado de 78d6287"
+  relevant_paths:
+    - "src/ragx/indexing/lock.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "tests/integration/test_index_lock_pipeline.py"
+    - "tests/unit/test_index_lock.py"
+
+- query: "publica o estado do indice em .ragx/status.json"
+  class: git
+  difficulty: hard
+  commit: 0bdac21
+  kind: code
+  note: "derivado de 0bdac21"
+  relevant_paths:
+    - "src/ragx/indexing/pipeline.py"
+    - "src/ragx/indexing/status_file.py"
+    - "tests/integration/test_status_file.py"
+
+- query: "diz se o indice esta defasado e por que"
+  class: git
+  difficulty: hard
+  commit: 543c7ce
+  kind: code
+  note: "derivado de 543c7ce"
+  relevant_paths:
+    - "src/ragx/cli/commands/index_cmd.py"
+    - "src/ragx/gitinfo.py"
+    - "src/ragx/indexing/freshness.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "tests/integration/test_freshness.py"
+
+- query: "fecha injecao de shell via barra invertida e corrige bloco/state"
+  class: git
+  difficulty: hard
+  commit: 4f96ad4
+  kind: code
+  note: "derivado de 4f96ad4"
+  relevant_paths:
+    - "src/ragx/githooks.py"
+    - "tests/security/test_architecture.py"
+    - "tests/unit/test_githooks.py"
+
+- query: "--source e --progress; watcher, MCP e sync registram a origem"
+  class: git
+  difficulty: hard
+  commit: 06b9ff7
+  kind: mixed
+  note: "derivado de 06b9ff7"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "src/ragx/cli/commands/index_cmd.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "src/ragx/mcp/operations.py"
+    - "src/ragx/sync/service.py"
+    - "src/ragx/watch/monitor.py"
+    - "tests/e2e/test_cli_index_progress.py"
+
+- query: "indice por branch, hooks, trava e status.json"
+  class: git
+  difficulty: hard
+  commit: a9a0478
+  kind: doc
+  note: "derivado de a9a0478"
+  relevant_paths:
+    - "docs/03-modelo-de-dados.md"
+    - "docs/12-git-sync.md"
+    - "docs/14-cli.md"
+
+- query: "bumpa SCHEMA_VERSION para 6 e trava o proximo drift"
+  class: git
+  difficulty: hard
+  commit: 5f11a61
+  kind: code
+  note: "derivado de 5f11a61"
+  relevant_paths:
+    - "src/ragx/core/ids.py"
+    - "tests/unit/test_ids.py"
+
+- query: "freshness ignora corridas embed-only ou com erro"
+  class: git
+  difficulty: hard
+  commit: bb43bbd
+  kind: code
+  note: "derivado de bb43bbd"
+  relevant_paths:
+    - "src/ragx/indexing/pipeline.py"
+    - "src/ragx/indexing/status_file.py"
+    - "tests/integration/test_freshness.py"
+
+- query: "reindex/sync devolvem busy estruturado, nao internal"
+  class: git
+  difficulty: hard
+  commit: 2cc4a0e
+  kind: code
+  note: "derivado de 2cc4a0e"
+  relevant_paths:
+    - "src/ragx/mcp/operations.py"
+    - "tests/integration/test_mcp.py"
+
+- query: "chamadas de background nao brigam mais pelo .git/index"
+  class: git
+  difficulty: hard
+  commit: 2ad8592
+  kind: code
+  note: "derivado de 2ad8592"
+  relevant_paths:
+    - "src/ragx/gitinfo.py"
+    - "tests/unit/test_gitinfo.py"
+
+- query: "indexador do hook usa sempre o interpretador atual"
+  class: git
+  difficulty: hard
+  commit: defb6e9
+  kind: code
+  note: "derivado de defb6e9"
+  relevant_paths:
+    - "src/ragx/githooks.py"
+    - "tests/unit/test_githooks.py"
+
+- query: "sync ocupado avisa que so a reindexacao e reagendada"
+  class: git
+  difficulty: hard
+  commit: 26fbdfd
+  kind: code
+  note: "derivado de 26fbdfd"
+  relevant_paths:
+    - "src/ragx/cli/commands/sync_cmd.py"
+    - "tests/e2e/test_cli_sync_busy.py"
+
+- query: "plano da Parte B (painel v2)"
+  class: git
+  difficulty: hard
+  commit: 461b9b5
+  kind: doc
+  note: "derivado de 461b9b5"
+  relevant_paths:
+    - "docs/superpowers/plans/2026-09-23-painel-v2.md"
+
+- query: "logger do teste de hook precisa do bit de execucao no Linux e macOS"
+  class: git
+  difficulty: hard
+  commit: e954c5e
+  kind: code
+  note: "derivado de e954c5e"
+  relevant_paths:
+    - "tests/unit/test_githooks.py"
+
+- query: "restaura ragx.clients perdido no merge b11e301"
+  class: git
+  difficulty: hard
+  commit: 1240380
+  kind: code
+  note: "derivado de 1240380"
+  relevant_paths:
+    - "src/ragx/clients/__init__.py"
+    - "src/ragx/clients/registry.py"
+    - "tests/integration/test_mcp_install.py"
+
+- query: "execFileText nunca rejeita e resolveRagx so aceita .exe no Windows"
+  class: git
+  difficulty: hard
+  commit: 51d42d3
+  kind: code
+  note: "derivado de 51d42d3"
+  relevant_paths:
+    - "src/app/electron/system/__tests__/exec.test.ts"
+    - "src/app/electron/system/__tests__/ragx-exe.test.ts"
+    - "src/app/electron/system/exec.ts"
+    - "src/app/electron/system/ragx-exe.ts"
+
+- query: "checagens de conexao do RAGX CLI, Claude Code e Ollama"
+  class: git
+  difficulty: hard
+  commit: 533ab5b
+  kind: code
+  note: "derivado de 533ab5b"
+  relevant_paths:
+    - "src/app/electron/connections/__tests__/checks.test.ts"
+    - "src/app/electron/connections/checks.ts"
+    - "src/app/src/types/ragx-bridge.d.ts"
+
+- query: "checagens de conexao nunca rejeitam com snapshot malformado"
+  class: git
+  difficulty: hard
+  commit: 9ad8355
+  kind: code
+  note: "derivado de 9ad8355"
+  relevant_paths:
+    - "src/app/electron/connections/__tests__/checks.test.ts"
+    - "src/app/electron/connections/checks.ts"
+
+- query: "fila serial de tarefas com catalogo fechado, progresso e previsao"
+  class: git
+  difficulty: hard
+  commit: f2634cb
+  kind: code
+  note: "derivado de f2634cb"
+  relevant_paths:
+    - "src/app/electron/jobs/__tests__/catalog.test.ts"
+    - "src/app/electron/jobs/__tests__/queue.test.ts"
+    - "src/app/electron/jobs/catalog.ts"
+    - "src/app/electron/jobs/queue.ts"
+    - "src/app/src/state.ts"
+    - "src/app/src/types/ragx-bridge.d.ts"
+
+- query: "dedupe da fila usa dedupeKey, nao so kind+projectId"
+  class: git
+  difficulty: hard
+  commit: f856936
+  kind: code
+  note: "derivado de f856936"
+  relevant_paths:
+    - "src/app/electron/jobs/__tests__/catalog.test.ts"
+    - "src/app/electron/jobs/__tests__/queue.test.ts"
+    - "src/app/electron/jobs/catalog.ts"
+    - "src/app/electron/jobs/queue.ts"
+
+- query: "selo Indexando so para tarefas de indexacao e cobertura do detalhe"
+  class: git
+  difficulty: hard
+  commit: ad4439a
+  kind: code
+  note: "derivado de ad4439a"
+  relevant_paths:
+    - "src/app/src/__tests__/state.test.ts"
+    - "src/app/src/components/project/__tests__/ConfirmButton.test.tsx"
+    - "src/app/src/pages/__tests__/ProjectPage.test.tsx"
+    - "src/app/src/state.ts"
+
+- query: "painel v2 no README e no CHANGELOG"
+  class: git
+  difficulty: hard
+  commit: c16eb36
+  kind: doc
+  note: "derivado de c16eb36"
+  relevant_paths:
+    - "src/app/README.md"
+
+- query: "zera scroll ao trocar de rota e empilha fatos do card de conexao"
+  class: git
+  difficulty: hard
+  commit: 5f5db22
+  kind: code
+  note: "derivado de 5f5db22"
+  relevant_paths:
+    - "src/app/src/App.tsx"
+    - "src/app/src/__tests__/App.test.tsx"
+
+- query: "freshness nao vira fresh sem proveniencia de git pre-0006"
+  class: git
+  difficulty: hard
+  commit: 01f2b0c
+  kind: mixed
+  note: "derivado de 01f2b0c"
+  relevant_paths:
+    - "docs/12-git-sync.md"
+    - "src/ragx/indexing/freshness.py"
+    - "tests/integration/test_freshness.py"
+
+- query: "registro MCP preserva as permissoes do arquivo de configuracao"
+  class: git
+  difficulty: hard
+  commit: 80ce617
+  kind: code
+  note: "derivado de 80ce617"
+  relevant_paths:
+    - "src/ragx/clients/registry.py"
+    - "tests/integration/test_mcp_install.py"
+
+- query: "card nao fica preso em Indexando quando o dono da trava morreu"
+  class: git
+  difficulty: hard
+  commit: c8cfa72
+  kind: code
+  note: "derivado de c8cfa72"
+  relevant_paths:
+    - "src/app/electron/data/__tests__/snapshot.test.ts"
+    - "src/app/electron/data/snapshot.ts"
+
+- query: "fase 15 do painel desktop no backlog (feedback de fila, Ollama docker/local, grafo 3D)"
+  class: git
+  difficulty: hard
+  commit: 34436e2
+  kind: doc
+  note: "derivado de 34436e2"
+  relevant_paths:
+    - "task/README.md"
+    - "task/fase-15-painel-desktop/RAGX-0115-feedback-de-fila-nas-acoes-do-card.md"
+    - "task/fase-15-painel-desktop/RAGX-0116-ollama-docker-ou-local-com-configuracao-automatica.md"
+    - "task/fase-15-painel-desktop/RAGX-0117-grafo-3d-por-projeto-no-painel.md"
+    - "task/fase-15-painel-desktop/README.md"
+
+- query: "spec e plano do Ollama docker ou local"
+  class: git
+  difficulty: hard
+  commit: 9d5535d
+  kind: doc
+  note: "derivado de 9d5535d"
+  relevant_paths:
+    - "docs/superpowers/plans/2026-09-24-ollama-docker-ou-local.md"
+    - "docs/superpowers/specs/2026-09-24-ollama-docker-ou-local-design.md"
+
+- query: "detecta como o Ollama roda (docker, local ou nada) e recomenda o modo"
+  class: git
+  difficulty: hard
+  commit: 8811e23
+  kind: code
+  note: "derivado de 8811e23"
+  relevant_paths:
+    - "src/app/electron/connections/checks.ts"
+    - "src/app/electron/ollama/__tests__/environment.test.ts"
+    - "src/app/electron/ollama/__tests__/paths.test.ts"
+    - "src/app/electron/ollama/environment.ts"
+    - "src/app/electron/ollama/paths.ts"
+    - "src/app/electron/system/http.ts"
+    - "src/app/src/types/ragx-bridge.d.ts"
+
+- query: "benchmark de embeddings do Ollama (velocidade e GPU ou CPU)"
+  class: git
+  difficulty: hard
+  commit: 7783933
+  kind: code
+  note: "derivado de 7783933"
+  relevant_paths:
+    - "src/app/electron/ollama/__tests__/benchmark.test.ts"
+    - "src/app/electron/ollama/benchmark.ts"
+    - "src/app/electron/system/http.ts"
+
+- query: "catalogo de tarefas para trocar, parar e iniciar o Ollama (docker ou local)"
+  class: git
+  difficulty: hard
+  commit: 579379e
+  kind: code
+  note: "derivado de 579379e"
+  relevant_paths:
+    - "src/app/electron/__tests__/ipc.test.ts"
+    - "src/app/electron/ipc.ts"
+    - "src/app/electron/jobs/__tests__/ollama-catalog.test.ts"
+    - "src/app/electron/jobs/catalog.ts"
+    - "src/app/src/types/ragx-bridge.d.ts"
+
+- query: "ollama-start respeita o modo preferido e falha de leitura do ambiente vira recusa"
+  class: git
+  difficulty: hard
+  commit: e763c9c
+  kind: code
+  note: "derivado de e763c9c"
+  relevant_paths:
+    - "src/app/electron/jobs/__tests__/ollama-catalog.test.ts"
+    - "src/app/electron/jobs/catalog.ts"
+
+- query: "fila executa passos condicionais, destacados e de espera pela API"
+  class: git
+  difficulty: hard
+  commit: 083fd5c
+  kind: code
+  note: "derivado de 083fd5c"
+  relevant_paths:
+    - "src/app/electron/jobs/__tests__/queue.test.ts"
+    - "src/app/electron/jobs/queue.ts"
+    - "src/app/electron/ollama/__tests__/paths.test.ts"
+    - "src/app/electron/ollama/paths.ts"
+
+- query: "ambiente do Ollama e conexoes refletem o estado depois da tarefa"
+  class: git
+  difficulty: hard
+  commit: 2cbffee
+  kind: code
+  note: "derivado de 2cbffee"
+  relevant_paths:
+    - "src/app/electron/__tests__/ipc.test.ts"
+    - "src/app/electron/ipc.ts"
+    - "src/app/electron/main.ts"
+    - "src/app/electron/ollama/__tests__/wiring.test.ts"
+    - "src/app/electron/ollama/wiring.ts"
+    - "src/app/electron/system/__tests__/coalesced-run.test.ts"
+    - "src/app/electron/system/coalesced-run.ts"
+
+- query: "card de Ollama mostra modo, processador e velocidade e sugere a troca certa"
+  class: git
+  difficulty: hard
+  commit: 8ef154d
+  kind: code
+  note: "derivado de 8ef154d"
+  relevant_paths:
+    - "src/app/electron/connections/__tests__/checks-ollama-env.test.ts"
+    - "src/app/electron/connections/checks.ts"
+    - "src/app/electron/main.ts"
+    - "src/app/src/jobs.ts"
+    - "src/app/src/types/ragx-bridge.d.ts"
+
+- query: "acoes de trocar, parar e medir o Ollama no card de conexoes"
+  class: git
+  difficulty: hard
+  commit: db62dc3
+  kind: code
+  note: "derivado de db62dc3"
+  relevant_paths:
+    - "src/app/src/__tests__/state.test.ts"
+    - "src/app/src/components/connections/ConnectionCard.tsx"
+    - "src/app/src/jobs.ts"
+    - "src/app/src/pages/ConnectionsPage.tsx"
+    - "src/app/src/pages/__tests__/ConnectionsPage.test.tsx"
+    - "src/app/src/pages/__tests__/Onboarding.test.tsx"
+    - "src/app/src/state.ts"
+
+- query: "card de projeto confirma que a acao entrou na fila e mostra falha da tarefa"
+  class: git
+  difficulty: hard
+  commit: 1f47b8c
+  kind: code
+  note: "derivado de 1f47b8c"
+  relevant_paths:
+    - "src/app/src/components/onboarding/howItWorks.ts"
+    - "src/app/src/components/project/ProjectCard.tsx"
+    - "src/app/src/pages/ProjectsPage.tsx"
+    - "src/app/src/pages/__tests__/Onboarding.test.tsx"
+    - "src/app/src/pages/__tests__/ProjectsPage.test.tsx"
+    - "src/app/src/state.ts"
+
+- query: "informa se o Ollama usa GPU ou CPU; docs e backlog do Ollama docker/local"
+  class: git
+  difficulty: hard
+  commit: 04534af
+  kind: mixed
+  note: "derivado de 04534af"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "src/app/README.md"
+    - "src/ragx/cli/commands/doctor.py"
+    - "task/fase-15-painel-desktop/RAGX-0115-feedback-de-fila-nas-acoes-do-card.md"
+    - "task/fase-15-painel-desktop/RAGX-0116-ollama-docker-ou-local-com-configuracao-automatica.md"
+    - "task/fase-15-painel-desktop/README.md"
+    - "tests/unit/test_doctor_ollama_processador.py"
+
+- query: "troca do Ollama nunca deixa a maquina sem nenhum e parar o local so mata o da pasta detectada"
+  class: git
+  difficulty: hard
+  commit: e558b45
+  kind: code
+  note: "derivado de e558b45"
+  relevant_paths:
+    - "src/app/electron/jobs/__tests__/ollama-catalog.test.ts"
+    - "src/app/electron/jobs/__tests__/queue.test.ts"
+    - "src/app/electron/jobs/catalog.ts"
+    - "src/app/electron/jobs/queue.ts"
+    - "src/app/electron/ollama/__tests__/choose-start.test.ts"
+    - "src/app/electron/ollama/choose-start.ts"
+
+- query: "deteccao do Ollama ignora o processo do container no Linux e consulta a placa de video uma vez so"
+  class: git
+  difficulty: hard
+  commit: 73deee2
+  kind: code
+  note: "derivado de 73deee2"
+  relevant_paths:
+    - "src/app/electron/ollama/__tests__/environment.test.ts"
+    - "src/app/electron/ollama/environment.ts"
+
+- query: "botao Iniciar do card do Ollama diz o que a tarefa liga"
+  class: git
+  difficulty: hard
+  commit: 45863ee
+  kind: code
+  note: "derivado de 45863ee"
+  relevant_paths:
+    - "src/app/electron/connections/__tests__/checks-ollama-env.test.ts"
+    - "src/app/electron/connections/checks.ts"
+
+- query: "card do Ollama trava todas as acoes durante a troca de modo"
+  class: git
+  difficulty: hard
+  commit: 7be3afe
+  kind: code
+  note: "derivado de 7be3afe"
+  relevant_paths:
+    - "src/app/src/components/connections/ConnectionCard.tsx"
+    - "src/app/src/pages/__tests__/ConnectionsPage.test.tsx"
+
+- query: "troca do Ollama sem janela sem Ollama, Iniciar, parada do local e RAGX-0116 revisada"
+  class: git
+  difficulty: hard
+  commit: c415513
+  kind: doc
+  note: "derivado de c415513"
+  relevant_paths:
+    - "src/app/README.md"
+    - "task/fase-15-painel-desktop/RAGX-0116-ollama-docker-ou-local-com-configuracao-automatica.md"
+
+- query: "parada do Ollama local detecta um processo sobrevivente e encerra a bandeja primeiro"
+  class: git
+  difficulty: hard
+  commit: 768b480
+  kind: code
+  note: "derivado de 768b480"
+  relevant_paths:
+    - "src/app/electron/jobs/__tests__/ollama-catalog.test.ts"
+    - "src/app/electron/jobs/catalog.ts"
+
+- query: "ragx mcp uninstall remove o registro do MCP dos clientes"
+  class: git
+  difficulty: hard
+  commit: 2576fcd
+  kind: mixed
+  note: "derivado de 2576fcd"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "src/ragx/cli/commands/mcp_cmd.py"
+    - "src/ragx/clients/__init__.py"
+    - "src/ragx/clients/registry.py"
+    - "tests/unit/test_mcp_uninstall.py"
+
+- query: "log do bootstrap fica em %APPDATA%\\app, e não em RAGX Painel"
+  class: git
+  difficulty: hard
+  commit: 93729d6
+  kind: doc
+  note: "derivado de 93729d6"
+  relevant_paths:
+    - "docs/superpowers/plans/2026-09-23-instalador-completo.md"
+    - "docs/superpowers/specs/2026-09-23-instalador-completo-design.md"
+    - "src/app/README.md"
+
+- query: "reinstalar a CLI libera o ambiente antes e não deixa o ragx quebrado"
+  class: git
+  difficulty: hard
+  commit: 45f27b9
+  kind: code
+  note: "derivado de 45f27b9"
+  relevant_paths:
+    - "src/app/electron/jobs/__tests__/catalog.test.ts"
+    - "src/app/electron/jobs/catalog.ts"
+
+- query: "Feat/logo ragx (#6)"
+  class: git
+  difficulty: hard
+  commit: 2d36f1b
+  kind: doc
+  note: "derivado de 2d36f1b"
+  relevant_paths:
+    - "task/README.md"
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0119-ci-do-painel-em-tres-sistemas.md"
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0120-release-publica-o-instalador-do-painel.md"
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0121-bundle-e-bootstrap-multiplataforma.md"
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0122-painel-linux.md"
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0123-painel-macos.md"
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0124-assinatura-de-codigo.md"
+    - "task/fase-17-distribuicao-multiplataforma/README.md"
+
+- query: "banco ocupado não vira mais \"Python sem FTS5\""
+  class: git
+  difficulty: hard
+  commit: 486ef17
+  kind: code
+  note: "derivado de 486ef17"
+  relevant_paths:
+    - "src/ragx/storage/db.py"
+    - "tests/unit/test_db_fts5_probe.py"
+
+- query: "index de monorepo pnpm não trava mais por 20 minutos"
+  class: git
+  difficulty: hard
+  commit: c857011
+  kind: code
+  note: "derivado de c857011"
+  relevant_paths:
+    - "src/ragx/security/ignore_engine.py"
+    - "src/ragx/walk.py"
+    - "tests/unit/test_ignore_engine.py"
+
+- query: "RAGX em todos os perfis do Claude Code e dica de início de sessão"
+  class: git
+  difficulty: hard
+  commit: 1f68d40
+  kind: mixed
+  note: "derivado de 1f68d40"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "src/ragx/cli/commands/claude_cmd.py"
+    - "src/ragx/clients/claude_hint.py"
+    - "src/ragx/clients/registry.py"
+    - "tests/conftest.py"
+    - "tests/unit/test_claude_profiles_hint.py"
+    - "tests/unit/test_claude_toggle.py"
+
+- query: "a release publica o instalador do painel com a versão certa"
+  class: git
+  difficulty: hard
+  commit: e0a7bbd
+  kind: mixed
+  note: "derivado de e0a7bbd"
+  relevant_paths:
+    - "AGENTS.md"
+    - "install/README.md"
+    - "scripts/versao.py"
+    - "src/app/README.md"
+    - "src/app/package.json"
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0120-release-publica-o-instalador-do-painel.md"
+    - "task/fase-17-distribuicao-multiplataforma/README.md"
+    - "tests/unit/test_script_versao.py"
+
+- query: "versao.py troca só a linha da versão no package.json"
+  class: git
+  difficulty: hard
+  commit: 1336c08
+  kind: code
+  note: "derivado de 1336c08"
+  relevant_paths:
+    - "scripts/versao.py"
+    - "tests/unit/test_script_versao.py"
+
+- query: "RAGX-0120 verificada na release v1.0.0-beta.4"
+  class: git
+  difficulty: hard
+  commit: b3f5b5e
+  kind: doc
+  note: "derivado de b3f5b5e"
+  relevant_paths:
+    - "task/fase-17-distribuicao-multiplataforma/RAGX-0120-release-publica-o-instalador-do-painel.md"
+
+- query: "detalhe do projeto em abas"
+  class: git
+  difficulty: hard
+  commit: 87961fd
+  kind: code
+  note: "derivado de 87961fd"
+  relevant_paths:
+    - "src/app/src/components/shell/Tabs.tsx"
+    - "src/app/src/pages/ProjectPage.tsx"
+    - "src/app/src/pages/__tests__/ProjectPage.test.tsx"
+    - "src/app/src/projectTab.ts"
+
+- query: "fase 18, atividade ao vivo, lista de projetos e perfis do Claude"
+  class: git
+  difficulty: hard
+  commit: 104296a
+  kind: doc
+  note: "derivado de 104296a"
+  relevant_paths:
+    - "task/README.md"
+    - "task/fase-18-painel-atividade-e-perfis/RAGX-0125-registro-de-atividade.md"
+    - "task/fase-18-painel-atividade-e-perfis/RAGX-0126-tela-de-atividade-ao-vivo.md"
+    - "task/fase-18-painel-atividade-e-perfis/RAGX-0127-lista-de-projetos.md"
+    - "task/fase-18-painel-atividade-e-perfis/RAGX-0128-perfis-do-claude-no-painel.md"
+    - "task/fase-18-painel-atividade-e-perfis/README.md"
+
+- query: "tela Conexões redesenhada, com os perfis do Claude dentro da faixa dele"
+  class: git
+  difficulty: hard
+  commit: 5680432
+  kind: mixed
+  note: "derivado de 5680432"
+  relevant_paths:
+    - "src/app/README.md"
+    - "src/app/electron/connections/__tests__/checks-ollama-env.test.ts"
+    - "src/app/electron/connections/checks.ts"
+    - "src/app/src/components/connections/ClaudeProfiles.tsx"
+    - "src/app/src/components/connections/ConnectionCard.tsx"
+    - "src/app/src/components/connections/__tests__/ClaudeProfiles.test.tsx"
+    - "src/app/src/pages/ConnectionsPage.tsx"
+    - "src/app/src/pages/__tests__/ConnectionsPage.test.tsx"
+
+- query: "lista de projetos com resumo, números, ordenação e visão em lista"
+  class: git
+  difficulty: hard
+  commit: e77fe96
+  kind: mixed
+  note: "derivado de e77fe96"
+  relevant_paths:
+    - "src/app/README.md"
+    - "src/app/src/components/project/ProjectBits.tsx"
+    - "src/app/src/components/project/ProjectCard.tsx"
+    - "src/app/src/pages/ProjectsPage.tsx"
+    - "src/app/src/pages/__tests__/ProjectsPage.test.tsx"
+    - "src/app/src/projectMetrics.ts"
+    - "task/fase-18-painel-atividade-e-perfis/RAGX-0127-lista-de-projetos.md"
+    - "task/fase-18-painel-atividade-e-perfis/README.md"
+
+- query: "nome do perfil do Claude aceita \"\\\" e \"/\" em qualquer sistema"
+  class: git
+  difficulty: hard
+  commit: 530820d
+  kind: code
+  note: "derivado de 530820d"
+  relevant_paths:
+    - "src/ragx/clients/registry.py"
+
+- query: "publica só o instalador do painel e o guia de uso"
+  class: git
+  difficulty: hard
+  commit: 727cc29
+  kind: doc
+  note: "derivado de 727cc29"
+  relevant_paths:
+    - "README.md"
+    - "docs/GUIA-DE-USO.md"
+    - "install/README.md"
+
+- query: "0140 depende também da 0129 (IgnoreEngine varre a árvore)"
+  class: git
+  difficulty: hard
+  commit: e80f550
+  kind: doc
+  note: "derivado de e80f550"
+  relevant_paths:
+    - "task/ROTEIRO-V2.md"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0140-index-paths-reindexar-so-os-arquivos-tocados.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+
+- query: "poda de pasta ignorada com negacao em gitignore aninhado"
+  class: git
+  difficulty: hard
+  commit: 6f3e04f
+  kind: mixed
+  note: "derivado de 6f3e04f"
+  relevant_paths:
+    - "src/ragx/security/ignore_engine.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0129-poda-de-diretorios-com-negacao-em-gitignore-aninhado.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+    - "tests/unit/test_ignore_engine.py"
+
+- query: "arquivo travado no save nao some do indice"
+  class: git
+  difficulty: hard
+  commit: 9ade69f
+  kind: mixed
+  note: "derivado de 9ade69f"
+  relevant_paths:
+    - "docs/04-indexacao.md"
+    - "src/ragx/cli/commands/index_cmd.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "src/ragx/walk.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0133-arquivo-travado-no-momento-do-save-nao-some-do-indice.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+
+- query: "load_index vetorizado e cacheado por geracao vec_gen"
+  class: git
+  difficulty: hard
+  commit: 2392572
+  kind: mixed
+  note: "derivado de 2392572"
+  relevant_paths:
+    - "docs/03-modelo-de-dados.md"
+    - "docs/05-busca.md"
+    - "src/ragx/core/ids.py"
+    - "src/ragx/storage/migrations/0007_vec_gen.sql"
+    - "src/ragx/storage/vectors.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0134-load-index-vetorizado-e-cacheado-por-geracao-vec-gen.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+    - "tests/unit/test_vector_index.py"
+
+- query: "cache do build_context com chave completa e versao confiavel"
+  class: git
+  difficulty: hard
+  commit: 0a35fab
+  kind: mixed
+  note: "derivado de 0a35fab"
+  relevant_paths:
+    - "docs/07-context-engine.md"
+    - "src/ragx/context/engine.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0135-cache-do-build-context-com-chave-completa-e-versao-confiavel.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+    - "tests/integration/test_context.py"
+    - "tests/unit/test_context_units.py"
+
+- query: "scope honrado ou recusado, nunca ignorado em silencio"
+  class: git
+  difficulty: hard
+  commit: 03e709a
+  kind: mixed
+  note: "derivado de 03e709a"
+  relevant_paths:
+    - "docs/09-mcp.md"
+    - "docs/17-multiprojeto-e-federacao.md"
+    - "src/ragx/federation/context.py"
+    - "src/ragx/federation/search.py"
+    - "src/ragx/mcp/server.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0137-scope-do-mcp-honrado-ou-recusado-nunca-ignorado.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+
+- query: "replace_for_document por diff de chunk; vetores e grafo sobrevivem a uma edicao"
+  class: git
+  difficulty: hard
+  commit: b38ab3c
+  kind: mixed
+  note: "derivado de b38ab3c"
+  relevant_paths:
+    - "docs/03-modelo-de-dados.md"
+    - "docs/04-indexacao.md"
+    - "src/ragx/cli/commands/index_cmd.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "src/ragx/storage/repositories.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0138-replace-for-document-por-diff-de-chunk-embeddings-e-grafo-sobrevivem-a-uma-edicao.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+    - "tests/integration/test_replace_for_document.py"
+
+- query: "hash das regras do veredito guardado nao fica congelado no processo"
+  class: git
+  difficulty: hard
+  commit: fd52918
+  kind: code
+  note: "derivado de fd52918"
+  relevant_paths:
+    - "src/ragx/indexing/verdicts.py"
+    - "tests/unit/test_verdict_context.py"
+
+- query: "descricoes para Tool Search, instructions com teto de 2 KB e lista estavel"
+  class: git
+  difficulty: hard
+  commit: 2af0ea7
+  kind: mixed
+  note: "derivado de 2af0ea7"
+  relevant_paths:
+    - "docs/09-mcp.md"
+    - "src/ragx/mcp/playbook.py"
+    - "src/ragx/mcp/server.py"
+    - "task/fase-20-economia-de-tokens/RAGX-0158-instructions-ate-2-kb-descricoes-para-tool-search-e-lista-estavel.md"
+    - "task/fase-20-economia-de-tokens/README.md"
+    - "tests/fixtures/mcp_tools_full.json"
+    - "tests/fixtures/mcp_tools_slim.json"
+    - "tests/integration/test_mcp_estavel.py"
+
+- query: "dica de SessionStart enxuta (~140 tokens) e uma vez por sessao"
+  class: git
+  difficulty: hard
+  commit: 462acb8
+  kind: mixed
+  note: "derivado de 462acb8"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "src/ragx/cli/commands/claude_cmd.py"
+    - "src/ragx/hooklight.py"
+    - "task/fase-20-economia-de-tokens/RAGX-0164-hint-de-sessionstart-enxuto-e-sem-repetir-em-subagente.md"
+    - "task/fase-20-economia-de-tokens/README.md"
+    - "tests/unit/test_claude_profiles_hint.py"
+    - "tests/unit/test_hooklight.py"
+
+- query: "subagente ragx-explorer instalavel, opt-in"
+  class: git
+  difficulty: hard
+  commit: 91c10ae
+  kind: mixed
+  note: "derivado de 91c10ae"
+  relevant_paths:
+    - "docs/14-cli.md"
+    - "docs/GUIA-DE-USO.md"
+    - "src/ragx/cli/commands/claude_cmd.py"
+    - "src/ragx/clients/claude_agent.py"
+    - "task/fase-20-economia-de-tokens/RAGX-0161-subagente-ragx-explorer-instalavel.md"
+    - "task/fase-20-economia-de-tokens/README.md"
+    - "tests/unit/test_claude_agent.py"
+
+- query: "tokens de design completos e contraste AA com testes"
+  class: git
+  difficulty: hard
+  commit: 7153682
+  kind: mixed
+  note: "derivado de 7153682"
+  relevant_paths:
+    - "src/app/README.md"
+    - "src/app/src/__tests__/contrast.test.ts"
+    - "src/app/src/__tests__/css-ratchet.json"
+    - "src/app/src/__tests__/css-ratchet.test.ts"
+    - "src/app/src/__tests__/no-hardcoded-color.test.ts"
+    - "src/app/src/test/wcag.ts"
+    - "task/fase-22-painel-v2/RAGX-0178-tokens-de-design-completos-e-contraste-aa.md"
+    - "task/fase-22-painel-v2/README.md"
+
+- query: "faixa de relance no detalhe do projeto: em dia, economia, agente usando"
+  class: git
+  difficulty: hard
+  commit: 6bc6308
+  kind: mixed
+  note: "derivado de 6bc6308"
+  relevant_paths:
+    - "src/app/README.md"
+    - "src/app/src/components/project/ProjectGlance.tsx"
+    - "src/app/src/components/project/__tests__/ProjectGlance.test.tsx"
+    - "src/app/src/pages/ProjectPage.tsx"
+    - "src/app/src/pages/__tests__/ProjectPage.test.tsx"
+    - "src/app/src/projectStatus.ts"
+    - "task/fase-22-painel-v2/RAGX-0184-detalhe-do-projeto-em-dia-economia-agente-usando.md"
+    - "task/fase-22-painel-v2/README.md"
+
+- query: "ciclo de verificacao 10x mais rapido (lint ignora release/, tsc incremental, npm run check, pytest-xdist)"
+  class: git
+  difficulty: hard
+  commit: fdf6b39
+  kind: mixed
+  note: "derivado de fdf6b39"
+  relevant_paths:
+    - "AGENTS.md"
+    - "pyproject.toml"
+    - "src/app/eslint.config.js"
+    - "src/app/package.json"
+    - "src/app/tsconfig.app.json"
+    - "src/app/vitest.config.ts"
+    - "tests/unit/test_claude_agent.py"
+
+- query: "cache de embedding em SQLite, em lote, com checkpoint"
+  class: git
+  difficulty: hard
+  commit: bb4c881
+  kind: mixed
+  note: "derivado de bb4c881"
+  relevant_paths:
+    - "docs/04-indexacao.md"
+    - "scripts/medir_indice_inicial.py"
+    - "src/ragx/embeddings/base.py"
+    - "src/ragx/indexing/embed.py"
+    - "src/ragx/storage/vectors.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0146-cache-de-embedding-em-sqlite-em-lote.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+    - "tests/unit/test_embedding_cache.py"
+
+- query: "gate unico, veredito em cache, scandir e lote por index_paths"
+  class: git
+  difficulty: hard
+  commit: 580b2c9
+  kind: mixed
+  note: "derivado de 580b2c9"
+  relevant_paths:
+    - "docs/19-watch-e-autonomia-do-agente.md"
+    - "scripts/medir_watch.py"
+    - "src/ragx/cli/commands/watch_cmd.py"
+    - "src/ragx/indexing/pipeline.py"
+    - "src/ragx/walk.py"
+    - "src/ragx/watch/monitor.py"
+    - "task/fase-19-velocidade-e-frescor/RAGX-0147-watcher-barato-sem-reconstruir-o-gate-a-cada-ciclo.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+
+- query: "RAGX-0151 em review: so 47,0% das edicoes mantem os simbolos (corte de 50%)"
+  class: git
+  difficulty: hard
+  commit: a793dce
+  kind: doc
+  note: "derivado de a793dce"
+  relevant_paths:
+    - "task/fase-19-velocidade-e-frescor/RAGX-0151-grafo-incremental-por-documento.md"
+    - "task/fase-19-velocidade-e-frescor/README.md"
+
+- query: "RAGX-0166 a 0169 em blocked (dependencias da fase 14 ainda todo)"
+  class: git
+  difficulty: hard
+  commit: d087721
+  kind: doc
+  note: "derivado de d087721"
+  relevant_paths:
+    - "task/fase-21-recuperacao-v2/RAGX-0166-prefixo-contextual-deterministico-antes-de-embutir-e-indexar.md"
+    - "task/fase-21-recuperacao-v2/RAGX-0167-conjunto-ouro-derivado-do-git-para-avaliar-recuperacao.md"
+    - "task/fase-21-recuperacao-v2/RAGX-0168-repo-map-compacto-pagerank-sobre-o-grafo-como-nivel-0.md"
+    - "task/fase-21-recuperacao-v2/RAGX-0169-benchmark-local-de-modelos-de-embedding-e-reranker-de-codigo.md"
+    - "task/fase-21-recuperacao-v2/README.md"
+
+- query: "RAGX-0195 em review com o andamento e as pendencias humanas"
+  class: git
+  difficulty: hard
+  commit: 11bb530
+  kind: doc
+  note: "derivado de 11bb530"
+  relevant_paths:
+    - "task/fase-22-painel-v2/RAGX-0195-fechar-a-v2.md"
+    - "task/fase-22-painel-v2/README.md"
+
+- query: "resolve de caminho com barra invertida vale em Linux e macOS"
+  class: git
+  difficulty: hard
+  commit: 68a412c
+  kind: code
+  note: "derivado de 68a412c"
+  relevant_paths:
+    - "tests/unit/test_touchq.py"
+
+- query: "conjunto de 26 para 152 consultas com classes, dificuldade e sem resposta"
+  class: git
+  difficulty: hard
+  commit: 77228f7
+  kind: mixed
+  note: "derivado de 77228f7"
+  relevant_paths:
+    - "docs/05-busca.md"
+    - "scripts/medir_grafo.py"
+    - "src/ragx/cli/commands/ab_cmd.py"
+    - "src/ragx/cli/commands/eval_cmd.py"
+    - "src/ragx/cli/commands/trial_cmd.py"
+    - "src/ragx/search/evaluation.py"
+    - "task/fase-14-evolucao-do-rag/RAGX-0099-ampliar-o-conjunto-de-avaliacao-para-150-consultas.md"
+    - "tests/unit/test_eval_conjunto.py"

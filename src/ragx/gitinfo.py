@@ -26,7 +26,7 @@ class GitState:
     dirty: bool
 
 
-def git(root: Path, *args: str) -> str | None:
+def git(root: Path, *args: str, timeout: float = _TIMEOUT_S) -> str | None:
     try:
         out = run_quiet(
             # `--no-optional-locks`: `git status` por padrão refresca e grava
@@ -43,7 +43,7 @@ def git(root: Path, *args: str) -> str | None:
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=_TIMEOUT_S,
+            timeout=timeout,
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -104,6 +104,55 @@ def hooks_dir(root: Path) -> Path | None:
 
 def hooks_dir_cache_clear() -> None:
     _HOOKS_DIR.clear()
+
+
+@dataclass(frozen=True)
+class Commit:
+    """Um commit para o conjunto-ouro (RAGX-0167): só hash, assunto e caminhos. Autor, e-mail e corpo NUNCA saem do git."""
+
+    short: str
+    subject: str
+    files: tuple[str, ...]
+    date: int = 0  # `%ct`, só para ordenar de forma estável
+
+
+def log_commits(root: Path, limit: int | None = None, since: str | None = None, timeout: float = 60.0) -> list[Commit] | None:
+    """Commits sem merge com os arquivos alterados (`git log --no-merges --name-status -M`), mais recentes primeiro.
+
+    `None` fora de git ou em erro/timeout. Renomeação segue pelo caminho NOVO; apagado fica de fora (não existe mais).
+    """
+    args = ["-c", "core.quotepath=off", "log", "--no-merges", "--name-status", "-M", "--format=@@%h%x09%ct%x09%s"]
+    if limit:
+        args += ["-n", str(limit)]
+    if since:
+        args += [f"--since={since}"]
+    out = git(root, *args, timeout=timeout)
+    if out is None:
+        return None
+    commits: list[Commit] = []
+    atual: tuple[str, int, str] | None = None
+    arquivos: list[str] = []
+
+    def fecha() -> None:
+        if atual is not None:
+            commits.append(Commit(atual[0], atual[2], tuple(dict.fromkeys(arquivos)), atual[1]))
+
+    for linha in out.splitlines():
+        if linha.startswith("@@"):
+            fecha()
+            arquivos = []
+            h, _, resto = linha[2:].partition("\t")
+            data, _, assunto = resto.partition("\t")
+            atual = (h, int(data) if data.isdigit() else 0, assunto)
+        elif linha.strip() and atual is not None:
+            partes = linha.split("\t")
+            status = partes[0][:1]
+            if status in ("A", "M", "T") and len(partes) >= 2:
+                arquivos.append(partes[1])
+            elif status in ("R", "C") and len(partes) >= 3:
+                arquivos.append(partes[2])
+    fecha()
+    return commits
 
 
 _COMMON_DIR: dict[str, Path] = {}

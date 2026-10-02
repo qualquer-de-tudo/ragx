@@ -32,6 +32,9 @@ class EvalCase:
     note: str = ""
     cls: str = "factual"
     difficulty: str = "easy"
+    #: conjunto derivado do git (RAGX-0167): hash curto do commit de origem e `code` | `doc` | `mixed`
+    commit: str = ""
+    kind: str = ""
 
     @property
     def no_answer(self) -> bool:
@@ -107,6 +110,8 @@ def load_cases(path: Path, only_answerable: bool = False) -> list[EvalCase]:
             note=item.get("note", ""),
             cls=item.get("class", "factual"),
             difficulty=item.get("difficulty", "easy"),
+            commit=item.get("commit", ""),
+            kind=item.get("kind", ""),
         )
         for item in raw
     ]

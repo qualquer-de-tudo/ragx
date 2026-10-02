@@ -12,8 +12,8 @@ max_file_bytes = 1048576
 # `base-knowledge/` é a ORIGEM do conhecimento base — ele já entra no índice
 # sob `@base/agents/`, via `ragx base`. Indexar também como arquivo do projeto
 # duplicaria cada documento e poluiria toda busca com dois resultados iguais.
-# `tests/eval/queries.yaml` é o gabarito do `ragx eval`: indexá-lo deixa a ferramenta achar a PERGUNTA em vez da resposta.
-exclude = ["base-knowledge/", "tests/eval/queries.yaml"]
+# `tests/eval/` (`queries.yaml`, `gold-git.yaml`) é o gabarito do `ragx eval`: indexá-lo deixa a ferramenta achar a PERGUNTA em vez da resposta.
+exclude = ["base-knowledge/", "tests/eval/"]
 
 [embedding]
 # Sem Ollama nesta maquina: fastembed roda o modelo localmente via ONNX,

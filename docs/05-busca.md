@@ -269,6 +269,25 @@ parecia, e o `semantic` fica claramente atrás do `keyword`**; o `hybrid` tem o 
 20/23, 17/23, 19/23; configuração 19/24, 16/24, 19/24; factual 27/46, 25/46, 24/46. As perguntas de relacionamento ("quem chama X")
 são as mais fracas em todos os modos, o que aponta para o grafo (RAGX-0145) e não para a fusão.
 
+### O conjunto-ouro derivado do git (RAGX-0167)
+
+Um segundo conjunto, sem mão-de-obra e que cresce sozinho: `ragx gold build` lê o histórico (`git log --no-merges --name-status -M`) e
+gera `tests/eval/gold-git.yaml`, em que a **mensagem do commit é a consulta** (sem o prefixo `tipo(escopo):` e sem o sufixo
+`(RAGX-0xxx)`) e os **arquivos alterados que existem hoje no índice são os documentos relevantes**. Fora do gabarito: `CHANGELOG.md`,
+`knowledge/`, lockfiles e gerados; fora do conjunto: commit de release, consulta com menos de 3 palavras, commit sem arquivo indexado e
+commit com mais de `--max-files` (8) arquivos relevantes. Só hash curto, assunto e caminhos saem do git: autor, e-mail e corpo do commit
+nunca são lidos; um assunto que dispare o `SecurityScanner`, ou que traga uma palavra comprida com cara de segredo (letra e dígito,
+entropia alta), é descartado e contado. A saída é determinística (byte-idêntica entre duas execuções). Vazamento é aceito: o índice está
+no HEAD, que já contém a mudança, então o conjunto mede "dada a intenção, ache o lugar", não previsão; `commit` e `kind`
+(`code`/`doc`/`mixed`) ficam em cada caso para recortar. Avalie com `ragx eval --queries tests/eval/gold-git.yaml`.
+
+Funil neste repositório (02/10/2026, `ragx gold build --dry-run`, 1,1 s): 251 commits sem merge, 7 de release, 0 com segredo, 1 de consulta
+curta, 19 sem arquivo indexado, 90 com arquivos demais, **134 casos**. Resultado do `ragx eval` sobre eles (fastembed multilíngue,
+recall@5 e IC95%): keyword **0,72** [0,64–0,79], semantic 0,49 [0,40–0,57], hybrid 0,60 [0,51–0,68]; MRR 0,51, 0,34, 0,47. Os intervalos
+cabem em 0,20 (conclusivo). **O mesmo padrão do conjunto manual de 152 consultas: o `keyword` vence o `hybrid`, que vence o `semantic`.** Dois
+conjuntos independentes (um escrito à mão por um agente, outro derivado do git) concordando é o que faltava para tratar isso como achado e
+não como ruído; é o ponto de partida da recalibração do RRF (RAGX-0105).
+
 ### 1. RRF premia consenso
 
 É a fraqueza conhecida do algoritmo. Rastreando a consulta
