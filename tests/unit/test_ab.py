@@ -19,6 +19,43 @@ def _call(arm: str = "slim", i: int = 0, rep: int = 0) -> ab.Call:
 
 
 # ── o plano e o argv de cada braço ──────────────────────────────────────
+def test_so_os_bracos_com_ragx_liberam_o_servidor_mcp(tmp_path) -> None:
+    com = ab.build_argv("slim", tmp_path / "slim.mcp.json")
+    assert com[com.index("--allowedTools") + 1] == "mcp__ragx"
+    assert "--allowedTools" not in ab.build_argv("without", tmp_path / "without.mcp.json")
+
+
+def test_permission_denials_do_claude_viram_contagem() -> None:
+    res = ab.ArmResult("slim", 0, 0)
+    ab._preencher(
+        res,
+        {"result": "x", "usage": {}, "permission_denials": [{"tool_name": "mcp__ragx__search_hybrid"}]},
+        ab.AbTask("q", ("a.py",)),
+    )
+    assert res.permission_denials == 1
+
+
+def test_with_hooks_so_o_braco_com_ragx_recebe_o_settings(tmp_path) -> None:
+    com = ab.build_argv("slim", tmp_path / "slim.mcp.json", with_hooks=True)
+    assert com[com.index("--settings") + 1] == str(tmp_path / "slim.settings.json")
+    assert "--settings" not in ab.build_argv("without", tmp_path / "without.mcp.json", with_hooks=True)
+    assert "--settings" not in ab.build_argv("slim", tmp_path / "slim.mcp.json")
+    ab.write_mcp_files(["without", "slim"], tmp_path, tmp_path, with_hooks=True, command="ragx")
+    assert not (tmp_path / "without.settings.json").exists()
+    hooks = __import__("json").loads((tmp_path / "slim.settings.json").read_text(encoding="utf-8"))["hooks"]
+    assert "claude hint" in hooks["SessionStart"][0]["hooks"][0]["command"]
+    assert hooks["PreToolUse"][0]["matcher"] == "Grep|Glob"
+
+
+def test_setting_sources_vai_igual_para_todos_os_bracos_e_some_quando_nao_pedido(tmp_path) -> None:
+    for arm in ("without", "slim"):
+        argv = ab.build_argv(arm, tmp_path / f"{arm}.mcp.json", setting_sources="project,local")
+        i = argv.index("--setting-sources")
+        assert argv[i + 1] == "project,local"
+        assert "--bare" not in argv
+    assert "--setting-sources" not in ab.build_argv("slim", tmp_path / "slim.mcp.json")
+
+
 def test_argv_de_cada_braco_usa_config_estrita_e_o_prompt_vai_pelo_stdin(tmp_path: Path) -> None:
     pasta = tmp_path / "com espaço"  # caminho com espaço: um argumento só, sem aspas manuais
     argv = ab.build_argv("full", pasta / "full.mcp.json", claude="claude", model="sonnet", max_turns=8, isolate=True)

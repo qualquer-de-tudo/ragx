@@ -198,6 +198,8 @@ ragx trial "<query>"
 
 ragx ab                             # só o PLANO (padrão): nada é executado
     --arms without,full,slim  --reps N  --limit N  --model M  --max-turns N  --isolate
+    --setting-sources project,local   o mesmo em todos os braços: sem os hooks e plugins do SEU usuário (não exige chave de API)
+    --with-hooks            dá aos braços com RAGX a dica de início e o lembrete de busca (o `without` nunca os recebe)
     --queries FILE  --out DIR  --json
     --simulate              roda o harness com números SINTÉTICOS (marcados `simulated`)
     --execute --max-calls N roda `claude -p` DE VERDADE (exige RAGX_AB_REAL=1)
@@ -222,6 +224,14 @@ teto, dizendo quantas chamadas seriam). `--simulate` serve para testar o harness
 manda usar o RAGX, o braço `without` fica sem a ferramenta mas com o texto pedindo-a (é o caso deste
 repositório); meça num projeto cujo `CLAUDE.md` não cite o RAGX, ou use `--isolate` (`--bare`, sem hooks
 nem `CLAUDE.md`; exige `ANTHROPIC_API_KEY`).
+
+**Permissão e hooks (achados na primeira medição real).** Em `claude -p` ninguém aprova permissão: sem `--allowedTools`, toda chamada
+ao RAGX era **negada** (`permission_denials` no JSON) e o braço com RAGX medido era, na prática, "sem RAGX"; duas chamadas de fumaça
+mostraram 0 chamadas ao RAGX em 12 e 8 turnos. Agora os braços com RAGX passam `--allowedTools mcp__ragx`, o relatório conta
+`permission_denials` e o comando avisa em vermelho se houve negação. Além disso, num teste o agente prefere o `Grep` se ninguém
+o orienta: `--with-hooks` dá ao braço com RAGX a mesma dica de início e o mesmo lembrete que `ragx claude on` instala, e
+`--setting-sources project,local` tira os hooks e plugins do usuário de todos os braços (senão o `without` receberia o
+"use o RAGX" sem a ferramenta).
 
 `ragx trial` compara o contexto montado com **dois baselines** (os arquivos certos lidos
 inteiros, o oráculo; e um "Grep + Read" simulado, `--grep-files K`) e mostra a economia

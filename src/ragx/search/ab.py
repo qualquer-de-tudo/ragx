@@ -79,6 +79,8 @@ class ArmResult:
     duration_ms: int = 0
     ragx_calls: int = 0
     ragx_resp_tokens: int = 0
+    #: Ferramentas que o `claude -p` negou por falta de permissão: com o RAGX negado o braço mede "sem RAGX".
+    permission_denials: int = 0
     simulated: bool = False
     error: str | None = None
 
@@ -131,6 +133,8 @@ def build_argv(
     model: str | None = None,
     max_turns: int | None = None,
     isolate: bool = False,
+    setting_sources: str | None = None,
+    with_hooks: bool = False,
 ) -> tuple[str, ...]:
     """O `argv` de uma chamada. O prompt NÃO entra aqui: vai pelo stdin (`claude -p` lê dele), o que
     dispensa citar aspas e quebras de linha no `claude.cmd` do Windows."""
@@ -140,6 +144,18 @@ def build_argv(
         argv += ["--model", model]
     if max_turns:
         argv += ["--max-turns", str(max_turns)]
+    if arm != "without":
+        # Em `claude -p` ninguém aprova permissão: sem isto TODA chamada ao RAGX é negada e o braço mede "sem RAGX"
+        # (visto numa chamada de fumaça: `permission_denials` com `mcp__ragx__search_hybrid`).
+        argv += ["--allowedTools", "mcp__ragx"]
+    if setting_sources:
+        # Mesmas fontes em todos os braços (ex.: `project,local` tira os hooks e plugins do usuário, que no braço sem
+        # RAGX avisariam "use o RAGX" sem a ferramenta). Não exige chave de API, ao contrário de `--bare`.
+        argv += ["--setting-sources", setting_sources]
+    if with_hooks and arm != "without":
+        # Só o braço com RAGX recebe a dica de início e o lembrete de busca: é o que faz o agente adotar a ferramenta no uso
+        # real (sem eles, num teste, ele prefere o Grep). O braço `without` nunca os recebe.
+        argv += ["--settings", str(mcp_file.with_name(f"{arm}.settings.json"))]
     if isolate:
         argv.append("--bare")  # sem hooks nem CLAUDE.md; exige ANTHROPIC_API_KEY (ver `claude --help`)
     return tuple(argv)
@@ -164,9 +180,27 @@ def plan(
     return calls
 
 
-def write_mcp_files(arms: Sequence[str], root: Path, out_dir: Path) -> None:
+def hooks_settings(command: str = "ragx") -> dict[str, Any]:
+    """O `--settings` do braço com RAGX: a dica de início de sessão e o lembrete no Grep/Glob, como `ragx claude on` os instala."""
+    from ragx.clients.claude_hint import NUDGE_EVENT, _entrada_de_lembrete, hint_command
+
+    return {
+        "hooks": {
+            "SessionStart": [{"hooks": [{"type": "command", "command": hint_command(command), "timeout": 15}]}],
+            NUDGE_EVENT: [_entrada_de_lembrete(command)],
+        }
+    }
+
+
+def write_mcp_files(
+    arms: Sequence[str], root: Path, out_dir: Path, *, with_hooks: bool = False, command: str = "ragx"
+) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     for arm in arms:
+        if with_hooks and arm != "without":
+            (out_dir / f"{arm}.settings.json").write_text(
+                json.dumps(hooks_settings(command), ensure_ascii=False, indent=1), encoding="utf-8"
+            )
         (out_dir / f"{arm}.mcp.json").write_text(
             json.dumps(mcp_config(arm, root), ensure_ascii=False, indent=1), encoding="utf-8"
         )
@@ -255,6 +289,7 @@ def _preencher(res: ArmResult, dados: dict[str, Any], task: AbTask) -> None:
     res.cost_usd = float(dados.get("total_cost_usd") or 0.0)
     res.turns = int(dados.get("num_turns") or 0)
     res.duration_ms = int(dados.get("duration_ms") or 0)
+    res.permission_denials = len(dados.get("permission_denials") or [])
     if dados.get("is_error"):
         res.error = res.error or "o Claude Code reportou erro"
 

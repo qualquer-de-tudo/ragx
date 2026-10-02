@@ -32,6 +32,8 @@ def ab(
     limit: Annotated[int, typer.Option("--limit", min=1, help="Quantas tarefas usar.")] = 12,
     out: Annotated[Path | None, typer.Option("--out", help="Pasta do relatório (padrão: .ragx/ab).")] = None,
     isolate: Annotated[bool, typer.Option("--isolate", help="Passa `--bare` ao claude: sem hooks nem CLAUDE.md (exige ANTHROPIC_API_KEY).")] = False,
+    setting_sources: Annotated[str | None, typer.Option("--setting-sources", help="Passa `--setting-sources` ao claude, igual em todos os braços (ex.: project,local: sem os hooks e plugins do seu usuário; não exige chave de API).")] = None,
+    with_hooks: Annotated[bool, typer.Option("--with-hooks", help="Dá aos braços com RAGX a dica de início e o lembrete de busca (o braço without nunca os recebe). Sem eles o agente costuma preferir o Grep.")] = False,
     simulate: Annotated[bool, typer.Option("--simulate", help="Roda o harness com números SINTÉTICOS (não é economia real).")] = False,
     execute: Annotated[bool, typer.Option("--execute", help="Roda `claude -p` de verdade (gasta cota): exige RAGX_AB_REAL=1 e --max-calls.")] = False,
     max_calls: Annotated[int | None, typer.Option("--max-calls", help="Teto de chamadas reais (obrigatório com --execute).")] = None,
@@ -66,6 +68,7 @@ def ab(
     chamadas = harness.plan(
         tarefas, escolhidos, reps, cfg.root, pasta / "tmp",
         claude=claude, model=model, max_turns=max_turns, isolate=isolate,
+        setting_sources=setting_sources, with_hooks=with_hooks,
     )
 
     if not simulate and not execute:
@@ -75,7 +78,7 @@ def ab(
     if execute:
         _guardas(chamadas, max_calls)
         runner: Any = harness.ClaudeRunner(claude, mcp_log=cfg.state_dir / "logs" / "mcp.jsonl")
-        harness.write_mcp_files(escolhidos, cfg.root, pasta / "tmp")
+        harness.write_mcp_files(escolhidos, cfg.root, pasta / "tmp", with_hooks=with_hooks, command=shutil.which("ragx") or "ragx")
     else:
         runner = harness.SimulatedRunner()
 
@@ -84,6 +87,8 @@ def ab(
         "model": model,
         "max_turns": max_turns,
         "isolate": isolate,
+        "setting_sources": setting_sources,
+        "with_hooks": with_hooks,
         "arms": escolhidos,
         "tasks": len(tarefas),
         "reps": reps,
@@ -97,6 +102,9 @@ def ab(
     (pasta / f"{time.strftime('%Y%m%d-%H%M%S')}{'-simulado' if simulate else ''}.json").write_text(dados, encoding="utf-8")
     (pasta / "latest.json").write_text(dados, encoding="utf-8")
 
+    negadas = sum(int(r.get("permission_denials") or 0) for r in relatorio.results if r.get("arm") != "without")
+    if negadas:
+        console.print(f"[red]{negadas} chamada(s) a ferramentas foram NEGADAS por permissão nos braços com RAGX:[/] o resultado não vale.")
     if as_json:
         console.print_json(dados)
         return
