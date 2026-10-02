@@ -32,7 +32,7 @@ Desempenho: com 12 projetos o painel dispara ~290 processos `git` por minuto (2 
 | [RAGX-0192](RAGX-0192-auto-update-com-electron-updater.md) | Auto-update com `electron-updater` | P3 | 1d | `review` |
 | [RAGX-0193](RAGX-0193-tema-claro.md) | Tema claro | P3 | 1d | `done` |
 | [RAGX-0194](RAGX-0194-csp-e-menu-minimo.md) | CSP e menu mínimo | P2 | 0,25d | `done` |
-| [RAGX-0195](RAGX-0195-fechar-a-v2.md) | Fechar a v2: medir S1 a S14, publicar o relatório e conferir a documentação | P0 | 1d | `todo` |
+| [RAGX-0195](RAGX-0195-fechar-a-v2.md) | Fechar a v2: medir S1 a S14, publicar o relatório e conferir a documentação | P0 | 1d | `review` |
 
 ## Dependências
 
