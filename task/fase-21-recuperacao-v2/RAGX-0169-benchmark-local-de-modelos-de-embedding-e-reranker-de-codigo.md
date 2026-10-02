@@ -7,7 +7,7 @@
 | **Estimativa** | 1d |
 | **Depende de** | `RAGX-0167` · `RAGX-0132` |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (7.2 #4 e #5) · [05-busca.md](../../docs/05-busca.md) · [adr/ADR-0004-embeddings.md](../../docs/adr/ADR-0004-embeddings.md) |
-| **Status** | `todo` |
+| **Status** | `blocked` |
 
 ## Objetivo
 
@@ -73,4 +73,4 @@ Ao terminar, o loop marca `review` (não `done`) e escreve a recomendação **se
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-02 — **`blocked`, nada implementado.** depende da RAGX-0167 (agora `blocked` pelo conjunto-ouro da fase 14); além disso a tarefa só entrega o harness e fecha em `review` por regra do roteiro (baixar modelos grandes é decisão humana). Verificado nos arquivos das dependências (todas ainda com `Status = todo`/`review`). Quando a dependência fechar, voltar o status para `todo` e retomar daqui.

@@ -7,7 +7,7 @@
 | **Estimativa** | 1d |
 | **Depende de** | `RAGX-0104` |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (7.2 #6) · [04-indexacao.md](../../docs/04-indexacao.md) · [05-busca.md](../../docs/05-busca.md) · [03-modelo-de-dados.md](../../docs/03-modelo-de-dados.md) |
-| **Status** | `todo` |
+| **Status** | `blocked` |
 
 ## Objetivo
 
@@ -73,4 +73,4 @@ Armadilhas: o FTS é `content=chunks` (tabela externa), então esquecer os gatil
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-02 — **`blocked`, nada implementado.** depende da RAGX-0104 (fase 14, prefixos no provider fastembed), que continua `todo`; o roteiro proíbe o loop de pegar a fase 14 por conta própria (a 0103 troca o modelo e muda o formato do índice: decisão humana). Verificado nos arquivos das dependências (todas ainda com `Status = todo`/`review`). Quando a dependência fechar, voltar o status para `todo` e retomar daqui.

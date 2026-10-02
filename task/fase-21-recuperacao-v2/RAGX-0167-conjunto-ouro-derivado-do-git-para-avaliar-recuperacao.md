@@ -7,7 +7,7 @@
 | **Estimativa** | 2d |
 | **Depende de** | `RAGX-0099` (fase 14) |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (7.2 #11) · [05-busca.md](../../docs/05-busca.md) · [14-cli.md](../../docs/14-cli.md) · [02-seguranca.md](../../docs/02-seguranca.md) |
-| **Status** | `todo` |
+| **Status** | `blocked` |
 
 ## Objetivo
 
@@ -71,4 +71,4 @@ Vazamento é inevitável e aceito: o índice está no HEAD, que já contém a mu
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-02 — **`blocked`, nada implementado.** depende da RAGX-0099 (fase 14, ampliar o conjunto de avaliação), que continua `todo` e é da fase que o loop não pega sozinho. Verificado nos arquivos das dependências (todas ainda com `Status = todo`/`review`). Quando a dependência fechar, voltar o status para `todo` e retomar daqui.

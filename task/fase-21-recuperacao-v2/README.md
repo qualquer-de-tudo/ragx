@@ -31,10 +31,10 @@ Os arquivos estão em [`task/fase-14-evolucao-do-rag/`](../fase-14-evolucao-do-r
 
 | ID | Tarefa | Prio | Est. | Status |
 |---|---|---|---|---|
-| [RAGX-0166](RAGX-0166-prefixo-contextual-deterministico-antes-de-embutir-e-indexar.md) | Prefixo contextual determinístico antes de embutir e indexar | P1 | 1d | `todo` |
-| [RAGX-0167](RAGX-0167-conjunto-ouro-derivado-do-git-para-avaliar-recuperacao.md) | Conjunto-ouro derivado do git para avaliar recuperação | P2 | 2d | `todo` |
-| [RAGX-0168](RAGX-0168-repo-map-compacto-pagerank-sobre-o-grafo-como-nivel-0.md) | Repo map compacto (PageRank sobre o grafo) como nível 0 | P2 | 2d | `todo` |
-| [RAGX-0169](RAGX-0169-benchmark-local-de-modelos-de-embedding-e-reranker-de-codigo.md) | Benchmark local de modelos de embedding e reranker de código | P2 | 1d | `todo` |
+| [RAGX-0166](RAGX-0166-prefixo-contextual-deterministico-antes-de-embutir-e-indexar.md) | Prefixo contextual determinístico antes de embutir e indexar | P1 | 1d | `blocked` |
+| [RAGX-0167](RAGX-0167-conjunto-ouro-derivado-do-git-para-avaliar-recuperacao.md) | Conjunto-ouro derivado do git para avaliar recuperação | P2 | 2d | `blocked` |
+| [RAGX-0168](RAGX-0168-repo-map-compacto-pagerank-sobre-o-grafo-como-nivel-0.md) | Repo map compacto (PageRank sobre o grafo) como nível 0 | P2 | 2d | `blocked` |
+| [RAGX-0169](RAGX-0169-benchmark-local-de-modelos-de-embedding-e-reranker-de-codigo.md) | Benchmark local de modelos de embedding e reranker de código | P2 | 1d | `blocked` |
 | [RAGX-0170](RAGX-0170-indice-por-worktree-branch-com-chunks-compartilhados-por-hash.md) | Índice por worktree/branch com chunks compartilhados por hash | P3 | 2d | `review` |
 
 ## Dependências

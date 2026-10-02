@@ -7,7 +7,7 @@
 | **Estimativa** | 2d |
 | **Depende de** | `RAGX-0111` (fase 14) · `RAGX-0145` |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (7.2 #9) · [06-grafo.md](../../docs/06-grafo.md) · [08-dictionary.md](../../docs/08-dictionary.md) · [09-mcp.md](../../docs/09-mcp.md) |
-| **Status** | `todo` |
+| **Status** | `blocked` |
 
 ## Objetivo
 
@@ -72,4 +72,4 @@ Armadilha principal: as 7.947 relações `calls` vêm de casar o **nome** da cha
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-02 — **`blocked`, nada implementado.** depende da RAGX-0111 (fase 14, `get_dictionary` em níveis), que continua `todo`, e da RAGX-0145, que está em `review` (queda do MRR do grafo, decisão humana). Verificado nos arquivos das dependências (todas ainda com `Status = todo`/`review`). Quando a dependência fechar, voltar o status para `todo` e retomar daqui.
