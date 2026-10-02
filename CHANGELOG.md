@@ -11,6 +11,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Modelo do fastembed numa pasta por usuário e trava que reconhece PID reutilizado.** O fastembed baixava o modelo
+  (240 MB) para `.ragx/cache/models` de CADA projeto, e cada projeto novo pagava o download de novo (10,1 s contra 0,9 s
+  com o modelo pronto). Agora vai para `embedding.model_cache_dir` (padrão `~/.ragx/models`), compartilhado; projeto com
+  cache antigo não vazio continua usando o dele, e `ragx doctor` mostra o tamanho e como migrar. A trava `index.lock`
+  só perguntava se o PID existia: no Windows, onde PIDs são reciclados em segundos, a trava de um indexador morto
+  podia virar "viva" para sempre e nada reindexava. Agora ela grava a identidade do processo (`proc`) e assume a
+  trava quando o PID é de outro processo; `status.json` e o cache de contexto usam a mesma regra (RAGX-0153).
+- **Fila de toque não perde mais edições quando a leitura falha.** `touchq.claim` tratava qualquer erro ao ler o arquivo
+  recém-tomado como "fila vazia" e o apagava (antivírus ou outro processo segurando o arquivo no Windows): as edições
+  sumiam da fila e o índice ficava velho sem aviso. Agora relê e, se persistir, devolve o arquivo à fila (RAGX-0153).
 - **Primeiro índice em paralelo.** `index.jobs` era configuração morta: leitura, Gate, parse e chunking rodavam um
   arquivo de cada vez (73% do primeiro índice de 400 arquivos e 60% do de 2.000). Agora, com pelo menos 200 arquivos a
   ler, um pool de processos (`spawn`, cada um com o PRÓPRIO Security Gate completo) faz esse estágio e o processo

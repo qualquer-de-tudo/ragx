@@ -94,6 +94,9 @@ class EmbeddingCfg(BaseModel):
     versioned_dim: int = 256
     versioned_quant: str = "int8"
     rescore: bool = True
+    #: onde o fastembed guarda o modelo baixado (RAGX-0153): uma pasta POR USUÁRIO, compartilhada entre projetos.
+    #: Um projeto que já tem `.ragx/cache/models` não vazia continua usando a dele. Vazio = sempre a do projeto.
+    model_cache_dir: str = "~/.ragx/models"
 
     @field_validator("base_url")
     @classmethod

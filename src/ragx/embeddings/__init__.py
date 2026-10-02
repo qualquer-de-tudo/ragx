@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import threading
+from pathlib import Path
 
 from ragx.config import Config
 from ragx.core.errors import UsageError
@@ -73,6 +75,28 @@ def build_embedder(cfg: Config) -> Embedder:
         return embedder
 
 
+def legacy_models_dir(cfg: Config) -> Path:
+    """Onde o fastembed guardava o modelo ANTES da RAGX-0153: uma cópia por projeto."""
+    return cfg.state_dir / "cache" / "models"
+
+
+def models_dir(cfg: Config) -> Path:
+    """Pasta de modelos do fastembed (RAGX-0153).
+
+    Um projeto cuja pasta antiga (`.ragx/cache/models`) já existe e NÃO está vazia continua usando a dele: quem já
+    baixou não baixa de novo. Os demais compartilham `embedding.model_cache_dir` (padrão `~/.ragx/models`), então o
+    segundo projeto novo não paga o download nem o disco (~240 MB) outra vez. Nada é movido, copiado ou apagado.
+    """
+    legado = legacy_models_dir(cfg)
+    try:
+        if legado.is_dir() and any(legado.iterdir()):
+            return legado
+    except OSError:
+        pass
+    configurado = cfg.embedding.model_cache_dir.strip()
+    return Path(os.path.expanduser(configurado)) if configurado else legado
+
+
 def _modelo_fastembed(cfg: Config) -> str:
     from ragx.embeddings.fastembed_provider import DEFAULT_MODEL
 
@@ -120,7 +144,7 @@ def _construir(cfg: Config) -> Embedder:
         return FastEmbedEmbedder(
             model=_modelo_fastembed(cfg),
             dim=cfg.embedding.dim,
-            cache_dir=cfg.state_dir / "cache" / "models",
+            cache_dir=models_dir(cfg),
             batch=cfg.embedding.batch,
         )
     raise UsageError(
@@ -134,5 +158,7 @@ __all__ = [
     "OllamaEmbedder",
     "build_embedder",
     "embedder_id",
+    "legacy_models_dir",
+    "models_dir",
     "reset_embedder_cache",
 ]

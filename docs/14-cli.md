@@ -99,6 +99,10 @@ ocupada deixa o pedido agendado e quem está rodando repete a passada ao
 terminar (até 3 vezes). Na origem `cli` o comando espera até 30 s antes de
 desistir com exit 4; nas outras origens sai na hora com 0.
 
+A trava guarda o PID do dono e a identidade do processo (`proc`: instante de criação). Se o PID existe mas é de
+OUTRO processo (o Windows recicla PIDs em segundos), o dono morreu e a trava é assumida sozinha: não é preciso
+apagar `index.lock` à mão (RAGX-0153). Trava de versão anterior, sem `proc`, continua valendo só pelo número.
+
 ragx status
     --json
     # --json inclui freshness {state, current, reasons} e recent_runs (últimas 10)

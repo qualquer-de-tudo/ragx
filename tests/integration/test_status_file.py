@@ -81,3 +81,29 @@ def test_escrita_e_atomica_nao_deixa_temporario(proj: Path) -> None:
     index_project(load_config(proj))
     leftovers = [p.name for p in (proj / ".ragx").iterdir() if p.name.endswith(".tmp")]
     assert leftovers == []
+
+
+def test_running_e_nulo_quando_o_pid_foi_reutilizado(proj: Path) -> None:
+    """RAGX-0153: PID vivo, mas o processo que gravou a trava não é o de hoje com esse número."""
+    import os
+
+    cfg = load_config(proj)
+    index_project(cfg)  # cria o banco
+    cfg.state_dir.mkdir(parents=True, exist_ok=True)
+    (cfg.state_dir / lock.LOCK_NAME).write_text(
+        json.dumps(
+            {"pid": os.getpid(), "op": "index", "source": "watch", "started_at": "x", "proc": "token-de-outra-era"}
+        ),
+        encoding="utf-8",
+    )
+    write_status(cfg)
+    assert _read(proj)["running"] is None
+    # e com o token certo, aparece
+    (cfg.state_dir / lock.LOCK_NAME).write_text(
+        json.dumps(
+            {"pid": os.getpid(), "op": "index", "source": "watch", "started_at": "x", "proc": lock.proc_token(os.getpid())}
+        ),
+        encoding="utf-8",
+    )
+    write_status(cfg)
+    assert _read(proj)["running"]["source"] == "watch"

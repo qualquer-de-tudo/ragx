@@ -31,11 +31,13 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from ragx.procs import run_quiet
 from ragx.storage.db import utcnow
 
 LOCK_NAME = "index.lock"
@@ -52,6 +54,12 @@ if sys.platform == "win32":
     _kernel32.GetExitCodeProcess.argtypes = [_HANDLE, ctypes.POINTER(ctypes.c_ulong)]
     _kernel32.CloseHandle.restype = ctypes.c_int
     _kernel32.CloseHandle.argtypes = [_HANDLE]
+
+    class _FILETIME(ctypes.Structure):
+        _fields_ = [("low", ctypes.c_uint32), ("high", ctypes.c_uint32)]
+
+    _kernel32.GetProcessTimes.restype = ctypes.c_int
+    _kernel32.GetProcessTimes.argtypes = [_HANDLE, *[ctypes.POINTER(_FILETIME)] * 4]
 
 
 def pid_alive(pid: int) -> bool:
@@ -76,6 +84,69 @@ def pid_alive(pid: int) -> bool:
     except PermissionError:
         return True
     return True
+
+
+def _starttime_do_stat(texto: str) -> str | None:
+    """O campo 22 (`starttime`) de `/proc/<pid>/stat`.
+
+    O nome do processo fica entre parênteses e pode ter espaços e `)`: os campos só são contados depois do
+    ÚLTIMO `)`. `starttime` é em ticks desde o boot: serve como identidade do processo, não como hora.
+    """
+    fim = texto.rfind(")")
+    if fim < 0:
+        return None
+    campos = texto[fim + 1 :].split()  # campos[0] é o estado (campo 3 do arquivo)
+    return campos[19] if len(campos) > 19 else None
+
+
+def proc_token(pid: int) -> str | None:
+    """A identidade de um processo além do NÚMERO (RAGX-0153), ou `None` se não der para saber.
+
+    O Windows recicla PIDs em segundos: uma trava de um indexador morto cujo número foi dado a outro processo
+    pareceria viva para sempre. O instante de criação do processo distingue os dois: Windows, `GetProcessTimes`;
+    Linux, o `starttime` de `/proc/<pid>/stat`; macOS e demais, `ps -o lstart=`. Qualquer falha devolve `None`
+    (e quem decide trata `None` como "não sei": segue vivo, sem arriscar assumir a trava de um dono real).
+    """
+    if pid <= 0:
+        return None
+    try:
+        if sys.platform == "win32":
+            handle = _kernel32.OpenProcess(0x1000, False, pid)  # QUERY_LIMITED_INFORMATION
+            if not handle:
+                return None
+            try:
+                criado, saiu, nucleo, usuario = _FILETIME(), _FILETIME(), _FILETIME(), _FILETIME()
+                ok = _kernel32.GetProcessTimes(
+                    handle, ctypes.byref(criado), ctypes.byref(saiu), ctypes.byref(nucleo), ctypes.byref(usuario)
+                )
+                return str((criado.high << 32) | criado.low) if ok else None
+            finally:
+                _kernel32.CloseHandle(handle)
+        if sys.platform.startswith("linux"):
+            return _starttime_do_stat(Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace"))
+        saida = run_quiet(
+            ["ps", "-o", "lstart=", "-p", str(pid)], capture_output=True, text=True, timeout=2, check=False
+        ).stdout.strip()
+        return saida or None
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def holder_alive(info: dict[str, Any] | None) -> bool:
+    """O dono descrito pelo conteúdo da trava continua vivo?
+
+    O PID existe (`pid_alive`) E, se a trava registrou o `proc` do dono, o processo de hoje com esse PID é o mesmo
+    (token igual ou impossível de ler). Token diferente significa PID reutilizado: o dono morreu. Trava de versão
+    anterior, sem `proc`, mantém o comportamento de sempre (só o número).
+    """
+    pid = info.get("pid") if info else None
+    if not isinstance(pid, int) or not pid_alive(pid):
+        return False
+    gravado = info.get("proc") if info else None
+    if not isinstance(gravado, str):
+        return True
+    atual = proc_token(pid)
+    return atual is None or atual == gravado
 
 
 def _read(path: Path) -> dict[str, Any] | None:
@@ -169,15 +240,18 @@ def try_acquire(state_dir: Path, op: str, source: str) -> bool:
     state_dir.mkdir(parents=True, exist_ok=True)
     path = state_dir / LOCK_NAME
     payload = json.dumps(
-        {"pid": os.getpid(), "op": op, "source": source, "started_at": utcnow()}
+        {
+            "pid": os.getpid(), "op": op, "source": source, "started_at": utcnow(),
+            "proc": proc_token(os.getpid()),
+        }
     )
     if _publish(path, payload):
         return True
     current = holder(state_dir)
     pid = current.get("pid") if current else None
-    if isinstance(pid, int) and pid_alive(pid):
+    if holder_alive(current):
         return False
-    # Dono morto ou arquivo ilegível: assume.
+    # Dono morto (ou PID reutilizado por outro processo) ou arquivo ilegível: assume.
     return _take_over(state_dir, pid, payload)
 
 

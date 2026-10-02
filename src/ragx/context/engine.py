@@ -467,9 +467,7 @@ def _indexando(cfg: Config) -> bool:
     from ragx.indexing import lock
 
     try:
-        dono = lock.holder(cfg.state_dir)
-        pid = dono.get("pid") if dono else None
-        return isinstance(pid, int) and lock.pid_alive(pid)
+        return lock.holder_alive(lock.holder(cfg.state_dir))  # PID reutilizado não conta (RAGX-0153)
     except Exception:
         return False
 

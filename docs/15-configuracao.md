@@ -62,6 +62,7 @@ normalize = true
 versioned_dim   = 256           # truncagem Matryoshka; 0 desliga o versionamento
 versioned_quant = "int8"        # int8 | none
 rescore         = true          # 2º estágio com float32 local, quando disponível
+model_cache_dir = "~/.ragx/models"  # fastembed: onde o modelo baixado fica (por usuário, compartilhado entre projetos)
 
 [size]
 max_artifact_bytes = 20_971_520   # 20 MB — acima disso, shard obrigatório
@@ -229,8 +230,14 @@ dim      = 768
 
 ### fastembed (sem daemon — a opção quando não há Ollama)
 
-ONNX Runtime embarcado. Baixa o modelo uma vez para `.ragx/cache/models/` e
-funciona offline a partir daí. Não exige serviço nenhum rodando.
+ONNX Runtime embarcado. Baixa o modelo uma vez e funciona offline a partir daí. Não exige serviço nenhum rodando.
+
+**Onde o modelo fica (RAGX-0153).** Numa pasta POR USUÁRIO, `embedding.model_cache_dir` (padrão `~/.ragx/models`, ou
+`RAGX_EMBEDDING_MODEL_CACHE_DIR`), compartilhada por todos os projetos: o segundo projeto novo não baixa nem ocupa
+disco de novo (o padrão tem ~240 MB; o 1º uso numa pasta vazia levou 10 s, contra 0,9 s com o modelo já baixado).
+Um projeto que já tem `.ragx/cache/models/` não vazia continua usando a dele (nada é movido, copiado nem apagado
+sozinho); para migrar, apague essa pasta, e o `ragx doctor` mostra o tamanho dela e como fazer. `model_cache_dir = ""`
+volta ao comportamento antigo, uma cópia por projeto.
 
 ```bash
 uv pip install "ragx[embed]"

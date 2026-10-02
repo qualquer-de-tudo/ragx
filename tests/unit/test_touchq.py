@@ -134,3 +134,41 @@ def test_touchq_nao_le_arquivo_do_projeto() -> None:
     assert "read_bytes" not in fonte
     # a única leitura de texto é da própria fila (`_ler` e o `claim`)
     assert fonte.count("read_text(") == 1
+
+
+def test_leitura_que_falha_uma_vez_nao_perde_a_fila(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Antivírus ou outro processo segurando o arquivo recém-tomado não pode virar "fila vazia" (e apagá-la)."""
+    sd = tmp_path / ".ragx"
+    touchq.enqueue(sd, ["a.py", "b.py", "c.py"])
+    original = Path.read_text
+    falhas = {"restam": 2}
+
+    def instavel(self: Path, *a, **k):
+        if self.name.endswith(".claimed") and falhas["restam"] > 0:
+            falhas["restam"] -= 1
+            raise PermissionError("em uso por outro processo")
+        return original(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", instavel)
+    lote = touchq.claim(sd)
+    assert lote is not None and sorted(lote.paths) == ["a.py", "b.py", "c.py"]
+    lote.done()
+
+
+def test_leitura_que_nunca_funciona_devolve_o_arquivo_a_fila_em_vez_de_apagar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sd = tmp_path / ".ragx"
+    touchq.enqueue(sd, ["a.py", "b.py"])
+    original = Path.read_text
+
+    def quebrada(self: Path, *a, **k):
+        if self.name.endswith(".claimed"):
+            raise PermissionError("em uso")
+        return original(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", quebrada)
+    monkeypatch.setattr(touchq.time, "sleep", lambda s: None)
+    assert touchq.claim(sd) is None
+    assert touchq.pending(sd) == ["a.py", "b.py"]  # nada se perdeu: está de volta na fila
+    assert not list(sd.glob("*.claimed"))

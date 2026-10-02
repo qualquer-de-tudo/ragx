@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import sys
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -126,6 +128,7 @@ def doctor(
     ok = _embedder_status(cfg, _row)
     if not ok:
         problems += 1
+    _cache_de_modelos(cfg, _row)
 
     if as_json:
         # Sai com 0 mesmo havendo problema: o diagnóstico está no payload, e
@@ -181,6 +184,31 @@ def _embedder_status(cfg, _row) -> bool:  # type: ignore[no-untyped-def]
                 "ou use: ragx config set embedding.provider fastembed",
             ])
     return _row("Embedder", label, True)
+
+
+def _cache_de_modelos(cfg, _row) -> None:  # type: ignore[no-untyped-def]
+    """Informativo (RAGX-0153): onde o fastembed guarda o modelo e o que sobrou do cache por projeto.
+
+    Nunca muda o veredito do `doctor` (sempre `ok=True`) e nunca levanta.
+    """
+    try:
+        from ragx.embeddings import legacy_models_dir, models_dir
+
+        legado = legacy_models_dir(cfg)
+        tem_legado = legado.is_dir() and any(legado.iterdir())
+        if cfg.embedding.provider != "fastembed" and not tem_legado:
+            return
+        em_uso = models_dir(cfg)
+        if tem_legado:
+            mb = sum(f.stat().st_size for f in legado.rglob("*") if f.is_file()) / 2**20
+            _row("Cache de modelos", f"{legado} ({mb:.0f} MB, em uso: cópia só deste projeto)", True, [
+                "para migrar para a pasta do usuário, apague essa pasta: o modelo é baixado uma vez para "
+                f"{Path(os.path.expanduser(cfg.embedding.model_cache_dir))} e passa a servir a todos os projetos",
+            ])
+        else:
+            _row("Cache de modelos", f"{em_uso} (compartilhado entre projetos)", True)
+    except Exception:
+        return
 
 
 def _processador_do_ollama(cfg) -> str:  # type: ignore[no-untyped-def]

@@ -132,3 +132,99 @@ def test_embedder_id_nao_diverge_do_embedder_construido(provider: str) -> None:
         assert cfg.embedding.dim == emb.dim
     finally:
         reset_embedder_cache()
+
+
+# ── pasta de modelos do fastembed (RAGX-0153) ───────────────────────────
+def _cfg_modelos(tmp_path, extra: str = ""):
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "fastembed"\ndim = 384\n' + extra,
+        encoding="utf-8",
+    )
+    from ragx.config import load_config
+
+    return load_config(tmp_path)
+
+
+def test_models_dir_sem_cache_legado_usa_a_pasta_do_usuario(tmp_path) -> None:
+    import os
+    from pathlib import Path
+
+    from ragx.embeddings import models_dir
+
+    cfg = _cfg_modelos(tmp_path)
+    assert cfg.embedding.model_cache_dir == "~/.ragx/models"
+    esperado = Path(os.path.expanduser("~/.ragx/models"))
+    assert models_dir(cfg) == esperado
+    # o HOME redirecionado de `tests/conftest.py` é o que vale, nunca o da pessoa
+    assert str(esperado).startswith(os.path.expanduser("~"))
+    assert tmp_path not in models_dir(cfg).parents
+
+
+def test_models_dir_com_cache_legado_vazio_ou_ausente_usa_a_do_usuario(tmp_path) -> None:
+    from ragx.embeddings import legacy_models_dir, models_dir
+
+    cfg = _cfg_modelos(tmp_path)
+    assert models_dir(cfg) != legacy_models_dir(cfg)  # ausente
+    legacy_models_dir(cfg).mkdir(parents=True)
+    assert models_dir(cfg) != legacy_models_dir(cfg)  # existe, mas vazia
+
+
+def test_models_dir_com_cache_legado_nao_vazio_continua_no_do_projeto(tmp_path) -> None:
+    from ragx.embeddings import legacy_models_dir, models_dir
+
+    cfg = _cfg_modelos(tmp_path)
+    (legacy_models_dir(cfg) / "models--x").mkdir(parents=True)
+    assert models_dir(cfg) == legacy_models_dir(cfg)
+
+
+def test_models_dir_por_configuracao_e_por_variavel_de_ambiente(tmp_path, monkeypatch) -> None:
+    from ragx.config import load_config
+    from ragx.embeddings import models_dir
+
+    cfg = _cfg_modelos(tmp_path / "p1", f'model_cache_dir = "{(tmp_path / "meus-modelos").as_posix()}"\n')
+    assert models_dir(cfg) == tmp_path / "meus-modelos"
+
+    monkeypatch.setenv("RAGX_EMBEDDING_MODEL_CACHE_DIR", str(tmp_path / "do-ambiente"))
+    outro = _cfg_modelos(tmp_path / "p2")
+    assert outro.embedding.model_cache_dir == str(tmp_path / "do-ambiente")
+    assert models_dir(load_config(tmp_path / "p2")) == tmp_path / "do-ambiente"
+
+
+def test_models_dir_vazio_na_configuracao_volta_para_o_cache_do_projeto(tmp_path) -> None:
+    from ragx.embeddings import legacy_models_dir, models_dir
+
+    cfg = _cfg_modelos(tmp_path, 'model_cache_dir = ""\n')
+    assert models_dir(cfg) == legacy_models_dir(cfg)
+
+
+def test_doctor_informa_o_cache_de_modelos_sem_mudar_o_veredito(tmp_path) -> None:
+    from ragx.cli.commands.doctor import _cache_de_modelos
+    from ragx.embeddings import legacy_models_dir
+
+    linhas: list[tuple] = []
+
+    def row(rotulo, valor, ok, dicas=None):
+        linhas.append((rotulo, valor, ok, dicas or []))
+        return ok
+
+    cfg = _cfg_modelos(tmp_path)
+    _cache_de_modelos(cfg, row)  # fastembed, sem cache legado: aponta a pasta do usuário
+    assert linhas[-1][0] == "Cache de modelos" and "compartilhado" in linhas[-1][1] and linhas[-1][2] is True
+
+    (legacy_models_dir(cfg) / "models--x").mkdir(parents=True)
+    (legacy_models_dir(cfg) / "models--x" / "m.onnx").write_bytes(b"x" * 2048)
+    _cache_de_modelos(cfg, row)  # com cache legado: tamanho e como migrar
+    _rotulo, valor, ok, dicas = linhas[-1]
+    assert ok is True and "em uso" in valor and any("apague essa pasta" in d for d in dicas)
+
+    # outro provider e nenhum cache legado: nada a dizer
+    (tmp_path / "ragx.toml").write_text('[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "hashing"\ndim = 64\n', encoding="utf-8")
+    import shutil
+
+    shutil.rmtree(legacy_models_dir(cfg))
+    from ragx.config import load_config
+
+    antes = len(linhas)
+    _cache_de_modelos(load_config(tmp_path), row)
+    assert len(linhas) == antes

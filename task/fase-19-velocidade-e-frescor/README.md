@@ -32,7 +32,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 | [RAGX-0150](RAGX-0150-micro-custos-ragx-context-sem-tokens-mmr-vetorizado-query-embutida-uma-vez.md) | Micro-custos: `ragx context` sem `--tokens`, MMR vetorizado, query embutida uma vez | P3 | 0,5d | `done` |
 | [RAGX-0151](RAGX-0151-grafo-incremental-por-documento.md) | Grafo incremental por documento | P3 | 1,5d | `review` |
 | [RAGX-0152](RAGX-0152-primeiro-indice-em-paralelo-pool-de-processos.md) | Primeiro índice em paralelo (pool de processos) | P3 | 1d | `review` |
-| [RAGX-0153](RAGX-0153-cache-de-modelos-por-usuario-e-trava-com-pid-reutilizado.md) | Cache de modelos por usuário e trava com PID reutilizado | P3 | 0,5d | `todo` |
+| [RAGX-0153](RAGX-0153-cache-de-modelos-por-usuario-e-trava-com-pid-reutilizado.md) | Cache de modelos por usuário e trava com PID reutilizado | P3 | 0,5d | `done` |
 
 ## Dependências
 

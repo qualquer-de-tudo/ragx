@@ -55,8 +55,7 @@ def _build(
         "SELECT COUNT(DISTINCT chunk_id) FROM embeddings"
     ).fetchone()[0]
     current = lock.holder(cfg.state_dir)
-    pid = current.get("pid") if current else None
-    running = current if isinstance(pid, int) and lock.pid_alive(pid) else None
+    running = current if lock.holder_alive(current) else None
     dirty = run.get("git_dirty") if run else None
     return {
         "schema_version": SCHEMA,

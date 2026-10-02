@@ -15,6 +15,8 @@ Ver `task/fase-14-evolucao-do-rag/RAGX-0097-*.md`.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from ragx.config import Config, load_config
@@ -130,3 +132,50 @@ def test_a_busca_devolve_os_mesmos_ids_em_chamadas_repetidas(tmp_path) -> None:
 
     for modo in ("keyword", "semantic", "hybrid"):
         assert ids(modo) == ids(modo), f"resultado instável em {modo}"
+
+
+# ── pasta de modelos por usuário (RAGX-0153) ────────────────────────────
+class _TextEmbeddingFalso:
+    chamadas: ClassVar[list[dict]] = []
+
+    def __init__(self, **kwargs) -> None:
+        type(self).chamadas.append(kwargs)
+
+    def embed(self, textos, batch_size=32):  # pragma: no cover - não é usado aqui
+        raise AssertionError
+
+
+@pytest.fixture
+def fastembed_falso(monkeypatch: pytest.MonkeyPatch):
+    import sys
+    import types
+
+    _TextEmbeddingFalso.chamadas = []
+    modulo = types.ModuleType("fastembed")
+    modulo.TextEmbedding = _TextEmbeddingFalso  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "fastembed", modulo)
+    return _TextEmbeddingFalso
+
+
+def test_dois_projetos_novos_usam_a_mesma_pasta_de_modelos(tmp_path, fastembed_falso) -> None:
+    from ragx.embeddings import models_dir
+
+    a = _cfg(tmp_path / "a", provider="fastembed", dim=384)
+    b = _cfg(tmp_path / "b", provider="fastembed", dim=384)
+    build_embedder(a)
+    build_embedder(b)
+    assert len(fastembed_falso.chamadas) == 2
+    pasta_a, pasta_b = (c["cache_dir"] for c in fastembed_falso.chamadas)
+    assert pasta_a == pasta_b == str(models_dir(a)) == str(models_dir(b))
+    # não é a pasta de nenhum dos projetos
+    assert str(tmp_path) not in pasta_a
+    assert not (a.state_dir / "cache" / "models").exists()  # nada foi criado no projeto
+
+
+def test_projeto_com_cache_legado_continua_usando_o_dele(tmp_path, fastembed_falso) -> None:
+    cfg = _cfg(tmp_path / "antigo", provider="fastembed", dim=384)
+    legado = cfg.state_dir / "cache" / "models"
+    (legado / "models--x").mkdir(parents=True)
+    (legado / "models--x" / "model.onnx").write_bytes(b"onnx")
+    build_embedder(cfg)
+    assert fastembed_falso.chamadas[-1]["cache_dir"] == str(legado)

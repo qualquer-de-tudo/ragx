@@ -96,11 +96,20 @@ def enqueue(state_dir: Path, rel_paths: Iterable[str]) -> int:
     return len(linhas)
 
 
+def _texto(path: Path) -> str:
+    """O ÚNICO ponto que lê um arquivo aqui, e só da própria fila (nomes de caminho, nunca conteúdo do projeto)."""
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
 def _ler(path: Path) -> list[str]:
     try:
-        texto = path.read_text(encoding="utf-8", errors="replace")
+        texto = _texto(path)
     except OSError:
         return []
+    return _linhas(texto)
+
+
+def _linhas(texto: str) -> list[str]:
     vistos: dict[str, str] = {}
     for linha in texto.splitlines():  # splitlines trata CRLF
         rel = linha.strip().replace("\\", "/")
@@ -140,6 +149,26 @@ class Claim:
         self.done()
 
 
+def _ler_tomada(path: Path) -> str | None:
+    """O texto do arquivo tomado, com algumas tentativas; `None` se continua ilegível."""
+    for tentativa in range(5):
+        try:
+            return _texto(path)
+        except OSError:
+            time.sleep(0.01 * (tentativa + 1))
+    return None
+
+
+def _devolver_arquivo(tomada: Path, fila: Path) -> None:
+    """Põe o arquivo tomado de volta como fila, sem pisar numa fila que já recomeçou; senão o deixa onde está."""
+    try:
+        os.link(tomada, fila)  # falha se a fila já existe: nunca sobrescreve
+    except OSError:
+        return  # fila nova no caminho (ou sem link físico): o arquivo tomado fica para recuperação, não é apagado
+    with contextlib.suppress(OSError):
+        tomada.unlink()
+
+
 def claim(state_dir: Path, max_batch: int = DEFAULT_MAX_BATCH) -> Claim | None:
     """Toma a fila inteira, de forma atômica. `None` se estava vazia.
 
@@ -151,7 +180,13 @@ def claim(state_dir: Path, max_batch: int = DEFAULT_MAX_BATCH) -> Claim | None:
         os.replace(fila, tomada)
     except OSError:  # não existe (ou outro consumidor chegou primeiro)
         return None
-    caminhos = _ler(tomada)
+    texto = _ler_tomada(tomada)
+    if texto is None:
+        # NÃO deu para ler (antivírus, outro processo segurando o arquivo): isso não é "fila vazia". Apagar aqui
+        # perderia as edições da fila e o índice ficaria velho sem ninguém saber; devolve o arquivo à fila.
+        _devolver_arquivo(tomada, fila)
+        return None
+    caminhos = _linhas(texto)
     if not caminhos:
         with contextlib.suppress(OSError):
             tomada.unlink()

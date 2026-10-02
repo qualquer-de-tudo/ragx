@@ -264,6 +264,11 @@ principal, com os resultados consumidos na ordem original, então o índice sai 
   e espera só os lotes em voo, sem processo filho sobrando.
 - O embedding continua no processo principal (RAGX-0146) e a escrita é de um escritor só.
 
+**Trava entre processos.** `index.lock` guarda o PID e o `proc` do dono (instante de criação do processo: `GetProcessTimes` no Windows,
+`starttime` de `/proc/<pid>/stat` no Linux, `ps -o lstart=` no macOS). Quem chega com a trava ocupada confere os DOIS: PID
+que existe mas pertence a outro processo (PID reutilizado) é dono morto, e a trava é assumida. Se o token não puder ser
+lido, a trava segue como viva; trava sem `proc` (versão anterior) vale só pelo número (RAGX-0153).
+
 ## Observabilidade
 
 ```bash
