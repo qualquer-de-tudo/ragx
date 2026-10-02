@@ -26,7 +26,7 @@ correspondente; regras do board em [README.md](README.md); plano geral em
 | **20** | [Economia de tokens](fase-20-economia-de-tokens/) | 🔴 v2 | 12 | ~11,5d |
 | **21** | [Recuperação v2](fase-21-recuperacao-v2/) | 🟠 v2 | 5 | ~8d |
 | **22** | [Painel v2](fase-22-painel-v2/) | 🟠 v2 | 25 | ~17,75d |
-| **23** | [Pós-lançamento](fase-23-pos-lancamento/) | 🟠 v1.0.x | 1 | ~2d |
+| **23** | [Pós-lançamento](fase-23-pos-lancamento/) | 🟠 v1.0.x | 2 | ~3d |
 | | **Total da v2 (fases 19 a 22)** | | **67** | **~55,25d** |
 
 > Estimativas são ordem de grandeza para um desenvolvedor, não compromisso de prazo.

@@ -147,7 +147,7 @@
       ],
       "goal": { "value": 1.5, "met": false },
       "method": "scripts/medir_indice_inicial.py --arquivos 20000 --provider hashing --jobs 4 --segunda-rodada",
-      "caveat": "Meta não atingida: o custo que sobra é por arquivo, em Python (stat, regras de ignore, pathlib), sem atalho seguro."
+      "caveat": "Meta não atingida: o custo que sobra é por arquivo, em Python (stat, regras de ignore, pathlib), sem atalho seguro. Próximo passo planejado (RAGX-0198): perguntar ao git o que mudou, em vez de varrer; o git leva 0,14 s nos mesmos 20 mil arquivos."
     },
     {
       "id": "panel-spawns",

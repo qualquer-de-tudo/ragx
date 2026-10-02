@@ -36,7 +36,7 @@ Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **me
 | Edição não commitada visível na busca | indefinido (indefinida: só aparecia no próximo commit ou refresh) | **1,4 s** | — | até 5 s: atingida |
 | Índice sem mudança, 20 mil arquivos | 7,6 s | **3,7 s** | −51% | até 1,5 s: **não atingida** |
 
-- **Índice sem mudança, 20 mil arquivos.** Meta não atingida: o custo que sobra é por arquivo, em Python (stat, regras de ignore, pathlib), sem atalho seguro.
+- **Índice sem mudança, 20 mil arquivos.** Meta não atingida: o custo que sobra é por arquivo, em Python (stat, regras de ignore, pathlib), sem atalho seguro. Próximo passo planejado (RAGX-0198): perguntar ao git o que mudou, em vez de varrer; o git leva 0,14 s nos mesmos 20 mil arquivos.
 
 ## Painel
 
