@@ -9,6 +9,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.0.2] — 2026-10-02
+
 ### Adicionado
 
 - **Benchmarks públicos no painel (Como funciona → Benchmarks).** O que o RAGX mediu de si mesmo, com antes, depois, meta, método, data e máquina: 11 métricas em 4 grupos
