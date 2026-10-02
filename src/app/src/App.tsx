@@ -215,6 +215,7 @@ function App() {
           onRefresh={() => void refresh()}
           jobs={jobs}
           claude={claude}
+          projects={snapshot?.projects ?? []}
         />
       )
       break
@@ -222,7 +223,12 @@ function App() {
       page = <PreferencesPage />
       break
     case 'how':
-      page = <HowItWorksPage onRestart={() => setRoute({ page: 'onboarding' })} />
+      page = (
+        <HowItWorksPage
+          onRestart={() => setRoute({ page: 'onboarding' })}
+          onOpenConnections={() => setRoute({ page: 'connections' })}
+        />
+      )
       break
   }
 

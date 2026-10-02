@@ -1,6 +1,9 @@
-import type { ConnectionCheck, JobView } from '../types/ragx-bridge'
+import { useEffect } from 'react'
+import type { ConnectionCheck, JobView, ProjectSnapshot } from '../types/ragx-bridge'
 import { ConnectionGrid } from '../components/connections/ConnectionCard'
 import { ClaudeProfiles } from '../components/connections/ClaudeProfiles'
+import { AutoSetupCard } from '../components/connections/AutoSetupCard'
+import { useAutoSetup } from '../hooks/useAutoSetup'
 import type { ClaudeToggle } from '../hooks/useClaudeIntegration'
 
 /**
@@ -33,6 +36,7 @@ export function ConnectionsPage({
   onRefresh,
   jobs,
   claude,
+  projects = [],
 }: {
   connections: ConnectionCheck[] | null
   checking: boolean
@@ -40,7 +44,16 @@ export function ConnectionsPage({
   jobs: readonly JobView[]
   /** Os perfis do Claude Code; sem ele (testes antigos), o card não aparece. */
   claude?: ClaudeToggle
+  /** Os projetos do último snapshot: o card de ajuste automático conta os hooks de git. */
+  projects?: readonly ProjectSnapshot[]
 }) {
+  const auto = useAutoSetup()
+  const ranAt = auto.state?.lastRunAt ?? null
+  const refreshClaude = claude?.refresh
+  // O ajuste pode ter completado hooks por fora: relê os perfis quando uma rodada nova termina.
+  useEffect(() => {
+    if (ranAt !== null) refreshClaude?.()
+  }, [ranAt, refreshClaude])
   return (
     <section className="page">
       <header className="page-head">
@@ -55,6 +68,7 @@ export function ConnectionsPage({
           </button>
         </div>
       </header>
+      {claude && <AutoSetupCard auto={auto} profiles={claude.profiles} projects={projects} />}
       <ConnectionGrid
         connections={connections}
         jobs={jobs}

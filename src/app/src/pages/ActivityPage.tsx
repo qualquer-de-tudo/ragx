@@ -16,6 +16,8 @@ import { usePricing } from '../hooks/usePricing'
 import { formatMoney, savedMoney } from '../money'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Segmented } from '../components/ui/Segmented'
+import { Pager } from '../components/ui/Pager'
+import { EVENTS_PER_PAGE, SESSIONS_PER_PAGE, clampPage } from '../paging'
 import { ActivityRow } from '../components/activity/ActivityRow'
 import { SessionList } from '../components/activity/SessionList'
 import { groupSessions } from '../sessions'
@@ -28,6 +30,7 @@ type ActivityView = 'eventos' | 'sessoes'
 let activityViewPref: ActivityView = 'eventos'
 
 const FILTERS: ActivityFilter[] = ['all', 'mcp', 'cli', 'session']
+
 
 /** Uma indexação acontecendo agora, pelo snapshot (hook, CLI) ou pela fila do painel. */
 interface Running {
@@ -76,15 +79,31 @@ export function ActivityPage({
   const [kind, setKind] = useState<ActivityFilter>('all')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [view, setViewState] = useState<ActivityView>(activityViewPref)
+  const [page, setPage] = useState(0)
   const setView = (v: ActivityView) => {
     activityViewPref = v // lembrada enquanto o painel estiver aberto
     setViewState(v)
+    setPage(0)
+  }
+  // Trocar o filtro volta à primeira página: a lista é outra.
+  const changeKind = (k: ActivityFilter) => {
+    setKind(k)
+    setPage(0)
+  }
+  const changeProject = (id: string | null) => {
+    setProjectId(id)
+    setPage(0)
   }
 
   const shown = useMemo(() => filterEvents(events, kind, projectId), [events, kind, projectId])
   const t = useMemo(() => totals(events), [events])
   const adoption = useAdoption(events)
   const sessions = useMemo(() => (view === 'sessoes' ? groupSessions(shown) : []), [view, shown])
+  const pageSize = view === 'sessoes' ? SESSIONS_PER_PAGE : EVENTS_PER_PAGE
+  const total = view === 'sessoes' ? sessions.length : shown.length
+  const current = clampPage(page, total, pageSize)
+  const pageEvents = useMemo(() => shown.slice(current * pageSize, (current + 1) * pageSize), [shown, current, pageSize])
+  const pageSessions = useMemo(() => sessions.slice(current * pageSize, (current + 1) * pageSize), [sessions, current, pageSize])
   const running = runningNow(projects, jobs)
   const live = events.length > 0 && now - Date.parse(events[0].ts) <= LIVE_MS
   const withActivity = useMemo(() => {
@@ -158,11 +177,11 @@ export function ActivityPage({
             label="Tipo de atividade"
             value={kind}
             options={FILTERS.map((f) => ({ value: f, label: FILTER_LABEL[f] }))}
-            onChange={setKind}
+            onChange={changeKind}
           />
           <label className="activity-project-filter">
             <span className="dim">Projeto</span>
-            <select value={projectId ?? ''} onChange={(e) => setProjectId(e.target.value || null)}>
+            <select value={projectId ?? ''} onChange={(e) => changeProject(e.target.value || null)}>
               <option value="">Todos</option>
               {withActivity.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -185,13 +204,16 @@ export function ActivityPage({
               ? 'Nenhuma atividade nas últimas 24 h. Ela aparece aqui assim que um agente usar o RAGX por MCP, alguém rodar ragx search ou ragx context no terminal, ou uma sessão do Claude Code abrir num projeto indexado.'
               : 'Nada com esse filtro nas últimas 24 h.'}</EmptyState>
         ) : view === 'sessoes' ? (
-          <SessionList groups={sessions} />
+          <SessionList groups={pageSessions} />
         ) : (
           <ol className="activity-feed" aria-label="Eventos, do mais novo para o mais antigo">
-            {shown.map((e) => (
-              <ActivityRow key={e.id} event={e} fresh={now - Date.parse(e.ts) < 5000} onOpen={onOpen} />
+            {pageEvents.map((e) => (
+              <ActivityRow key={e.id} event={e} fresh={current === 0 && now - Date.parse(e.ts) < 5000} onOpen={onOpen} />
             ))}
           </ol>
+        )}
+        {shown.length > 0 && (
+          <Pager total={total} page={current} pageSize={pageSize} onPage={setPage} noun={view === 'sessoes' ? 'sessões' : 'eventos'} />
         )}
       </Section>
     </section>

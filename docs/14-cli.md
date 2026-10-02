@@ -409,6 +409,7 @@ ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projeto
 ragx claude on [--dry-run] [--no-hint] [--no-touch] [--no-nudge]   põe de volta, com a dica, o aviso de edição e o lembrete
 ragx touch [ARQUIVO...] [--stdin-json] [--root R]    avisa o RAGX de arquivos editados (reindexa só eles)
 ragx claude on|off --profile empresa     só num perfil (id ou nome)
+ragx claude heal [--json] [--command EXE] [--profile X] [--dry-run]   instala os hooks que faltam nos perfis onde o RAGX já está ligado
 ragx claude hint                 o texto que a dica entrega ao agente nesta pasta
 ragx claude nudge                lembrete do índice no 1º Grep/Glob da sessão (uso do hook PreToolUse)
 ragx claude agent install [--dry-run] [--profile X]   instala o subagente ragx-explorer (opt-in)
@@ -512,6 +513,14 @@ pode estar numa pasta-pai), pasta sem índice é ignorada, e o comando sai sempr
 edições em sequência (`[watch] touch_debounce_ms`, 400 ms) viram uma só reindexação. `--no-touch`
 liga o MCP sem o hook (e tira o que já estava); `off` o remove, e os seus `PostToolUse` ficam.
 `ragx touch ARQUIVO...` faz o mesmo à mão.
+
+**Completar hooks que faltam (`ragx claude heal`).** Quem ligou o RAGX numa versão antiga ficou sem o aviso de edição e o
+lembrete de busca, e nada avisava: o índice deixava de ver o que o agente edita (visto numa máquina com três perfis, os três
+sem `touch` nem `nudge`). `heal` completa o que falta, **só em perfil onde o MCP já está registrado**: nunca liga um perfil
+desligado, que é decisão da pessoa. Respeita a recusa explícita: `ragx claude on --no-touch` (ou `--no-nudge`, `--no-hint`)
+guarda a escolha em `~/.ragx/claude-optout.json`, e `heal` não reinstala o que foi recusado; um `ragx claude on` sem flags
+apaga a recusa. É idempotente, preserva os hooks da pessoa e aceita `--dry-run`. O painel o roda sozinho (ver
+[GUIA-DE-USO](GUIA-DE-USO.md), tela Conexões).
 
 ## Orçamento de tamanho (Fases 1 e 9)
 

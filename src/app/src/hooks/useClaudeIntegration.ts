@@ -15,6 +15,8 @@ export interface ClaudeToggle {
   /** Pede a pasta ao sistema e adiciona como perfil, já ligado. */
   addProfile: () => void
   removeProfile: (id: string) => void
+  /** Lê de novo, sem mexer em `busy`: o ajuste automático pode ter completado hooks por fora. */
+  refresh?: () => void
 }
 
 /**
@@ -115,5 +117,16 @@ export function useClaudeIntegration(): ClaudeToggle {
   )
   const removeProfile = useCallback((id: string) => run(() => window.ragx.removeClaudeProfile(id)), [run])
 
-  return { enabled, busy, error, changed, toggle, profiles, setProfile, addProfile, removeProfile }
+  const refresh = useCallback(() => {
+    window.ragx.getClaudeIntegration().then(
+      (s) => {
+        if (!alive.current || inFlight.current) return
+        setEnabled(s.enabled)
+        setProfiles(s.profiles ?? [])
+      },
+      (err: unknown) => console.error('getClaudeIntegration() falhou:', err),
+    )
+  }, [])
+
+  return { enabled, busy, error, changed, toggle, profiles, setProfile, addProfile, removeProfile, refresh }
 }

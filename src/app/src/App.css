@@ -65,10 +65,25 @@
   color: var(--ink);
 }
 
+.nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+}
+
 .nav ul {
   display: grid;
   gap: var(--sp-4);
   padding-top: var(--sp-8);
+}
+
+/* A ajuda no pé da barra, separada do uso diário por um fio. */
+.nav .nav-foot {
+  margin-top: auto;
+  padding: var(--sp-8) 0;
+  border-top: 1px solid var(--line);
 }
 
 .nav-item {
@@ -1276,10 +1291,25 @@ kbd {
 /* Uma faixa por serviço, na largura toda. */
 /* Uma coluna que pode encolher: sem isto o caminho longo de um fato alargava o cartão além da janela. */
 .conn-card {
+  --conn-indent: 50px;
+  --conn-tone: var(--line-strong);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  padding: 18px 20px;
+  gap: var(--sp-12);
+  padding: var(--sp-16) var(--sp-20) var(--sp-16) var(--sp-20);
+  box-shadow: inset 3px 0 0 var(--conn-tone);
+}
+
+.conn-ok {
+  --conn-tone: var(--good);
+}
+
+.conn-warn {
+  --conn-tone: var(--warning);
+}
+
+.conn-error {
+  --conn-tone: var(--critical);
 }
 
 .conn-head {
@@ -1292,30 +1322,15 @@ kbd {
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   background: var(--surface-3);
   color: var(--ink-2);
 }
 
-.conn-ok .conn-icon {
-  background: var(--good-wash);
-  color: var(--good);
-}
-
-.conn-warn .conn-icon {
-  background: var(--warning-wash);
-  color: var(--warning);
-}
-
-.conn-error .conn-icon {
-  background: var(--critical-wash);
-  color: var(--critical-text);
-}
-
 .conn-ident {
-  flex: 1 1 auto;
+  flex: 1 1 220px;
   min-width: 0;
   display: grid;
   gap: 4px;
@@ -1344,28 +1359,32 @@ kbd {
 .conn-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--sp-6) var(--sp-24);
   margin: 0;
+  padding: var(--sp-8) 0 0 var(--conn-indent);
+  border-top: 1px solid var(--line);
 }
 
 .conn-fact {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-8);
   flex: 0 1 auto;
-  min-width: min(150px, 100%);
+  min-width: 0;
   max-width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
 }
 
 .conn-fact dt {
-  font-size: var(--fs-sm);
+  flex: none;
+  font-size: var(--fs-md);
   color: var(--ink-3);
 }
 
 .conn-fact dd {
-  margin: 2px 0 0;
-  font-size: var(--fs-lg);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 500;
   color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1374,7 +1393,20 @@ kbd {
 
 .conn-help {
   display: grid;
-  gap: 6px;
+  gap: var(--sp-6);
+  padding-left: var(--conn-indent);
+}
+
+.conn-help-summary {
+  width: fit-content;
+  cursor: pointer;
+  font-size: var(--fs-md);
+  color: var(--accent-text);
+  border-radius: var(--radius-xs);
+}
+
+.conn-help[open] > .conn-help-summary {
+  margin-bottom: 6px;
 }
 
 .conn-help-text {
@@ -1475,7 +1507,7 @@ kbd {
     max-width: none;
     width: 100%;
     justify-content: flex-start;
-    padding-left: 54px;
+    padding-left: var(--conn-indent);
   }
 }
 
@@ -1487,7 +1519,7 @@ kbd {
   max-width: none;
   width: 100%;
   justify-content: flex-start;
-  padding-left: 54px;
+  padding-left: var(--conn-indent);
 }
 
 .how-card h2 {
@@ -2812,6 +2844,36 @@ kbd {
   margin-left: auto;
 }
 
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8) var(--sp-16);
+  margin-top: var(--sp-12);
+  padding-top: var(--sp-12);
+  border-top: 1px solid var(--line);
+}
+
+.pager-range {
+  margin: 0;
+  font-size: var(--fs-md);
+  color: var(--ink-2);
+}
+
+.pager-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+.pager-page {
+  min-width: 110px;
+  text-align: center;
+  font-size: var(--fs-md);
+}
+
 .activity-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -2958,8 +3020,8 @@ kbd {
 .conn-sub {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 4px;
-  padding-top: 14px;
+  gap: var(--sp-4);
+  padding: var(--sp-12) 0 0 var(--conn-indent);
   border-top: 1px solid var(--line);
 }
 
@@ -3269,4 +3331,330 @@ kbd {
 
 .projects-table tbody tr:hover {
   background: var(--surface-2);
+}
+
+/* ── Conexões: ajuste automático e hooks por perfil (1.0.1) ────────── */
+
+.auto-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-12);
+  padding: var(--sp-16) var(--sp-20);
+  margin-bottom: var(--sp-12);
+}
+
+.auto-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-16);
+}
+
+.auto-head .card-title {
+  margin: 0;
+}
+
+.auto-lede {
+  margin: var(--sp-4) 0 0;
+  max-width: 62ch;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.auto-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auto-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-12);
+  padding: var(--sp-8) 0;
+  border-top: 1px solid var(--line);
+}
+
+.auto-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: var(--sp-6);
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+
+.auto-ok .auto-dot {
+  background: var(--good);
+}
+
+.auto-warn .auto-dot {
+  background: var(--warning);
+}
+
+.auto-row-body {
+  min-width: 0;
+}
+
+.auto-row-title {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.auto-row-text {
+  margin: var(--sp-2) 0 0;
+  max-width: 72ch;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.auto-callout {
+  margin: 0;
+  padding: var(--sp-8) var(--sp-12);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.auto-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8) var(--sp-16);
+  padding-top: var(--sp-12);
+  border-top: 1px solid var(--line);
+}
+
+.auto-last {
+  flex: 1 1 280px;
+  margin: 0;
+  min-width: 0;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.hook-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-6);
+  margin: var(--sp-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hook-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-2) var(--sp-8) var(--sp-2) var(--sp-8);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+}
+
+.hook-chip-mark {
+  font-weight: 700;
+}
+
+.hook-chip-on {
+  border-color: var(--good-line);
+  background: var(--good-wash);
+  color: var(--ink);
+}
+
+.hook-chip-on .hook-chip-mark {
+  color: var(--good);
+}
+
+.hook-chip-off {
+  border-color: var(--warning-line);
+  background: var(--warning-wash);
+  color: var(--ink);
+}
+
+.hook-chip-off .hook-chip-mark {
+  color: var(--warning);
+}
+
+/* ── tela Como funciona ────────────────────────────────────────────── */
+
+.how-page {
+  display: grid;
+  gap: var(--sp-12);
+  align-content: start;
+}
+
+.how-flow {
+  display: grid;
+  gap: var(--sp-16);
+  padding: var(--sp-20);
+}
+
+.how-flow .card-title {
+  margin: 0;
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 var(--sp-20);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-step {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--sp-6);
+}
+
+/* O fio que liga cada passo ao seguinte: a ordem é parte da informação. */
+.how-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: 36px;
+  right: -12px;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.how-step-n {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: var(--sp-6);
+  border: 1px solid var(--accent-line);
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent-text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.how-step-title {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.how-step-text {
+  margin: 0;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.how-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--sp-12);
+}
+
+.how-keep,
+.how-local {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-12);
+  padding: var(--sp-20);
+}
+
+.how-keep .card-title,
+.how-local .card-title {
+  margin: 0;
+}
+
+.how-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-list > li {
+  padding: var(--sp-12) 0;
+  border-top: 1px solid var(--line);
+}
+
+.how-list > li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.how-list > li:last-child {
+  padding-bottom: 0;
+}
+
+.how-list-title {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.how-list-text {
+  margin: var(--sp-2) 0 0;
+  max-width: 68ch;
+  font-size: var(--fs-md);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.how-list-plain .how-list-text {
+  margin: 0;
+}
+
+.how-link {
+  justify-self: start;
+}
+
+.how-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-12);
+  padding-top: var(--sp-4);
+}
+
+.how-foot p {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .how-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-16);
+  }
+
+  .how-step {
+    grid-template-columns: 28px minmax(0, 1fr);
+    column-gap: var(--sp-12);
+    row-gap: var(--sp-2);
+  }
+
+  .how-step-n {
+    grid-row: 1 / span 2;
+    margin-bottom: 0;
+  }
+
+  .how-step:not(:last-child)::after {
+    top: 34px;
+    bottom: -14px;
+    left: 13px;
+    right: auto;
+    width: 1px;
+    height: auto;
+  }
+
+  .how-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

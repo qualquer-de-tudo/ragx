@@ -27,13 +27,21 @@ const item = (nome: string) => screen.getByText(nome, { selector: '.profile-name
 describe('ClaudeProfiles', () => {
   it('um item por perfil, com a pasta, a origem e o interruptor de cada um', () => {
     render(<ClaudeProfiles claude={claude()} />)
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(document.querySelectorAll('.profile-item')).toHaveLength(3)
     expect(within(item('empresa')).getByText('C:/u/.claude-empresa')).toBeInTheDocument()
     expect(within(item('empresa')).getByText('detectado')).toBeInTheDocument()
     expect(within(item('cliente')).getByText('adicionado')).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'RAGX no perfil empresa' })).toHaveAttribute('aria-checked', 'false')
-    expect(within(item('cliente')).getByText('sem a dica de início de sessão')).toBeInTheDocument()
     expect(screen.getByText(/RAGX ligado em 2 de 3/)).toBeInTheDocument()
+  })
+
+  it('perfil ligado mostra cada hook como instalado ou faltando; perfil desligado não mostra hooks', () => {
+    render(<ClaudeProfiles claude={claude()} />)
+    const hooks = within(screen.getByRole('list', { name: 'Hooks do perfil cliente' }))
+    expect(hooks.getByText('Dica de início').closest('li')).toHaveClass('hook-chip-off')
+    expect(hooks.getByText('Aviso de edição').closest('li')).toHaveClass('hook-chip-on')
+    expect(hooks.getByText(/Dica de início/).parentElement).toHaveTextContent('falta instalar')
+    expect(screen.queryByRole('list', { name: 'Hooks do perfil empresa' })).not.toBeInTheDocument()
   })
 
   it('o interruptor liga e desliga só aquele perfil', () => {

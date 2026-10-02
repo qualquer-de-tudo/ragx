@@ -9,6 +9,20 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **O painel mantém os hooks em dia sozinho (Ajuste automático).** Numa máquina com três perfis do Claude Code, nenhum tinha o aviso de edição nem o
+  lembrete de busca (ligados numa versão antiga), e o índice não via o que o agente editava. O novo `ragx claude heal` completa o que falta, só em perfil com o
+  RAGX ligado e respeitando `--no-touch`/`--no-nudge`; o painel o roda ao abrir, a cada 15 min e quando um snapshot mostra projeto sem hooks de git (enfileirando
+  `hooks install`). Preferência `autoSetup`, ligada por padrão. Tela Conexões com card do ajuste, hooks por perfil em selos, fatos em linha e o comando manual recolhido.
+- **"Como funciona" no fim da barra lateral e refeito:** o caminho do dado em cinco passos numerados, o que mantém o índice em dia e onde ficam os dados.
+- **Atividade paginada** (50 eventos ou 20 sessões por página): o DOM tem o mesmo tamanho com 500 eventos ou com 10 mil.
+
+### Corrigido
+
+- **`status.json` não deixa mais um `.tmp` órfão nem fica velho no Windows.** Quando o painel tinha o arquivo aberto, o `os.replace` falhava, o erro era engolido e o
+  temporário ficava para sempre ao lado do `status.json`. Agora a troca tenta de novo (5 vezes, até 0,75 s) e o temporário é apagado se a troca falha.
+
 ## [1.0.0] — 2026-10-02
 
 ### Adicionado

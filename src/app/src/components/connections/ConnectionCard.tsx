@@ -27,7 +27,8 @@ const PENDING_TITLES = ['RAGX CLI', 'Claude Code', 'Ollama'] as const
 const COPIED_MS = 2000
 
 /** Bloco mono com o texto de ajuda (às vezes um comando) e um botão para copiar. */
-function HelpBlock({ text }: { text: string }) {
+/** Com a conexão fora do ar (`open`), a ajuda já vem aberta; nos avisos fica recolhida. */
+function HelpBlock({ text, open }: { text: string; open: boolean }) {
   const [copied, setCopied] = useState(false)
   const timer = useRef<number | undefined>(undefined)
   useEffect(() => () => window.clearTimeout(timer.current), [])
@@ -46,7 +47,8 @@ function HelpBlock({ text }: { text: string }) {
   }
 
   return (
-    <div className="conn-help">
+    <details className="conn-help" open={open}>
+      <summary className="conn-help-summary">Como fazer manualmente</summary>
       <pre className="conn-help-text">{text}</pre>
       <div className="conn-help-foot">
         <span className="hint" role="status">
@@ -56,7 +58,7 @@ function HelpBlock({ text }: { text: string }) {
           Copiar
         </button>
       </div>
-    </div>
+    </details>
   )
 }
 
@@ -238,7 +240,7 @@ export const ConnectionCard = memo(function ConnectionCard({
           ))}
         </dl>
       )}
-      {check.help && <HelpBlock text={check.help} />}
+      {check.help && <HelpBlock text={check.help} open={check.state === 'error'} />}
       {benchError !== null && (
         <p className="callout callout-error conn-callout" role="alert">
           Não foi possível medir: {benchError}

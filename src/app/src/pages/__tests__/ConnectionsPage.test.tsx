@@ -440,6 +440,33 @@ describe('ConnectionsPage: card do Ollama', () => {
   })
 })
 
+describe('ConnectionsPage: ajuste automático', () => {
+  it('mostra o card do ajuste automático acima das conexões e relê os perfis quando uma rodada termina', async () => {
+    const bridge = installBridge()
+    const refresh = vi.fn()
+    const claude = {
+      enabled: true, busy: false, error: null, changed: false, toggle: vi.fn(),
+      profiles: [{ id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, touch: false, nudge: false, added: false }],
+      setProfile: vi.fn(), addProfile: vi.fn(), removeProfile: vi.fn(), refresh,
+    }
+    bridge.getAutoSetup = vi.fn().mockResolvedValue({
+      enabled: true, running: false, lastRunAt: '2026-10-02T12:00:00Z',
+      claude: { checked: 1, installed: ['padrão: aviso de edição'], error: null }, git: { queued: [], failed: [] },
+    })
+    render(<ConnectionsPage connections={connectionChecks()} checking={false} onRefresh={vi.fn()} jobs={[]} claude={claude} projects={[]} />)
+    expect(screen.getByRole('heading', { name: 'Ajuste automático' })).toBeInTheDocument()
+    expect(screen.getByText(/Faltam hooks em padrão/)).toBeInTheDocument()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+    expect(await screen.findByText(/Instalou: Claude Code, padrão: aviso de edição/)).toBeInTheDocument()
+  })
+
+  it('sem o Claude (testes antigos), o card não aparece', () => {
+    installBridge()
+    render(<ConnectionsPage connections={connectionChecks()} checking={false} onRefresh={vi.fn()} jobs={[]} />)
+    expect(screen.queryByRole('heading', { name: 'Ajuste automático' })).not.toBeInTheDocument()
+  })
+})
+
 describe('ConnectionsPage: perfis do Claude Code', () => {
   it('ficam dentro da faixa do Claude Code, não num card à parte', () => {
     installBridge()

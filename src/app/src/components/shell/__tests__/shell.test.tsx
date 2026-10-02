@@ -40,6 +40,13 @@ describe('Sidebar', () => {
     expect(within(nav).getByRole('button', { name: 'Como funciona' })).not.toHaveAttribute('aria-current')
   })
 
+  it('"Como funciona" fica no fim da barra, depois de todos os outros itens', () => {
+    render(<Sidebar route={{ page: 'projects' }} onNavigate={() => {}} />)
+    const nomes = within(screen.getByRole('navigation')).getAllByRole('button').map((b) => b.textContent)
+    expect(nomes[nomes.length - 1]).toBe('Como funciona')
+    expect(nomes.slice(0, -1)).toEqual(['Projetos', 'Atividade', 'Conexões', 'Preferências'])
+  })
+
   it('o detalhe de um projeto conta como a página Projetos', () => {
     render(<Sidebar route={{ page: 'project', id: 'x' }} onNavigate={() => {}} />)
     expect(screen.getByRole('button', { name: 'Projetos' })).toHaveAttribute('aria-current', 'page')

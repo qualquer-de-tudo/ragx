@@ -10,6 +10,12 @@ import { Tooltip } from '../ui/Tooltip'
  * os `~/.claude-*` são detectados; os outros, adicionados escolhendo a pasta,
  * já ligados. "Remover" desliga antes de tirar da lista.
  */
+const HOOKS = [
+  { key: 'hint', label: 'Dica de início' },
+  { key: 'touch', label: 'Aviso de edição' },
+  { key: 'nudge', label: 'Lembrete de busca' },
+] as const
+
 export function ClaudeProfiles({ claude }: { claude: ClaudeToggle }) {
   const { profiles, busy, error, changed } = claude
   const headId = useId()
@@ -42,7 +48,6 @@ export function ClaudeProfiles({ claude }: { claude: ClaudeToggle }) {
                 <p className="profile-name">
                   {p.name}
                   <span className="profile-origin">{p.added ? 'adicionado' : 'detectado'}</span>
-                  {p.enabled && !p.hint && <span className="profile-warn">sem a dica de início de sessão</span>}
                 </p>
                 <Tooltip text={p.dir} focusable>
                   {(tip) => (
@@ -51,6 +56,19 @@ export function ClaudeProfiles({ claude }: { claude: ClaudeToggle }) {
                     </p>
                   )}
                 </Tooltip>
+                {p.enabled && (
+                  <ul className="hook-chips" aria-label={`Hooks do perfil ${p.name}`}>
+                    {HOOKS.map((h) => (
+                      <li key={h.key} className={`hook-chip ${p[h.key] ? 'hook-chip-on' : 'hook-chip-off'}`}>
+                        <span className="hook-chip-mark" aria-hidden="true">
+                          {p[h.key] ? '✓' : '–'}
+                        </span>
+                        {h.label}
+                        <span className="sr-only">{p[h.key] ? ': instalado' : ': falta instalar'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div className="profile-actions">
                 {p.added && (

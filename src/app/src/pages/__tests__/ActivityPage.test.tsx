@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { ActivityPage } from '../ActivityPage'
+import { EVENTS_PER_PAGE } from '../../paging'
 import { liveProjectIds, mergeEvents, whoLabel } from '../../activity'
 import { job, snap } from '../../test/snap'
 import type { ActivityEvent } from '../../types/ragx-bridge'
@@ -123,5 +124,42 @@ describe('ActivityPage', () => {
     const card = within(screen.getByRole('region', { name: 'Em andamento' }))
     expect(card.getByText('Indexando · Commit')).toBeInTheDocument()
     expect(card.getByText('Gerar embeddings em ragx')).toBeInTheDocument()
+  })
+
+  describe('paginação', () => {
+    const muitos = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        ev({ id: `e${String(i).padStart(5, '0')}`, ts: new Date(NOW - 30_000 - i * 1000).toISOString(), name: `ferramenta_${i}` }),
+      )
+
+    it('10 mil eventos viram uma página de linhas, não 10 mil no DOM', () => {
+      renderPage(muitos(10_000))
+      expect(screen.getAllByRole('listitem')).toHaveLength(EVENTS_PER_PAGE)
+      expect(screen.getByText(/1 a 50 de 10\.000 eventos/)).toBeInTheDocument()
+      expect(screen.getByText('ferramenta_0')).toBeInTheDocument()
+      expect(screen.queryByText('ferramenta_50')).not.toBeInTheDocument()
+    })
+
+    it('Próxima mostra os eventos seguintes e Anterior volta', () => {
+      renderPage(muitos(120))
+      fireEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+      expect(screen.getByText('ferramenta_50')).toBeInTheDocument()
+      expect(screen.queryByText('ferramenta_0')).not.toBeInTheDocument()
+      expect(screen.getByText(/51 a 100 de 120 eventos/)).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Anterior' }))
+      expect(screen.getByText('ferramenta_0')).toBeInTheDocument()
+    })
+
+    it('trocar o filtro volta para a primeira página', () => {
+      renderPage(muitos(120))
+      fireEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+      fireEvent.click(screen.getByRole('radio', { name: 'Agentes (MCP)' }))
+      expect(screen.getByText(/1 a 50 de 120 eventos/)).toBeInTheDocument()
+    })
+
+    it('até 50 eventos não mostra paginação', () => {
+      renderPage(muitos(50))
+      expect(screen.queryByRole('navigation', { name: /Paginação/ })).not.toBeInTheDocument()
+    })
   })
 })

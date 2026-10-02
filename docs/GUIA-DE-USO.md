@@ -59,9 +59,9 @@ A explicação do passo 1 fica sempre disponível na tela **Como funciona**.
 |---|---|
 | **Projetos** | Um card por projeto: estado do índice, pasta, branch, quando foi indexado, economia de tokens. Um botão no card faz o que o estado pede. |
 | **Detalhe do projeto** | Quatro abas: *Visão geral*, *Economia de tokens*, *Histórico* e *Manutenção*. |
-| **Atividade** | O que os agentes e a CLI estão fazendo, ao vivo: chamadas MCP, sessões do Claude, comandos no terminal. Nunca mostra o texto da consulta. |
+| **Atividade** | O que os agentes e a CLI estão fazendo, ao vivo: chamadas MCP, sessões do Claude, comandos no terminal. Nunca mostra o texto da consulta. A lista é paginada (50 eventos ou 20 sessões por página). |
 | **Conexões** | CLI, Claude Code e Ollama, com correção de um clique. |
-| **Como funciona** | A explicação do primeiro passo da configuração. |
+| **Como funciona** | Fica no fim da barra lateral: o caminho do dado em cinco passos, o que mantém o índice em dia e onde ficam os dados. |
 
 ### Selos de estado de um projeto
 
@@ -110,6 +110,12 @@ repositório do RAGX, vai ver segredos **falsos de propósito** nas fixtures de
 teste: não são vazamento.
 
 ## 5. Conexões: as três peças
+
+No topo da tela, o **Ajuste automático** mantém os hooks em dia sem você pedir: no Claude Code, o aviso de edição (o índice vê o
+que o agente edita) e o lembrete de busca, em cada perfil onde o RAGX está ligado; no git, os hooks de cada projeto com índice.
+Roda ao abrir o painel, a cada 15 minutos e quando aparece um projeto sem hooks. O interruptor desliga; **Ajustar agora** roda na hora.
+Cada perfil do Claude mostra, em selos, quais hooks estão instalados. Quem recusou um hook por linha de comando
+(`ragx claude on --no-touch`) continua com a escolha respeitada.
 
 | Peça | Para que serve | Se não estiver verde |
 |---|---|---|
