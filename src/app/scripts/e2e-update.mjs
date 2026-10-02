@@ -46,8 +46,10 @@ const app = await electron.launch({ executablePath: exe, args: [`--user-data-dir
 const page = await app.firstWindow()
 await page.setViewportSize({ width: 1280, height: 900 }).catch(() => {})
 
+/** A captura é só evidência: com a janela em segundo plano ela pode estourar o tempo, e isso não é falha do painel. */
 async function shot(name) {
-  if (shots) await page.screenshot({ path: path.join(shots, `${name}.png`) })
+  if (!shots) return
+  await page.screenshot({ path: path.join(shots, `${name}.png`), timeout: 5000 }).catch(() => console.log(`   (sem captura de ${name})`))
 }
 
 const status = () => page.locator('.update-status').innerText()
