@@ -943,7 +943,7 @@
       "handler": null,
       "normalized": "activate",
       "raw": "activate",
-      "source": "src/app/electron/main.ts:835"
+      "source": "src/app/electron/main.ts:865"
     },
     {
       "confidence": 0.85,
@@ -961,7 +961,7 @@
       "handler": null,
       "normalized": "click",
       "raw": "click",
-      "source": "src/app/electron/main.ts:156"
+      "source": "src/app/electron/main.ts:157"
     },
     {
       "confidence": 0.85,
@@ -979,7 +979,7 @@
       "handler": null,
       "normalized": "closed",
       "raw": "closed",
-      "source": "src/app/electron/main.ts:791"
+      "source": "src/app/electron/main.ts:821"
     },
     {
       "confidence": 0.85,
@@ -1112,6 +1112,15 @@
       "contract": null,
       "detected_by": "reference",
       "handler": null,
+      "normalized": "ragx:openpreferences",
+      "raw": "ragx:openPreferences",
+      "source": "src/app/electron/preload.ts:77"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
       "normalized": "ragx:openproject",
       "raw": "ragx:openProject",
       "source": "src/app/electron/preload.ts:77"
@@ -1195,7 +1204,7 @@
       "handler": null,
       "normalized": "will-navigate",
       "raw": "will-navigate",
-      "source": "src/app/electron/main.ts:740"
+      "source": "src/app/electron/main.ts:769"
     },
     {
       "confidence": 0.85,
@@ -1204,7 +1213,7 @@
       "handler": null,
       "normalized": "window-all-closed",
       "raw": "window-all-closed",
-      "source": "src/app/electron/main.ts:840"
+      "source": "src/app/electron/main.ts:870"
     },
     {
       "confidence": 0.85,
