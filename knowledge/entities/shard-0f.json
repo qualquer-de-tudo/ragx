@@ -590,7 +590,7 @@
     "name": "ConnectionsPage.tsx",
     "qualified_name": "src/app/src/pages/ConnectionsPage.tsx",
     "source": "structural",
-    "summary": "import type { ConnectionCheck, JobView } from '../types/ragx-bridge'",
+    "summary": "import { useEffect } from 'react'",
     "type": "file"
   },
   {
@@ -658,6 +658,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "2aeb88bbd0380a3124db51d54ff4b014",
+    "id": "4b723fcf38e400dd93b0a9ff1b89172e",
+    "name": "AutoSetupCard.tsx",
+    "qualified_name": "src/app/src/components/connections/AutoSetupCard.tsx",
+    "source": "structural",
+    "summary": "import { useId } from 'react'",
+    "type": "file"
   },
   {
     "chunk_id": "6d9bf201faaccc6ae10f11b55d0d041c",
@@ -1045,6 +1056,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "eae9c1361ccb6ec59143fda99fdd9392",
+    "confidence": 1.0,
+    "document_id": "69260146e8edb95991e41c80fcb7dc7c",
+    "id": "736a8eeff69dcd40966e3aca8c456d76",
+    "name": "casa",
+    "qualified_name": "tests/unit/test_claude_heal.py::casa",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "92502b96fca241cebfa45948b6dfd081",
@@ -1109,6 +1131,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "406e6b23b15a59127ef0c486336d9a2d",
+    "id": "7be3ac1f3f182157691d690acfff1a31",
+    "name": "AutoSetupCard.test.tsx",
+    "qualified_name": "src/app/src/components/connections/__tests__/AutoSetupCard.test.tsx",
+    "source": "structural",
+    "summary": "import { describe, expect, it, vi } from 'vitest'",
+    "type": "file"
   },
   {
     "chunk_id": "499301fd70d98464a804f0ea77a63bad",

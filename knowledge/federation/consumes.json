@@ -943,7 +943,7 @@
       "handler": null,
       "normalized": "activate",
       "raw": "activate",
-      "source": "src/app/electron/main.ts:792"
+      "source": "src/app/electron/main.ts:835"
     },
     {
       "confidence": 0.85,
@@ -961,7 +961,7 @@
       "handler": null,
       "normalized": "click",
       "raw": "click",
-      "source": "src/app/electron/main.ts:155"
+      "source": "src/app/electron/main.ts:156"
     },
     {
       "confidence": 0.85,
@@ -979,7 +979,7 @@
       "handler": null,
       "normalized": "closed",
       "raw": "closed",
-      "source": "src/app/electron/main.ts:748"
+      "source": "src/app/electron/main.ts:791"
     },
     {
       "confidence": 0.85,
@@ -1078,7 +1078,16 @@
       "handler": null,
       "normalized": "ragx:activity",
       "raw": "ragx:activity",
-      "source": "src/app/electron/preload.ts:21"
+      "source": "src/app/electron/preload.ts:22"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "ragx:autosetup",
+      "raw": "ragx:autoSetup",
+      "source": "src/app/electron/preload.ts:52"
     },
     {
       "confidence": 0.85,
@@ -1087,7 +1096,7 @@
       "handler": null,
       "normalized": "ragx:connections",
       "raw": "ragx:connections",
-      "source": "src/app/electron/preload.ts:21"
+      "source": "src/app/electron/preload.ts:22"
     },
     {
       "confidence": 0.85,
@@ -1096,7 +1105,7 @@
       "handler": null,
       "normalized": "ragx:jobs",
       "raw": "ragx:jobs",
-      "source": "src/app/electron/preload.ts:51"
+      "source": "src/app/electron/preload.ts:52"
     },
     {
       "confidence": 0.85,
@@ -1105,7 +1114,7 @@
       "handler": null,
       "normalized": "ragx:openproject",
       "raw": "ragx:openProject",
-      "source": "src/app/electron/preload.ts:51"
+      "source": "src/app/electron/preload.ts:77"
     },
     {
       "confidence": 0.85,
@@ -1114,7 +1123,7 @@
       "handler": null,
       "normalized": "ragx:snapshot",
       "raw": "ragx:snapshot",
-      "source": "src/app/electron/preload.ts:21"
+      "source": "src/app/electron/preload.ts:22"
     },
     {
       "confidence": 0.85,
@@ -1123,7 +1132,7 @@
       "handler": null,
       "normalized": "ragx:update",
       "raw": "ragx:update",
-      "source": "src/app/electron/preload.ts:51"
+      "source": "src/app/electron/preload.ts:77"
     },
     {
       "confidence": 0.85,
@@ -1186,7 +1195,7 @@
       "handler": null,
       "normalized": "will-navigate",
       "raw": "will-navigate",
-      "source": "src/app/electron/main.ts:698"
+      "source": "src/app/electron/main.ts:740"
     },
     {
       "confidence": 0.85,
@@ -1195,7 +1204,7 @@
       "handler": null,
       "normalized": "window-all-closed",
       "raw": "window-all-closed",
-      "source": "src/app/electron/main.ts:797"
+      "source": "src/app/electron/main.ts:840"
     },
     {
       "confidence": 0.85,

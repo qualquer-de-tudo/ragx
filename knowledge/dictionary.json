@@ -97,18 +97,18 @@
         "CHANGELOG.md",
         "README.md"
       ],
-      "occurrences": 281,
+      "occurrences": 283,
       "rule": "Extensão predominante: .md"
     },
     {
       "confidence": 0.9,
       "evidence": [
         "docs/13-testes-hardening.md",
+        "src/app/electron/__tests__/auto-setup.test.ts",
         "src/app/electron/__tests__/ipc.test.ts",
-        "src/app/electron/__tests__/menu.test.ts",
-        "src/app/electron/__tests__/navigation.test.ts"
+        "src/app/electron/__tests__/menu.test.ts"
       ],
-      "occurrences": 108,
+      "occurrences": 112,
       "rule": "Testes ficam em src/"
     },
     {
@@ -250,7 +250,7 @@
         "AGENTS.md",
         "README.md"
       ],
-      "seen": 333,
+      "seen": 337,
       "term": "RAGX"
     },
     {
@@ -266,7 +266,7 @@
         "docs/09-mcp.md",
         "docs/adr/ADR-0006-mcp-casca-fina.md"
       ],
-      "seen": 50,
+      "seen": 52,
       "term": "MCP"
     },
     {
@@ -288,37 +288,37 @@
   ],
   "modules": [
     {
-      "chunks": 1729,
-      "files": 99,
+      "chunks": 1766,
+      "files": 101,
       "name": "src/app/electron",
       "summary": "Painel desktop (Electron) para o RAGX. Mostra os projetos registrados no hub"
     },
     {
-      "chunks": 1672,
-      "files": 180,
+      "chunks": 1682,
+      "files": 181,
       "name": "src/ragx",
       "summary": null
     },
     {
-      "chunks": 1326,
-      "files": 141,
+      "chunks": 1400,
+      "files": 149,
       "name": "src/app/src",
       "summary": "Painel desktop (Electron) para o RAGX. Mostra os projetos registrados no hub"
     },
     {
-      "chunks": 680,
-      "files": 51,
+      "chunks": 691,
+      "files": 52,
       "name": "tests/unit",
       "summary": null
     },
     {
-      "chunks": 488,
+      "chunks": 490,
       "files": 27,
       "name": "tests/integration",
       "summary": null
     },
     {
-      "chunks": 419,
+      "chunks": 420,
       "files": 29,
       "name": "docs",
       "summary": "Knowledge Engine local para projetos de software: indexa um repositório, protege segredos,"
@@ -364,10 +364,16 @@
       "files": 9,
       "name": "vscode-plugin/tests",
       "summary": "Interface visual para o conhecimento que o [RAGX](../README.md) indexou do seu"
+    },
+    {
+      "chunks": 126,
+      "files": 12,
+      "name": "tests/e2e",
+      "summary": null
     }
   ],
   "project": {
-    "generated_at": "2026-10-02T12:41:18Z",
+    "generated_at": "2026-10-02T15:26:37Z",
     "id": "2a0786031710",
     "kind": "other",
     "name": "ragx",
@@ -376,7 +382,7 @@
   "repo_map": [
     {
       "path": "src/ragx/storage/repositories.py",
-      "rank": 0.056104,
+      "rank": 0.055961,
       "symbols": [
         "ChunkRepo",
         "DocumentRepo",
@@ -385,7 +391,7 @@
     },
     {
       "path": "src/ragx/cli/commands/graph_cmd.py",
-      "rank": 0.039121,
+      "rank": 0.038959,
       "symbols": [
         "entities",
         "rank",
@@ -394,7 +400,7 @@
     },
     {
       "path": "src/ragx/storage/db.py",
-      "rank": 0.037476,
+      "rank": 0.037347,
       "symbols": [
         "open_db",
         "utcnow",
@@ -403,16 +409,16 @@
     },
     {
       "path": "src/ragx/core/models.py",
-      "rank": 0.036968,
+      "rank": 0.036834,
       "symbols": [
         "Chunk",
-        "ChunkKind",
-        "Document"
+        "Document",
+        "ChunkKind"
       ]
     },
     {
       "path": "src/ragx/config.py",
-      "rank": 0.036787,
+      "rank": 0.036624,
       "symbols": [
         "load_config",
         "Config",
@@ -421,7 +427,7 @@
     },
     {
       "path": "src/ragx/graph/store.py",
-      "rank": 0.029768,
+      "rank": 0.029638,
       "symbols": [
         "GraphStore",
         "Entity",
@@ -430,7 +436,7 @@
     },
     {
       "path": "src/ragx/indexing/touchq.py",
-      "rank": 0.023644,
+      "rank": 0.023756,
       "symbols": [
         "resolve",
         "enqueue",
@@ -439,7 +445,7 @@
     },
     {
       "path": "src/ragx/gitinfo.py",
-      "rank": 0.019691,
+      "rank": 0.020512,
       "symbols": [
         "Commit",
         "git",
@@ -448,7 +454,7 @@
     },
     {
       "path": "src/ragx/diagnostics.py",
-      "rank": 0.019641,
+      "rank": 0.019585,
       "symbols": [
         "utcnow",
         "log_mcp_call",
@@ -457,7 +463,7 @@
     },
     {
       "path": "src/ragx/search/ab.py",
-      "rank": 0.018796,
+      "rank": 0.019258,
       "symbols": [
         "Runner",
         "plan",
@@ -466,7 +472,7 @@
     },
     {
       "path": "src/ragx/cli/commands/index_cmd.py",
-      "rank": 0.017943,
+      "rank": 0.0178,
       "symbols": [
         "chunk",
         "chunks",
@@ -475,7 +481,7 @@
     },
     {
       "path": "src/ragx/sync/service.py",
-      "rank": 0.017265,
+      "rank": 0.017383,
       "symbols": [
         "resolve",
         "SyncReport",
@@ -484,7 +490,7 @@
     },
     {
       "path": "src/ragx/indexing/lock.py",
-      "rank": 0.013285,
+      "rank": 0.013235,
       "symbols": [
         "release",
         "holder",
@@ -493,7 +499,7 @@
     },
     {
       "path": "src/ragx/federation/hub.py",
-      "rank": 0.012376,
+      "rank": 0.012336,
       "symbols": [
         "status",
         "sync",
@@ -631,11 +637,11 @@
     }
   ],
   "stats": {
-    "chunks": 9426,
-    "documents": 869,
-    "embeddings": 9426,
-    "entities": 3659,
-    "relations": 34129
+    "chunks": 9573,
+    "documents": 883,
+    "embeddings": 9573,
+    "entities": 3694,
+    "relations": 34342
   },
   "technologies": [
     {

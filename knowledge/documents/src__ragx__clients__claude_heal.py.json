@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "1a2abe138f9fa8c57cc45e91ee9926feaf8f58a436c2a6e717a85e7ab56ece3e",
+  "doc_kind": "code",
+  "id": "174b168631e1f100c734700a3a13b45d",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/clients/claude_heal.py",
+  "size_bytes": 3819,
+  "title": "Mantém os hooks do RAGX em dia nos perfis do Claude Code onde ele já está ligado.\n\n`ragx claude on` instala o MCP e os três hooks (dica de início de sessão, aviso de edição e lembrete\nde busca), mas quem ligou numa versão antiga ficou sem os dois últimos, e nada avisava: o índice\ndeixava de ver as edições do agente. `heal` completa o que falta, só em perfil onde o MCP está\nregistrado, e respeita a escolha explícita (`ragx claude on --no-touch`), que fica em\n`~/.ragx/claude-optout.json`. Nunca liga o RAGX num perfil desligado: isso é decisão da pessoa."
+}

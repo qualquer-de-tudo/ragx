@@ -110,6 +110,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "25cd7823391f138858ec7328dfa4d270",
+    "id": "0e8fbdf7ccea837617e24a0e74bbbf7c",
+    "name": "useAutoSetup.ts",
+    "qualified_name": "src/app/src/hooks/useAutoSetup.ts",
+    "source": "structural",
+    "summary": "import { useCallback, useEffect, useRef, useState } from 'react'",
+    "type": "file"
+  },
+  {
     "chunk_id": "1d0c3d63c5b891d54891eca7a844770e",
     "confidence": 1.0,
     "document_id": "6748b25689773747d50f29c12233c01b",
@@ -239,6 +250,17 @@
     "qualified_name": "src/ragx/tasks/analyzer.py",
     "source": "structural",
     "summary": "Task Analyzer — decide executar agora ou documentar e decompor antes.\n\nDeterminístico e offline. O RAGX não tem um LLM e não vai ter (ADR-0015), então\na classificação vem de duas fontes, ambas auditáveis:\n\n  1. sinais léxicos declarados em `signals.yaml`\n  2. medição no ÍNDICE REAL — quantos módulos já falam do assunto, e se existe\n     documento cobrindo\n\nA segunda é o que separa isto de um casador de palavras: a mesma frase pontua\ndiferente num repositório onde o assunto aparece em cinco módulos e num onde\nnão aparece em lugar nenhum.\n\nA limitação, dita de frente: ele lê palavras e mede impacto. Não entende o\npedido. Um pedido escrito de forma incomum pode ser subestimado — por isso\nexiste sobreposição, e ela fica registrada.",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "9e080b174af0e6c841c2785aafff43bb",
+    "id": "18d0c137017627c19a50fa9b85116d1d",
+    "name": "README.md",
+    "qualified_name": "task/fase-23-pos-lancamento/README.md",
+    "source": "structural",
+    "summary": "Fase 23: Pós-lançamento",
     "type": "file"
   },
   {
@@ -1067,6 +1089,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "69260146e8edb95991e41c80fcb7dc7c",
+    "id": "6507144797120a1a5bc8b311d8d3169f",
+    "name": "test_claude_heal.py",
+    "qualified_name": "tests/unit/test_claude_heal.py",
+    "source": "structural",
+    "summary": "`ragx claude heal`: completa os hooks que faltam, só onde o RAGX já está ligado, e respeita a recusa.",
+    "type": "file"
+  },
+  {
     "chunk_id": "76a57a85269c5954516fc50e2cead84e",
     "confidence": 1.0,
     "document_id": "24dfb7696ab696d0f6248eddfefef66b",
@@ -1888,7 +1921,7 @@
     "name": "HowItWorksPage.tsx",
     "qualified_name": "src/app/src/pages/HowItWorksPage.tsx",
     "source": "structural",
-    "summary": "import { HOW_IT_WORKS, HOW_IT_WORKS_TITLE } from '../components/onboarding/howItWorks'",
+    "summary": "import { HOW_KEEPS, HOW_LOCAL, HOW_STEPS } from '../components/onboarding/howItWorks'",
     "type": "file"
   },
   {
@@ -1901,6 +1934,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "2a32e44f087585d05db71ff00941113e",
+    "id": "b3aff9477ab640ff5635cd20ed116fec",
+    "name": "useAutoSetup.test.ts",
+    "qualified_name": "src/app/src/hooks/__tests__/useAutoSetup.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it, vi } from 'vitest'",
+    "type": "file"
   },
   {
     "chunk_id": "18a6e27e69d3154409d6e08aff2f4b98",
@@ -2085,6 +2129,17 @@
     "id": "c9e16fd7b4413e82367349ac434f999b",
     "name": "_strategy",
     "qualified_name": "src/ragx/tasks/analyzer.py::_strategy",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "ac1440432a7d5e2aa3dc733498fd242f",
+    "confidence": 1.0,
+    "document_id": "69260146e8edb95991e41c80fcb7dc7c",
+    "id": "ca4bfc97c2666de82a0a7f00558dae89",
+    "name": "test_heal_respeita_o_no_touch_escolhido_de_proposito",
+    "qualified_name": "tests/unit/test_claude_heal.py::test_heal_respeita_o_no_touch_escolhido_de_proposito",
     "source": "structural",
     "summary": null,
     "type": "function"
