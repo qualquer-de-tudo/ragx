@@ -259,6 +259,12 @@ Multilíngue por padrão: o corpus típico é português + código. Alternativas
 | `BAAI/bge-small-en-v1.5` | 384 | 70 MB | só inglês, mais leve |
 | `intfloat/multilingual-e5-large` | 1024 | 2,2 GB | melhor qualidade, mais pesado |
 
+**Prefixos (RAGX-0104).** Modelos assimétricos precisam de um prefixo para saber se estão codificando a consulta ou o
+documento. O mapa é declarado em `embeddings/fastembed_provider.py` (`PREFIXES`): `e5` usa `query: ` e `passage: `, e `nomic`
+usa `search_query: ` e `search_document: `; modelo fora do mapa roda SEM prefixo (o padrão `paraphrase-multilingual-MiniLM` é
+simétrico e não leva nenhum). O esquema de prefixos entra no id do embedder (`fastembed:<modelo>#p<hash>`): trocar o mapa troca o
+id e invalida os vetores já gravados. Modelo sem prefixo mantém o id de sempre, então os índices existentes seguem válidos.
+
 Trocar de modelo invalida os vetores existentes — ver *Trocar de modelo de
 embedding* mais abaixo.
 

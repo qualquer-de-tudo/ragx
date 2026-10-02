@@ -295,9 +295,9 @@ mede e captura o painel no tema claro.
 ## Atualização do painel
 
 Atualizar o painel ainda é rodar o instalador novo por cima, mas o painel agora pode conferir sozinho (RAGX-0192) com o
-`electron-updater` contra o GitHub Releases (`qualquer-de-tudo/ragx`, canal `latest`). **Desligado por padrão**
-(Preferências, "Verificar atualizações do painel"): desligado, ou fora do painel empacotado, **zero chamadas de rede**.
-Ligado, confere ao abrir e em "Verificar agora"; `autoDownload` e `autoInstallOnAppQuit` ficam falsos, então só baixa
+`electron-updater` contra o GitHub Releases (`qualquer-de-tudo/ragx`, canal `latest`). **Ligado por padrão desde a v1.0.0**
+(Preferências, "Verificar atualizações do painel"; só o `false` de quem desligou fica gravado): desligado, ou fora do painel
+empacotado, **zero chamadas de rede**. Ligado, confere o GitHub ao abrir e em "Verificar agora"; `autoDownload` e `autoInstallOnAppQuit` ficam falsos, então só baixa
 ("Baixar atualização") e instala ("Instalar e reiniciar", só com a atualização baixada) quando a pessoa manda. O `.exe`
 **não é assinado** (RAGX-0124 adiada): o Windows pode mostrar o SmartScreen ao atualizar, e sem `publisherName` o updater
 não confere assinatura; a proteção é o `sha512` do `latest.yml`, servido pelo mesmo GitHub (a tela diz isso sempre).

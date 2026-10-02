@@ -479,7 +479,8 @@ export function createHandlers(deps: HandlerDeps) {
         ...(theme === undefined ? {} : { theme }),
         ...(tray === true ? { tray } : {}),
         ...(notifyStale === true ? { notifyStale } : {}),
-        ...(autoUpdate === true ? { autoUpdate } : {}),
+        // ligada por padrão: só o `false` explícito sai (ausente = ligada)
+        ...(autoUpdate === false ? { autoUpdate } : {}),
       }
     },
 
@@ -506,7 +507,8 @@ export function createHandlers(deps: HandlerDeps) {
       const current = deps.readSettings()
       const { [key]: _old, ...rest } = current
       void _old
-      deps.writeSettings(valueUnknown ? { ...rest, [key]: true } : rest)
+      // `autoUpdate` é ligada por padrão: desligar grava `false` (apagar a chave a ligaria de novo)
+      deps.writeSettings(valueUnknown ? { ...rest, [key]: true } : key === 'autoUpdate' ? { ...rest, autoUpdate: false } : rest)
     },
 
     /**

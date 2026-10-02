@@ -1028,7 +1028,16 @@ describe('createHandlers - autoUpdate como preferência (RAGX-0192)', () => {
     const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true }) }))
     handlers.setPreference('autoUpdate', true)
     expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true, autoUpdate: true })
-    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, autoUpdate: true }) })).getSettings()).toStrictEqual({ onboardingDone: true, autoUpdate: true })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, autoUpdate: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
+  })
+
+  it('ligada por padrão: ausente não sai; desligar grava false; só o false explícito chega ao renderer', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true, autoUpdate: true }) }))
+    handlers.setPreference('autoUpdate', false)
+    expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true, autoUpdate: false })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, autoUpdate: false }) })).getSettings()).toStrictEqual({ onboardingDone: true, autoUpdate: false })
   })
 })
 

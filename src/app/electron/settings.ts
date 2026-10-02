@@ -37,7 +37,10 @@ export interface RendererSettings {
   tray?: boolean
   /** Notificação do sistema quando um índice continua defasado (RAGX-0191). Ausente = desligado. */
   notifyStale?: boolean
-  /** Atualização do painel pelo GitHub Releases (RAGX-0192). Ausente = desligada: zero chamadas de rede. */
+  /**
+   * Atualização do painel pelo GitHub Releases (RAGX-0192). **Ligada por padrão desde a v1.0.0**: ausente = ligada; só
+   * `false` (a pessoa desligou) fica gravado. Desligada, zero chamadas de rede.
+   */
   autoUpdate?: boolean
 }
 
@@ -74,8 +77,10 @@ export function readSettings(dir: string): PanelSettings {
     const theme = (parsed as Record<string, unknown> | null)?.theme
     if (theme === 'light' || theme === 'system') settings.theme = theme
     if (pricing !== null) settings.pricing = pricing
-    // só `true` fica: ausente e qualquer outro valor são `false` (desligado por padrão)
+    // só `true` fica: ausente e qualquer outro valor são `false` (desligado por padrão); a exceção é `autoUpdate`,
+    // ligada por padrão, em que o `false` explícito também fica (é a escolha da pessoa de desligar)
     for (const key of PREFERENCE_KEYS) if ((parsed as Record<string, unknown> | null)?.[key] === true) settings[key] = true
+    if ((parsed as Record<string, unknown> | null)?.autoUpdate === false) settings.autoUpdate = false
     return settings
   } catch {
     return { ...DEFAULT_SETTINGS }

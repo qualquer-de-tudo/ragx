@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 import numpy as np
 import pytest
 
@@ -228,3 +230,107 @@ def test_doctor_informa_o_cache_de_modelos_sem_mudar_o_veredito(tmp_path) -> Non
     antes = len(linhas)
     _cache_de_modelos(load_config(tmp_path), row)
     assert len(linhas) == antes
+
+
+# ── prefixos declarados no fastembed (RAGX-0104) ────────────────────────
+class _TextEmbeddingEco:
+    """Registra o que o modelo recebeu e devolve um vetor que depende do texto."""
+
+    recebidos: ClassVar[list[list[str]]] = []
+
+    def __init__(self, **kwargs) -> None:
+        pass
+
+    def embed(self, textos, batch_size=32):
+        import numpy as np
+
+        _TextEmbeddingEco.recebidos.append(list(textos))
+        for t in textos:
+            v = np.zeros(8, dtype=np.float32)
+            v[sum(map(ord, t)) % 8] = 1.0
+            yield v
+
+
+@pytest.fixture
+def fastembed_eco(monkeypatch):
+    import sys
+    import types
+
+    _TextEmbeddingEco.recebidos = []
+    modulo = types.ModuleType("fastembed")
+    modulo.TextEmbedding = _TextEmbeddingEco  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "fastembed", modulo)
+    return _TextEmbeddingEco
+
+
+@pytest.mark.parametrize(
+    ("modelo", "consulta", "documento"),
+    [
+        ("intfloat/multilingual-e5-large", "query: ", "passage: "),
+        ("nomic-ai/nomic-embed-text-v1.5", "search_query: ", "search_document: "),
+    ],
+)
+def test_consulta_e_documento_levam_prefixos_diferentes(fastembed_eco, modelo, consulta, documento) -> None:
+    from ragx.embeddings.fastembed_provider import FastEmbedEmbedder
+
+    e = FastEmbedEmbedder(model=modelo, dim=8)
+    q = e.embed_query("texto igual")
+    assert fastembed_eco.recebidos[-1] == [consulta + "texto igual"]
+    d = e.embed_documents(["texto igual"])
+    assert fastembed_eco.recebidos[-1] == [documento + "texto igual"]
+    # o MESMO texto vira vetores diferentes conforme o lado
+    assert not (q == d[0]).all()
+
+
+def test_modelo_sem_prefixo_declarado_roda_sem_prefixo_e_com_o_id_de_sempre(fastembed_eco) -> None:
+    from ragx.embeddings.fastembed_provider import DEFAULT_MODEL, FastEmbedEmbedder, prefixes_for
+
+    assert prefixes_for(DEFAULT_MODEL) == ("", "")
+    e = FastEmbedEmbedder(model=DEFAULT_MODEL, dim=8)
+    e.embed_query("a")
+    assert fastembed_eco.recebidos[-1] == ["a"]
+    e.embed_documents(["b"])
+    assert fastembed_eco.recebidos[-1] == ["b"]
+    assert e.id == f"fastembed:{DEFAULT_MODEL}"  # os índices existentes continuam válidos
+
+
+def test_o_mapa_e_declarado_nao_adivinhado_pelo_nome(fastembed_eco) -> None:
+    """Um modelo com "e5" no nome mas fora do mapa NÃO ganha prefixo por heurística."""
+    from ragx.embeddings.fastembed_provider import FastEmbedEmbedder, prefixes_for
+
+    assert prefixes_for("acme/meu-e5-proprio") == ("", "")
+    FastEmbedEmbedder(model="acme/meu-e5-proprio", dim=8).embed_query("x")
+    assert fastembed_eco.recebidos[-1] == ["x"]
+
+
+def test_o_prefixo_entra_no_id_e_trocar_o_mapa_troca_o_id(fastembed_eco, monkeypatch) -> None:
+    from ragx.embeddings import fastembed_provider as fp
+
+    modelo = "intfloat/multilingual-e5-large"
+    antes = fp.model_id(modelo)
+    assert antes.startswith(f"fastembed:{modelo}#p") and antes != f"fastembed:{modelo}"
+    assert fp.FastEmbedEmbedder(model=modelo, dim=8).id == antes
+    monkeypatch.setitem(fp.PREFIXES, modelo, ("consulta: ", "documento: "))
+    depois = fp.model_id(modelo)
+    assert depois != antes  # outro texto embutido = vetores incompatíveis = outro id (cache e vetores invalidados)
+
+
+def test_embedder_id_de_modelo_com_prefixo_nao_diverge_do_construido(fastembed_eco) -> None:
+    import tempfile
+    from pathlib import Path
+
+    from ragx.config import load_config
+    from ragx.embeddings import build_embedder, embedder_id, reset_embedder_cache
+
+    raiz = Path(tempfile.mkdtemp())
+    (raiz / "ragx.toml").write_text(
+        '[project]\nname = "t"\nid = "t"\n\n[embedding]\nprovider = "fastembed"\n'
+        'model = "nomic-ai/nomic-embed-text-v1.5"\ndim = 8\n',
+        encoding="utf-8",
+    )
+    cfg = load_config(raiz)
+    reset_embedder_cache()
+    try:
+        assert embedder_id(cfg) == build_embedder(cfg).id and "#p" in embedder_id(cfg)
+    finally:
+        reset_embedder_cache()

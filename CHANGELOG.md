@@ -11,6 +11,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Prefixos de consulta e documento declarados no provider fastembed.** O mapa `modelo -> (consulta, documento)` é explícito
+  (`e5`, `nomic`) em vez de uma heurística pelo nome, modelo ausente roda sem prefixo, e o esquema entra no id do embedder
+  (`fastembed:<modelo>#p<hash>`) para que trocar o prefixo invalide os vetores. O modelo padrão é simétrico e mantém o id, então
+  nenhum índice existente é invalidado (RAGX-0104).
 - **Resultados da v2 medidos de novo, com o que não bateu.** `docs/26-resultados-v2.md` repete os 14 SLOs da spec 25 com o código
   final: 10 atingidos (S1 2.958 tokens, S5 1,77 s, S6 1,4 s, S7 75 ms, S8 99 ms, S9 40 ms, S10 22 ms, S11 ≈4 filhos/min visível e 0
   minimizada, S12 e S13), S2 só com o perfil `slim` (370 tokens; o padrão `full` fica em 2.680), **S4 não atingida** (7,69 s com 20 mil
@@ -336,6 +340,9 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **A verificação de atualização do painel vem ligada.** O painel confere o GitHub Releases ao abrir (só empacotado) e
+  mostra "versão X disponível"; nunca baixa nem instala sozinho (`autoDownload` falso) e dá para desligar em Preferências, o que
+  zera as chamadas de rede. O instalador continua sem assinatura: o Windows pode mostrar o SmartScreen ao atualizar (RAGX-0192).
 - **O servidor MCP sobe no perfil `slim` por padrão.** O custo fixo das ferramentas por turno cai de 2.680 para 370 tokens (6
   ferramentas: `get_dictionary`, `search_hybrid`, `build_context`, `get_chunk`, `get_entity`, `refresh`). **Quebra de
   comportamento:** quem usava as outras 27 (tarefas, grafo, contratos, `get_playbook`, `sync`) pede `[mcp] profile = "full"`,

@@ -132,7 +132,7 @@ describe('tray e notifyStale (RAGX-0191)', () => {
 })
 
 describe('autoUpdate (RAGX-0192)', () => {
-  it('padrão desligado; valor inválido descartado; true sobrevive', () => {
+  it('ligada por padrão (ausente = ligada); valor inválido descartado; true e false explícitos sobrevivem', () => {
     const dir = mkTmp()
     fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true }))
     expect(readSettings(dir).autoUpdate).toBeUndefined()
@@ -140,6 +140,9 @@ describe('autoUpdate (RAGX-0192)', () => {
     expect(readSettings(dir).autoUpdate).toBeUndefined()
     fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, autoUpdate: true }))
     expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, autoUpdate: true })
+    // desligar é uma escolha da pessoa: o `false` explícito fica gravado (apagar a chave ligaria de novo)
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, autoUpdate: false }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, autoUpdate: false })
   })
 })
 

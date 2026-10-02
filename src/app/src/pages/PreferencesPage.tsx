@@ -26,7 +26,7 @@ export function PreferencesPage() {
       .then(() => window.ragx.getSettings())
       .then(
         (s) => {
-          if (!cancelled) setPrefs({ tray: s.tray === true, notifyStale: s.notifyStale === true, autoUpdate: s.autoUpdate === true })
+          if (!cancelled) setPrefs({ tray: s.tray === true, notifyStale: s.notifyStale === true, autoUpdate: s.autoUpdate !== false })
         },
         (err: unknown) => {
           console.error('getSettings() falhou:', err)
@@ -150,8 +150,8 @@ export function PreferencesPage() {
               Verificar atualizações do painel
             </p>
             <p className="hint">
-              Desligado por padrão: com ele desligado o painel não faz nenhuma chamada de rede. Ligado, confere o GitHub
-              Releases ao abrir e quando você pede, e só baixa e instala quando você manda.
+              Ligado por padrão: confere o GitHub Releases ao abrir e quando você pede, e só baixa e instala quando você
+              manda. Desligado, o painel não faz nenhuma chamada de rede.
             </p>
           </div>
           <Switch

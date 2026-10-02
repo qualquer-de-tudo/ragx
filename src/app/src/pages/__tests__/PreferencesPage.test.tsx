@@ -61,9 +61,19 @@ describe('PreferencesPage: Atualizações (RAGX-0192)', () => {
     render(<PreferencesPage />)
     expect(screen.getByText(/O instalador não é assinado: o Windows pode mostrar o aviso do SmartScreen ao atualizar/)).toBeInTheDocument()
     expect(await screen.findByText(/Versão atual: 1\.0\.0-beta\.5/)).toBeInTheDocument()
-    expect(screen.getByRole('switch', { name: 'Verificar atualizações do painel' })).toHaveAttribute('aria-checked', 'false')
-    expect(screen.getByRole('button', { name: 'Verificar agora' })).toBeDisabled() // desligada: nada de rede
+    // ligada por padrão (v1.0.0): a pessoa não precisa ter mexido em nada
+    await act(async () => {})
+    expect(screen.getByRole('switch', { name: 'Verificar atualizações do painel' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('button', { name: 'Verificar agora' })).toBeEnabled()
     expect(screen.queryByRole('button', { name: 'Instalar e reiniciar' })).not.toBeInTheDocument()
+  })
+
+  it('desligada pela pessoa: o interruptor fica desligado e "Verificar agora" desabilitado (nada de rede)', async () => {
+    installBridge({ getSettings: vi.fn().mockResolvedValue({ onboardingDone: true, autoUpdate: false }) })
+    render(<PreferencesPage />)
+    await act(async () => {})
+    expect(screen.getByRole('switch', { name: 'Verificar atualizações do painel' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('button', { name: 'Verificar agora' })).toBeDisabled()
   })
 
   it('ligar grava a preferência; verificar agora chama a ponte quando ligada', async () => {

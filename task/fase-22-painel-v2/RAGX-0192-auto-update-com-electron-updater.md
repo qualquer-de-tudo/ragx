@@ -7,7 +7,7 @@
 | **Estimativa** | 1d |
 | **Depende de** | RAGX-0171 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (U-14, seção 7.4) · [25-spec-v2.md](../../docs/25-spec-v2.md) (R-P11, seção 4.2) · [src/app/README.md](../../src/app/README.md) |
-| **Status** | `review` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -33,7 +33,7 @@ Hoje atualizar o painel é baixar o instalador novo na página da release e rod�
 
 ## Critérios de aceite
 
-- [ ] Depois de `npm run package` (NÃO executado: demorado, e a execução foi interrompida pela pessoa; conferir `latest.yml` e `.exe.blockmap` na próxima vez) (em `src/app`), `release/` contém o `.exe`, o `.exe.blockmap` e o `*.yml` do updater; o nome do `.yml` conferido de verdade (o `electron-builder` 25.1.8 usa `channel || "latest"` para GitHub em `app-builder-lib/out/publish/updateInfoBuilder.js:37-39`, ou seja `latest.yml`) e a `url`/`path` dentro dele bate com `artifactName` (`RAGX-Painel-Setup-${version}.exe`, `electron-builder.yml:45`).
+- [x] Depois de `npm run package` (executado em 02/10/2026 pelo PowerShell: o `tar` do Git Bash quebra o `prepare-bundle`) (em `src/app`), `release/` contém o `.exe`, o `.exe.blockmap` e o `*.yml` do updater; o nome do `.yml` conferido de verdade (o `electron-builder` 25.1.8 usa `channel || "latest"` para GitHub em `app-builder-lib/out/publish/updateInfoBuilder.js:37-39`, ou seja `latest.yml`) e a `url`/`path` dentro dele bate com `artifactName` (`RAGX-Painel-Setup-${version}.exe`, `electron-builder.yml:45`).
 - [x] `release.yml` continua YAML válido (carregar com `yaml.safe_load` ou `actionlint`, o que houver na máquina) e a lista de `files:` do passo "Publicar" não inclui wheel, sdist nem vsix (conferir com `git diff`).
 - [x] Com `autoUpdate` desligado, teste com `autoUpdater` simulado comprova 0 chamadas a `checkForUpdates`; com `app.isPackaged` falso, idem, mesmo ligado.
 - [x] Máquina de estados: `available` não baixa sozinho; `installUpdate` fora de `downloaded` é recusado; erro de rede vira `error` com mensagem em português e não derruba o painel.
@@ -56,7 +56,7 @@ Hoje atualizar o painel é baixar o instalador novo na página da release e rod�
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo) (todos menos o `npm run package` e a atualização real)
+- [ ] Todos os critérios de aceite acima verificados (rodando, não supondo) (todos, menos a atualização real entre duas versões publicadas, que só existe depois da v1.0.0 e de uma versão seguinte)
 - [x] Testes escritos e verdes
 - [x] `npm test`, `npm run lint` e `tsc` dos dois projetos limpos (em `src/app`)
 - [x] Nenhuma regressão visual nas telas afetadas (conferido por screenshot ou teste de renderização)
@@ -72,3 +72,4 @@ _(o loop registra aqui o que fez, com datas e medições)_
 - Conferido no código do pacote: `GitHubProvider` usa `updater.channel || options.channel`, então fixar `channel: latest` no código e no builder resolve a dúvida do `beta.yml`. `acquireSingleInstance` já deixa passar `headless`, que é o `--bootstrap` do instalador (segunda instância).
 - Testes novos: `updater.test.ts` (11), `settings` e `ipc` (autoUpdate), `PreferencesPage.test.tsx` (+4: aviso de assinatura, desligada sem rede, Baixar só com `available`, Instalar só com `downloaded`, erro em português), `preload.test.ts` (5 métodos novos). Painel: 1890 testes verdes, `lint` e `tsc` limpos.
 - **O que falta (por isso `review`)**: (1) rodar `npm run package` e conferir `latest.yml` e `.exe.blockmap` em `release/`, e que a `url`/`path` do `latest.yml` bate com `artifactName` (`RAGX-Painel-Setup-${version}.exe`); (2) uma atualização real entre duas versões publicadas (o loop não faz push, tag nem release); (3) conferir à mão se `quitAndInstall` com instalador assistido (`oneClick: false`) se comporta como se espera; (4) decidir ligar: o `.exe` não é assinado e o Windows pode alertar.
+- 2026-10-02 — **Ligada por padrão por decisão da pessoa** (v1.0.0), embora eu tenha recomendado deixar desligada: nunca testei uma atualização real nem o `quitAndInstall` com o instalador assistido. Ausente = ligada; só o `false` explícito fica em `settings.json` (`readSettings`, `getSettings`, `setPreference` e `main.ts` ajustados; a UI e o README dizem "ligado por padrão"). `npm run check` verde (1.923 testes). **`npm run package` rodou de verdade**: `latest.yml` (371 bytes, `url` e `path` iguais a `RAGX-Painel-Setup-1.0.0-beta.5.exe`, com `sha512` e `size`) e o `.exe.blockmap` foram gerados em `release/`, então o ajuste do `release.yml` tem o que anexar. Continua valendo: o `.exe` não é assinado (SmartScreen) e a atualização real entre duas versões não foi exercitada; o primeiro teste honesto é publicar a 1.0.0 e depois uma 1.0.1.

@@ -120,7 +120,9 @@ def embedder_id(cfg: Config) -> str:
     if p == "ollama":
         return f"ollama:{cfg.embedding.model}"
     if p == "fastembed":
-        return f"fastembed:{_modelo_fastembed(cfg)}"
+        from ragx.embeddings.fastembed_provider import model_id
+
+        return model_id(_modelo_fastembed(cfg))
     raise UsageError(
         f"provider de embedding desconhecido: {p!r} (use ollama | fastembed | hashing)"
     )

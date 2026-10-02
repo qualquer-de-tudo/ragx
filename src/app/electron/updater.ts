@@ -1,7 +1,7 @@
 /**
  * Atualização do painel com `electron-updater` contra o GitHub Releases (RAGX-0192).
  *
- * **Desligada por padrão** (`autoUpdate`): o `.exe` não é assinado (RAGX-0124 adiada), então o Windows pode alertar no
+ * **Ligada por padrão desde a v1.0.0** (`autoUpdate`, a pessoa desliga em Preferências): o `.exe` não é assinado (RAGX-0124 adiada), então o Windows pode alertar no
  * update e a integridade fica a cargo do hash do `latest.yml`. Desligada, ou fora do painel empacotado, NÃO faz nenhuma
  * chamada de rede. Nunca baixa nem instala sozinha: `autoDownload` e `autoInstallOnAppQuit` ficam falsos, e cada passo
  * é um pedido da pessoa. Este módulo não importa `electron` nem `electron-updater`: o `autoUpdater` entra por injeção

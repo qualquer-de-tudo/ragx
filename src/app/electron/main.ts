@@ -208,13 +208,14 @@ function applyNativeTheme(): void {
 }
 
 // -- atualização do painel (RAGX-0192) -------------------------------------
-// Desligada por padrão: sem `autoUpdate`, ou fora do painel empacotado, nenhuma chamada de rede.
+// Ligada por padrão desde a v1.0.0 (a pessoa pode desligar em Preferências): desligada, ou fora do painel empacotado,
+// nenhuma chamada de rede.
 
 const updater = createUpdater({
   autoUpdater: autoUpdater as never,
   isPackaged: app.isPackaged,
   version: app.getVersion(),
-  enabled: () => currentPrefs().autoUpdate === true,
+  enabled: () => currentPrefs().autoUpdate !== false,
   onState: (state) => mainWindow?.webContents.send('ragx:update', state),
 })
 
