@@ -7,6 +7,7 @@ Ver docs/04-indexacao.md e ADR-0008.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -295,20 +296,33 @@ def _decisao_sem_ler(gate: SecurityGate, inner: str, rel: str) -> GateDecision:
 
 
 def scan_fingerprints(
-    root: Path, gate: SecurityGate, follow_symlinks: bool = False
+    root: Path,
+    gate: SecurityGate,
+    follow_symlinks: bool = False,
+    ignored_cache: dict[str, bool] | None = None,
 ) -> dict[str, tuple[int, int]]:
     """`{caminho: (tamanho, mtime_ns)}` — sem abrir um único arquivo.
 
     É o que o `ragx watch` compara entre dois instantes. Fica aqui, e não no
     watcher, para que continue valendo que só este módulo enumera o projeto:
     o watcher recebe nomes e números, nunca bytes.
+
+    `ignored_cache` (RAGX-0147) guarda o veredito de `should_ignore` por caminho: o watcher o passa
+    de ciclo em ciclo enquanto o gate é o mesmo e o zera quando um arquivo de ignore muda. Caminho
+    novo calcula. Só poupa a conta; o veredito de segurança continua sendo `gate.admit` na leitura.
     """
     root = Path(root).resolve()
     visited: set[tuple[int, int]] = set()
     out: dict[str, tuple[int, int]] = {}
     for path in _walk(root, follow_symlinks, visited, gate.ignore.can_prune):
         rel = path.relative_to(root).as_posix()
-        ignored, _ = gate.ignore.should_ignore(rel)
+        if ignored_cache is None:
+            ignored, _ = gate.ignore.should_ignore(rel)
+        else:
+            ignored = ignored_cache.get(rel)  # type: ignore[assignment]
+            if ignored is None:
+                ignored, _ = gate.ignore.should_ignore(rel)
+                ignored_cache[rel] = ignored
         if ignored:
             continue
         try:
@@ -333,38 +347,42 @@ def _walk(
     while stack:
         current = stack.pop()
         try:
-            entries = list(current.iterdir())
+            # `os.scandir`: tipo (arquivo, pasta, link) vem da enumeração, sem syscall por entrada (RAGX-0147).
+            # A ordem é a de `sorted(Path)` de antes (no Windows, sem diferenciar maiúscula).
+            with os.scandir(current) as it:
+                entries = sorted(it, key=lambda e: Path(e.path))
         except OSError:
             # Pasta que existe mas não abriu: quem consome precisa saber, para
             # não confundir com "tudo que havia lá foi apagado".
             if on_unreadable_dir is not None and current.exists():
                 on_unreadable_dir(current)
             continue
-        for entry in sorted(entries):
+        for entry in entries:
             try:
                 # Junction do Windows não é symlink para o Python: sem isto ela
                 # passava pela guarda e a pasta de fora era percorrida (A8). Só se
                 # pergunta por pasta; em arquivo não há syscall a mais.
-                eh_link = entry.is_symlink() or (entry.is_dir() and is_junction(entry))
+                eh_link = entry.is_symlink() or (entry.is_dir() and is_junction(entry.path))
                 if eh_link:
                     if not follow_symlinks:
                         continue
                     # Link que escapa da raiz é recusado (ameaça A8).
-                    target = entry.resolve()
+                    target = Path(entry.path).resolve()
                     if not target.is_relative_to(root):
                         continue
                 if entry.is_dir():
-                    if can_prune is not None and can_prune(entry.relative_to(root).as_posix()):
+                    caminho = Path(entry.path)
+                    if can_prune is not None and can_prune(caminho.relative_to(root).as_posix()):
                         continue
-                    st = entry.stat()
+                    st = os.stat(entry.path)  # `DirEntry.stat()` zera st_ino no Windows
                     key = (st.st_dev, st.st_ino)
                     if key in visited:  # ciclo
                         continue
                     visited.add(key)
-                    stack.append(entry)
+                    stack.append(caminho)
                 elif entry.is_file():
-                    yield entry
+                    yield Path(entry.path)
             except OSError:
                 if on_unreadable_dir is not None:
-                    on_unreadable_dir(entry)
+                    on_unreadable_dir(Path(entry.path))
                 continue

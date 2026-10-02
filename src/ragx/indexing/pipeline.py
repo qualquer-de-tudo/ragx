@@ -154,8 +154,11 @@ def index_paths(
     source: str = "paths",
     wait_s: float = 0.0,
     on_event: Callable[[dict[str, Any]], None] | None = None,
+    gate: SecurityGate | None = None,
 ) -> IndexReport:
     """Reindexa SÓ os arquivos pedidos: sem varrer a árvore e sem chamar o git.
+
+    `gate` (RAGX-0147): o watcher passa o dele, que já existe, em vez de construir outro a cada lote.
 
     É o que uma edição feita no meio de uma sessão precisa (RAGX-0140): o custo do arquivo, e
     não o do projeto. O Security Gate é o mesmo e roda antes de qualquer byte (`iter_paths`
@@ -192,7 +195,7 @@ def index_paths(
 
     budget = MAX_PENDING_RERUNS
     try:
-        report = _index_paths_once(cfg, rels, embed, source, on_event)
+        report = _index_paths_once(cfg, rels, embed, source, on_event, gate)
         budget = _drain_pending(cfg, state_dir, budget)
     finally:
         lock.release(state_dir)
@@ -207,15 +210,17 @@ def _index_paths_once(
     embed: bool,
     source: str,
     on_event: Callable[[dict[str, Any]], None] | None,
+    gate: SecurityGate | None = None,
 ) -> IndexReport:
-    gate = SecurityGate(
-        cfg.root,
-        policy=cfg.security.policy,
-        scan_content=cfg.security.scan_content,
-        min_entropy=cfg.security.min_entropy,
-        extra_exclude=cfg.index.exclude,
-        extra_include=cfg.index.include,
-    )
+    if gate is None:
+        gate = SecurityGate(
+            cfg.root,
+            policy=cfg.security.policy,
+            scan_content=cfg.security.scan_content,
+            min_entropy=cfg.security.min_entropy,
+            extra_exclude=cfg.index.exclude,
+            extra_include=cfg.index.include,
+        )
     opts = ChunkOptions(max_tokens=cfg.chunk.max_tokens, min_tokens=cfg.chunk.min_tokens)
     report = IndexReport()
     started = time.perf_counter()

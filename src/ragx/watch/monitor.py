@@ -20,6 +20,7 @@ Duas velocidades, de propósito:
 
 from __future__ import annotations
 
+import statistics
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -54,6 +55,10 @@ class WatchState:
     since_consolidation: int = 0
     last_error: str | None = None
     warnings: list[str] = field(default_factory=list)
+    #: duração do último ciclo e mediana dos ociosos, em ms (RAGX-0147)
+    last_cycle_ms: float | None = None
+    idle_cycle_ms_p50: float | None = None
+    _idle_ms: list[float] = field(default_factory=list, repr=False)
 
 
 def diff(
@@ -76,12 +81,31 @@ def _gate(cfg: Config) -> SecurityGate:
     )
 
 
-def snapshot(cfg: Config) -> dict[str, tuple[int, int]]:
-    return scan_fingerprints(cfg.root, _gate(cfg), cfg.index.follow_symlinks)
+#: arquivos cujo conteúdo muda o que é visitado: o gate (e o cache de veredito) é refeito quando um deles muda
+_ARQUIVOS_DE_REGRA = frozenset({".gitignore", ".dockerignore", ".ragignore"})
+_JANELA_OCIOSA = 200
+
+
+def _mexe_em_regra(paths: tuple[str, ...]) -> bool:
+    return any(p.rsplit("/", 1)[-1] in _ARQUIVOS_DE_REGRA for p in paths)
+
+
+def snapshot(
+    cfg: Config,
+    gate: SecurityGate | None = None,
+    ignored_cache: dict[str, bool] | None = None,
+) -> dict[str, tuple[int, int]]:
+    """Sem `gate` constrói um (como sempre); o laço do `watch` passa o dele (RAGX-0147)."""
+    return scan_fingerprints(cfg.root, gate or _gate(cfg), cfg.index.follow_symlinks, ignored_cache)
 
 
 def apply_changes(
-    cfg: Config, state: WatchState, consolidate: bool, source: str = "watch"
+    cfg: Config,
+    state: WatchState,
+    consolidate: bool,
+    source: str = "watch",
+    paths: tuple[str, ...] | None = None,
+    gate: SecurityGate | None = None,
 ) -> None:
     """Reindexa; consolida quando o ciclo pede.
 
@@ -90,10 +114,15 @@ def apply_changes(
     um índice que parou no tempo sem ninguém perceber.
     """
     from ragx.core.errors import IndexBusyError
-    from ragx.indexing.pipeline import index_project
+    from ragx.indexing.pipeline import index_paths, index_project
 
     try:
-        r = index_project(cfg, source=source)
+        # Lote de arquivos conhecidos: reindexa só eles (RAGX-0140). `index_paths` cai sozinho no
+        # índice completo para arquivo de regra ou lote acima de `watch.max_batch`.
+        if paths:
+            r = index_paths(cfg, paths, source=source, gate=gate)
+        else:
+            r = index_project(cfg, source=source)
         state.indexed += r.stats.indexed
         state.blocked += r.stats.blocked
         state.applied += 1
@@ -133,28 +162,40 @@ def watch(
     fica toda na CLI, este módulo não imprime nada.
     """
     state = WatchState()
-    known = snapshot(cfg)
+    gate = _gate(cfg)  # uma vez por sessão: reconstruído só quando um arquivo de ignore muda
+    vereditos: dict[str, bool] = {}
+    known = snapshot(cfg, gate, vereditos)
     pendente: set[str] = set()
     ultimo_evento = 0.0
 
     while max_cycles is None or state.cycles < max_cycles:
         state.cycles += 1
         sleep(cfg.watch.interval_s)
+        inicio = time.perf_counter()
 
-        atual = snapshot(cfg)
+        atual = snapshot(cfg, gate, vereditos)
         d = diff(known, atual)
         known = atual
+
+        if d.total and _mexe_em_regra(d.paths):
+            # `.gitignore` & cia mudou: o que é visitado muda. Gate novo, vereditos zerados e uma
+            # varredura nova, para o ciclo seguinte já refletir a regra.
+            gate = _gate(cfg)
+            vereditos.clear()
+            known = snapshot(cfg, gate, vereditos)
 
         if d.total:
             # Trocou algo: o relógio do debounce reinicia. Salvar 12 arquivos em
             # sequência vira UMA reindexação, não doze.
             pendente.update(d.paths[: cfg.watch.max_batch])
             ultimo_evento = time.monotonic()
+            _fim_do_ciclo(state, inicio, ocioso=False)
             if on_event:
                 on_event("change", d, state)
             continue
 
         if not pendente:
+            _fim_do_ciclo(state, inicio, ocioso=True)
             if on_event:
                 on_event("idle", d, state)
             continue
@@ -165,8 +206,17 @@ def watch(
         lote = Delta(modified=tuple(sorted(pendente)))
         pendente.clear()
         consolidar = state.since_consolidation + 1 >= cfg.watch.full_sync_every
-        apply_changes(cfg, state, consolidate=consolidar)
+        apply_changes(cfg, state, consolidate=consolidar, paths=lote.modified, gate=gate)
         if on_event:
             on_event("apply", lote, state)
 
     return state
+
+
+def _fim_do_ciclo(state: WatchState, inicio: float, ocioso: bool) -> None:
+    ms = (time.perf_counter() - inicio) * 1000
+    state.last_cycle_ms = round(ms, 2)
+    if ocioso:
+        state._idle_ms.append(ms)
+        del state._idle_ms[:-_JANELA_OCIOSA]
+        state.idle_cycle_ms_p50 = round(statistics.median(state._idle_ms), 2)

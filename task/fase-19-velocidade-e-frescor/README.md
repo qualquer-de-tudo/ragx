@@ -26,7 +26,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 | [RAGX-0144](RAGX-0144-clone-novo-usa-os-embeddings-versionados-em-knowledge.md) | Clone novo usa os embeddings versionados em `knowledge/` | P1 | 1d | `done` |
 | [RAGX-0145](RAGX-0145-expansao-do-grafo-semeadura-pelo-topo-filtros-e-grau-so-dos-visitados.md) | Expansão do grafo: semeadura pelo topo, filtros e grau só dos visitados | P1 | 1d | `review` |
 | [RAGX-0146](RAGX-0146-cache-de-embedding-em-sqlite-em-lote.md) | Cache de embedding em SQLite, em lote | P2 | 0,75d | `done` |
-| [RAGX-0147](RAGX-0147-watcher-barato-sem-reconstruir-o-gate-a-cada-ciclo.md) | Watcher barato: sem reconstruir o gate a cada ciclo | P2 | 0,75d | `todo` |
+| [RAGX-0147](RAGX-0147-watcher-barato-sem-reconstruir-o-gate-a-cada-ciclo.md) | Watcher barato: sem reconstruir o gate a cada ciclo | P2 | 0,75d | `done` |
 | [RAGX-0148](RAGX-0148-knowledge-estavel-no-git-sem-timestamp-sem-reescrita-igual.md) | `knowledge/` estável no Git: sem timestamp, sem reescrita igual | P2 | 0,5d | `todo` |
 | [RAGX-0149](RAGX-0149-junction-do-windows-tratada-como-symlink.md) | Junction do Windows tratada como symlink | P1 | 0,25d | `done` |
 | [RAGX-0150](RAGX-0150-micro-custos-ragx-context-sem-tokens-mmr-vetorizado-query-embutida-uma-vez.md) | Micro-custos: `ragx context` sem `--tokens`, MMR vetorizado, query embutida uma vez | P3 | 0,5d | `todo` |

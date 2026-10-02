@@ -111,6 +111,7 @@ def _once(cfg: object, plain: bool) -> None:
             "indexed": st.indexed, "blocked": st.blocked,
             "consolidations": st.consolidations, "error": st.last_error,
             "warnings": st.warnings,
+            "last_cycle_ms": st.last_cycle_ms, "idle_cycle_ms_p50": st.idle_cycle_ms_p50,
         }, ensure_ascii=False))
         return
     console.print(

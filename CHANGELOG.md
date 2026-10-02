@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **`ragx watch` com ciclo ocioso mais barato.** A cada 2 s o watcher reconstruía o `SecurityGate` e o `IgnoreEngine` e
+  fazia 5 syscalls por arquivo. Agora o gate é construído uma vez (refeito só quando um `.gitignore`, `.dockerignore`
+  ou `.ragignore` muda), o veredito de ignore fica em cache, a enumeração usa `os.scandir` e o lote vai por
+  `index_paths`. Medido num projeto sintético: 643 arquivos 126 para 48 ms, 2.000 arquivos 282 para 97 ms por ciclo;
+  segredo criado depois de 50 ciclos continua bloqueado (RAGX-0147).
 - **Cache de embedding em SQLite, em lote, com checkpoint.** O cache guardava um arquivo por chunk e o `embed_pending`
   fazia dois `SELECT` por chunk e só gravava no fim. Agora é um SQLite por modelo lido e escrito em lote, um único
   `SELECT` busca o que falta, e a cada 10 lotes o que já foi embutido é gravado: um `ragx index` morto no meio

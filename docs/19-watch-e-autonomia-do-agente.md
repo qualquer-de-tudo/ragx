@@ -49,6 +49,18 @@ Decisão deliberada, por três motivos:
 O custo é um `stat` por arquivo não ignorado, por ciclo. No RAGX (301
 documentos, ~12 mil arquivos ignorados antes de qualquer I/O), milissegundos.
 
+**Custo do ciclo ocioso (RAGX-0147).** O `SecurityGate` (e o `IgnoreEngine`, que caminha a árvore atrás de
+`.gitignore`) é construído **uma vez** por sessão do `watch`, e o veredito de `should_ignore` por caminho fica em
+cache enquanto o gate é o mesmo. Os dois são refeitos quando o delta traz `.gitignore`, `.dockerignore` ou `.ragignore`
+(criado, alterado ou removido): o ciclo seguinte já reflete a regra nova. Só poupa a conta: o veredito de segurança
+continua sendo `gate.admit`, na hora de ler (um segredo criado no ciclo 50 é bloqueado igual). A enumeração usa
+`os.scandir`, então tipo de entrada (arquivo, pasta, link) vem da listagem, sem uma syscall por entrada; o
+`st_ino` das pastas continua vindo de `os.stat`, porque `DirEntry.stat()` o zera no Windows, e o tamanho e o mtime dos
+arquivos também (no NTFS os da entrada podem ficar defasados com o arquivo aberto para escrita). Medido num projeto
+sintético: 643 arquivos, 126 para 48 ms; 2.000 arquivos, 282 para 97 ms. O lote que o debounce junta vai por
+`index_paths` (RAGX-0140) em vez de varrer o projeto; arquivo de regra ou lote acima de `watch.max_batch` cai no
+`index_project`. `WatchState` expõe `last_cycle_ms` e `idle_cycle_ms_p50`.
+
 ### Duas velocidades
 
 | Evento | O que roda | Custo |

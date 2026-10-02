@@ -159,3 +159,101 @@ def test_arquivo_travado_nao_vira_remocao_no_watcher(cfg, monkeypatch) -> None:
         caminhos = {r[0] for r in conn.execute("SELECT rel_path FROM documents")}
     assert "app.py" in caminhos
     assert st.last_error is None
+
+
+# --- RAGX-0147: gate único, vereditos em cache e aplicação por caminho ---------------------------------------------
+
+
+def _conta_gates(monkeypatch):  # type: ignore[no-untyped-def]
+    from ragx.security import gate as gate_mod
+
+    n = {"gates": 0}
+    original = gate_mod.SecurityGate.__init__
+
+    def conta(self, *a, **k):  # type: ignore[no-untyped-def]
+        n["gates"] += 1
+        original(self, *a, **k)
+
+    monkeypatch.setattr(gate_mod.SecurityGate, "__init__", conta)
+    return n
+
+
+def test_gate_e_construido_uma_vez_em_50_ciclos_ociosos(cfg, monkeypatch) -> None:
+    n = _conta_gates(monkeypatch)
+    watch(cfg, max_cycles=50, sleep=lambda _s: None)
+    assert n["gates"] == 1
+
+
+@pytest.mark.parametrize("regra", [".gitignore", ".dockerignore", ".ragignore"])
+def test_arquivo_de_ignore_reconstroi_o_gate_e_a_regra_vale_no_ciclo_seguinte(cfg, monkeypatch, regra) -> None:
+    (cfg.root / "log.tmp").write_text("x = 1\n", encoding="utf-8")
+    n = _conta_gates(monkeypatch)
+    ciclo = {"n": 0}
+
+    def sleep(_s: float) -> None:
+        ciclo["n"] += 1
+        if ciclo["n"] == 2:
+            (cfg.root / regra).write_text("*.tmp\n", encoding="utf-8")
+
+    watch(cfg, max_cycles=6, sleep=sleep)
+    # o do início, o refeito pelo arquivo de regra e o do `index_project` que esse lote dispara (o lote cai nele)
+    assert n["gates"] == 3
+    assert "log.tmp" not in snapshot(cfg)
+
+
+def test_snapshot_sem_gate_continua_igual(cfg) -> None:
+    assert snapshot(cfg) == snapshot(cfg, None, None)
+
+
+def test_lote_de_um_arquivo_vai_por_index_paths_e_o_texto_novo_aparece(cfg, monkeypatch) -> None:
+    import ragx.indexing.pipeline as pipe
+
+    chamadas: list[str] = []
+    for nome in ("index_paths", "index_project"):
+        original = getattr(pipe, nome)
+        monkeypatch.setattr(pipe, nome, lambda *a, _o=original, _n=nome, **k: (chamadas.append(_n), _o(*a, **k))[1])
+    ciclo = {"n": 0}
+
+    def sleep(_s: float) -> None:
+        ciclo["n"] += 1
+        if ciclo["n"] == 1:
+            (cfg.root / "novo.py").write_text("def zeta_unico_0147():\n    return 7\n", encoding="utf-8")
+
+    watch(cfg, max_cycles=5, sleep=sleep)
+    assert chamadas[0] == "index_paths"
+    assert search(cfg, "zeta_unico_0147", mode="keyword", limit=5).results
+
+
+def test_lote_com_gitignore_cai_em_index_project(cfg, monkeypatch) -> None:
+    import ragx.indexing.pipeline as pipe
+
+    chamadas: list[str] = []
+    original = pipe.index_project
+    monkeypatch.setattr(pipe, "index_project", lambda *a, **k: (chamadas.append("index_project"), original(*a, **k))[1])
+    ciclo = {"n": 0}
+
+    def sleep(_s: float) -> None:
+        ciclo["n"] += 1
+        if ciclo["n"] == 1:
+            (cfg.root / ".gitignore").write_text("build/\n", encoding="utf-8")
+
+    watch(cfg, max_cycles=4, sleep=sleep)
+    assert "index_project" in chamadas
+
+
+def test_arquivo_apagado_sai_do_indice_pelo_lote_por_caminho(cfg) -> None:
+    ciclo = {"n": 0}
+
+    def sleep(_s: float) -> None:
+        ciclo["n"] += 1
+        if ciclo["n"] == 1:
+            (cfg.root / "app.py").unlink()
+
+    watch(cfg, max_cycles=4, sleep=sleep)
+    with open_db(cfg.db_path, read_only=True) as conn:
+        assert "app.py" not in {r[0] for r in conn.execute("SELECT rel_path FROM documents")}
+
+
+def test_estado_expoe_a_duracao_do_ciclo(cfg) -> None:
+    st = watch(cfg, max_cycles=5, sleep=lambda _s: None)
+    assert st.last_cycle_ms is not None and st.idle_cycle_ms_p50 is not None
