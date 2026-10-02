@@ -24,7 +24,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 | [RAGX-0142](RAGX-0142-aquecer-embedder-e-contador-no-servidor-mcp.md) | Aquecer embedder e contador no servidor MCP | P1 | 0,5d | `done` |
 | [RAGX-0143](RAGX-0143-entrada-leve-para-claude-hint-e-hook-run-guarda-no-post-checkout.md) | Entrada leve para `claude hint` e `hook-run`; guarda no `post-checkout` | P1 | 1d | `done` |
 | [RAGX-0144](RAGX-0144-clone-novo-usa-os-embeddings-versionados-em-knowledge.md) | Clone novo usa os embeddings versionados em `knowledge/` | P1 | 1d | `done` |
-| [RAGX-0145](RAGX-0145-expansao-do-grafo-semeadura-pelo-topo-filtros-e-grau-so-dos-visitados.md) | Expansão do grafo: semeadura pelo topo, filtros e grau só dos visitados | P1 | 1d | `review` |
+| [RAGX-0145](RAGX-0145-expansao-do-grafo-semeadura-pelo-topo-filtros-e-grau-so-dos-visitados.md) | Expansão do grafo: semeadura pelo topo, filtros e grau só dos visitados | P1 | 1d | `done` |
 | [RAGX-0146](RAGX-0146-cache-de-embedding-em-sqlite-em-lote.md) | Cache de embedding em SQLite, em lote | P2 | 0,75d | `done` |
 | [RAGX-0147](RAGX-0147-watcher-barato-sem-reconstruir-o-gate-a-cada-ciclo.md) | Watcher barato: sem reconstruir o gate a cada ciclo | P2 | 0,75d | `done` |
 | [RAGX-0148](RAGX-0148-knowledge-estavel-no-git-sem-timestamp-sem-reescrita-igual.md) | `knowledge/` estável no Git: sem timestamp, sem reescrita igual | P2 | 0,5d | `done` |

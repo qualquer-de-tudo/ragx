@@ -7,7 +7,7 @@
 | **Estimativa** | 2d |
 | **Depende de** | `RAGX-0111` (fase 14) · `RAGX-0145` |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (7.2 #9) · [06-grafo.md](../../docs/06-grafo.md) · [08-dictionary.md](../../docs/08-dictionary.md) · [09-mcp.md](../../docs/09-mcp.md) |
-| **Status** | `blocked` |
+| **Status** | `doing` |
 
 ## Objetivo
 
