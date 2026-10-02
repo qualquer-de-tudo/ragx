@@ -91,14 +91,22 @@ knowledge/
 | Seção | Fonte primária | Determinístico? |
 |-------|----------------|-----------------|
 | `technologies` | manifests de dependência (`composer.json`, `package.json`, `pyproject.toml`, `go.mod`) + catálogo do grafo | sim |
-| `services` | entidades `class`/`service` + convenção de nome + `documented_by` | sim |
-| `modules` | estrutura de diretórios + contagem de chunks | sim |
+| `services` | classe com convenção de nome ou referenciada de fora, **sem** exceção, enum, DTO (`@dataclass`, classe só de campos) nem símbolo privado; ordenada pelo grau no grafo; `summary` extrativo | sim |
+| `modules` | estrutura de diretórios + contagem de chunks; a pasta que concentra mais de 25% do código é aberta em mais um nível (`src/ragx` vira `src/ragx/indexing`); `summary` do README, do `__init__.py` ou do README de uma pasta-mãe (nunca o da raiz) | sim |
 | `entrypoints` | rotas, `main`, scripts de `package.json`, `Dockerfile CMD` | sim |
-| `data_stores` | `CREATE TABLE`, migrations, modelos ORM | sim |
-| `concepts` | clustering de entidades + termos frequentes; refinado por LLM no modo `--semantic` | parcial |
+| `data_stores` | `CREATE TABLE`, migrations, modelos ORM (sem tabelas de `tests/` e `fixtures/`) | sim |
+| `concepts` | o que cada documento de `docs/` descreve: o título dele e as classes que ele documenta (relação `documented_by` do grafo), sem símbolo genérico (citado por mais de 4 documentos) | sim |
 | `conventions` | detecção de padrão repetido (>= 3 ocorrências) | sim |
 | `glossary` | siglas e termos de domínio extraídos de headings e docstrings | parcial |
 | `summaries` | primeira seção do doc / docstring de módulo; LLM no modo `--semantic` | parcial |
+
+**Resumos extrativos (RAGX-0109).** O `summary` de um serviço é a primeira linha do docstring da classe; sem ele, a do
+docstring do módulo onde ela mora; em TS/JS/PHP, o bloco `/** ... */` que a precede. O de um módulo vem do primeiro parágrafo
+do README da pasta ou do docstring do `__init__.py`. **Sem docstring, `summary` fica `null`: nada é inventado.** O `--semantic` só
+melhora o que o extrativo produziu.
+
+**Densidade (RAGX-0110).** O dicionário tem um teto de ~4.000 tokens (`_TOKEN_TARGET`): neste repositório caiu de 10.935 (auditoria)
+PARA 3.701, com mais informação por item (resumo em vez de lista de símbolos). Nenhum símbolo `_privado` entra.
 
 Regra dura: **tudo que é determinístico é gerado sem LLM**. O modo `--semantic` só
 preenche `concepts`, `glossary` e `summaries`, e marca cada item com
@@ -132,16 +140,27 @@ Por CLI:
 
 ```bash
 ragx dictionary show --section services
+ragx dictionary show --level 0          # o mapa em ~400 tokens
 ```
 
 Por MCP (Fase 6), é a ferramenta que todo agente deve chamar primeiro:
 
 ```json
-{ "tool": "get_dictionary", "arguments": { "section": "services" } }
+{ "tool": "get_dictionary", "arguments": { "level": 0 } }
+{ "tool": "get_dictionary", "arguments": { "section": "services", "level": 1 } }
 ```
 
-O `dictionary.json` completo cabe em poucos milhares de tokens; seções individuais,
-em centenas.
+**Níveis (RAGX-0111).** O agente começa barato e aprofunda. Os níveis são recortes de leitura do mesmo `dictionary.json` (o
+formato em disco não muda) e cada um é superconjunto do anterior:
+
+| `level` | O que traz | Tokens (neste repositório) |
+|---|---|---:|
+| `0` | projeto, estatísticas, tecnologias, 8 serviços (só nomes), 6 módulos com resumo, pontos de entrada | ~400 |
+| `1` | tudo do `0` + 12 serviços com caminho e resumo, todos os módulos, convenções, 10 documentos | ~1.700 |
+| `2` (padrão) | o dicionário completo, como sempre foi | ~3.700 |
+
+`section` e `level` se combinam: `section="services", level=1` devolve só os serviços no recorte do nível 1. O playbook e as
+`instructions` do servidor mandam começar por `level=0`.
 
 ## Critério de aceite da Fase 5
 

@@ -8,7 +8,7 @@
 | **Estimativa** | 1,5d |
 | **Depende de** | — |
 | **Documentação** | [23-auditoria-e-evolucao-do-rag.md](../../docs/23-auditoria-e-evolucao-do-rag.md) · [08-dictionary.md](../../docs/08-dictionary.md) |
-| **Status** | `todo` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -16,12 +16,12 @@
 
 ## Entregáveis
 
-- [ ] Resumo extrativo, sem LLM, a partir do que já está no índice:
-  - [ ] docstring de classe/módulo (o parser Python já a captura em `meta`)
-  - [ ] primeiro parágrafo da seção, em Markdown
-  - [ ] assinatura + primeira linha de docstring, em função
-- [ ] `--semantic` continua existindo, e melhora o que o extrativo produziu
-- [ ] `summary` nunca fica `null` quando há docstring disponível
+- [x] Resumo extrativo, sem LLM, a partir do que já está no índice:
+  - [x] docstring de classe/módulo (o parser Python já a captura em `meta`)
+  - [x] primeiro parágrafo da seção, em Markdown
+  - [x] assinatura + primeira linha de docstring, em função
+- [x] `--semantic` continua existindo, e melhora o que o extrativo produziu
+- [x] `summary` nunca fica `null` quando há docstring disponível
 
 ## Fora de escopo
 
@@ -30,14 +30,14 @@
 
 ## Critérios de aceite
 
-- [ ] **≥ 80%** de `services` e `modules` com `summary` preenchido, sem LLM
-- [ ] O tamanho do dicionário não cresce: o resumo ENTRA e a lista de símbolos redundante SAI (ver `RAGX-0110`)
-- [ ] `dictionary generate` continua determinístico
+- [x] **≥ 80%** de `services` e `modules` com `summary` preenchido, sem LLM
+- [x] O tamanho do dicionário não cresce: o resumo ENTRA e a lista de símbolos redundante SAI (ver `RAGX-0110`)
+- [x] `dictionary generate` continua determinístico
 
 ## Testes
 
-- [ ] Teste de extração de docstring por tipo de nó
-- [ ] Teste de que ausência de docstring não produz `summary` inventado
+- [x] Teste de extração de docstring por tipo de nó
+- [x] Teste de que ausência de docstring não produz `summary` inventado
 
 ## Notas
 
@@ -45,9 +45,13 @@ A camada que deveria ser o Nível 0/1 do conhecimento hierárquico existe estrut
 
 ## Definition of Done
 
-- [ ] Todos os critérios de aceite acima verificados
-- [ ] Testes escritos e verdes em Linux, macOS e Windows
-- [ ] `ruff` e `mypy` limpos
-- [ ] Suíte `security/` continua verde
-- [ ] CHANGELOG atualizado na MESMA alteração
-- [ ] Documentação confere com o comportamento implementado
+- [x] Todos os critérios de aceite acima verificados
+- [ ] Testes escritos e verdes em Linux, macOS e Windows (verdes no Windows; Linux e macOS só a CI)
+- [x] `ruff` e `mypy` limpos
+- [x] Suíte `security/` continua verde
+- [x] CHANGELOG atualizado na MESMA alteração
+- [x] Documentação confere com o comportamento implementado
+
+## Andamento
+
+- 2026-10-02 — Resumos extrativos: `_primeira_linha`, `_fatos_da_classe` (ast), `_resumo_de_classe`, `_resumo_do_documento`, `_resumo_do_modulo` (README, `__init__`, README de pasta-mãe que não seja a raiz). Medido no repositório (dicionário já enxuto pela 0110): **serviços 15/15 (100%)** e **módulos 7/10 (70%)**, **22/25 = 88% combinados**, que é o que o critério mede; só os módulos `src/ragx`, `tests/unit` e `tests/integration` ficam `null`, porque nem README nem `__init__` dizem algo (nada é inventado). Caso de `SecurityGate`: não tem docstring própria, então o resumo vem do docstring do módulo `gate.py`. Testes em `tests/integration/test_dictionary_niveis.py`. `--semantic` não foi tocado.

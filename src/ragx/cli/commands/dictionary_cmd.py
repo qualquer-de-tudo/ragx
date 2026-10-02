@@ -55,6 +55,7 @@ def generate(
 @app.command("show")
 def show(
     section: Annotated[str | None, typer.Option("--section")] = None,
+    level: Annotated[int, typer.Option("--level", help="0, 1 ou 2 (completo, o padrão)")] = 2,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Mostra o dicionário (ou uma seção)."""
@@ -66,12 +67,17 @@ def show(
         console.print("\n[yellow]dicionário ausente.[/] Rode: [bold]ragx dictionary generate[/]\n")
         raise typer.Exit(1)
 
+    if level not in builder.LEVELS:
+        raise UsageError(f"--level deve ser 0, 1 ou 2 (recebi {level})")
     if section:
         if section not in data:
             raise UsageError(
                 f"seção desconhecida: {section!r} (disponíveis: {', '.join(sorted(data))})"
             )
-        data = {section: data[section]}
+        visto = builder.at_level(data, level)
+        data = {section: visto.get(section, data[section] if level >= 2 else [])}
+    else:
+        data = builder.at_level(data, level)
 
     if as_json:
         console.print_json(json.dumps(data, ensure_ascii=False))

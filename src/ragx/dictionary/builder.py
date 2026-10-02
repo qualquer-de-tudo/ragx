@@ -12,8 +12,11 @@ Ver docs/08-dictionary.md.
 
 from __future__ import annotations
 
+import ast
 import json
+import re
 import sqlite3
+import textwrap
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
@@ -31,7 +34,13 @@ _MAX_ITEMS = 60
 # perde a razão de existir. Ver docs/08-dictionary.md.
 _GLOSSARY_MAX = 20
 _DOCS_MAX = 40
-_TOKEN_TARGET = 8000
+_TOKEN_TARGET = 4000
+#: tamanho máximo de um resumo extrativo (primeira linha de docstring / primeiro parágrafo)
+_SUMMARY_MAX = 160
+#: um módulo com mais que esta fração dos chunks é subdividido em mais um nível de pasta
+_MODULE_SPLIT_SHARE = 0.25
+#: um símbolo documentado por mais documentos que isto é genérico demais para ser um conceito
+_CONCEPT_MAX_DOCS = 4
 
 
 @dataclass
@@ -86,6 +95,131 @@ def build(cfg: Config, semantic: bool = False) -> tuple[dict[str, Any], Dictiona
     return data, report
 
 
+# ── resumos extrativos (RAGX-0109): do que o código e a documentação JÁ dizem, sem LLM ─────────
+def _primeira_linha(texto: str | None) -> str | None:
+    """Primeira linha não vazia de um texto, sem ponto final e limitada; `None` se não houver (nunca inventa)."""
+    if not texto:
+        return None
+    for linha in texto.strip().splitlines():
+        linha = linha.strip().strip("*#/ \t")
+        if linha:
+            linha = linha.rstrip(".:;")
+            return linha[: _SUMMARY_MAX - 1] + "…" if len(linha) > _SUMMARY_MAX else linha
+    return None
+
+
+def _fatos_da_classe(content: str) -> dict[str, Any] | None:
+    """Docstring, bases e métodos de uma classe a partir do texto do chunk; `None` se não for Python legível."""
+    try:
+        tree = ast.parse(textwrap.dedent(content))
+    except (SyntaxError, ValueError):
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            bases = [ast.unparse(b) for b in node.bases]
+            metodos = [
+                n for n in node.body
+                if isinstance(n, ast.FunctionDef | ast.AsyncFunctionDef) and not (n.name.startswith("__") and n.name.endswith("__"))
+            ]
+            decoradores = [ast.unparse(d) for d in node.decorator_list]
+            return {
+                "doc": _primeira_linha(ast.get_docstring(node)),
+                "bases": bases,
+                "metodos": len(metodos),
+                "decoradores": decoradores,
+            }
+    return None
+
+
+_DOC_COMENTARIO = re.compile(r"/\*\*(.+?)\*/", re.S)
+
+
+def _resumo_de_classe(content: str, fatos: dict[str, Any] | None) -> str | None:
+    if fatos is not None:
+        return fatos["doc"]
+    m = _DOC_COMENTARIO.search(content[:1500])  # TS/JS/PHP: o bloco de documentação logo antes da classe
+    return _primeira_linha(m.group(1)) if m else None
+
+
+_DOC_MODULO = re.compile(r'''^\s*(?:"""|\'\'\')(.+?)(?:"""|\'\'\')''', re.S)
+
+
+def _resumo_do_documento(conn: sqlite3.Connection, document_id: str | None) -> str | None:
+    """Primeira linha do docstring do MÓDULO (primeiro chunk do arquivo), quando a classe não tem o dela."""
+    if not document_id:
+        return None
+    row = conn.execute(
+        "SELECT content FROM chunks WHERE document_id = ? ORDER BY ordinal LIMIT 1", (document_id,)
+    ).fetchone()
+    if not row:
+        return None
+    m = _DOC_MODULO.match(row["content"][:1200])
+    return _primeira_linha(m.group(1)) if m else None
+
+
+def _eh_so_dados(nome: str, fatos: dict[str, Any] | None, metodos: int) -> bool:
+    """Exceção, enum, DTO e esquema não são serviço (RAGX-0110). `metodos`: quantos métodos o grafo registra na classe."""
+    if nome.endswith(("Error", "Exception")):
+        return True
+    if fatos is None:
+        return False
+    if metodos == 0 and not fatos["bases"]:
+        return True  # sem nenhum método e sem herança: só campos (DTO), mesmo sem `@dataclass`
+    bases = " ".join(fatos["bases"])
+    if re.search(r"Exception|Error|Enum|BaseModel|TypedDict|NamedTuple|Protocol", bases):
+        return True
+    return any("dataclass" in d for d in fatos["decoradores"])
+
+
+def _resumo_do_modulo(conn: sqlite3.Connection, modulo: str) -> str | None:
+    """README da pasta (primeiro parágrafo), docstring do `__init__.py` ou README de uma pasta-mãe que NÃO seja a raiz
+    (`src/app/electron` herda o de `src/app`: é o mesmo aplicativo); `None` se nada disso disser algo."""
+    achou = _resumo_da_pasta(conn, modulo)
+    if achou or modulo == ".":
+        return achou
+    partes = PurePosixPath(modulo).parts
+    for n in range(len(partes) - 1, 0, -1):  # nunca a raiz do projeto: o README dela fala do projeto, não da pasta
+        achou = _readme_da_pasta(conn, "/".join(partes[:n]))
+        if achou:
+            return achou
+    return None
+
+
+def _resumo_da_pasta(conn: sqlite3.Connection, modulo: str) -> str | None:
+    return _readme_da_pasta(conn, modulo) or _init_da_pasta(conn, modulo)
+
+
+def _readme_da_pasta(conn: sqlite3.Connection, modulo: str) -> str | None:
+    base = "" if modulo == "." else modulo.rstrip("/") + "/"
+    for nome in ("README.md", "readme.md"):
+        row = conn.execute(
+            "SELECT c.content FROM chunks c JOIN documents d ON d.id = c.document_id "
+            "WHERE d.rel_path = ? ORDER BY c.ordinal LIMIT 3",
+            (base + nome,),
+        ).fetchall()
+        for r in row:
+            for linha in r["content"].splitlines():
+                t = linha.strip()
+                if t and not t.startswith(("#", "|", "```", "-", ">", "[", "!", "<")) and len(t) > 12:
+                    return _primeira_linha(t)
+    return None
+
+
+def _init_da_pasta(conn: sqlite3.Connection, modulo: str) -> str | None:
+    base = "" if modulo == "." else modulo.rstrip("/") + "/"
+    row = conn.execute(
+        "SELECT c.content FROM chunks c JOIN documents d ON d.id = c.document_id "
+        "WHERE d.rel_path = ? ORDER BY c.ordinal LIMIT 1",
+        (base + "__init__.py",),
+    ).fetchone()
+    if row:
+        try:
+            return _primeira_linha(ast.get_docstring(ast.parse(row["content"])))
+        except (SyntaxError, ValueError):
+            return None
+    return None
+
+
 # ── seções determinísticas ──────────────────────────────────────────────
 def _technologies(
     entities: list[dict], relations: list[dict], doc_path: dict[str, str]
@@ -122,16 +256,28 @@ def _services(
         if r["type"] in ("calls", "imports", "depends_on"):
             incoming[r["dst_id"]] += 1
 
+    metodos_de: Counter[str] = Counter()
+    for r in relations:
+        if r["type"] == "contains" and by_id.get(r["dst_id"], {}).get("type") == "method":
+            metodos_de[r["src_id"]] += 1
+
     out = []
     for e in entities:
-        if e["type"] != "class":
-            continue
+        if e["type"] != "class" or e["name"].startswith("_"):
+            continue  # símbolo privado não entra no mapa
         looks_like_service = any(
             e["name"].endswith(s)
             for s in ("Service", "Repository", "Client", "Manager", "Handler", "Gateway",
                       "Provider", "Engine", "Scanner", "Builder", "Store")
         )
         if not looks_like_service and incoming[e["id"]] < 3:
+            continue
+        content = ""
+        if e["chunk_id"]:
+            row = conn.execute("SELECT content FROM chunks WHERE id = ?", (e["chunk_id"],)).fetchone()
+            content = row["content"] if row else ""
+        fatos = _fatos_da_classe(content) if content else None
+        if _eh_so_dados(e["name"], fatos, metodos_de[e["id"]]):
             continue
         deps = sorted(
             {
@@ -149,15 +295,21 @@ def _services(
                 for r in relations
                 if r["src_id"] == e["id"] and r["type"] == "documented_by"
                 and r["dst_id"] in by_id
+                # a documentação de verdade, não o changelog, as tarefas e os planos que citam qualquer nome
+                and not by_id[r["dst_id"]]["qualified_name"].startswith(
+                    ("CHANGELOG", "task/", "docs/superpowers/", "agents/", "SECURITY")
+                )
             }
         )
         out.append(
             {
                 "name": e["name"],
                 "path": doc_path.get(e["document_id"], ""),
-                "summary": e["summary"],
-                "depends_on": deps[:8],
-                "documented_by": documented[:4],
+                "summary": e["summary"]
+                or _resumo_de_classe(content, fatos)
+                or _resumo_do_documento(conn, e["document_id"]),
+                "depends_on": [d for d in deps if not d.startswith("_")][:5],
+                "documented_by": documented[:2],
                 "referenced_by": incoming[e["id"]],
             }
         )
@@ -165,20 +317,36 @@ def _services(
 
 
 def _modules(conn: sqlite3.Connection, docs: list[dict]) -> list[dict[str, Any]]:
-    counts: dict[str, dict[str, int]] = defaultdict(lambda: {"files": 0, "chunks": 0})
+    """Pastas de dois níveis; a que concentra muito do código é aberta em mais um (`src/ragx` vira `src/ragx/indexing`)."""
     chunk_by_doc = {
         r["document_id"]: r["n"]
         for r in conn.execute("SELECT document_id, COUNT(*) n FROM chunks GROUP BY document_id")
     }
-    for d in docs:
-        parts = PurePosixPath(d["rel_path"]).parts
-        module = "/".join(parts[:2]) if len(parts) > 2 else (parts[0] if len(parts) > 1 else ".")
-        counts[module]["files"] += 1
-        counts[module]["chunks"] += chunk_by_doc.get(d["id"], 0)
+
+    def nome(parts: tuple[str, ...], niveis: int) -> str:
+        if len(parts) > niveis:
+            return "/".join(parts[:niveis])
+        return parts[0] if len(parts) > 1 else "."
+
+    por_doc = [(PurePosixPath(d["rel_path"]).parts, chunk_by_doc.get(d["id"], 0)) for d in docs]
+    total = sum(n for _, n in por_doc) or 1
+    dois: dict[str, int] = defaultdict(int)
+    for parts, n in por_doc:
+        dois[nome(parts, 2)] += n
+    grandes = {m for m, n in dois.items() if n / total > _MODULE_SPLIT_SHARE}
+
+    counts: dict[str, dict[str, int]] = defaultdict(lambda: {"files": 0, "chunks": 0})
+    for parts, n in por_doc:
+        m = nome(parts, 2)
+        if m in grandes and len(parts) > 3:
+            m = nome(parts, 3)
+        counts[m]["files"] += 1
+        counts[m]["chunks"] += n
+    ordenados = sorted(counts.items(), key=lambda kv: -kv[1]["chunks"])[:_MAX_ITEMS]
     return [
-        {"name": m, "files": v["files"], "chunks": v["chunks"]}
-        for m, v in sorted(counts.items(), key=lambda kv: -kv[1]["chunks"])
-    ][:_MAX_ITEMS]
+        {"name": m, "files": v["files"], "chunks": v["chunks"], "summary": _resumo_do_modulo(conn, m)}
+        for m, v in ordenados
+    ]
 
 
 def _entrypoints(entities: list[dict], doc_path: dict[str, str]) -> list[dict[str, Any]]:
@@ -206,6 +374,7 @@ def _data_stores(entities: list[dict], doc_path: dict[str, str]) -> list[dict[st
             }
             for e in entities
             if e["type"] == "table"
+            and not doc_path.get(e["document_id"], "").startswith(("tests/", "test/", "fixtures/"))
         ),
         key=lambda x: x["name"],
     )[:_MAX_ITEMS]
@@ -279,29 +448,47 @@ def _docs(docs: list[dict]) -> list[dict[str, Any]]:
 def _concepts(
     entities: list[dict], relations: list[dict], doc_path: dict[str, str]
 ) -> dict[str, list[str]]:
-    """Agrupa entidades por raiz de nome — determinístico, sem LLM.
+    """Conceito = o que um documento da documentação descreve: o título dele e as classes que ele documenta.
 
-    É mais pobre que clustering semântico, e honesto: o que sai daqui tem
-    evidência direta no nome dos símbolos.
+    Vem da relação `documented_by` do grafo (RAGX-0110), não de agrupar nomes por pedaço de string, e as classes saem
+    ordenadas pelo grau no grafo. Símbolo privado não entra.
     """
-    groups: dict[str, set[str]] = defaultdict(set)
-    tokens = Counter()
-    for e in entities:
-        if e["type"] not in ("class", "technology", "endpoint", "table"):
+    by_id = {e["id"]: e for e in entities}
+    grau: Counter[str] = Counter()
+    for r in relations:
+        grau[r["src_id"]] += 1
+        grau[r["dst_id"]] += 1
+    # Só a documentação do projeto (`docs/`, fora de planos e specs) conta como conceito; changelog, tarefas e planos
+    # citam qualquer nome. E um símbolo citado por muitos documentos (`Config`, `Task`) é genérico: não descreve nenhum.
+    def conta(path: str) -> bool:
+        return path.startswith("docs/") and not path.startswith(("docs/superpowers/", "docs/adr/"))
+
+    quantos: Counter[str] = Counter()
+    pares: list[tuple[str, str]] = []
+    for r in relations:
+        if r["type"] != "documented_by":
             continue
-        for tok in _split_words(e["name"]):
-            if len(tok) > 3:
-                tokens[tok.lower()] += 1
-    for tok, n in tokens.most_common(24):
-        if n < 2:
+        src, dst = by_id.get(r["src_id"]), by_id.get(r["dst_id"])
+        if not src or not dst or src["type"] != "class" or src["name"].startswith("_"):
             continue
-        for e in entities:
-            if e["type"] in ("class", "technology", "table") and tok in e["name"].lower():
-                groups[tok].add(e["name"])
-    return {
-        k: sorted(v)[:12] for k, v in sorted(groups.items(), key=lambda kv: -len(kv[1]))[:20]
-        if len(v) >= 2
-    }
+        if not conta(doc_path.get(dst.get("document_id") or "", "")):
+            continue
+        pares.append((src["id"], dst.get("summary") or dst["name"]))
+        quantos[src["id"]] += 1
+    por_doc: dict[str, set[str]] = defaultdict(set)
+    for sid, titulo in pares:
+        if quantos[sid] <= _CONCEPT_MAX_DOCS:
+            por_doc[titulo].add(sid)
+    ordenados = sorted(por_doc.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    out: dict[str, list[str]] = {}
+    for titulo, ids in ordenados:
+        if len(ids) < 2:
+            continue
+        nomes = [by_id[i]["name"] for i in sorted(ids, key=lambda i: (-grau[i], by_id[i]["name"]))]
+        out[titulo] = nomes[:6]
+        if len(out) >= 12:
+            break
+    return out
 
 
 def _glossary(docs: list[dict], entities: list[dict]) -> list[dict[str, Any]]:
@@ -327,6 +514,53 @@ def _split_words(name: str) -> list[str]:
     import re
 
     return [w for w in re.split(r"(?<=[a-z0-9])(?=[A-Z])|[_\-. ]", name) if w]
+
+
+# ── níveis de leitura (RAGX-0111) ───────────────────────────────────────
+#: `get_dictionary(level=N)`: o agente começa barato e aprofunda. Os níveis são RECORTES DE LEITURA do mesmo
+#: `dictionary.json` (o formato em disco não muda), e cada um é superconjunto do anterior: mesmas seções, mais itens e
+#: mais campos por item. Custo medido neste repositório: nível 0 ≈ 400 tokens, nível 1 ≈ 1.700, nível 2 (completo) ≈ 3.700.
+LEVELS = (0, 1, 2)
+
+#: por nível: seção -> (máximo de itens, campos mantidos por item; `None` = o item inteiro)
+_NIVEIS: dict[int, dict[str, tuple[int, tuple[str, ...] | None]]] = {
+    0: {
+        "technologies": (8, ("name",)),
+        "services": (8, ("name",)),
+        "modules": (6, ("name", "summary")),
+        "entrypoints": (5, ("kind", "value")),
+    },
+    1: {
+        "technologies": (_MAX_ITEMS, ("name", "confidence")),
+        "services": (12, ("name", "path", "summary")),
+        "modules": (_MAX_ITEMS, ("name", "summary", "files")),
+        "entrypoints": (_MAX_ITEMS, None),
+        "conventions": (_MAX_ITEMS, ("rule", "occurrences")),
+        "docs": (10, None),
+    },
+}
+
+
+def at_level(data: dict[str, Any], level: int) -> dict[str, Any]:
+    """O recorte do dicionário no `level` (0, 1 ou 2). `2` devolve tudo, como sempre foi."""
+    if level not in LEVELS:
+        raise ValueError(f"nível desconhecido: {level} (use 0, 1 ou 2)")
+    if level == 2:
+        return data
+    plano = _NIVEIS[level]
+    out: dict[str, Any] = {"schema_version": data.get("schema_version"), "level": level}
+    projeto = data.get("project") or {}
+    out["project"] = {k: projeto[k] for k in ("name", "id", "kind") if k in projeto}
+    out["stats"] = data.get("stats", {})
+    for secao, (maximo, campos) in plano.items():
+        itens = data.get(secao)
+        if not isinstance(itens, list):
+            continue
+        recorte = itens[:maximo]
+        if campos is not None:
+            recorte = [{k: i[k] for k in campos if k in i} for i in recorte]
+        out[secao] = recorte
+    return out
 
 
 # ── segurança: o dicionário é artefato COMPARTILHADO ────────────────────

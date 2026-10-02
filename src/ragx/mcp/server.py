@@ -143,7 +143,7 @@ SLIM_TOOLS = ("get_dictionary", "search_hybrid", "build_context", "get_chunk", "
 
 #: Descrições do `slim`: curtas e com a função primeiro (a descrição é custo fixo em todo turno).
 _SLIM_DESCRIPTIONS = {
-    "get_dictionary": "Mostra o mapa do projeto: tecnologias, serviços, módulos, convenções. Use primeiro.",
+    "get_dictionary": "Mostra o mapa do projeto por níveis: level=0 (~400 tokens, comece aqui), 1 (~1.700), 2 (completo, ~3.700).",
     "search_hybrid": "Localiza código e docs por busca híbrida (semântica + palavra-chave): onde algo está.",
     "build_context": "Monta o contexto de uma tarefa (trechos com arquivo e linhas) dentro de um orçamento de tokens.",
     "get_chunk": "Abre o texto completo de um chunk pelo chunk_id de um resultado.",
@@ -642,7 +642,7 @@ class KnowledgeAPI:
         payload["baseline_tokens"] = whole_files_tokens(other_cfg or self.cfg, pack.sources)
         return cap(ok(payload), self.cfg.mcp.max_response_bytes)
 
-    def get_dictionary(self, section: str | None = None) -> dict[str, Any]:
+    def get_dictionary(self, section: str | None = None, level: int = 2) -> dict[str, Any]:
         blocked = self._guard()
         if blocked:
             return blocked
@@ -652,13 +652,19 @@ class KnowledgeAPI:
                 data, _ = dictionary_builder.build(self.cfg)
             except Exception:
                 return err("not_found", "dicionário indisponível: rode `ragx dictionary generate`")
+        if level not in dictionary_builder.LEVELS:
+            return err("invalid_argument", f"level deve ser 0, 1 ou 2 (recebi {safe_echo(str(level), 12)})")
+        # `section` escolhe a seção do dicionário COMPLETO; `level` recorta o que vem dela (e, sem `section`, o todo)
         if section:
             if section not in data:
                 return err(
                     "not_found",
                     f"seção desconhecida: {safe_echo(section, 40)} (disponíveis: {', '.join(sorted(data))})",
                 )
-            data = {section: data[section]}
+            visto = dictionary_builder.at_level(data, level)
+            data = {section: visto.get(section, data[section] if level >= 2 else [])}
+        else:
+            data = dictionary_builder.at_level(data, level)
         return cap(ok({"project": self.project, "dictionary": data}),
                    self.cfg.mcp.max_response_bytes)
 
@@ -805,9 +811,9 @@ def build_server(
             "get_playbook", cfg,
         )
 
-    @_tool(description="Mostra o mapa barato do projeto: tecnologias, serviços, módulos e convenções. Use primeiro, para se orientar.")
-    def get_dictionary(section: str | None = None) -> dict[str, Any]:
-        return _guarded(lambda: api.get_dictionary(section), "get_dictionary", cfg)
+    @_tool(description="Mostra o mapa do projeto por níveis: level=0 (~400 tokens, comece aqui), 1 (~1.700), 2 (completo, ~3.700, o padrão). Use primeiro, para se orientar.")
+    def get_dictionary(section: str | None = None, level: int = 2) -> dict[str, Any]:
+        return _guarded(lambda: api.get_dictionary(section, level), "get_dictionary", cfg)
 
     @_tool(description="Busca por significado (semântica) no conhecimento indexado. Para localizar também por palavra-chave, prefira search_hybrid.")
     def search_knowledge(

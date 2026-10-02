@@ -9,9 +9,14 @@
   "name": "get_playbook"
  },
  {
-  "description": "Mostra o mapa barato do projeto: tecnologias, serviços, módulos e convenções. Use primeiro, para se orientar.",
+  "description": "Mostra o mapa do projeto por níveis: level=0 (~400 tokens, comece aqui), 1 (~1.700), 2 (completo, ~3.700, o padrão). Use primeiro, para se orientar.",
   "input_schema": {
    "properties": {
+    "level": {
+     "default": 2,
+     "title": "Level",
+     "type": "integer"
+    },
     "section": {
      "anyOf": [
       {

@@ -41,7 +41,7 @@ store, por construção, não tem segredo dentro.
 | Ferramenta | Entrada | Saída | Camada |
 |------------|---------|-------|--------|
 | `get_playbook` | — | procedimento operacional + estado desta instalação | Fase 12 |
-| `get_dictionary` | `section?` | visão estruturada do projeto | Fase 5 |
+| `get_dictionary` | `section?`, `level?` (0, 1 ou 2) | visão estruturada do projeto, em níveis: 0 ~400 tokens, 1 ~1.700, 2 completo ~3.700 | Fase 5 |
 | `search_knowledge` | `query`, `limit?`, `filters?` | resultados semânticos | Fase 2 |
 | `search_hybrid` | `query`, `limit?`, `filters?` | resultados fundidos | Fase 2 |
 | `get_document` | `path` | metadados + lista de chunks | Fase 1 |

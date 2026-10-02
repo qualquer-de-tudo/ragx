@@ -19,9 +19,10 @@ from ragx.config import Config
 _LEITURA = """\
 ## 1. Antes de responder qualquer coisa
 
-`get_dictionary` — 5 a 8 mil tokens que descrevem tecnologias, serviços,
-módulos e convenções. É barato e evita a maior fonte de erro do agente:
-inventar a arquitetura do projeto.
+`get_dictionary(level=0)` — ~400 tokens com o projeto, as tecnologias, os módulos e os
+pontos de entrada. Aprofunde só se precisar: `level=1` (~1.700 tokens, serviços e convenções)
+e `level=2` (completo, ~3.700). É barato e evita a maior fonte de erro do agente: inventar
+a arquitetura do projeto.
 
 ## 2. Para localizar
 
@@ -135,11 +136,11 @@ def playbook(cfg: Config, write_enabled: bool) -> dict[str, Any]:
 #: A ordem em que as ferramentas ajudam, para cada perfil. Só cita o que o perfil expõe.
 _ORDEM = {
     "full": (
-        "Ordem recomendada: get_dictionary (orientação barata) -> search_hybrid (localizar) -> "
+        "Ordem recomendada: get_dictionary(level=0) (orientação barata) -> search_hybrid (localizar) -> "
         "build_context (montar o contexto de trabalho) -> get_chunk (aprofundar)."
     ),
     "slim": (
-        "Ordem: get_dictionary (orientar) -> search_hybrid (localizar) -> build_context (montar o "
+        "Ordem: get_dictionary(level=0) (orientar) -> search_hybrid (localizar) -> build_context (montar o "
         "contexto da tarefa) -> get_chunk (aprofundar); get_entity mostra quem chama quem."
     ),
 }
@@ -161,7 +162,7 @@ def short_instructions(write_enabled: bool, profile: str = "full") -> str:
     if slim:
         base = (
             "Conhecimento do projeto indexado pelo RAGX; tudo vem do índice, que não contém segredos. "
-            "Comece por get_dictionary."
+            "Comece por get_dictionary(level=0)."
         )
         if write_enabled:
             base += " Chame refresh no início de uma tarefa para reindexar o que mudou."
@@ -169,7 +170,7 @@ def short_instructions(write_enabled: bool, profile: str = "full") -> str:
         base = (
             "Conhecimento do projeto indexado pelo RAGX. Nenhuma ferramenta lê o "
             "filesystem: tudo vem do índice, que por construção não contém segredos. "
-            "Comece por get_playbook (uma vez) e depois get_dictionary."
+            "Comece por get_playbook (uma vez) e depois get_dictionary(level=0)."
         )
         if write_enabled:
             base += (

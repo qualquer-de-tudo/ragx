@@ -11,6 +11,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Dicionário enxuto, com resumos e em níveis.** O `get_dictionary`, a primeira chamada que o playbook manda fazer, custava 10.935
+  tokens (7.680 no início desta rodada) e nenhum item tinha `summary`. Agora: resumos extrativos sem LLM (docstring da classe, do
+  módulo ou README da pasta; **100% dos serviços e 70% dos módulos** neste repositório, e `null` quando não há o que citar),
+  serviços sem exceção, enum, DTO nem símbolo privado, `concepts` a partir do que cada documento descreve e módulos grandes abertos
+  em mais um nível. O completo ficou em **3.701 tokens** (−66% contra os 10.935 da auditoria). E há três níveis de leitura:
+  `get_dictionary(level=0)` ~400 tokens, `level=1` ~1.700, `level=2` o completo; `ragx dictionary show --level N`. O playbook e as
+  `instructions` mandam começar pelo nível 0 (RAGX-0109, 0110, 0111).
 - **Prefixos de consulta e documento declarados no provider fastembed.** O mapa `modelo -> (consulta, documento)` é explícito
   (`e5`, `nomic`) em vez de uma heurística pelo nome, modelo ausente roda sem prefixo, e o esquema entra no id do embedder
   (`fastembed:<modelo>#p<hash>`) para que trocar o prefixo invalide os vetores. O modelo padrão é simétrico e mantém o id, então
