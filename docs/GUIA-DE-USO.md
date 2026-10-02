@@ -96,6 +96,13 @@ commit, checkout e merge.
 As tarefas rodam **uma de cada vez** (o Ollama é compartilhado). O indicador no
 topo mostra quantas há, o progresso e a previsão, com **Cancelar** por tarefa.
 
+### Atualizar o painel
+
+Em **Preferências → Atualizações**, o painel confere o GitHub Releases ao abrir e a cada 6 horas. Achando uma versão
+diferente da instalada, avisa **uma vez por versão**: notificação do sistema (o clique abre Preferências), um aviso na tela
+e um ponto no item Preferências. Nada baixa sozinho: **Baixar atualização** e depois **Instalar e reiniciar** são cliques
+seus. O instalador não é assinado, então o Windows pode mostrar o SmartScreen. Com a opção desligada, nenhuma chamada de rede.
+
 ## 4. Antes de indexar: veja o que será bloqueado
 
 No terminal, dentro do projeto:

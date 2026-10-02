@@ -63,6 +63,8 @@ export interface PanelSettings extends RendererSettings {
    * principal lê, para o catálogo decidir o `ollama-start`.
    */
   ollamaMode?: 'docker' | 'native'
+  /** A última versão do painel de que já se avisou (notificação de versão nova); uma por versão. */
+  notifiedUpdate?: string
 }
 
 const FILE_NAME = 'settings.json'
@@ -79,6 +81,8 @@ export function readSettings(dir: string): PanelSettings {
     const raw = fs.readFileSync(filePath(dir), 'utf-8')
     const parsed = JSON.parse(raw) as { onboardingDone?: unknown; ollamaMode?: unknown; pricing?: unknown } | null
     const settings: PanelSettings = { onboardingDone: parsed?.onboardingDone === true }
+    const notified = (parsed as Record<string, unknown> | null)?.notifiedUpdate
+    if (typeof notified === 'string' && notified.length > 0 && notified.length < 64) settings.notifiedUpdate = notified
     const mode = parsed?.ollamaMode
     if (mode === 'docker' || mode === 'native') settings.ollamaMode = mode
     const pricing = parsePricing(parsed?.pricing)

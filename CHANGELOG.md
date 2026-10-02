@@ -16,6 +16,9 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   RAGX ligado e respeitando `--no-touch`/`--no-nudge`; o painel o roda ao abrir, a cada 15 min e quando um snapshot mostra projeto sem hooks de git (enfileirando
   `hooks install`). Preferência `autoSetup`, ligada por padrão. Tela Conexões com card do ajuste, hooks por perfil em selos, fatos em linha e o comando manual recolhido.
 - **"Como funciona" no fim da barra lateral e refeito:** o caminho do dado em cinco passos numerados, o que mantém o índice em dia e onde ficam os dados.
+- **Aviso de versão nova do painel.** Quando o GitHub Releases traz uma versão diferente da instalada, o painel avisa uma vez por versão: notificação do sistema (o clique abre
+  Preferências), um aviso na tela e um ponto no item Preferências da barra. A conferência roda ao abrir e a cada 6 h, para o painel que fica dias aberto também notar
+  (desligada em Preferências, não faz nenhuma chamada de rede).
 - **Atividade paginada** (50 eventos ou 20 sessões por página): o DOM tem o mesmo tamanho com 500 eventos ou com 10 mil.
 
 ### Corrigido

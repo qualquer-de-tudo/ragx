@@ -21,11 +21,14 @@ export function Sidebar({
   route,
   onNavigate,
   live = false,
+  updateAvailable = false,
 }: {
   route: Route
   onNavigate: (route: Route) => void
   /** Algum projeto teve atividade no último minuto: acende o ponto de "Atividade". */
   live?: boolean
+  /** Há versão nova do painel: acende um ponto em Preferências, onde está o botão de baixar. */
+  updateAvailable?: boolean
 }) {
   const active = navSection(route)
   const item = (it: Item) => (
@@ -40,6 +43,9 @@ export function Sidebar({
         <span className="nav-label">{it.label}</span>
         {it.section === 'activity' && live && (
           <span className="live-dot live-dot-on nav-live" role="img" aria-label="em uso agora" />
+        )}
+        {it.section === 'preferences' && updateAvailable && (
+          <span className="nav-update-dot" role="img" aria-label="atualização disponível" />
         )}
       </button>
     </li>

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from '../App'
-import type { RagxBridge, Snapshot } from '../types/ragx-bridge'
+import type { RagxBridge, Snapshot, UpdateState } from '../types/ragx-bridge'
 import { snap } from '../test/snap'
 
 const project = snap({ id: 'juriflux', name: 'Juriflux' })
@@ -29,6 +29,7 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
     setOnboardingDone: vi.fn(),
     setPricing: vi.fn(),
     setPreference: vi.fn().mockResolvedValue(undefined),
+    onOpenPreferences: vi.fn(() => () => {}),
     onOpenProject: vi.fn(() => () => {}),
     setTheme: vi.fn().mockResolvedValue(undefined),
     getUpdateState: vi.fn().mockResolvedValue({ status: 'idle', currentVersion: '1.0.0', version: null, progress: null, error: null }),
@@ -105,6 +106,31 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Conexões: tudo certo' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Conexões' })).toBeInTheDocument()
+  })
+
+  it('versão nova: ponto em Preferências, aviso na tela uma vez por versão, e a notificação do sistema abre Preferências', async () => {
+    const b = install({ onboardingDone: true }, withProject)
+    let pushUpdate: (s: UpdateState) => void = () => {}
+    let openPrefs: () => void = () => {}
+    b.onUpdate = vi.fn((cb: (s: UpdateState) => void) => {
+      pushUpdate = cb
+      return () => {}
+    })
+    b.onOpenPreferences = vi.fn((cb: () => void) => {
+      openPrefs = cb
+      return () => {}
+    })
+    render(<App />)
+    await screen.findByRole('heading', { level: 1, name: 'Projetos' })
+    expect(screen.queryByRole('img', { name: 'atualização disponível' })).not.toBeInTheDocument()
+
+    const nova: UpdateState = { status: 'available', currentVersion: '1.0.0', version: '1.0.1', progress: null, error: null }
+    act(() => pushUpdate(nova))
+    expect(await screen.findByRole('img', { name: 'atualização disponível' })).toBeInTheDocument()
+    expect(await screen.findByText('RAGX 1.0.1 disponível. Baixe em Preferências.')).toBeInTheDocument()
+
+    act(() => openPrefs())
+    expect(await screen.findByRole('heading', { level: 1, name: 'Preferências' })).toBeInTheDocument()
   })
 
   it('zera o scroll do conteúdo ao trocar de rota', async () => {

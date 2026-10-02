@@ -51,6 +51,7 @@ export function installBridge(over: Partial<RagxBridge> = {}): RagxBridge {
     setOnboardingDone: vi.fn().mockResolvedValue(undefined),
     setPricing: vi.fn().mockResolvedValue(undefined),
     setPreference: vi.fn().mockResolvedValue(undefined),
+    onOpenPreferences: vi.fn(() => () => {}),
     onOpenProject: vi.fn(() => () => {}),
     setTheme: vi.fn().mockResolvedValue(undefined),
     getUpdateState: vi.fn().mockResolvedValue({ status: 'idle', currentVersion: '1.0.0', version: null, progress: null, error: null }),

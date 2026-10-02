@@ -3,6 +3,7 @@ import { useSnapshot } from './hooks/useSnapshot'
 import { useJobs } from './hooks/useJobs'
 import { useConnections } from './hooks/useConnections'
 import { useClaudeIntegration } from './hooks/useClaudeIntegration'
+import { hasNewVersion, useUpdate } from './hooks/useUpdate'
 import { useActivity } from './hooks/useActivity'
 import { useJobFailureToasts } from './hooks/useJobFailureToasts'
 import { ipcErrorMessage } from './ipcError'
@@ -49,6 +50,8 @@ function App() {
   // principal (o resultado chega por `ragx:connections`).
   const { connections, checking, refresh } = useConnections()
   const claude = useClaudeIntegration()
+  const update = useUpdate()
+  const updateReady = hasNewVersion(update)
   const activity = useActivity()
   // "Em uso agora" apaga um minuto depois do último evento, sem evento novo. O `Set` só muda quando a pertença muda,
   // então o App não renderiza a cada tick do relógio.
@@ -137,6 +140,18 @@ function App() {
 
   // O clique numa notificação do sistema (RAGX-0191) pede o detalhe de um projeto; só o `projectId` chega.
   useEffect(() => window.ragx.onOpenProject((id) => setRoute({ page: 'project', id })), [])
+
+  // O clique na notificação de versão nova leva às Preferências, onde ficam "Baixar" e "Instalar e reiniciar".
+  useEffect(() => window.ragx.onOpenPreferences(() => setRoute({ page: 'preferences' })), [])
+
+  // Com o painel à vista a notificação do sistema passa batida: um aviso na tela, uma vez por versão.
+  const avisada = useRef<string | null>(null)
+  const novaVersao = update?.status === 'available' ? update.version : null
+  useEffect(() => {
+    if (novaVersao === null || novaVersao === avisada.current) return
+    avisada.current = novaVersao
+    notify.info(`RAGX ${novaVersao} disponível. Baixe em Preferências.`)
+  }, [novaVersao])
 
   const onCancelJob = useCallback((id: string) => {
     window.ragx.cancelJob(id).catch((err: unknown) => {
@@ -234,7 +249,7 @@ function App() {
 
   return (
     <div className="shell">
-      <Sidebar route={shellRoute} onNavigate={setRoute} live={liveIds.size > 0} />
+      <Sidebar route={shellRoute} onNavigate={setRoute} live={liveIds.size > 0} updateAvailable={updateReady} />
       <div className="shell-main">
         <TopBar
           query={query}

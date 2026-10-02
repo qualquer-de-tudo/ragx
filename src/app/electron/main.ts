@@ -11,6 +11,7 @@ import { StaleNotifier } from './stale-notifier'
 import { createTray, summarizeStates, type RagxTray } from './tray'
 import { createUpdater } from './updater'
 import { createAutoSetup, type HealResult } from './auto-setup'
+import { createUpdateNotice } from './update-notice'
 import { autoUpdater } from 'electron-updater'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
@@ -212,13 +213,41 @@ function applyNativeTheme(): void {
 // Ligada por padrão desde a v1.0.0 (a pessoa pode desligar em Preferências): desligada, ou fora do painel empacotado,
 // nenhuma chamada de rede.
 
+// Avisa uma vez por versão nova (notificação do sistema; o clique abre as Preferências, onde está o botão de baixar).
+const noticeNewVersion = createUpdateNotice({
+  notified: () => currentPrefs().notifiedUpdate,
+  remember: (version) => {
+    updateSettings(userDataDir(), { notifiedUpdate: version })
+    prefsCache = null
+  },
+  show: (version, current) => {
+    if (HEADLESS || !Notification.isSupported()) return
+    const notification = new Notification({
+      title: `RAGX ${version} disponível`,
+      body: `Você está na ${current}. Abra Preferências para baixar e instalar.`,
+    })
+    notification.on('click', () => {
+      showPanel()
+      mainWindow?.webContents.send('ragx:openPreferences')
+    })
+    notification.show()
+  },
+})
+
 const updater = createUpdater({
   autoUpdater: autoUpdater as never,
   isPackaged: app.isPackaged,
   version: app.getVersion(),
   enabled: () => currentPrefs().autoUpdate !== false,
-  onState: (state) => mainWindow?.webContents.send('ragx:update', state),
+  onState: (state) => {
+    mainWindow?.webContents.send('ragx:update', state)
+    noticeNewVersion(state)
+  },
 })
+
+/** Um painel que fica dias aberto também precisa notar a versão nova: confere de tempos em tempos (sem rede se desligado). */
+const UPDATE_RECHECK_MS = 6 * 60 * 60_000
+let updateRecheckTimer: ReturnType<typeof setInterval> | null = null
 
 // -- ajuste automático dos hooks (1.0.1) -------------------------------------
 // Completa os hooks do Claude Code e do git sozinho (ver `auto-setup.ts`). Ligado por padrão; desligável em Preferências.
@@ -761,6 +790,7 @@ function createWindow(): void {
     watchPanelActivity(win)
     startRuntimeMeasurement()
     void updater.check() // no startup, só se `autoUpdate` estiver ligado e o painel empacotado
+    updateRecheckTimer ??= setInterval(() => void updater.check(), UPDATE_RECHECK_MS)
     startAutoSetup()
     // Fix round 1 (MINOR 4): a primeira checagem de conexão roda logo depois
     // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`

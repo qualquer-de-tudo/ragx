@@ -60,6 +60,7 @@ describe('preload', () => {
         'setOnboardingDone',
         'setPricing',
         'setPreference',
+        'onOpenPreferences',
         'onOpenProject',
         'setTheme',
         'getUpdateState',

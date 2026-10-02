@@ -299,6 +299,8 @@ export interface RagxBridge {
   installUpdate: () => Promise<void>
   onUpdate: (cb: (state: UpdateState) => void) => () => void
   /** O clique numa notificação pede para abrir o detalhe de um projeto (só o `projectId`, nunca caminho). */
+  /** O clique na notificação de versão nova pede a tela de Preferências. */
+  onOpenPreferences: (cb: () => void) => () => void
   onOpenProject: (cb: (projectId: string) => void) => () => void
   /** Mede embeddings/s no Ollama em uso; o modelo é escolhido pelo processo principal. Sem argumentos. */
   runOllamaBenchmark: () => Promise<OllamaBenchmark>

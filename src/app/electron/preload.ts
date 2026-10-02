@@ -79,6 +79,11 @@ const ragx: RagxBridge = {
     ipcRenderer.on('ragx:update', listener)
     return () => ipcRenderer.removeListener('ragx:update', listener)
   },
+  onOpenPreferences: (cb: () => void): (() => void) => {
+    const listener = () => cb()
+    ipcRenderer.on('ragx:openPreferences', listener)
+    return () => ipcRenderer.removeListener('ragx:openPreferences', listener)
+  },
   onOpenProject: (cb: (projectId: string) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, projectId: string) => cb(projectId)
     ipcRenderer.on('ragx:openProject', listener)
