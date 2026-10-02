@@ -35,6 +35,7 @@ from ragx.cli.commands import (
     trial_cmd,
     watch_cmd,
     worker_cmd,
+    worktree_cmd,
 )
 from ragx.core.errors import RagxError
 
@@ -90,6 +91,7 @@ app.add_typer(federation_cmd.hub_app, name="hub", help="Hub multiprojeto local."
 app.add_typer(mcp_cmd.app, name="mcp", help="Servidor MCP.")
 app.add_typer(claude_cmd.app, name="claude", help="Liga e desliga o RAGX no Claude Code (global).")
 app.add_typer(hooks_cmd.app, name="hooks", help="Hooks de git que mantêm o índice na branch atual.")
+app.add_typer(worktree_cmd.app, name="worktree", help="Worktrees do repositório e o cache de embedding que compartilham.")
 app.add_typer(security.app, name="security", help="Varredura e regras de segurança.")
 app.add_typer(config_cmd.app, name="config", help="Inspeção e ajuste de configuração.")
 

@@ -103,6 +103,10 @@ A trava guarda o PID do dono e a identidade do processo (`proc`: instante de cri
 OUTRO processo (o Windows recicla PIDs em segundos), o dono morreu e a trava é assumida sozinha: não é preciso
 apagar `index.lock` à mão (RAGX-0153). Trava de versão anterior, sem `proc`, continua valendo só pelo número.
 
+```bash
+ragx worktree status [PATH] [--json]   # worktrees do repositório, chunks em comum e o cache de embedding compartilhado
+```
+
 ragx status
     --json
     # --json inclui freshness {state, current, reasons} e recent_runs (últimas 10)

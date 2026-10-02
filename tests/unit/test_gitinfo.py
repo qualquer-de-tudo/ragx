@@ -101,3 +101,33 @@ def test_read_state_sujo_com_arquivo_novo_nao_rastreado(tmp_path: Path) -> None:
     (root / "novo.txt").write_text("n\n", encoding="utf-8")
     st = gitinfo.read_state(root)
     assert st is not None and st.dirty is True and st.branch == "main"
+
+
+# ── worktrees (RAGX-0170) ───────────────────────────────────────────────
+def test_common_dir_e_worktrees_fora_de_git(tmp_path: Path) -> None:
+    assert gitinfo.common_dir(tmp_path) is None
+    assert gitinfo.worktrees(tmp_path) == []
+
+
+def test_common_dir_e_o_mesmo_no_principal_e_no_worktree(tmp_path: Path) -> None:
+    principal = _repo(tmp_path / "principal") if (tmp_path / "principal").mkdir() is None else tmp_path
+    novo = tmp_path / "irmao"
+    subprocess.run(["git", "worktree", "add", "-q", "-b", "outra", str(novo)], cwd=principal, check=True)
+    # num worktree `.git` é um ARQUIVO; ainda assim a pasta comum é a do repositório principal
+    assert (novo / ".git").is_file()
+    esperado = (principal / ".git").resolve()
+    assert gitinfo.common_dir(principal) == esperado
+    assert gitinfo.common_dir(novo) == esperado
+
+
+def test_worktrees_lista_o_principal_primeiro_com_branch_e_head(tmp_path: Path) -> None:
+    principal = _repo(tmp_path / "principal") if (tmp_path / "principal").mkdir() is None else tmp_path
+    novo = tmp_path / "irmao"
+    subprocess.run(["git", "worktree", "add", "-q", "-b", "outra", str(novo)], cwd=principal, check=True)
+    solto = tmp_path / "solto"
+    subprocess.run(["git", "worktree", "add", "-q", "--detach", str(solto)], cwd=principal, check=True)
+    lista = gitinfo.worktrees(novo)  # perguntando de DENTRO de um worktree irmão
+    assert [w.path.resolve() for w in lista] == [principal.resolve(), novo.resolve(), solto.resolve()]
+    assert [w.branch for w in lista] == ["main", "outra", None]
+    assert [w.detached for w in lista] == [False, False, True]
+    assert all(w.head and len(w.head) == 40 for w in lista)

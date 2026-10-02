@@ -10,6 +10,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -121,11 +122,76 @@ def embed_pending(
         )
         return report
 
-    with EmbeddingCache(cfg.state_dir / "cache", embedder.id, cfg.embedding.cache) as cache:
+    with _abrir_cache(cfg, embedder.id) as cache:
         _embed_all(conn, cfg, embedder, cache, pending, vdim, report, progress)
     report.total = embedding_count(conn)
     report.coarse_only = coarse_only_count(conn, model_id)
     return report
+
+
+_GIT_COMUM: dict[str, Path] = {}
+
+
+def _pasta_git_comum(root: Path) -> Path | None:
+    """A pasta `.git` comum aos worktrees, lida dos metadados do git SEM chamar o `git`.
+
+    A reindexação por caminho (RAGX-0140) não pode pagar um subprocesso por edição: sobe da raiz até achar `.git`;
+    pasta = repositório principal; arquivo (`gitdir: X`) = worktree, e `X/commondir` aponta a pasta comum. `None` fora
+    de git ou em qualquer dúvida. Lê só arquivos de metadado do git, nunca o código do projeto. Memoizada por raiz.
+    """
+    chave = str(root)
+    if chave in _GIT_COMUM:
+        return _GIT_COMUM[chave]
+    achado: Path | None = None
+    try:
+        for pasta in (Path(root).resolve(), *Path(root).resolve().parents):
+            git = pasta / ".git"
+            if git.is_dir():
+                achado = git
+                break
+            if git.is_file():
+                texto = git.read_text(encoding="utf-8", errors="replace").strip()
+                if texto.startswith("gitdir:"):
+                    gitdir = Path(texto[len("gitdir:"):].strip())
+                    gitdir = gitdir if gitdir.is_absolute() else (pasta / gitdir)
+                    comum = gitdir / "commondir"
+                    if comum.is_file():
+                        rel = comum.read_text(encoding="utf-8", errors="replace").strip()
+                        achado = (gitdir / rel).resolve()
+                    else:
+                        achado = gitdir.resolve()
+                break
+    except OSError:
+        achado = None
+    if achado is not None and not achado.is_dir():
+        achado = None
+    if achado is not None:  # `None` não é guardado: um `git init` depois tem de ser visto
+        _GIT_COMUM[chave] = achado
+    return achado
+
+
+def shared_cache_root(cfg: Config) -> Path:
+    """Onde o cache de embedding grava (RAGX-0170).
+
+    Num repositório git, `<pasta .git comum>/ragx/cache`: todos os worktrees do repositório compartilham o mesmo cache
+    por `content_hash`, então o worktree novo não reembute o que o irmão já embutiu. Fora de git, ou se a pasta não
+    puder ser descoberta, é o cache local de sempre (`<raiz>/.ragx/cache`). Não é versionado nem sai do clone.
+    """
+    local = cfg.state_dir / "cache"
+    comum = _pasta_git_comum(cfg.root)
+    return local if comum is None else comum / "ragx" / "cache"
+
+
+def _abrir_cache(cfg: Config, model_id: str) -> EmbeddingCache:
+    """O cache compartilhado do repositório, lendo também o local; se ele não abrir (pasta sem permissão), o local."""
+    local = cfg.state_dir / "cache"
+    compartilhado = shared_cache_root(cfg)
+    if compartilhado != local:
+        cache = EmbeddingCache(compartilhado, model_id, cfg.embedding.cache, also_read=[local])
+        if cache.usable or not cfg.embedding.cache:
+            return cache
+        cache.close()
+    return EmbeddingCache(local, model_id, cfg.embedding.cache)
 
 
 #: a cada quantos lotes grava o que já foi embutido (RAGX-0146): `ragx index` morto no meio retoma do ponto em que parou

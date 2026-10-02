@@ -84,13 +84,21 @@ class EmbeddingCache:
     banco ilegível é renomeado para `.corrupt` e recriado, e erro de escrita vira "sem cache" naquela rodada.
     """
 
-    def __init__(self, root: Path, model_id: str, enabled: bool = True):
+    def __init__(
+        self, root: Path, model_id: str, enabled: bool = True, also_read: Sequence[Path] = ()
+    ):
         self.enabled = enabled
         safe = model_id.replace(":", "_").replace("/", "_")
         self.legacy_dir = Path(root) / "emb" / safe
         self.path = Path(root) / "emb" / f"{safe}.sqlite"
+        #: outras raízes de cache que este lê (RAGX-0170): o cache local de um worktree, quando a gravação vai para a
+        #: pasta compartilhada do repositório. Só leitura; o que é achado nelas é importado para este.
+        self.also_read = [Path(r) / "emb" for r in also_read if Path(r) != Path(root)]
+        self._safe = safe
         #: chunks trazidos do formato antigo (por arquivo) nesta rodada
         self.imported = 0
+        #: chunks trazidos de outra raiz de cache (o local, quando o principal é o compartilhado)
+        self.imported_shared = 0
         self._conn: sqlite3.Connection | None = None
         if enabled:
             self._open()
@@ -123,6 +131,11 @@ class EmbeddingCache:
                 self._conn = None
         except (OSError, sqlite3.Error):
             self._conn = None  # sem cache nesta rodada
+
+    @property
+    def usable(self) -> bool:
+        """O SQLite abriu (ou o cache está desligado): gravar e ler vale."""
+        return self._conn is not None or not self.enabled
 
     def close(self) -> None:
         if self._conn is not None:
@@ -168,7 +181,51 @@ class EmbeddingCache:
             if achados:
                 self.imported += len(achados)
                 self.put_many(achados)
+        faltam = [h for h in hashes if h not in out]
+        if faltam and self.also_read:
+            achados = self._ler_de_outras_raizes(faltam)
+            if achados:
+                out.update(achados)
+                self.imported_shared += len(achados)
+                self.put_many(achados.items())
         return out
+
+    def _ler_de_outras_raizes(self, hashes: list[str]) -> dict[str, np.ndarray]:
+        """Procura os `hashes` nos caches das outras raízes (SQLite em leitura e formato antigo por arquivo)."""
+        achados: dict[str, np.ndarray] = {}
+        for pasta in self.also_read:
+            falta = [h for h in hashes if h not in achados]
+            if not falta:
+                break
+            banco = pasta / f"{self._safe}.sqlite"
+            if banco.is_file():
+                try:
+                    conn = sqlite3.connect(banco.as_uri() + "?mode=ro", uri=True, timeout=5.0)
+                except sqlite3.Error:
+                    conn = None
+                if conn is not None:
+                    try:
+                        for i in range(0, len(falta), 500):
+                            janela = falta[i : i + 500]
+                            ph = ",".join("?" * len(janela))
+                            for h, blob in conn.execute(
+                                f"SELECT content_hash, vec FROM vecs WHERE content_hash IN ({ph})", janela
+                            ):
+                                achados[h] = unpack_f32(blob)
+                    except sqlite3.Error:
+                        pass  # cache alheio ilegível: é só otimização
+                    finally:
+                        conn.close()
+            antigo = pasta / self._safe
+            if antigo.is_dir():
+                for h in (h for h in falta if h not in achados):
+                    arq = antigo / h[:2] / f"{h}.f32"
+                    if arq.is_file():
+                        try:
+                            achados[h] = unpack_f32(arq.read_bytes())
+                        except OSError:
+                            continue
+        return achados
 
     def put_many(self, items: Iterable[tuple[str, np.ndarray]]) -> None:
         """Grava vários numa transação. Falha de escrita não derruba a indexação."""

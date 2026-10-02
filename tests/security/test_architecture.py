@@ -108,7 +108,7 @@ def test_apenas_modulos_autorizados_leem_o_filesystem() -> None:
                       "ragx.context", "ragx.graph", "ragx.sizing", "ragx.indexing",
                       "ragx.federation", "ragx.sync", "ragx.tokens", "ragx.search",
                       "ragx.agents", "ragx.base", "ragx.tasks", "ragx.githooks",
-                      "ragx.perf", "ragx.hooklight")
+                      "ragx.perf", "ragx.hooklight", "ragx.worktrees")
             # `ragx.perf` lê só os transcripts do próprio Claude Code
             # (`~/.claude/projects/`) e o `.ragx/logs/mcp.jsonl`: nunca o
             # código do projeto-alvo. De cada transcript sai um número (tempo);
@@ -119,6 +119,8 @@ def test_apenas_modulos_autorizados_leem_o_filesystem() -> None:
             # arquivos, o conteúdo lido só é reescrito no lugar ou reduzido a
             # um booleano (`installed()`); nunca chega ao índice, ao MCP, a
             # log nem a stdout.
+            # `ragx.worktrees` (RAGX-0170) só lista `.ragx/cache/emb/*.sqlite` e abre `.ragx/knowledge.db`
+            # dos worktrees, em leitura: nunca o código do projeto.
             # `ragx.hooklight` (RAGX-0143) lê só artefatos PRÓPRIOS: `ragx.toml`,
             # `.ragx/status.json` e o `registry.json` do hub, com `read_text`. Um
             # teste abaixo proíbe nele `read_bytes` e qualquer varredura de pasta.

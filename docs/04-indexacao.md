@@ -269,6 +269,19 @@ principal, com os resultados consumidos na ordem original, então o índice sai 
 que existe mas pertence a outro processo (PID reutilizado) é dono morto, e a trava é assumida. Se o token não puder ser
 lido, a trava segue como viva; trava sem `proc` (versão anterior) vale só pelo número (RAGX-0153).
 
+**Worktrees (RAGX-0170).** Cada `git worktree` tem o PRÓPRIO índice (`<raiz>/.ragx`), mas o cache de embedding por
+`content_hash` é um só por repositório: `<pasta .git comum>/ragx/cache` (descoberta por `git rev-parse --git-common-dir`,
+porque `.git` num worktree é um arquivo). O cache local antigo (`.ragx/cache`) continua sendo LIDO e o que se acha nele é
+importado; fora de git, ou se a pasta comum não abrir (sem permissão), vale o cache local de sempre. O cache não é
+versionado e não sai do clone. Medido num clone local com o fastembed (9 mil chunks): o primeiro índice de um worktree
+novo caiu de 127 s (100% do índice a frio, tudo reembutido) para 7,4 s (5%), sem reembutir nenhum chunk igual ao do irmão.
+Por isso NÃO se copia o banco do irmão como semente: o cache compartilhado sozinho já passa do alvo (≤ 25%), e uma cópia
+traria o risco de herdar do irmão um documento que o Security Gate do worktree novo bloquearia. Trocar de branch no
+mesmo worktree custou 5 a 11 s, então também não há um banco por branch. `ragx worktree status [--json]` lista os
+worktrees, o tamanho do índice de cada um, quantos chunks distintos compartilha com o da raiz consultada e o tamanho do
+cache. Atenção: o hook `post-checkout` disparado por `git worktree add` reindexa a raiz PRINCIPAL (o bloco do hook usa o
+`--root` de onde foi instalado), não o worktree novo; quem cria o worktree roda `ragx index` nele.
+
 ## Observabilidade
 
 ```bash

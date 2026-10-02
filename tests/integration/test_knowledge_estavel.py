@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import time
 from pathlib import Path
 
 import pytest
@@ -54,6 +55,8 @@ def test_editar_uma_funcao_toca_poucos_arquivos_e_atualiza_o_generated_at(cfg) -
 
     antes = _estado(cfg.root)
     gerado_antes = json.loads((cfg.root / "knowledge" / "manifest.json").read_text(encoding="utf-8"))["generated_at"]
+    # `generated_at` tem resolução de 1 s: numa máquina rápida os dois `sync` caem no MESMO segundo e o teste falhava
+    time.sleep(1.1)
     (cfg.root / "m3.py").write_text((cfg.root / "m3.py").read_text(encoding="utf-8") + "\n\ndef nova():\n    return 1\n", encoding="utf-8")
     index_project(cfg)
     sync(cfg, full=True)

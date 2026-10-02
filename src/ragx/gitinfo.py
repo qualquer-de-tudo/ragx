@@ -106,6 +106,65 @@ def hooks_dir_cache_clear() -> None:
     _HOOKS_DIR.clear()
 
 
+_COMMON_DIR: dict[str, Path] = {}
+
+
+def common_dir(root: Path) -> Path | None:
+    """A pasta `.git` COMPARTILHADA por todos os worktrees do repositório (RAGX-0170), ou `None` fora de git.
+
+    `.git` num worktree é um ARQUIVO (`gitdir: ...`), nunca uma pasta: por isso a resposta vem de
+    `git rev-parse --git-common-dir`, que devolve a mesma pasta no repositório principal e em qualquer worktree
+    (relativa à raiz no principal, absoluta nos outros). Memoizado por processo e raiz; `None` não é guardado.
+    """
+    chave = str(root)
+    achado = _COMMON_DIR.get(chave)
+    if achado is not None:
+        return achado
+    out = git(root, "rev-parse", "--git-common-dir")
+    if not out:
+        return None
+    p = Path(out)
+    resolvido = (p if p.is_absolute() else Path(root) / p).resolve()
+    _COMMON_DIR[chave] = resolvido
+    return resolvido
+
+
+@dataclass(frozen=True)
+class Worktree:
+    path: Path
+    head: str | None = None  # commit; `None` num worktree sem commit
+    branch: str | None = None  # `None` com HEAD destacado ou bare
+    bare: bool = False
+    detached: bool = False
+
+
+def worktrees(root: Path) -> list[Worktree]:
+    """Os worktrees do repositório (`git worktree list --porcelain`), o principal primeiro; vazio fora de git."""
+    out = git(root, "worktree", "list", "--porcelain")
+    if not out:
+        return []
+    achados: list[Worktree] = []
+    for bloco in out.split("\n\n"):
+        caminho: Path | None = None
+        head: str | None = None
+        branch: str | None = None
+        bare = detached = False
+        for linha in bloco.splitlines():
+            if linha.startswith("worktree "):
+                caminho = Path(linha[len("worktree "):])
+            elif linha.startswith("HEAD "):
+                head = linha[len("HEAD "):]
+            elif linha.startswith("branch "):
+                branch = linha[len("branch "):].removeprefix("refs/heads/")
+            elif linha == "bare":
+                bare = True
+            elif linha == "detached":
+                detached = True
+        if caminho is not None:
+            achados.append(Worktree(caminho, head, branch, bare, detached))
+    return achados
+
+
 def commits_between(root: Path, old: str, new: str) -> int | None:
     out = git(root, "rev-list", "--count", f"{old}..{new}")
     try:

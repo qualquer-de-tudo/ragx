@@ -11,6 +11,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Worktree novo não reembute o que o irmão já embutiu.** Cada `git worktree` subia o índice do zero: no clone de
+  teste (9 mil chunks, fastembed) o primeiro índice de um worktree novo levava 127 s, igual ao índice a frio, com todos
+  os chunks reembutidos. O cache de embedding agora é um só por repositório (`<.git comum>/ragx/cache`, lendo também o
+  cache local antigo; fora de git nada muda): o mesmo worktree novo leva 7,4 s (5%) e não reembute nenhum chunk igual. A
+  semente de banco copiado ficou de fora de propósito (o cache sozinho já passa do alvo, e copiar traria o risco de
+  herdar um arquivo que o Gate novo bloquearia). Novo `ragx worktree status [--json]` e `gitinfo.common_dir`/`worktrees`
+  (RAGX-0170).
 - **Modelo do fastembed numa pasta por usuário e trava que reconhece PID reutilizado.** O fastembed baixava o modelo
   (240 MB) para `.ragx/cache/models` de CADA projeto, e cada projeto novo pagava o download de novo (10,1 s contra 0,9 s
   com o modelo pronto). Agora vai para `embedding.model_cache_dir` (padrão `~/.ragx/models`), compartilhado; projeto com
