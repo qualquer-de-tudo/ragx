@@ -9,6 +9,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.0.1] — 2026-10-02
+
 ### Adicionado
 
 - **O painel mantém os hooks em dia sozinho (Ajuste automático).** Numa máquina com três perfis do Claude Code, nenhum tinha o aviso de edição nem o
