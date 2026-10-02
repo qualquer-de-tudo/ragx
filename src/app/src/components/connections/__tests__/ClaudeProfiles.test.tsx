@@ -11,9 +11,9 @@ function claude(over: Partial<ClaudeToggle> = {}): ClaudeToggle {
     changed: false,
     toggle: vi.fn(),
     profiles: [
-      { id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, added: false },
-      { id: 'claude-code:empresa', name: 'empresa', label: 'Claude Code (empresa)', dir: 'C:/u/.claude-empresa', enabled: false, hint: false, added: false },
-      { id: 'claude-code:cliente', name: 'cliente', label: 'Claude Code (cliente)', dir: 'D:/contas/cliente', enabled: true, hint: false, added: true },
+      { id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, touch: true, nudge: true, added: false },
+      { id: 'claude-code:empresa', name: 'empresa', label: 'Claude Code (empresa)', dir: 'C:/u/.claude-empresa', enabled: false, hint: false, touch: true, nudge: true, added: false },
+      { id: 'claude-code:cliente', name: 'cliente', label: 'Claude Code (cliente)', dir: 'D:/contas/cliente', enabled: true, hint: false, touch: true, nudge: true, added: true },
     ],
     setProfile: vi.fn(),
     addProfile: vi.fn(),

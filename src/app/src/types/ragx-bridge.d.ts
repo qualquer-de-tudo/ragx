@@ -3,8 +3,9 @@ import type { ActivityEvent, AdoptionSummary, ContextPreview, TelemetrySummary }
 export type { ActivityEvent, AdoptionSummary, ContextPreview }
 import type { Pricing, RendererSettings } from '../../electron/settings'
 import type { UpdateState } from '../../electron/updater'
+import type { AutoSetupState } from '../../electron/auto-setup'
 
-export type { UpdateState }
+export type { UpdateState, AutoSetupState }
 
 export type { Pricing }
 
@@ -239,6 +240,10 @@ export interface ClaudeProfile {
   enabled: boolean
   /** A dica de início de sessão está instalada. */
   hint: boolean
+  /** O aviso de edição (`PostToolUse`) está instalado: sem ele o índice não vê o que o agente edita. */
+  touch: boolean
+  /** O lembrete de busca (`PreToolUse` em Grep/Glob) está instalado. */
+  nudge: boolean
   /** Adicionado à mão (`ragx claude profiles add`); os outros foram detectados. */
   added: boolean
 }
@@ -280,11 +285,15 @@ export interface RagxBridge {
   /** Preço por milhão de tokens de entrada que a pessoa informa (RAGX-0186); `null` limpa. */
   setPricing: (pricing: Pricing | null) => Promise<void>
   /** Liga ou desliga a bandeja ou a notificação de defasagem (RAGX-0191): chave de lista fechada, valor booleano. */
-  setPreference: (key: 'tray' | 'notifyStale' | 'autoUpdate', value: boolean) => Promise<void>
+  setPreference: (key: 'tray' | 'notifyStale' | 'autoUpdate' | 'autoSetup', value: boolean) => Promise<void>
   /** Tema do painel (RAGX-0193): `dark` (padrão), `light` ou `system`. */
   setTheme: (theme: 'dark' | 'light' | 'system') => Promise<void>
   /** Atualização do painel (RAGX-0192): estado, verificar, baixar e instalar. Sem argumentos; desligada = zero rede. */
   getUpdateState: () => Promise<UpdateState>
+  /** Ajuste automático dos hooks do Claude Code e do git: estado, rodar agora e empurrões do processo principal. */
+  getAutoSetup: () => Promise<AutoSetupState>
+  runAutoSetup: () => Promise<AutoSetupState>
+  onAutoSetup: (cb: (state: AutoSetupState) => void) => () => void
   checkForUpdates: () => Promise<UpdateState>
   downloadUpdate: () => Promise<UpdateState>
   installUpdate: () => Promise<void>

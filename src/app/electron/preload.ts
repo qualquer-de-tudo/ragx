@@ -16,6 +16,7 @@ import type {
   Snapshot,
   TrialResult,
   UpdateState,
+  AutoSetupState,
 } from '../src/types/ragx-bridge'
 
 const ragx: RagxBridge = {
@@ -59,10 +60,17 @@ const ragx: RagxBridge = {
   getSettings: (): Promise<PanelSettings> => ipcRenderer.invoke('ragx:getSettings'),
   setOnboardingDone: (done: boolean): Promise<void> => ipcRenderer.invoke('ragx:setOnboardingDone', done),
   setPricing: (pricing: Pricing | null): Promise<void> => ipcRenderer.invoke('ragx:setPricing', pricing),
-  setPreference: (key: 'tray' | 'notifyStale' | 'autoUpdate', value: boolean): Promise<void> =>
+  setPreference: (key: 'tray' | 'notifyStale' | 'autoUpdate' | 'autoSetup', value: boolean): Promise<void> =>
     ipcRenderer.invoke('ragx:setPreference', key, value),
   setTheme: (theme: 'dark' | 'light' | 'system'): Promise<void> => ipcRenderer.invoke('ragx:setTheme', theme),
   getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke('ragx:getUpdateState'),
+  getAutoSetup: (): Promise<AutoSetupState> => ipcRenderer.invoke('ragx:getAutoSetup'),
+  runAutoSetup: (): Promise<AutoSetupState> => ipcRenderer.invoke('ragx:runAutoSetup'),
+  onAutoSetup: (cb: (state: AutoSetupState) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, state: AutoSetupState) => cb(state)
+    ipcRenderer.on('ragx:autoSetup', listener)
+    return () => ipcRenderer.removeListener('ragx:autoSetup', listener)
+  },
   checkForUpdates: (): Promise<UpdateState> => ipcRenderer.invoke('ragx:checkForUpdates'),
   downloadUpdate: (): Promise<UpdateState> => ipcRenderer.invoke('ragx:downloadUpdate'),
   installUpdate: (): Promise<void> => ipcRenderer.invoke('ragx:installUpdate'),

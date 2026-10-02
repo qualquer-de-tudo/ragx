@@ -42,11 +42,19 @@ export interface RendererSettings {
    * `false` (a pessoa desligou) fica gravado. Desligada, zero chamadas de rede.
    */
   autoUpdate?: boolean
+  /**
+   * Ajuste automático dos hooks do Claude Code e do git (1.0.1). **Ligado por padrão**: ausente = ligado; só `false` (a
+   * pessoa desligou) fica gravado.
+   */
+  autoSetup?: boolean
 }
 
 /** As únicas preferências booleanas que o renderer pode alterar (`ragx:setPreference`). */
-export const PREFERENCE_KEYS = ['tray', 'notifyStale', 'autoUpdate'] as const
+export const PREFERENCE_KEYS = ['tray', 'notifyStale', 'autoUpdate', 'autoSetup'] as const
 export type PreferenceKey = (typeof PREFERENCE_KEYS)[number]
+
+/** Preferências ligadas por padrão: o que fica gravado é o `false` explícito (apagar a chave as ligaria de novo). */
+export const DEFAULT_ON_KEYS: readonly PreferenceKey[] = ['autoUpdate', 'autoSetup']
 
 export interface PanelSettings extends RendererSettings {
   /**
@@ -80,7 +88,7 @@ export function readSettings(dir: string): PanelSettings {
     // só `true` fica: ausente e qualquer outro valor são `false` (desligado por padrão); a exceção é `autoUpdate`,
     // ligada por padrão, em que o `false` explícito também fica (é a escolha da pessoa de desligar)
     for (const key of PREFERENCE_KEYS) if ((parsed as Record<string, unknown> | null)?.[key] === true) settings[key] = true
-    if ((parsed as Record<string, unknown> | null)?.autoUpdate === false) settings.autoUpdate = false
+    for (const key of DEFAULT_ON_KEYS) if ((parsed as Record<string, unknown> | null)?.[key] === false) settings[key] = false
     return settings
   } catch {
     return { ...DEFAULT_SETTINGS }

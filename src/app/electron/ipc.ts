@@ -3,7 +3,7 @@ import type { BundleInfo } from './bootstrap/bundle'
 import { resolveJob, JobRejected, MODEL_PATTERN, type CatalogContext, type ResolvedJob } from './jobs/catalog'
 import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
-import { PREFERENCE_KEYS, THEMES, parsePricing, type PanelSettings, type PreferenceKey, type RendererSettings } from './settings'
+import { DEFAULT_ON_KEYS, PREFERENCE_KEYS, THEMES, parsePricing, type PanelSettings, type PreferenceKey, type RendererSettings } from './settings'
 import { parseContextPreview } from './data/context-preview'
 import type { ContextPreview } from './data/types'
 import type {
@@ -98,6 +98,8 @@ export function parseClaudeProfiles(value: unknown): ClaudeProfile[] {
       dir: text(r.dir, ''),
       enabled: r.enabled,
       hint: r.hint === true,
+      touch: r.touch === true,
+      nudge: r.nudge === true,
       added: r.added === true,
     }]
   })
@@ -472,7 +474,7 @@ export function createHandlers(deps: HandlerDeps) {
 
     /** Só `onboardingDone` sai para o renderer; o resto das configurações fica aqui. */
     getSettings(): RendererSettings {
-      const { onboardingDone, pricing, tray, notifyStale, autoUpdate, theme } = deps.readSettings()
+      const { onboardingDone, pricing, tray, notifyStale, autoUpdate, autoSetup, theme } = deps.readSettings()
       return {
         onboardingDone,
         ...(pricing === undefined ? {} : { pricing }),
@@ -481,6 +483,7 @@ export function createHandlers(deps: HandlerDeps) {
         ...(notifyStale === true ? { notifyStale } : {}),
         // ligada por padrão: só o `false` explícito sai (ausente = ligada)
         ...(autoUpdate === false ? { autoUpdate } : {}),
+        ...(autoSetup === false ? { autoSetup } : {}),
       }
     },
 
@@ -507,8 +510,10 @@ export function createHandlers(deps: HandlerDeps) {
       const current = deps.readSettings()
       const { [key]: _old, ...rest } = current
       void _old
-      // `autoUpdate` é ligada por padrão: desligar grava `false` (apagar a chave a ligaria de novo)
-      deps.writeSettings(valueUnknown ? { ...rest, [key]: true } : key === 'autoUpdate' ? { ...rest, autoUpdate: false } : rest)
+      // as ligadas por padrão (`autoUpdate`, `autoSetup`): desligar grava `false` (apagar a chave as ligaria de novo)
+      deps.writeSettings(
+        valueUnknown ? { ...rest, [key]: true } : DEFAULT_ON_KEYS.includes(key) ? { ...rest, [key]: false } : rest,
+      )
     },
 
     /**

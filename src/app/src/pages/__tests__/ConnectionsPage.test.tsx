@@ -445,7 +445,7 @@ describe('ConnectionsPage: perfis do Claude Code', () => {
     installBridge()
     const claude = {
       enabled: true, busy: false, error: null, changed: false, toggle: vi.fn(),
-      profiles: [{ id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, added: false }],
+      profiles: [{ id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, touch: true, nudge: true, added: false }],
       setProfile: vi.fn(), addProfile: vi.fn(), removeProfile: vi.fn(),
     }
     render(<ConnectionsPage connections={connectionChecks()} checking={false} onRefresh={vi.fn()} jobs={[]} claude={claude} />)

@@ -10,6 +10,7 @@ import { busyProjectIds, deriveProjectState } from './project-state'
 import { StaleNotifier } from './stale-notifier'
 import { createTray, summarizeStates, type RagxTray } from './tray'
 import { createUpdater } from './updater'
+import { createAutoSetup, type HealResult } from './auto-setup'
 import { autoUpdater } from 'electron-updater'
 import { runRagxCommand } from './data/run-ragx-command'
 import { ActivityTail } from './data/activity'
@@ -219,6 +220,42 @@ const updater = createUpdater({
   onState: (state) => mainWindow?.webContents.send('ragx:update', state),
 })
 
+// -- ajuste automático dos hooks (1.0.1) -------------------------------------
+// Completa os hooks do Claude Code e do git sozinho (ver `auto-setup.ts`). Ligado por padrão; desligável em Preferências.
+
+const AUTO_SETUP_FIRST_MS = 8_000
+const AUTO_SETUP_EVERY_MS = 15 * 60_000
+
+const autoSetup = createAutoSetup({
+  enabled: () => currentPrefs().autoSetup !== false,
+  healClaude: async () => {
+    const exe = getRagxExe()
+    const out = (await runRagxCommand(os.homedir(), ['claude', 'heal', '--json', '--command', exe])) as HealResult | null
+    if (out === null || typeof out !== 'object' || !Array.isArray(out.healed)) throw new Error('resposta inesperada de "ragx claude heal"')
+    return out
+  },
+  projects: () =>
+    (latestSnapshot?.projects ?? [])
+      .filter((p) => p.path !== null && p.exists)
+      .map((p) => ({ id: p.id, name: p.name, hooksInstalled: p.hooksInstalled })),
+  installGitHooks: (projectId) => {
+    try {
+      handlers.enqueueJob({ kind: 'hooks-install', projectId })
+      return true
+    } catch (err) {
+      console.error(`hooks de git não enfileirados (${projectId}):`, err)
+      return false
+    }
+  },
+  onState: (state) => mainWindow?.webContents.send('ragx:autoSetup', state),
+})
+let autoSetupTimer: ReturnType<typeof setInterval> | null = null
+
+function startAutoSetup(): void {
+  setTimeout(() => void autoSetup.run(), AUTO_SETUP_FIRST_MS)
+  autoSetupTimer ??= setInterval(() => void autoSetup.run(), AUTO_SETUP_EVERY_MS)
+}
+
 // -- Ollama ------------------------------------------------------------
 
 // Último ambiente detectado: alimenta o catálogo (`CatalogContext.ollamaEnv`).
@@ -352,6 +389,7 @@ function pushSnapshotNow(opts: { markDirtyIfBusy?: boolean } = {}): Promise<void
     .then(async (snapshot) => {
       snapshotStale = false
       if (snapshotGate.shouldSend(snapshot)) mainWindow?.webContents.send('ragx:snapshot', snapshot)
+      autoSetup.onSnapshot() // projeto novo (ou sem hooks de git) é ajustado sem esperar o próximo ciclo
       if (snapshotDirtyAfterInFlight) {
         snapshotDirtyAfterInFlight = false
         await pushSnapshotNow()
@@ -458,12 +496,16 @@ handleIpc('ragx:setPreference', (key: unknown, value: unknown) => {
   applyPreferences()
   // ligar a atualização confere na hora; desligar não faz nada (e nunca chama a rede)
   if (key === 'autoUpdate' && value === true) void updater.check()
+  // idem para o ajuste automático: ligar roda na hora; desligar só para as próximas rodadas
+  if (key === 'autoSetup' && value === true) void autoSetup.run()
 })
 handleIpc('ragx:setTheme', (theme: unknown) => {
   handlers.setTheme(theme)
   applyNativeTheme()
 })
 handleIpc('ragx:getUpdateState', () => updater.getState())
+handleIpc('ragx:getAutoSetup', () => autoSetup.getState())
+handleIpc('ragx:runAutoSetup', () => autoSetup.run())
 handleIpc('ragx:checkForUpdates', () => updater.check())
 handleIpc('ragx:downloadUpdate', () => updater.download())
 handleIpc('ragx:installUpdate', () => updater.install())
@@ -719,6 +761,7 @@ function createWindow(): void {
     watchPanelActivity(win)
     startRuntimeMeasurement()
     void updater.check() // no startup, só se `autoUpdate` estiver ligado e o painel empacotado
+    startAutoSetup()
     // Fix round 1 (MINOR 4): a primeira checagem de conexão roda logo depois
     // do primeiro snapshot, sem esperar os 30s do polling - `getConnections`
     // já constrói um snapshot se ainda não houver nenhum (decisão 2 da Task 6).

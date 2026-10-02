@@ -146,6 +146,18 @@ describe('autoUpdate (RAGX-0192)', () => {
   })
 })
 
+describe('autoSetup (ajuste automático dos hooks)', () => {
+  it('ligado por padrão: ausente e valor inválido somem; o false explícito fica gravado', () => {
+    const dir = mkTmp()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true }))
+    expect(readSettings(dir).autoSetup).toBeUndefined()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, autoSetup: 'nao' }))
+    expect(readSettings(dir).autoSetup).toBeUndefined()
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ onboardingDone: true, autoSetup: false }))
+    expect(readSettings(dir)).toStrictEqual({ onboardingDone: true, autoSetup: false })
+  })
+})
+
 describe('theme (RAGX-0193)', () => {
   it('padrão escuro: o campo some; só light e system ficam; valor inválido volta ao padrão', () => {
     const dir = mkTmp()

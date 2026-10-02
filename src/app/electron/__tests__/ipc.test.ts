@@ -789,8 +789,8 @@ describe('createHandlers - getIndexRuns', () => {
 })
 
 describe('createHandlers - perfis do Claude Code', () => {
-  const PADRAO = { id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, added: false }
-  const CLIENTE = { id: 'claude-code:cliente', name: 'cliente', label: 'Claude Code (cliente)', dir: 'D:/contas/cliente', enabled: true, hint: true, added: true }
+  const PADRAO = { id: 'claude-code', name: 'padrão', label: 'Claude Code', dir: 'C:/u/.claude', enabled: true, hint: true, touch: true, nudge: false, added: false }
+  const CLIENTE = { id: 'claude-code:cliente', name: 'cliente', label: 'Claude Code (cliente)', dir: 'D:/contas/cliente', enabled: true, hint: true, touch: true, nudge: true, added: true }
 
   function cli(profiles = [PADRAO, CLIENTE]) {
     return vi.fn(async (_cwd: string, args: string[]) => {
@@ -1038,6 +1038,20 @@ describe('createHandlers - autoUpdate como preferência (RAGX-0192)', () => {
     expect(writeSettings).toHaveBeenCalledWith({ onboardingDone: true, autoUpdate: false })
     expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
     expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, autoUpdate: false }) })).getSettings()).toStrictEqual({ onboardingDone: true, autoUpdate: false })
+  })
+})
+
+describe('createHandlers - autoSetup como preferência', () => {
+  it('desligar grava false, ligar apaga o false, e só o false explícito chega ao renderer', () => {
+    const writeSettings = vi.fn()
+    const handlers = createHandlers(makeDeps({ writeSettings, readSettings: () => ({ onboardingDone: true }) }))
+    handlers.setPreference('autoSetup', false)
+    expect(writeSettings).toHaveBeenLastCalledWith({ onboardingDone: true, autoSetup: false })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true, autoSetup: false }) })).getSettings()).toStrictEqual({
+      onboardingDone: true,
+      autoSetup: false,
+    })
+    expect(createHandlers(makeDeps({ readSettings: () => ({ onboardingDone: true }) })).getSettings()).toStrictEqual({ onboardingDone: true })
   })
 })
 
