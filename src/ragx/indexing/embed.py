@@ -15,14 +15,13 @@ import numpy as np
 
 from ragx.config import Config
 from ragx.embeddings import build_embedder, embedder_id
-from ragx.embeddings.base import EmbeddingCache
+from ragx.embeddings.base import Embedder, EmbeddingCache
 from ragx.indexing.chunkers import context_prefix
 from ragx.storage.vectors import (
-    coarse_only_chunks,
     coarse_only_count,
     embedding_count,
     has_vectors,
-    missing_chunk_ids,
+    pending_for_embedding,
     register_model,
     store_vectors,
 )
@@ -97,9 +96,7 @@ def embed_pending(
         except Exception as exc:  # o import é um atalho: falhar nele nunca impede o caminho normal
             report.import_warning = f"embeddings versionados não importados: {exc}"
 
-    pending = missing_chunk_ids(conn, model_id)
-    if upgrade_coarse:
-        pending += coarse_only_chunks(conn, model_id)
+    pending = pending_for_embedding(conn, model_id, include_coarse=upgrade_coarse)
     report.pending = len(pending)
     if not pending:
         report.total = embedding_count(conn)
@@ -124,72 +121,79 @@ def embed_pending(
         )
         return report
 
-    cache = EmbeddingCache(cfg.state_dir / "cache", embedder.id, cfg.embedding.cache)
-    paths = _paths_for(conn, [cid for cid, _, _ in pending])
-
-    todo: list[tuple[str, str, str]] = []
-    ready: list[tuple[str, np.ndarray]] = []
-    for cid, chash, content in pending:
-        cached = cache.get(chash)
-        if cached is not None and cached.size == embedder.dim:
-            ready.append((cid, cached))
-            report.from_cache += 1
-        else:
-            todo.append((cid, chash, content))
-
-    batch = max(cfg.embedding.batch, 1)
-    done = 0
-    try:
-        for i in range(0, len(todo), batch):
-            window = todo[i : i + batch]
-            # Prefixo de contexto entra SÓ no embedding, nunca em chunks.content.
-            texts = [
-                _prefixed(paths.get(cid, ""), content, cid, conn) for cid, _h, content in window
-            ]
-            vecs = embedder.embed_documents(texts)
-            for (cid, chash, _c), vec in zip(window, vecs, strict=True):
-                cache.put(chash, vec)
-                ready.append((cid, vec))
-            done += len(window)
-            if progress:
-                progress(done, len(todo))
-    except Exception as exc:
-        report.error = str(exc)
-
-    if ready:
-        report.embedded = store_vectors(conn, embedder.id, ready, vdim)
+    with EmbeddingCache(cfg.state_dir / "cache", embedder.id, cfg.embedding.cache) as cache:
+        _embed_all(conn, cfg, embedder, cache, pending, vdim, report, progress)
     report.total = embedding_count(conn)
     report.coarse_only = coarse_only_count(conn, model_id)
     return report
 
 
-def _paths_for(conn: sqlite3.Connection, chunk_ids: list[str]) -> dict[str, str]:
-    if not chunk_ids:
-        return {}
-    out: dict[str, str] = {}
-    for i in range(0, len(chunk_ids), 500):
-        window = chunk_ids[i : i + 500]
-        ph = ",".join("?" * len(window))
-        for r in conn.execute(
-            f"""SELECT c.id, d.rel_path FROM chunks c JOIN documents d ON d.id = c.document_id
-                WHERE c.id IN ({ph})""",
-            window,
-        ):
-            out[r["id"]] = r["rel_path"]
-    return out
+#: a cada quantos lotes grava o que já foi embutido (RAGX-0146): `ragx index` morto no meio retoma do ponto em que parou
+CHECKPOINT_EVERY = 10
+
+_Row = tuple[str, str, str, str, str, str | None, str | None]
 
 
-def _prefixed(rel_path: str, content: str, chunk_id: str, conn: sqlite3.Connection) -> str:
-    r = conn.execute(
-        "SELECT kind, symbol, heading_path FROM chunks WHERE id = ?", (chunk_id,)
-    ).fetchone()
-    if r is None:
-        return content
+def _embed_all(
+    conn: sqlite3.Connection,
+    cfg: Config,
+    embedder: Embedder,
+    cache: EmbeddingCache,
+    pending: list[_Row],
+    vdim: int,
+    report: EmbedReport,
+    progress: Callable[[int, int], None] | None,
+) -> None:
+    cached = cache.get_many([row[1] for row in pending])
+    todo: list[_Row] = []
+    ready: list[tuple[str, np.ndarray]] = []
+    for row in pending:
+        vec = cached.get(row[1])
+        if vec is not None and vec.size == embedder.dim:
+            ready.append((row[0], vec))
+            report.from_cache += 1
+        else:
+            todo.append(row)
+
+    def flush() -> None:
+        if ready:
+            report.embedded += store_vectors(conn, embedder.id, ready, vdim)
+            conn.commit()  # checkpoint: o que já foi embutido sobrevive a um processo morto
+            ready.clear()
+
+    batch = max(cfg.embedding.batch, 1)
+    done = 0
+    try:
+        for n, i in enumerate(range(0, len(todo), batch), start=1):
+            window = todo[i : i + batch]
+            # Prefixo de contexto entra SÓ no embedding, nunca em chunks.content.
+            texts = [
+                _prefixed(rel_path, content, cid, kind, symbol, heading)
+                for cid, _h, content, rel_path, kind, symbol, heading in window
+            ]
+            vecs = embedder.embed_documents(texts)
+            cache.put_many([(row[1], vec) for row, vec in zip(window, vecs, strict=True)])
+            ready.extend((row[0], vec) for row, vec in zip(window, vecs, strict=True))
+            done += len(window)
+            if progress:
+                progress(done, len(todo))
+            if n % CHECKPOINT_EVERY == 0:
+                flush()
+    except Exception as exc:
+        report.error = str(exc)
+    finally:
+        flush()
+
+
+def _prefixed(
+    rel_path: str, content: str, chunk_id: str, kind: str, symbol: str | None, heading_path: str | None
+) -> str:
+    """O texto que vai ao embedder: prefixo de contexto + conteúdo, montado da linha já lida (sem `SELECT`)."""
     from ragx.core.models import Chunk, ChunkKind
 
     stub = Chunk(
-        id=chunk_id, document_id="", ordinal=0, kind=ChunkKind(r["kind"]),
+        id=chunk_id, document_id="", ordinal=0, kind=ChunkKind(kind),
         start_line=0, end_line=0, content=content, content_hash="", token_count=0,
-        symbol=r["symbol"], heading_path=r["heading_path"],
+        symbol=symbol, heading_path=heading_path,
     )
     return context_prefix(rel_path, stub)

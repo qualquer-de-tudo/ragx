@@ -435,3 +435,129 @@ def test_pontes_do_grafo_dos_chunks_intactos_sobrevivem_a_uma_edicao(proj: Path)
     com1, sem1 = pontes()
     # antes: TODAS as pontes do arquivo viravam NULL até o próximo `sync`; agora só a do chunk editado
     assert sem1 <= sem0 + 1 and com1 >= com0 - 1
+
+
+# --- RAGX-0146: cache de embedding em lote, checkpoint e uma consulta só ---------------------------------------------
+
+
+class _Contador:
+    """Embedder falso: conta quantos textos recebeu e pode morrer no N-ésimo lote."""
+
+    id = "falso:0146"
+    dim = 128
+
+    def __init__(self, morre_no_lote: int | None = None) -> None:
+        self.textos = 0
+        self.lotes = 0
+        self.morre_no_lote = morre_no_lote
+
+    def available(self) -> bool:
+        return True
+
+    def embed_documents(self, texts):  # type: ignore[no-untyped-def]
+        import numpy as np
+
+        self.lotes += 1
+        if self.morre_no_lote is not None and self.lotes == self.morre_no_lote:
+            raise RuntimeError("morreu no meio")
+        self.textos += len(texts)
+        return np.ones((len(texts), self.dim), dtype=np.float32)
+
+    def embed_query(self, text):  # type: ignore[no-untyped-def]
+        import numpy as np
+
+        return np.ones(self.dim, dtype=np.float32)
+
+
+def _com_chunks(proj: Path, n: int = 30) -> None:
+    for i in range(n):
+        (proj / "src" / f"m{i}.py").write_text(f"def f{i}():\n    return {i}\n", encoding="utf-8")
+
+
+def _embute(proj: Path, monkeypatch: pytest.MonkeyPatch, emb: _Contador, batch: int = 4):  # type: ignore[no-untyped-def]
+    from ragx.indexing import embed as embed_mod
+
+    cfg = load_config(proj)
+    cfg.embedding.batch = batch
+    monkeypatch.setattr(embed_mod, "build_embedder", lambda _cfg: emb)
+    monkeypatch.setattr(embed_mod, "embedder_id", lambda _cfg: emb.id)
+    index_project(cfg, embed=False)
+    conn = sqlite3.connect(cfg.db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        return embed_mod.embed_pending(cfg, conn), cfg
+    finally:
+        conn.close()
+
+
+def test_segunda_rodada_nao_chama_o_embedder_e_nao_cria_arquivo_por_chunk(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _com_chunks(proj)
+    emb = _Contador()
+    r1, cfg = _embute(proj, monkeypatch, emb)
+    assert r1.embedded > 0 and emb.textos == r1.embedded
+    antes = emb.textos
+    r2, _ = _embute(proj, monkeypatch, emb)
+    assert emb.textos == antes and r2.pending == 0
+    arquivos = [p for p in (cfg.state_dir / "cache" / "emb").rglob("*") if p.is_file()]
+    assert arquivos and all(".sqlite" in p.name for p in arquivos)  # `.sqlite`, `-wal` e `-shm`
+
+
+def test_processo_morto_no_meio_retoma_do_ultimo_lote_concluido(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _com_chunks(proj)
+    morre = _Contador(morre_no_lote=3)
+    r1, cfg = _embute(proj, monkeypatch, morre)
+    assert r1.error and morre.textos == 8  # 2 lotes de 4 chegaram antes
+    conn = sqlite3.connect(cfg.db_path)
+    gravados = conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0]
+    conn.close()
+    assert gravados == 8  # o que tinha lote concluído foi gravado mesmo com a falha
+
+    sobra = _Contador()
+    r2, _ = _embute(proj, monkeypatch, sobra)
+    assert r2.error is None
+    assert sobra.textos == r2.pending - r2.from_cache or sobra.textos <= r2.pending
+    assert sobra.textos + 8 == r1.pending  # nada do que já estava pronto foi reembutido
+
+
+def test_consultas_sql_do_embed_nao_crescem_com_o_numero_de_chunks(
+    proj: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from ragx.indexing import embed as embed_mod
+
+    contagens = []
+    for n in (10, 60):
+        sub = proj / f"p{n}"
+        (sub / "src").mkdir(parents=True)
+        (sub / "ragx.toml").write_text((proj / "ragx.toml").read_text(encoding="utf-8"), encoding="utf-8")
+        _com_chunks(sub, n)
+        cfg = load_config(sub)
+        index_project(cfg, embed=False)
+        emb = _Contador()
+        monkeypatch.setattr(embed_mod, "build_embedder", lambda _cfg, e=emb: e)
+        monkeypatch.setattr(embed_mod, "embedder_id", lambda _cfg, e=emb: e.id)
+        conn = sqlite3.connect(cfg.db_path)
+        conn.row_factory = sqlite3.Row
+        vistas: list[str] = []
+        conn.set_trace_callback(vistas.append)
+        embed_mod.embed_pending(cfg, conn)
+        conn.close()
+        contagens.append(sum(1 for q in vistas if q.lstrip().upper().startswith("SELECT")))
+    assert contagens[1] <= contagens[0] + 2  # 6x mais chunks, quase o mesmo número de SELECTs
+
+
+@pytest.mark.parametrize("kind,symbol,heading", [("method", "A.m", None), ("section", None, "T > S"), ("file", None, None)])
+def test_texto_enviado_ao_embedder_e_o_mesmo_de_antes(kind: str, symbol: str | None, heading: str | None) -> None:
+    """Regressão: o prefixo de contexto continua `context_prefix` do `Chunk`, com símbolo, título ou nenhum."""
+    from ragx.core.models import Chunk, ChunkKind
+    from ragx.indexing.chunkers import context_prefix
+    from ragx.indexing.embed import _prefixed
+
+    chunk = Chunk(
+        id="c", document_id="", ordinal=0, kind=ChunkKind(kind), start_line=0, end_line=0,
+        content="corpo", content_hash="", token_count=0, symbol=symbol, heading_path=heading,
+    )
+    assert _prefixed("src/a.py", "corpo", "c", kind, symbol, heading) == context_prefix("src/a.py", chunk)

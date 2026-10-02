@@ -254,6 +254,29 @@ def missing_chunk_ids(conn: sqlite3.Connection, model_id: str) -> list[tuple[str
     ]
 
 
+def pending_for_embedding(
+    conn: sqlite3.Connection, model_id: str, include_coarse: bool = False
+) -> list[tuple[str, str, str, str, str, str | None, str | None]]:
+    """Tudo o que `embed_pending` precisa dos chunks a embutir, num ÚNICO `SELECT` (RAGX-0146).
+
+    `(chunk_id, content_hash, content, rel_path, kind, symbol, heading_path)`: antes eram um `SELECT` por chunk para o
+    caminho e outro para o tipo/símbolo/título. `include_coarse` soma os chunks que só têm o vetor grosseiro
+    (`missing_chunk_ids` não os vê: eles TÊM linha em `embeddings`).
+    """
+    cond = "(e.chunk_id IS NULL OR e.vector IS NULL)" if include_coarse else "e.chunk_id IS NULL"
+    return [
+        (r["id"], r["content_hash"], r["content"], r["rel_path"], r["kind"], r["symbol"], r["heading_path"])
+        for r in conn.execute(
+            f"""SELECT c.id, c.content_hash, c.content, d.rel_path, c.kind, c.symbol, c.heading_path
+                FROM chunks c
+                JOIN documents d ON d.id = c.document_id
+                LEFT JOIN embeddings e ON e.chunk_id = c.id AND e.model_id = ?
+                WHERE {cond}""",
+            (model_id,),
+        )
+    ]
+
+
 def has_vectors(conn: sqlite3.Connection, model_id: str) -> bool:
     return conn.execute(
         "SELECT 1 FROM embeddings WHERE model_id = ? LIMIT 1", (model_id,)

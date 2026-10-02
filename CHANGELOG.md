@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Cache de embedding em SQLite, em lote, com checkpoint.** O cache guardava um arquivo por chunk e o `embed_pending`
+  fazia dois `SELECT` por chunk e só gravava no fim. Agora é um SQLite por modelo lido e escrito em lote, um único
+  `SELECT` busca o que falta, e a cada 10 lotes o que já foi embutido é gravado: um `ragx index` morto no meio
+  retoma de onde parou. Num projeto sintético de 4.001 chunks, a parte de cache e prefixo foi de 3,8 s para 0,37 s e o
+  primeiro índice de 7,5 s para 3,7 s; o cache antigo é lido de passagem (RAGX-0146).
 - **Tema claro no painel, como preferência.** O painel era só escuro. Agora Preferências tem "Tema": Escuro (o
   padrão, intocado), Claro e Seguir o sistema, com troca na hora e sem reiniciar. Todos os tokens de cor foram
   redefinidos para o claro, com contraste AA conferido por teste nos dois temas, e a janela e o `nativeTheme` do

@@ -150,9 +150,14 @@ documentos presentes no banco e ausentes no disco → removed (DELETE cascade)
 Detecção rápida antes do hash: se `size_bytes` e `mtime_ns` batem com o registrado,
 pula a leitura do conteúdo. `--full` desliga esse atalho.
 
-Cache de embeddings: `.ragx/cache/emb/<model_id>/<content_hash>.f32`. Chunk que só
-mudou de lugar (arquivo renomeado, função movida) reaproveita o vetor — é o que faz
-a reindexação ficar barata.
+Cache de embeddings (RAGX-0146): um SQLite por modelo, `.ragx/cache/emb/<model_id>.sqlite`
+(`content_hash` -> vetor float32), lido e escrito **em lote**. Chunk que só mudou de lugar
+(arquivo renomeado, função movida) reaproveita o vetor — é o que faz a reindexação ficar
+barata. Antes era um arquivo por chunk (2,9 ms cada no Windows). O formato antigo
+(`emb/<model_id>/<hh>/<hash>.f32`) é lido de passagem e importado, nunca apagado; banco
+ilegível vira `.sqlite.corrupt` e é recriado. O `embed_pending` busca o que falta num único
+`SELECT` e grava um checkpoint a cada 10 lotes: um `ragx index` morto no meio retoma do ponto
+em que parou.
 
 **Veredito guardado** (`file_verdicts`, RAGX-0139). Arquivo `unsupported`, binário, indecodável ou
 bloqueado nunca entra em `documents`, então o atalho de tamanho+mtime não o alcançava: era relido e
