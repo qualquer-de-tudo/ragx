@@ -88,7 +88,7 @@ ragx index [PATH]
     --embed-only            (re)gera apenas embeddings faltantes
     --include GLOB          adiciona padrão de inclusão
     --exclude GLOB          adiciona padrão de exclusão
-    --jobs N                paralelismo (padrão: cpu_count)
+    # paralelismo do primeiro índice: chave `index.jobs` do ragx.toml (0 = min(cpu_count, 4); sem flag)
     --source ORIGEM         quem disparou: cli, panel, watch, sync, mcp:refresh,
                             mcp:index, hook:post-checkout, hook:post-commit, hook:post-merge
     --progress              progresso em linhas JSON no stdout (fases scan, chunk,

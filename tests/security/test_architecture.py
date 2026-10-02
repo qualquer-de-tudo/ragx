@@ -194,38 +194,75 @@ def test_conhecimento_base_fica_fora_do_git() -> None:
 def test_walker_passa_pelo_gate_antes_de_entregar_bytes() -> None:
     """Nenhum caminho do walker devolve conteúdo sem um GateDecision.
 
-    Desde a RAGX-0140 há dois pontos de entrada (`iter_files`, a varredura, e `iter_paths`,
-    a reindexação por caminho) e UM só lugar que lê e entrega bytes, `_examinar`: os dois
-    delegam a ele com `yield from`, e é nele que todo `yield` constrói um `WalkedFile`. O
-    helper `_walk` fica de fora de propósito: só enumera caminhos, nunca entrega bytes.
+    Desde a RAGX-0152 a leitura tem dois estágios: `_decidir`/`iter_candidates` fazem só as decisões
+    BARATAS (sem abrir o arquivo) e `read_candidate` é o UNICO lugar que lê bytes e chama `gate.admit`,
+    no processo principal ou no worker do pipeline paralelo. Os pontos de entrada (`iter_files`,
+    `iter_paths`, `_examinar`) só compõem os dois estágios. O helper `_walk` fica de fora de propósito:
+    só enumera caminhos, nunca entrega bytes.
     """
     fonte = (SRC / "walk.py").read_text(encoding="utf-8")
     assert "gate.admit(" in fonte, "walker precisa chamar o gate"
 
     tree = ast.parse(fonte)
     funcoes = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
-    for nome in ("iter_files", "iter_paths", "_examinar"):
+    for nome in ("iter_files", "iter_paths", "iter_candidates", "_examinar", "_decidir", "read_candidate"):
         assert nome in funcoes, f"{nome} sumiu"
 
-    # os pontos de entrada NÃO entregam nada por conta própria: só delegam
-    for nome in ("iter_files", "iter_paths"):
-        brutos = [n for n in ast.walk(funcoes[nome]) if isinstance(n, ast.Yield)]
-        assert not brutos, f"{nome} entrega direto, sem passar por _examinar"
-        delega = [n for n in ast.walk(funcoes[nome]) if isinstance(n, ast.YieldFrom)]
-        assert delega and all("_examinar" in ast.dump(d) for d in delega), (
-            f"{nome} precisa delegar a _examinar"
+    # ler bytes e admitir no gate: SÓ em `read_candidate`
+    def _usa(no: ast.AST, nome: str) -> bool:
+        return any(
+            (isinstance(n, ast.Attribute) and n.attr == nome) or (isinstance(n, ast.Name) and n.id == nome)
+            for n in ast.walk(no)
         )
 
-    # e `_examinar` é um gerador em que todo `yield` constrói um WalkedFile (com decisão)
-    yields = [n for n in ast.walk(funcoes["_examinar"]) if isinstance(n, ast.Yield) and n.value]
-    assert yields, "_examinar precisa ser um gerador"
-    for node in yields:
+    assert [n for n, f in funcoes.items() if _usa(f, "read_bytes")] == ["read_candidate"]
+    assert [n for n, f in funcoes.items() if _usa(f, "admit")] == ["read_candidate"]
+
+    # todo retorno de `read_candidate` é `None` (sumiu) ou um WalkedFile com decisão
+    retornos = [n for n in ast.walk(funcoes["read_candidate"]) if isinstance(n, ast.Return)]
+    assert retornos
+    for node in retornos:
         trecho = ast.dump(node)
-        assert "WalkedFile" in trecho, f"yield sem GateDecision: {trecho[:140]}"
-    # a leitura de bytes e o `gate.admit` ficam SÓ em `_examinar`
-    for nome in ("iter_files", "iter_paths"):
+        assert "WalkedFile" in trecho or "Constant(value=None)" in trecho, f"retorno sem decisão: {trecho[:140]}"
+    # e o conteúdo só entra no WalkedFile pela `decision` que veio de `gate.admit`
+    assert any(
+        isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "admit"
+        for n in ast.walk(funcoes["read_candidate"])
+    )
+
+    # os estágios de decisão barata não leem nem admitem; os pontos de entrada compõem os estágios
+    for nome in ("iter_files", "iter_paths", "iter_candidates", "_decidir"):
         texto = ast.dump(funcoes[nome])
         assert "read_bytes" not in texto and "'admit'" not in texto, f"{nome} lê ou admite por fora"
+    assert "read_candidate" in ast.dump(funcoes["iter_files"]) and "iter_candidates" in ast.dump(funcoes["iter_files"])
+    assert "_examinar" in ast.dump(funcoes["iter_paths"]), "iter_paths precisa delegar a _examinar"
+    assert "_decidir" in ast.dump(funcoes["_examinar"]) and "read_candidate" in ast.dump(funcoes["_examinar"])
+    for nome in ("iter_paths", "iter_candidates"):
+        assert not [n for n in ast.walk(funcoes[nome]) if isinstance(n, ast.Yield) and "WalkedFile" in ast.dump(n)], (
+            f"{nome} fabrica WalkedFile por conta própria"
+        )
+
+
+def test_pipeline_paralelo_so_le_arquivo_por_read_candidate() -> None:
+    """`ragx.indexing.parallel` (RAGX-0152) roda o Gate COMPLETO no worker e nunca abre arquivo por conta própria."""
+    caminho = SRC / "indexing" / "parallel.py"
+    fonte = caminho.read_text(encoding="utf-8")
+    tree = ast.parse(fonte)
+    assert "read_candidate" in fonte and "SecurityGate(" in fonte
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Call):
+            nome = getattr(n.func, "attr", None) or getattr(n.func, "id", "")
+            assert nome not in {"read_bytes", "read_text", "open", "scandir", "listdir"}, (
+                f"parallel.py lê o filesystem por fora de read_candidate: {nome}"
+            )
+    # não importa a configuração nem a CLI: cada worker em `spawn` pagaria o pydantic/typer
+    importados = {
+        (n.module or "") if isinstance(n, ast.ImportFrom) else a.name
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Import | ast.ImportFrom)
+        for a in (n.names if isinstance(n, ast.Import) else [None])
+    }
+    assert not any(m == "ragx.config" or m.startswith(("ragx.cli", "typer")) for m in importados), sorted(importados)
 
 
 # ── domínio não conhece infraestrutura ──────────────────────────────────

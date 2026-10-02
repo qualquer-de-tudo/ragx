@@ -27,7 +27,7 @@ visibility = "workspace"        # workspace | private (private fica fora do hub)
 include_unknown  = false        # extensões fora da lista fechada
 max_file_bytes   = 1048576      # 1 MiB
 follow_symlinks  = false
-jobs             = 0            # 0 = cpu_count
+jobs             = 0            # primeiro índice: 0 = min(cpu_count, 4), 1 = sequencial, N = N processos
 batch_size       = 200          # arquivos por transação
 exclude = [
   "**/snapshots/**",

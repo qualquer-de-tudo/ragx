@@ -23,6 +23,7 @@ from ragx.core.models import Document, IndexStats, Verdict
 from ragx.indexing import freshness, lock, parsers, status_file
 from ragx.indexing.chunkers import ChunkOptions, chunk_document
 from ragx.indexing.embed import embed_pending
+from ragx.indexing.parallel import ParallelStats, Prepared, WorkerSpec, process_stream, resolve_jobs
 from ragx.indexing.verdicts import BLOCKED, CACHED_SKIPS
 from ragx.indexing.verdicts import prepare as vprepare
 from ragx.security.gate import SecurityGate
@@ -34,7 +35,7 @@ from ragx.storage.repositories import (
     SecurityEventRepo,
     VerdictRepo,
 )
-from ragx.walk import WalkedFile, iter_files, iter_paths, normalizar_caminho
+from ragx.walk import WalkedFile, iter_candidates, iter_files, iter_paths, normalizar_caminho
 
 VALID_SOURCES = frozenset({
     "cli", "panel", "watch", "sync", "mcp:refresh", "mcp:index",
@@ -65,6 +66,10 @@ class IndexReport:
     imported_embeddings: int = 0
     coarse_only: int = 0
     embed_warning: str | None = None
+    #: workers do pool do primeiro índice (RAGX-0152); 0 = sequencial (abaixo do limiar, `jobs = 1`, dry-run)
+    parallel_jobs: int = 0
+    #: motivo, quando o pool caiu no meio e o resto da rodada rodou no processo principal
+    parallel_fallback: str | None = None
 
 
 MAX_PENDING_RERUNS = 3
@@ -361,6 +366,7 @@ def _index_once(
         mode = "embed-only" if embed_only else ("full" if full else "incremental")
         run_id = None if dry_run else runs.start(mode, source, gitinfo.read_state(cfg.root))
         run_error: str | None = None
+        fonte: Iterator[tuple[WalkedFile, Prepared | None]] | None = None
 
         try:
             if embed_only:
@@ -385,14 +391,21 @@ def _index_once(
                 seen_paths=seen_paths, full=full, dry_run=dry_run, on_event=on_event,
                 verdicts=verdicts, vrepo=VerdictRepo(conn),
             )
-            for walked in _all_sources(cfg, gate, fingerprints, unreadable_dirs, verdicts):
+            jobs = 1 if dry_run else resolve_jobs(cfg.index.jobs)
+            stats_paralelo = ParallelStats()
+            fonte = _all_sources(
+                cfg, gate, fingerprints, unreadable_dirs, verdicts, jobs=jobs, stats=stats_paralelo
+            )
+            for walked, pre in fonte:
                 report.stats = _bump(report.stats, files_seen=1)
                 if on_event:
                     on_event({"phase": "scan", "done": report.stats.files_seen, "total": None})
                 if progress:
                     progress(report.stats.files_seen, walked.rel_path)
 
-                _handle(ctx, walked)
+                _handle(ctx, walked, pre)
+            report.parallel_jobs = stats_paralelo.jobs
+            report.parallel_fallback = stats_paralelo.fell_back
 
             # Documentos que sumiram do disco.
             gone = [
@@ -441,6 +454,10 @@ def _index_once(
             run_error = str(exc)
             raise
         finally:
+            # Ctrl+C ou erro no meio da varredura: fecha o gerador AGORA, o que desliga o pool de processos
+            # (cancela o que não começou e espera só os lotes em voo) antes de a exceção sair daqui.
+            if fonte is not None:
+                fonte.close()  # type: ignore[attr-defined]
             elapsed = int((time.perf_counter() - started) * 1000)
             report.stats = _bump(report.stats, duration_ms=elapsed)
             object.__setattr__(report.stats, "skip_reasons", skip_reasons)
@@ -520,8 +537,12 @@ def _flush_verdicts(ctx: _Ctx, gone: Iterable[str] = ()) -> None:
     ctx.vput.clear()
 
 
-def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
-    """Trata UM arquivo entregue pelo walker: BLOCK, parse, chunk, upsert, eventos."""
+def _handle(ctx: _Ctx, walked: WalkedFile, pre: Prepared | None = None) -> None:
+    """Trata UM arquivo entregue pelo walker: BLOCK, parse, chunk, upsert, eventos.
+
+    `pre` (RAGX-0152): hash, parse e chunking que um worker do pool já fez sobre o texto admitido pelo Gate; sem
+    ele, tudo é feito aqui. A escrita no banco é a mesma nos dois casos.
+    """
     cfg, report, skip_reasons = ctx.cfg, ctx.report, ctx.skip_reasons
     docs, chunks, events = ctx.docs, ctx.chunks, ctx.events
     known, seen_paths = ctx.known, ctx.seen_paths
@@ -571,7 +592,7 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
 
     seen_paths.add(walked.rel_path)
     text = d.content or ""
-    chash = content_hash(text)
+    chash = pre.chash if pre is not None else content_hash(text)
     prior = known.get(walked.rel_path)
 
     if (
@@ -584,20 +605,29 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
         _sem_veredito(ctx, walked.rel_path)
         return
 
-    parsed = parsers.parse(
-        walked.rel_path, text, include_unknown=cfg.index.include_unknown
-    )
-    if parsed is None:
+    if pre is None:
+        parsed = parsers.parse(
+            walked.rel_path, text, include_unknown=cfg.index.include_unknown
+        )
+        pre = (
+            None if parsed is None
+            else Prepared(
+                supported=True, chash=chash, doc_kind=parsed.doc_kind, lang=parsed.lang,
+                title=parsed.title, degraded=parsed.degraded,
+                chunks=tuple(chunk_document(walked.rel_path, text, parsed, opts)),
+            )
+        )
+    if pre is None or not pre.supported:
         skip_reasons["unsupported"] = skip_reasons.get("unsupported", 0) + 1
         report.stats = _bump(report.stats, skipped=1)
         seen_paths.discard(walked.rel_path)
         _guardar(ctx, walked, "unsupported", "unsupported")
         return
     _sem_veredito(ctx, walked.rel_path)
-    if parsed.degraded:
+    if pre.degraded:
         report.degraded += 1
 
-    produced = chunk_document(walked.rel_path, text, parsed, opts)
+    produced = list(pre.chunks)
     report.stats = _bump(report.stats, indexed=1, chunks=len(produced))
     if on_event:
         on_event({"phase": "chunk", "done": report.stats.indexed, "total": None})
@@ -615,13 +645,13 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
     doc = Document(
         id=document_id(walked.rel_path),
         rel_path=walked.rel_path,
-        doc_kind=parsed.doc_kind,
+        doc_kind=pre.doc_kind,  # type: ignore[arg-type]
         size_bytes=walked.size_bytes,
         mtime_ns=walked.mtime_ns,
         content_hash=chash,
         chunker_version=CHUNKER_VERSION,
-        lang=parsed.lang,
-        title=parsed.title,
+        lang=pre.lang,
+        title=pre.title,
         redacted=d.verdict is Verdict.ALLOW_REDACTED,
     )
     docs.upsert(doc)
@@ -643,32 +673,55 @@ def _sob_pasta_ilegivel(rel_path: str, pastas: set[str]) -> bool:
     return any(p == "" or rel_path == p or rel_path.startswith(p + "/") for p in pastas)
 
 
+def _worker_spec(cfg: Config) -> WorkerSpec:
+    return WorkerSpec(
+        root=str(cfg.root),
+        policy=str(cfg.security.policy),
+        scan_content=cfg.security.scan_content,
+        min_entropy=cfg.security.min_entropy,
+        extra_exclude=tuple(cfg.index.exclude),
+        extra_include=tuple(cfg.index.include),
+        max_tokens=cfg.chunk.max_tokens,
+        min_tokens=cfg.chunk.min_tokens,
+        include_unknown=cfg.index.include_unknown,
+    )
+
+
 def _all_sources(
     cfg: Config,
     gate: SecurityGate,
     fingerprints: dict[str, tuple[int, int]] | None,
     unreadable_dirs: set[str] | None = None,
     verdicts: dict[str, tuple[int, int, str, str | None]] | None = None,
-) -> Iterator[WalkedFile]:
+    jobs: int = 1,
+    stats: ParallelStats | None = None,
+) -> Iterator[tuple[WalkedFile, Prepared | None]]:
     """O projeto e, depois, o conhecimento base.
 
     Uma única cadeia de geradores: o corpo do laço de indexação não sabe (nem
     precisa saber) de onde o arquivo veio. Cada fonte base tem o SEU gate,
     enraizado nela — regra de nome e .gitignore avaliam o caminho real, e o
     prefixo `@base/<fonte>/` só aparece do lado de fora.
+
+    O projeto passa por `process_stream` (RAGX-0152): com `jobs > 1` e candidatos suficientes, leitura, Gate,
+    parse e chunking rodam num pool de processos e voltam na ordem da varredura (o segundo item da tupla é o
+    resultado do parse; `None` no caminho sequencial). O conhecimento base continua sequencial.
     """
-    yield from iter_files(
-        cfg.root, gate,
-        max_bytes=cfg.index.max_file_bytes,
-        follow_symlinks=cfg.index.follow_symlinks,
-        fingerprints=fingerprints,
-        unreadable_dirs=unreadable_dirs,
-        verdicts=verdicts,
+    yield from process_stream(
+        iter_candidates(
+            cfg.root, gate,
+            max_bytes=cfg.index.max_file_bytes,
+            follow_symlinks=cfg.index.follow_symlinks,
+            fingerprints=fingerprints,
+            unreadable_dirs=unreadable_dirs,
+            verdicts=verdicts,
+        ),
+        gate, _worker_spec(cfg), jobs, stats,
     )
     if not cfg.base.enabled:
         return
     for name, path in base_source.active_roots(cfg):
-        yield from iter_files(
+        for walked in iter_files(
             path,
             SecurityGate(
                 path,
@@ -683,7 +736,8 @@ def _all_sources(
             unreadable_dirs=unreadable_dirs,
             verdicts=verdicts,
             prefix=f"{base_source.PREFIX}/{name}/",
-        )
+        ):
+            yield walked, None
 
 
 def _embed_cb(

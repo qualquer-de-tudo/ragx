@@ -42,6 +42,21 @@ class WalkedFile:
         return self.decision.content
 
 
+@dataclass(frozen=True, slots=True)
+class Candidate:
+    """Arquivo que passou nas decisões baratas (ignore, veredito guardado, `unchanged`, tamanho, nome) e
+    ainda PRECISA ser lido: leitura, sonda de binário e Gate vêm depois, em `read_candidate` (RAGX-0152).
+
+    Só dados simples (strings e inteiros), para atravessar um processo sem custo.
+    """
+
+    path: str  # caminho absoluto no disco
+    inner: str  # relativo à raiz, como o Gate o vê
+    rel: str  # `inner` com o prefixo do índice (conhecimento base entra como `@base/<fonte>/...`)
+    size_bytes: int
+    mtime_ns: int
+
+
 def iter_files(
     root: Path,
     gate: SecurityGate,
@@ -64,6 +79,35 @@ def iter_files(
     listadas: o que já estava indexado sob elas não pode ser tratado como
     removido.
     """
+    for item in iter_candidates(
+        root, gate, max_bytes, follow_symlinks, only, fingerprints, prefix, unreadable_dirs, verdicts
+    ):
+        if isinstance(item, Candidate):
+            lido = read_candidate(item, gate)
+            if lido is not None:
+                yield lido
+        else:
+            yield item
+
+
+def iter_candidates(
+    root: Path,
+    gate: SecurityGate,
+    max_bytes: int = 1_048_576,
+    follow_symlinks: bool = False,
+    only: set[str] | None = None,
+    fingerprints: dict[str, tuple[int, int]] | None = None,
+    prefix: str = "",
+    unreadable_dirs: set[str] | None = None,
+    verdicts: Verdicts | None = None,
+) -> Iterator[WalkedFile | Candidate]:
+    """Primeiro estágio de `iter_files` (RAGX-0152): percorre a árvore e faz só as decisões BARATAS.
+
+    Cada arquivo sai como um `WalkedFile` já decidido (ignorado, veredito guardado, `unchanged`, grande
+    demais, nome na deny-list, `stat` com erro) ou como um `Candidate`, que ainda precisa de
+    `read_candidate` (leitura + sonda de binário + Gate). A ordem é a da varredura. `iter_files` é a
+    composição dos dois estágios; o pipeline paralelo entrega os `Candidate` a processos que o fazem.
+    """
     root = Path(root).resolve()
     visited: set[tuple[int, int]] = set()
 
@@ -76,7 +120,9 @@ def iter_files(
         rel = prefix + path.relative_to(root).as_posix()
         if only is not None and rel not in only:
             continue
-        yield from _examinar(path, root, gate, max_bytes, fingerprints, prefix, verdicts)
+        decidido = _decidir(path, root, gate, max_bytes, fingerprints, prefix, verdicts)
+        if decidido is not None:
+            yield decidido
 
 
 def iter_paths(
@@ -171,9 +217,31 @@ def _examinar(
 ) -> Iterator[WalkedFile]:
     """Decide UM arquivo: ignore, atalho, tamanho, nome, leitura, binário e Gate.
 
-    É o único lugar onde bytes de arquivo do projeto são lidos e entregues, para a
-    varredura e para a reindexação por caminho. Todo `yield` constrói um `WalkedFile`
-    com uma `GateDecision`, e o conteúdo só sai depois de `gate.admit`.
+    É a composição de `_decidir` (decisões baratas) e `read_candidate` (leitura + Gate): serve à
+    reindexação por caminho e à varredura sequencial. Todo `WalkedFile` entregue leva uma
+    `GateDecision`, e o conteúdo só sai depois de `gate.admit`.
+    """
+    decidido = _decidir(path, root, gate, max_bytes, fingerprints, prefix, verdicts)
+    if isinstance(decidido, Candidate):
+        decidido = read_candidate(decidido, gate)
+    if decidido is not None:
+        yield decidido
+
+
+def _decidir(
+    path: Path,
+    root: Path,
+    gate: SecurityGate,
+    max_bytes: int,
+    fingerprints: dict[str, tuple[int, int]] | None,
+    prefix: str,
+    verdicts: Verdicts | None = None,
+) -> WalkedFile | Candidate | None:
+    """Decisões baratas sobre UM arquivo, SEM abri-lo (RAGX-0152).
+
+    Devolve um `WalkedFile` quando o destino já se sabe (ignorado, veredito guardado, `unchanged`, grande
+    demais, nome na deny-list, `stat` com erro), um `Candidate` quando falta ler, ou `None` quando o
+    arquivo sumiu.
     """
     inner = path.relative_to(root).as_posix()
     rel = prefix + inner
@@ -181,19 +249,17 @@ def _examinar(
         st = path.stat()
     except OSError as exc:
         if _sumiu(exc):
-            return
+            return None
         decision = _decisao_sem_ler(gate, inner, rel)
-        yield WalkedFile(rel, 0, 0, decision, unreadable=decision.rule_id == _UNREADABLE)
-        return
+        return WalkedFile(rel, 0, 0, decision, unreadable=decision.rule_id == _UNREADABLE)
 
     # Ignore antes de ler: o arquivo grande ignorado não custa I/O.
     ignored, source = gate.ignore.should_ignore(inner)
     if ignored:
-        yield WalkedFile(
+        return WalkedFile(
             rel, st.st_size, st.st_mtime_ns,
             GateDecision(Verdict.SKIP, rel, rule_id=source, reason="ignore"),
         )
-        return
 
     # Veredito guardado (RAGX-0139): arquivo que NÃO entra no índice, decidido antes com este
     # mesmo tamanho e mtime e as mesmas regras (o chamador descarta o cache quando elas mudam).
@@ -202,62 +268,69 @@ def _examinar(
     if verdicts is not None:
         guardado = verdicts.get(rel)
         if guardado is not None and guardado[:2] == (st.st_size, st.st_mtime_ns):
-            yield WalkedFile(rel, st.st_size, st.st_mtime_ns, _decisao_guardada(rel, guardado),
-                             cached_verdict=True)
-            return
+            return WalkedFile(rel, st.st_size, st.st_mtime_ns, _decisao_guardada(rel, guardado),
+                              cached_verdict=True)
 
     # Atalho: size+mtime idênticos ao registrado -> nem abre o arquivo.
     # É o que faz a reindexação sem mudanças ser barata (docs/04-indexacao.md).
     if fingerprints is not None:
         fp = fingerprints.get(rel)
         if fp is not None and fp == (st.st_size, st.st_mtime_ns):
-            yield WalkedFile(
+            return WalkedFile(
                 rel, st.st_size, st.st_mtime_ns,
                 GateDecision(Verdict.ALLOW, rel, reason="unchanged"),
                 unchanged=True,
             )
-            return
 
     if st.st_size > max_bytes:
-        yield WalkedFile(
+        return WalkedFile(
             rel, st.st_size, st.st_mtime_ns,
             GateDecision(Verdict.SKIP, rel, rule_id="too_large", reason="too_large"),
         )
-        return
 
     # Deny-list de nome ANTES de abrir o arquivo.
     hit = gate.scanner.scan_filename(inner)
     if hit is not None:
-        yield WalkedFile(
+        return WalkedFile(
             rel, st.st_size, st.st_mtime_ns,
             GateDecision(Verdict.BLOCK, rel, rule_id=hit.rule_id, findings=(hit,),
                          reason=hit.rule_id),
         )
-        return
 
+    return Candidate(str(path), inner, rel, st.st_size, st.st_mtime_ns)
+
+
+def read_candidate(candidate: Candidate, gate: SecurityGate) -> WalkedFile | None:
+    """Segundo estágio (RAGX-0152): lê o arquivo, sonda binário e passa pelo Gate.
+
+    É o único lugar que lê os bytes de um arquivo do projeto, tanto no processo principal quanto no
+    worker do pipeline paralelo (que constrói o PRÓPRIO `SecurityGate` completo). O conteúdo só sai
+    depois de `gate.admit`. `None` quando o arquivo sumiu entre a varredura e a leitura; outro
+    `OSError` vira `unreadable` (RAGX-0133).
+    """
+    path, inner, rel = Path(candidate.path), candidate.inner, candidate.rel
+    size, mtime = candidate.size_bytes, candidate.mtime_ns
     try:
         raw = path.read_bytes()
     except OSError as exc:
         if _sumiu(exc):
-            return
-        yield WalkedFile(
-            rel, st.st_size, st.st_mtime_ns,
+            return None
+        return WalkedFile(
+            rel, size, mtime,
             GateDecision(Verdict.SKIP, rel, rule_id=_UNREADABLE, reason=_UNREADABLE),
             unreadable=True,
         )
-        return
 
     if b"\x00" in raw[:_BINARY_PROBE]:
-        yield WalkedFile(
-            rel, st.st_size, st.st_mtime_ns,
+        return WalkedFile(
+            rel, size, mtime,
             GateDecision(Verdict.SKIP, rel, rule_id="binary", reason="binary"),
         )
-        return
 
     decision = gate.admit(inner, raw)
-    if prefix:
+    if rel != inner:
         decision = replace(decision, path=rel)
-    yield WalkedFile(rel, st.st_size, st.st_mtime_ns, decision)
+    return WalkedFile(rel, size, mtime, decision)
 
 
 _UNREADABLE = "unreadable"

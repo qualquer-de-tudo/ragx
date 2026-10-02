@@ -235,18 +235,34 @@ a interrupção.
 ## Concorrência
 
 ```text
-ThreadPool(N=cpu_count)  →  leitura + gate + parse + chunk   (I/O e CPU leve)
-        │
-        ▼ fila
-Thread única escritora   →  SQLite (evita "database is locked")
+varredura + decisões baratas (processo principal)   ignore, veredito guardado, unchanged, tamanho, nome
+        │ Candidate(path, rel, size, mtime)
+        ▼ lotes de 16, janela de 4 × jobs lotes em voo
+ProcessPoolExecutor(jobs, spawn)                    read_candidate + parse + chunk   (um SecurityGate COMPLETO por worker)
+        │ resultados NA ORDEM da varredura
+        ▼
+Processo principal, único escritor                  docs.upsert, replace_for_document, eventos, commits em lote
         │
         ▼ lote
-Embedder.embed_batch()   →  batch de 32 chunks por chamada
+Embedder.embed_batch()                              batch de 32 chunks por chamada
 ```
 
-GIL não é gargalo aqui porque o custo dominante é I/O de arquivo e chamada HTTP ao
-embedder. Se o parsing com tree-sitter virar gargalo, a substituição é
-`ProcessPoolExecutor` só na etapa de parse — por isso `Parser` não guarda estado.
+**Primeiro índice em paralelo (RAGX-0152).** Leitura, Gate, parse e chunking eram feitos um arquivo de cada vez; num
+projeto de milhares de arquivos eram a maior parte do primeiro índice (a leitura sozinha, dezenas de ms por arquivo
+no Windows com antivírus). Agora o `walk.iter_candidates` faz as decisões baratas no processo principal e entrega os
+`Candidate` a um pool de processos, cada um com o PRÓPRIO `SecurityGate` completo (o Gate não tem atalho, ADR-0008:
+todo byte continua lido por `walk.read_candidate`). A escrita no banco é a de sempre e acontece só no processo
+principal, com os resultados consumidos na ordem original, então o índice sai idêntico ao sequencial.
+
+- `index.jobs`: `0` = `min(cpu_count, 4)` (cada worker custa 100–200 MB), `1` = sequencial, `N` = N workers.
+- O pool só nasce com pelo menos `PARALLEL_MIN_FILES` (200) arquivos a LER: abaixo disso, ou com tudo `unchanged`
+  (reindexação sem mudança), nada muda e nenhum processo é criado. `--dry-run`, o `index_paths` do watcher/`touch` e o
+  conhecimento base ficam sequenciais.
+- Se a infraestrutura do pool cair (processo morto, `spawn` que não consegue reimportar o módulo principal), o resto
+  da rodada é refeito no processo principal e `parallel_fallback` diz por quê (`ragx index --json` traz `parallel_jobs`
+  e `parallel_fallback`). Erro do nosso código num arquivo propaga com o caminho dele; Ctrl+C cancela o que não começou
+  e espera só os lotes em voo, sem processo filho sobrando.
+- O embedding continua no processo principal (RAGX-0146) e a escrita é de um escritor só.
 
 ## Observabilidade
 

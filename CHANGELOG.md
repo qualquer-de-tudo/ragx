@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Primeiro índice em paralelo.** `index.jobs` era configuração morta: leitura, Gate, parse e chunking rodavam um
+  arquivo de cada vez (73% do primeiro índice de 400 arquivos e 60% do de 2.000). Agora, com pelo menos 200 arquivos a
+  ler, um pool de processos (`spawn`, cada um com o PRÓPRIO Security Gate completo) faz esse estágio e o processo
+  principal continua o único a escrever no banco, na ordem da varredura: o índice sai idêntico ao sequencial. `jobs = 0`
+  usa `min(cpu_count, 4)`, `1` mantém o caminho de sempre. Medido (2.000 arquivos, provider `hashing`): 13,2 e 14,2 s
+  contra 6,3 e 6,8 s com 4 workers (cerca de 2,1x); 400 arquivos: 2,25 s contra 1,38 s; reindexação sem mudança segue
+  em ~0,2 s e não cria pool. Se o pool cair, o resto da rodada roda no processo principal e `ragx index --json` diz
+  por quê (`parallel_jobs`, `parallel_fallback`) (RAGX-0152).
 - **Micro-custos do `build_context` e do dicionário.** O MMR rodava em laço Python (agora vetorizado, 3,7 para 0,2 ms em
   30 candidatos, mesma seleção em 200 sementes), a consulta era embutida duas vezes por `build_context` (agora uma, a
   busca repassa o vetor) e o `dictionary.build` construía um `SecurityGate` que caminhava a árvore só para usar o

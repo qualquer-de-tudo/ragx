@@ -10,6 +10,7 @@ import json
 import shutil
 import sqlite3
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -29,9 +30,16 @@ from ragx.indexing.pipeline import index_project
 pytestmark = pytest.mark.security
 
 
-@pytest.fixture(scope="module")
-def indexado(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Indexa a fixture de segredos de ponta a ponta, uma vez."""
+@pytest.fixture(scope="module", params=["sequencial", "paralelo"])
+def indexado(request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
+    """Indexa a fixture de segredos de ponta a ponta, uma vez, no caminho sequencial E no pool de processos.
+
+    O paralelo (RAGX-0152) baixa o limiar para 1 e usa 2 workers: cada worker constrói o PRÓPRIO Gate
+    completo, e toda superfície abaixo (chunks, FTS, embeddings, `knowledge`) tem de continuar sem segredo.
+    """
+    from ragx.indexing import parallel
+
+    paralelo = request.param == "paralelo"
     root = tmp_path_factory.mktemp("surf") / "proj"
     shutil.copytree(FIXTURE_ROOT, root)
     (root / "ragx.toml").write_text(
@@ -39,12 +47,20 @@ def indexado(tmp_path_factory: pytest.TempPathFactory) -> Path:
         '[security]\npolicy = "strict"\n\n'
         # provider determinístico: a superfície de embeddings precisa de vetores
         # reais, mas não de rede nem de daemon
-        '[embedding]\nprovider = "hashing"\ndim = 256\nversioned_dim = 128\n',
+        '[embedding]\nprovider = "hashing"\ndim = 256\nversioned_dim = 128\n\n'
+        f"[index]\njobs = {2 if paralelo else 1}\n",
         encoding="utf-8",
     )
     cfg = load_config(root)
-    index_project(cfg)
-    return cfg.db_path
+    mp = pytest.MonkeyPatch()
+    try:
+        if paralelo:
+            mp.setattr(parallel, "PARALLEL_MIN_FILES", 1)
+        report = index_project(cfg)
+        assert report.parallel_jobs == (2 if paralelo else 0), "o caminho pedido não foi o usado"
+        yield cfg.db_path
+    finally:
+        mp.undo()
 
 
 def _dump_all(db: Path) -> str:

@@ -56,6 +56,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arquivos", type=int, default=400)
     ap.add_argument("--provider", default="hashing")
+    ap.add_argument("--jobs", type=int, default=None, help="`index.jobs` (RAGX-0152): 1 = sequencial, N = N workers, 0 = automático")
     ap.add_argument("--segunda-rodada", action="store_true", help="roda de novo para medir o índice sem mudança")
     args = ap.parse_args()
     origem = Path.cwd()
@@ -71,7 +72,8 @@ def main() -> None:
         _gerar(raiz, args.arquivos)
         (raiz / "ragx.toml").write_text(
             '[project]\nname = "sintetico"\nid = "sintetico"\n\n'
-            f'[embedding]\nprovider = "{args.provider}"\ndim = 64\nversioned_dim = 32\n',
+            f'[embedding]\nprovider = "{args.provider}"\ndim = 64\nversioned_dim = 32\n'
+            + (f"\n[index]\njobs = {args.jobs}\n" if args.jobs is not None else ""),
             encoding="utf-8",
         )
         os.chdir(raiz)
@@ -89,6 +91,24 @@ def main() -> None:
         _medir(vec_mod, "pending_for_embedding", "pending_for_embedding")
         _medir(vec_mod, "missing_chunk_ids", "missing_chunk_ids")
 
+        # fases do laço de leitura (RAGX-0152): leitura, gate, parse, chunk, escrita no banco, embedding
+        import pathlib
+
+        from ragx.indexing import parsers as parsers_mod
+        from ragx.indexing import pipeline as pipe_mod
+        from ragx.security.gate import SecurityGate
+        from ragx.storage import repositories as repo_mod
+
+        _medir(pathlib.Path, "read_bytes", "leitura (read_bytes)")
+        _medir(SecurityGate, "admit", "gate.admit")
+        _medir(parsers_mod, "parse", "parsers.parse")
+        _medir(pipe_mod, "chunk_document", "chunk_document")
+        _medir(repo_mod.DocumentRepo, "upsert", "banco: docs.upsert")
+        _medir(repo_mod.ChunkRepo, "replace_for_document", "banco: replace_for_document")
+        _medir(repo_mod.SecurityEventRepo, "record", "banco: events.record")
+        _medir(repo_mod.SecurityEventRepo, "clear_for", "banco: events.clear_for")
+        _medir(pipe_mod, "embed_pending", "embed_pending (total)")
+
         cfg = load_config(raiz)
         t0 = time.perf_counter()
         report = index_project(cfg, embed=True)
@@ -96,7 +116,7 @@ def main() -> None:
 
         chunks = getattr(report, "chunks", None)
         print(f"arquivos: {args.arquivos}  chunks: {chunks}  provider: {args.provider}")
-        print(f"primeiro índice, total: {total:.2f} s")
+        print(f"primeiro índice, total: {total:.2f} s  (jobs={args.jobs}, workers usados: {getattr(report, 'parallel_jobs', 'n/a')}, queda: {getattr(report, 'parallel_fallback', None)})")
         for rotulo in sorted(FASES):
             print(f"  {rotulo:24s} {FASES[rotulo]:7.3f} s  ({CHAMADAS[rotulo]} chamadas)")
         cache_dir = cfg.state_dir / "cache" / "emb"

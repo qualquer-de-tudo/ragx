@@ -146,6 +146,7 @@ def index(
                     "chunks_kept": report.chunks_kept, "chunks_removed": report.chunks_removed,
                     "duration_ms": s.duration_ms,
                     "embedded": s.embedded, "embed_error": report.embed_error,
+                    "parallel_jobs": report.parallel_jobs, "parallel_fallback": report.parallel_fallback,
                 },
                 ensure_ascii=False,
             )
