@@ -288,6 +288,33 @@ cabem em 0,20 (conclusivo). **O mesmo padrão do conjunto manual de 152 consulta
 conjuntos independentes (um escrito à mão por um agente, outro derivado do git) concordando é o que faltava para tratar isso como achado e
 não como ruído; é o ponto de partida da recalibração do RRF (RAGX-0105).
 
+### Benchmark local de modelos (RAGX-0169)
+
+`ragx bench models` mede, no corpus do próprio projeto, os modelos de embedding e de reranker que **já estão em disco**: o Ollama
+(só em loopback; um `base_url` remoto é recusado, porque nenhum byte do projeto sai da máquina) e o cache do fastembed. Candidato
+ausente é relatado como `ausente`, com a linha de como baixar (`tests/eval/models.yaml`), nunca baixado e nunca contado como zero.
+Cada candidato roda numa CÓPIA do índice (API de backup do SQLite) em `.ragx/bench/<nome>/`: o `.ragx/knowledge.db` real nunca é
+escrito (teste e conferência: 9.329 vetores do mesmo modelo antes e depois). Mede carga fria, chunks/s do reembed (sem o cache de
+embedding), latência de `embed_query` (p50/p95), tamanho dos vetores e recall@5 com IC95%, MRR e nDCG@10 em `semantic` e `hybrid`,
+nos DOIS conjuntos (152 manuais e 134 do git). `--dry-run` só lista o que há em disco e estima o reembed por 64 chunks reais; estimativa
+acima de 20 min exige `--force-slow`. Rerankers (`TextCrossEncoder` do fastembed) reordenam o top-30 do híbrido do índice atual e dão a
+latência de 30 pares em CPU; licença não comercial (`cc-by-nc`) sai marcada e fora de qualquer recomendação. **É só o harness: adotar um
+modelo é decisão de uma pessoa (RAGX-0103).**
+
+Medido em 02/10/2026 neste repositório (9.329 chunks, CPU e a GPU AMD do Ollama), recall@5 [IC95%] / MRR no modo `hybrid`:
+
+| Candidato | Conjunto manual (132) | Conjunto do git (134) | `embed_query` p50 / p95 | Reembed | Vetores |
+|---|---|---|---|---:|---:|
+| MiniLM atual (fastembed, 384d) | 0,62 [0,54–0,70] / 0,52 | 0,60 [0,51–0,68] / 0,47 | 3,6 / 4,4 ms | 91,7 chunks/s (~102 s) | 14,3 MB |
+| `nomic-embed-text` (Ollama, 768d, com prefixos) | **0,71** [0,63–0,78] / **0,56** | **0,65** [0,57–0,72] / 0,49 | 14,9 / 38,5 ms | 83,3 chunks/s (~112 s) | 28,7 MB |
+| nomic v1.5, jina-code, qwen3-embedding, 3 rerankers | `ausente` | `ausente` | | | |
+
+O `nomic-embed-text` melhora o `hybrid` nos dois conjuntos (+0,09 e +0,05 de recall@5, +0,04 e +0,01 de MRR) e é o primeiro modelo com o
+qual o `hybrid` (0,71) passa o `keyword` (0,70) no conjunto manual. Os intervalos ainda se sobrepõem (±0,08), então é um indício
+consistente nos dois conjuntos, não uma prova; o custo é ~4x a latência de consulta e o dobro do espaço dos vetores. **Latência do
+reranker em CPU: sem número**, porque nenhum reranker está em disco e baixar é decisão de uma pessoa (`ragx bench models --only
+rerank-minilm-l6` mede assim que o modelo estiver no cache).
+
 ### 1. RRF premia consenso
 
 É a fraqueza conhecida do algoritmo. Rastreando a consulta

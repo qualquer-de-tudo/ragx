@@ -104,6 +104,8 @@ OUTRO processo (o Windows recicla PIDs em segundos), o dono morreu e a trava é 
 apagar `index.lock` à mão (RAGX-0153). Trava de versão anterior, sem `proc`, continua valendo só pelo número.
 
 ```bash
+ragx bench models [--candidates tests/eval/models.yaml] [--only NOME] [--dry-run] [--out ARQ.json] [--force-slow]
+                                       # mede no corpus os modelos de embedding e reranker que JÁ estão em disco
 ragx graph rank [--top N] [--tokens 600] [--json]
                                        # os arquivos mais centrais (PageRank) e o mapa que cabe no orçamento
 ragx gold build [--limit N] [--max-files 8] [--out tests/eval/gold-git.yaml] [--dry-run]

@@ -1,0 +1,66 @@
+# Candidatos do `ragx bench models` (RAGX-0169). O benchmark só mede o que JÁ está em disco: um candidato ausente é
+# relatado como `ausente` com a linha de `how_to_get`, nunca baixado. Adotar um modelo é decisão de uma pessoa (RAGX-0103).
+
+- name: minilm-atual
+  provider: fastembed
+  model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+  dim: 384
+  kind: embedding
+  license: apache-2.0
+  how_to_get: "já é o modelo do índice (cache do fastembed)"
+
+- name: ollama-nomic-embed-text
+  provider: ollama
+  model: nomic-embed-text
+  dim: 768
+  kind: embedding
+  license: apache-2.0
+  how_to_get: "ollama pull nomic-embed-text"
+
+- name: fastembed-nomic-v1.5
+  provider: fastembed
+  model: nomic-ai/nomic-embed-text-v1.5
+  dim: 768
+  kind: embedding
+  license: apache-2.0
+  how_to_get: "baixado pelo fastembed no primeiro uso (~520 MB)"
+
+- name: fastembed-jina-code
+  provider: fastembed
+  model: jinaai/jina-embeddings-v2-base-code
+  dim: 768
+  kind: embedding
+  license: apache-2.0
+  how_to_get: "baixado pelo fastembed no primeiro uso (~640 MB)"
+
+- name: ollama-qwen3-embedding-0.6b
+  provider: ollama
+  model: qwen3-embedding:0.6b
+  dim: 1024
+  kind: embedding
+  license: apache-2.0
+  how_to_get: "ollama pull qwen3-embedding:0.6b"
+
+- name: rerank-minilm-l6
+  provider: fastembed
+  model: Xenova/ms-marco-MiniLM-L-6-v2
+  dim: 0
+  kind: reranker
+  license: apache-2.0
+  how_to_get: "baixado pelo fastembed no primeiro uso (~80 MB)"
+
+- name: rerank-bge-base
+  provider: fastembed
+  model: BAAI/bge-reranker-base
+  dim: 0
+  kind: reranker
+  license: mit
+  how_to_get: "baixado pelo fastembed no primeiro uso (~1 GB)"
+
+- name: rerank-jina-v1-turbo
+  provider: fastembed
+  model: jinaai/jina-reranker-v1-turbo-en
+  dim: 0
+  kind: reranker
+  license: apache-2.0
+  how_to_get: "baixado pelo fastembed no primeiro uso (~150 MB)"

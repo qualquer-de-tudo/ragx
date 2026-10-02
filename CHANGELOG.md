@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **`ragx bench models`: benchmark local de modelos de embedding e reranker.** Mede, numa cópia do índice e nos dois conjuntos de avaliação, só o que já
+  está em disco (Ollama em loopback e cache do fastembed); ausente é relatado, nunca baixado nem contado como zero. Primeiros números: o
+  `nomic-embed-text` (Ollama) leva o `hybrid` a recall@5 0,71 no conjunto manual e 0,65 no do git, contra 0,62 e 0,60 do MiniLM atual, com
+  ~4x a latência de consulta (14,9 contra 3,6 ms) e o dobro do espaço de vetores. Só o harness: adotar um modelo continua sendo uma
+  decisão (RAGX-0169).
 - **Repo map: os arquivos mais centrais do projeto, por PageRank sobre o grafo.** O dicionário não ordenava arquivo nenhum por importância.
   Agora `graph/rank.py` calcula o PageRank das relações de código no nível do arquivo (sem prosa, e descartando nomes ambíguos que
   criam hubs falsos como `get`), e o mapa entra no `get_dictionary`: 10 arquivos no nível 0, que passou a custar ~700 tokens (o

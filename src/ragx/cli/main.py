@@ -11,6 +11,7 @@ from ragx.cli.commands import (
     ab_cmd,
     agent_cmd,
     base_cmd,
+    bench_cmd,
     claude_cmd,
     config_cmd,
     context_cmd,
@@ -81,6 +82,7 @@ app.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )(hooks_cmd.hook_run)
 app.add_typer(agent_cmd.app, name="agent", help="Perfis de agente.")
+app.add_typer(bench_cmd.app, name="bench", help="Benchmark local de modelos de embedding e reranker.")
 app.add_typer(base_cmd.app, name="base", help="Conhecimento base compartilhado entre projetos.")
 app.add_typer(task_cmd.app, name="task", help="Análise, planejamento e execução de trabalho.")
 app.add_typer(worker_cmd.app, name="schedule", help="Agendamentos de disparo.")
