@@ -51,7 +51,7 @@ def cfg(tmp_path_factory: pytest.TempPathFactory):
 
 
 def _chamar(cfg, nome: str, write: bool = False, **args):  # type: ignore[no-untyped-def]
-    server = build_server(cfg, allow_write=write)
+    server = build_server(cfg, allow_write=write, profile="full")
     return asyncio.run(server.call_tool(nome, args))
 
 
@@ -80,7 +80,7 @@ def test_resposta_e_compacta_e_nao_se_repete_em_structured_content(cfg, nome, ar
 
 
 def test_nenhuma_ferramenta_tem_output_schema(cfg) -> None:
-    server = build_server(cfg, allow_write=True)
+    server = build_server(cfg, allow_write=True, profile="full")
     tools = asyncio.run(server.list_tools())
     com_saida = [t.name for t in tools if getattr(t, "output_schema", None)]
     assert com_saida == [], f"outputSchema não serve ao modelo: {com_saida}"

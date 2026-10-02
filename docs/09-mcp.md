@@ -320,12 +320,12 @@ chars (−18,4%); `get_dictionary` 36.713 → 21.530 (−41,4%); `get_document` 
 
 ## Perfis (RAGX-0157)
 
-O servidor expõe 33 ferramentas (perfil `full`, o padrão), mas só `build_context`, `search_hybrid`,
+O servidor expõe 33 ferramentas no perfil `full` (e 6 no `slim`, **o padrão desde a v1.0.0**), mas só `build_context`, `search_hybrid`,
 `get_dictionary`, `get_playbook` e `sync` aparecem nos logs e nos transcripts de uso real: as outras 28
 custam tokens em todo turno e quase nunca são chamadas. O custo fixo (nome + descrição + schema de
 entrada de cada ferramenta, no prompt de TODA requisição ao modelo) é **~2.600 tokens** no `full`.
 
-O perfil **`slim`** expõe 6, com os mesmos nomes e argumentos do `full`, e custa **~370 tokens**
+O perfil **`slim`**, o padrão, expõe 6, com os mesmos nomes e argumentos do `full`, e custa **~370 tokens**
 (−86%):
 
 | Ferramenta | Para quê |
@@ -342,10 +342,11 @@ No `slim` as descrições são curtas (a função primeiro) e os schemas não tr
 `get_playbook` vira as `instructions` do servidor e `sync` fica na CLI. As `instructions` do `slim` só
 citam ferramentas que ele expõe.
 
-Como ligar (o padrão **não** muda): `[mcp] profile = "slim"` no `ragx.toml` ou em
-`~/.config/ragx/config.toml`, `RAGX_MCP_PROFILE=slim`, ou `ragx mcp serve --profile slim`;
-`ragx mcp tools --profile slim` lista e mostra o custo. O plugin do VS Code usa ferramentas que só o
-`full` tem (`task_status`, `list_projects`): não o aponte para o `slim`. As contagens ("33 ferramentas")
+O padrão é `slim` (decisão da pessoa, RAGX-0157, na v1.0.0). Para ter as 33 ferramentas: `[mcp] profile = "full"` no
+`ragx.toml` ou em `~/.config/ragx/config.toml`, `RAGX_MCP_PROFILE=full`, ou `ragx mcp serve --profile full`;
+`ragx mcp tools --profile full|slim` lista e mostra o custo. **Quem tinha o servidor registrado e usava as ferramentas fora
+do `slim` (tarefas, grafo, contratos, `get_playbook`, `sync`) precisa pedir o `full`.** O plugin do VS Code usa ferramentas
+que só o `full` tem (`task_status`, `list_projects`) e já sobe o servidor com `--profile full`. As contagens ("33 ferramentas")
 nos READMEs são as do `full`.
 
 ### Como escrever a descrição de uma ferramenta, e por que a lista é estável (RAGX-0158)

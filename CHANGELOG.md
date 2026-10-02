@@ -336,6 +336,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 
+- **O servidor MCP sobe no perfil `slim` por padrão.** O custo fixo das ferramentas por turno cai de 2.680 para 370 tokens (6
+  ferramentas: `get_dictionary`, `search_hybrid`, `build_context`, `get_chunk`, `get_entity`, `refresh`). **Quebra de
+  comportamento:** quem usava as outras 27 (tarefas, grafo, contratos, `get_playbook`, `sync`) pede `[mcp] profile = "full"`,
+  `RAGX_MCP_PROFILE=full` ou `ragx mcp serve --profile full`; o plugin do VS Code já sobe com `--profile full` (RAGX-0157).
+
 - **Teto do `build_context` e `response_format` `concise`/`detailed`.** O agente podia pedir até 32.000
   tokens de contexto e a busca devolvia o conteúdo inteiro de cada hit mesmo quando só queria
   localizar. Agora `[mcp] max_context_tokens` (5.000) limita o pedido e a resposta diz

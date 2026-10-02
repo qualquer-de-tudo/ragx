@@ -37,7 +37,7 @@ def _registradas() -> set[str]:
     from ragx.config import load_config
     from ragx.mcp.server import build_server
 
-    server = build_server(load_config(), allow_write=True)
+    server = build_server(load_config(), allow_write=True, profile="full")
     return {t.name for t in asyncio.run(server.list_tools())}
 
 
@@ -87,7 +87,7 @@ def test_o_readme_nao_promete_uma_contagem_que_o_codigo_desmente() -> None:
     """
     readme = (RAIZ / "README.md").read_text(encoding="utf-8")
     # cada perfil tem a sua contagem (`full` e `slim`, RAGX-0157): o número citado tem de ser a de algum
-    reais = {len(_registradas()), len(SLIM_TOOLS)}
+    reais = {len(_registradas()), len(SLIM_TOOLS)}  # `_registradas` é o full
     for m in re.finditer(r"(\d+)\s+ferramentas", readme):
         assert int(m.group(1)) in reais, (
             f"o README diz {m.group(1)} ferramentas MCP; os perfis do servidor expõem {sorted(reais)}."

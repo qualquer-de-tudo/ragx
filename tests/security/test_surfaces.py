@@ -398,7 +398,7 @@ def test_superficie_mcp_no_fio(indexado: Path) -> None:
 
     cfg = load_config(indexado.parent.parent)
     cfg.mcp.rate_per_min = 100_000
-    server = build_server(cfg, allow_write=False)
+    server = build_server(cfg, allow_write=False, profile="full")
 
     chamadas = [
         ("get_dictionary", {}),

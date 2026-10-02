@@ -287,7 +287,7 @@ _ESCRITA = {
 def test_servidor_registra_as_ferramentas(api: KnowledgeAPI) -> None:
     import asyncio
 
-    nomes = {t.name for t in asyncio.run(build_server(api.cfg, allow_write=True).list_tools())}
+    nomes = {t.name for t in asyncio.run(build_server(api.cfg, allow_write=True, profile="full").list_tools())}
     assert nomes == _LEITURA | _ESCRITA
 
 
@@ -299,7 +299,7 @@ def test_modo_leitura_ainda_expoe_as_ferramentas_de_escrita(api: KnowledgeAPI) -
     """
     import asyncio
 
-    nomes = {t.name for t in asyncio.run(build_server(api.cfg, allow_write=False).list_tools())}
+    nomes = {t.name for t in asyncio.run(build_server(api.cfg, allow_write=False, profile="full").list_tools())}
     assert nomes >= _ESCRITA
 
     from ragx.mcp.orchestration import OrchestrationAPI

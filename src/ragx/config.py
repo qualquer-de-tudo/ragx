@@ -196,9 +196,11 @@ class McpCfg(BaseModel):
     # a primeira busca não pagar 3 s (RAGX-0142). Só acontece em pasta com índice. Quem mantém
     # vários servidores abertos e pouca RAM desliga.
     warmup: bool = True
-    # `full`: as 33 ferramentas. `slim`: as 6 que as sessões reais usam (2.649 -> ~400 tokens de
-    # custo fixo por turno). O padrão NÃO muda: trocar para `slim` é decisão de quem usa (RAGX-0157).
-    profile: Literal["full", "slim"] = "full"
+    # `full`: as 33 ferramentas. `slim`: as 6 que as sessões reais usam (2.680 -> ~370 tokens de
+    # custo fixo por turno). O padrão é `slim` desde a v1.0.0 (decisão da pessoa, RAGX-0157); quem precisa das
+    # outras (o plugin do VS Code, `task_status`, `search_graph`...) pede `full`: `[mcp] profile = "full"`,
+    # `RAGX_MCP_PROFILE=full` ou `ragx mcp serve --profile full`.
+    profile: Literal["full", "slim"] = "slim"
     # `concise`: a busca devolve um `snippet` curto no lugar do conteúdo (o agente abre o
     # trecho inteiro com `get_chunk`); `detailed` devolve o conteúdo, como antes. 140 caracteres
     # (e não 200) porque é onde a busca de 10 hits cruza -60% em tokens no fio: 200 dava -56,8%.

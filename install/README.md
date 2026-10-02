@@ -129,7 +129,7 @@ causa número um de "instalei e o comando não existe".
 
 ```bash
 ragx --version          # ragx 1.0.0b1
-ragx mcp tools --json   # 33 ferramentas
+ragx mcp tools --json   # 6 ferramentas (perfil slim, o padrão); --profile full lista as 33
 ```
 
 ## 4. Usar

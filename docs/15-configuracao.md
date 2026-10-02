@@ -130,7 +130,7 @@ max_context_tokens = 5000       # teto do build_context pedido pelo agente (acim
 response_format    = "concise"  # concise: a busca devolve `snippet`; detailed: devolve `content`
 snippet_chars      = 140        # tamanho do trecho do modo concise
 warmup             = true       # carrega embedder e contador de tokens em segundo plano ao subir (false: pouca RAM, vários servidores)
-profile            = "full"     # full: 33 ferramentas (~2.600 tokens por turno); slim: 6 (~360). Ver 09-mcp.md
+profile            = "slim"     # slim (padrão): 6 ferramentas (~370 tokens por turno); full: 33 (~2.700). Ver 09-mcp.md
 
 [sync]
 auto_dictionary  = true         # regenera dictionary no sync

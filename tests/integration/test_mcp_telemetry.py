@@ -38,7 +38,7 @@ def _log_lines(proj: Path) -> list[dict]:
 
 
 async def _call_tool(cfg, name: str, **kwargs):
-    server = build_server(cfg, allow_write=False)
+    server = build_server(cfg, allow_write=False, profile="full")
     tools = {t.name: t for t in await server.list_tools()}
     assert name in tools
     return await server.call_tool(name, kwargs)
@@ -175,7 +175,7 @@ def test_chamada_limitada_pelo_rate_limit_grava_rate_limited(proj: Path) -> None
 
     cfg = load_config(proj)
     cfg.mcp.rate_per_min = 1
-    server = build_server(cfg, allow_write=False)
+    server = build_server(cfg, allow_write=False, profile="full")
     asyncio.run(server.call_tool("get_dictionary", {}))
     asyncio.run(server.call_tool("get_dictionary", {}))
     ultimas = [e for e in _log_lines(proj) if e["tool"] == "get_dictionary"]

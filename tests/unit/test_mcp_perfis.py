@@ -33,9 +33,11 @@ def _listar(cfg, **kw):  # type: ignore[no-untyped-def]
     return asyncio.run(build_server(cfg, allow_write=True, **kw).list_tools())
 
 
-def test_o_padrao_continua_full(projeto: Path) -> None:
-    assert McpCfg().profile == "full"
-    assert len(_listar(load_config(projeto))) == 33
+def test_o_padrao_e_slim_e_o_full_continua_disponivel(projeto: Path) -> None:
+    """Desde a v1.0.0 o padrão é `slim` (decisão da pessoa, RAGX-0157); o `full` é pedido por nome."""
+    assert McpCfg().profile == "slim"
+    assert len(_listar(load_config(projeto))) == 6
+    assert len(_listar(load_config(projeto), profile="full")) == 33
 
 
 def test_slim_expoe_so_as_seis_com_os_mesmos_nomes(projeto: Path) -> None:
@@ -71,7 +73,7 @@ def test_schemas_do_slim_sem_title_anyof_nem_default(projeto: Path) -> None:
 def test_o_custo_fixo_do_slim_cabe_em_600_tokens(projeto: Path) -> None:
     n, tokens = footprint_tokens(_listar(load_config(projeto), profile="slim"))
     assert n == 6 and tokens <= 600, tokens
-    n_full, tokens_full = footprint_tokens(_listar(load_config(projeto)))
+    n_full, tokens_full = footprint_tokens(_listar(load_config(projeto), profile="full"))
     assert n_full == 33 and tokens_full > 4 * tokens  # o slim é MUITO menor
 
 

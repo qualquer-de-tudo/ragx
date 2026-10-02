@@ -256,7 +256,7 @@ async function conectarAgora(): Promise<void> {
       () =>
         new McpRagClient({
           command: comando,
-          args: cfg.get<string[]>('mcpArgs', ['mcp', 'serve']),
+          args: cfg.get<string[]>('mcpArgs', ['mcp', 'serve', '--profile', 'full']),
           cwd,
           write: false,
           log,

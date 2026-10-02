@@ -134,7 +134,7 @@
         "ragx.mcpArgs": {
           "type": "array",
           "items": { "type": "string" },
-          "default": ["mcp", "serve"],
+          "default": ["mcp", "serve", "--profile", "full"],
           "description": "Argumentos para subir o servidor MCP."
         },
         "ragx.autoSync": {

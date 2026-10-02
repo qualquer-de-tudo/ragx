@@ -145,7 +145,7 @@ def test_nenhuma_ferramenta_aceita_scope_e_o_descarta(
     monkeypatch.setenv("RAGX_HUB_PATH", str(tmp_path / "hub-que-nao-existe"))
     cfg = load_config(sem_hub)
     api = KnowledgeAPI(cfg)
-    tools = {t.name: t for t in asyncio.run(build_server(cfg).list_tools())}
+    tools = {t.name: t for t in asyncio.run(build_server(cfg, profile="full").list_tools())}
     com_scope = [n for n, t in tools.items() if "scope" in json.dumps(t.input_schema)]
     assert {"search_hybrid", "search_knowledge", "build_context"} <= set(com_scope)
     respostas = {
