@@ -28,7 +28,7 @@ com o motivo. Nenhum número vem de memória nem da estimativa de uma tarefa.
 | S11 | Painel: processos filhos por minuto, 12 projetos, visível / minimizada | ≈290 / ≈290 | ≤ 20 / 0 | visível **≈4,1** (docker 2,1; tasklist 0,5; powershell 0,5; ragx 1; `git` **0**); minimizada **0**; oculta **0** | atingida | `node scripts/measure-runtime.mjs --plan visible:2,minimized:2,hidden:1 --label fechamento-0195` em `src/app` (Electron 33.4.11, casca de produção, 12 repositórios `git init` de fixture) |
 | S12 | Cache do `build_context` com filtro diferente | serve resultado de outro filtro | 0 acertos incorretos | **0**: o teste de propriedade passa | atingida | `uv run pytest tests/integration/test_context.py -k cache`; o teste é `test_propriedade_cache_nunca_devolve_pack_diferente_do_calculado` |
 | S13 | Adoção: sessões em projeto indexado que chamam o RAGX | 8% (3 de 38) | medida e visível no painel | **2 de 2** sessões neste repositório, desde 29/09 (universo pequeno) | atingida (é critério de medição) | contagem independente: o `node -e` da RAGX-0190 sobre `.ragx/logs/cli.jsonl` e `mcp.jsonl`; a tela do painel usa `computeAdoption` |
-| S14 | Economia real contra baseline de Grep | desconhecida | medida por A/B e publicada | — | n/a — o A/B real (RAGX-0162) não foi rodado: gasta cota e é decisão de uma pessoa | — (o harness `ragx ab` entrega `--dry-run`; o plano padrão são 36 chamadas) |
+| S14 | Economia real contra baseline de Grep | desconhecida | medida por A/B e publicada | **inconclusiva em tokens faturáveis**: mediana 27,6 mil (sem RAGX) contra 26,0 mil (com), economia pareada +0,8% [IC95% −1,8% a +15,0%] em 11 pares; **custo −18%** (soma US$ 3,26 → 2,68) e **turnos 6 → 3** (mediana); acerto 83% contra 78%; o agente usou o RAGX em 10 de 18 tarefas | medida, não conclusiva | `RAGX_AB_REAL=1 ragx ab --execute --max-calls 36 --arms without,slim --limit 18 --queries <gold do git> --model sonnet --max-turns 15 --setting-sources project,local --with-hooks` (monorepo TypeScript de 3.480 arquivos, 02/10/2026) |
 
 ### Notas por linha
 
@@ -97,3 +97,21 @@ Resultados que não são um SLO mas saíram da v2, todos com número antes e dep
 97 ms contra 282 ms (0147); `knowledge/` sem arquivos sujos num `sync` sem mudança (0148); worktree novo em 7,4 s contra
 127 s (0170). Correções achadas no caminho: a fila de toque perdia edições quando a leitura do arquivo falhava (0153) e a trava
 de indexação ficava presa com PID reutilizado (0153).
+
+### S14: o que o A/B real mostrou (02/10/2026)
+
+Rodado num monorepo TypeScript de terceiros de 3.480 arquivos (do próprio usuário), com 18 tarefas geradas do histórico do git (mensagem do commit como pergunta, arquivos alterados como gabarito), 2 braços (sem RAGX e `slim`), 1 repetição, Sonnet, no máximo 15 turnos: 36 chamadas a `claude -p`. A ordem dos braços girava por tarefa; o braço sem RAGX não recebia nenhum hook do RAGX.
+
+| | Sem RAGX | Com RAGX (`slim`) |
+|---|---:|---:|
+| Tokens faturáveis, mediana por tarefa | 27.569 | 26.040 |
+| Tokens brutos (com `cache_read`), mediana | 264.142 | 180.914 |
+| Custo, mediana por tarefa | US$ 0,164 | US$ 0,133 |
+| Custo, soma das 18 tarefas | US$ 3,26 | US$ 2,68 (−18%) |
+| Turnos, mediana | 6 | 3 |
+| Acerto do arquivo certo | 15 de 18 (83%) | 14 de 18 (78%) |
+| Tarefas em que usou o RAGX | 0 | 10 de 18 (1 chamada cada, ~900 tokens por resposta) |
+
+**Leitura honesta.** A economia em tokens faturáveis **não se sustenta estatisticamente** (intervalo cruza zero, 11 pares em que os dois acharam o arquivo). Duas razões visíveis nos dados: (1) quase todo o custo faturável é um piso fixo de ~26 mil tokens (`cache_creation`: o prompt do próprio projeto e as ferramentas), que o RAGX não toca; (2) as perguntas eram de "onde está X", que um `Grep` num monorepo bem nomeado já resolve em 3 a 6 turnos. Onde o `Grep` sofreu (12 e 13 turnos), o RAGX respondeu em 2 e 3: 60,8 mil → 4,5 mil, 35,2 mil → 25,9 mil e 30,6 mil → 26,0 mil são as maiores quedas. O ganho que aparece de forma consistente é **menos turnos e menos custo**, não tokens faturáveis. O acerto foi um pouco menor com o RAGX (14 contra 15), diferença que 18 tarefas não distinguem do acaso.
+
+**Limites.** Um projeto, 18 tarefas, 1 repetição, um modelo; tarefas fáceis. Não mede tarefas de entendimento amplo (onde o contexto montado deveria pesar mais). Uma chamada do braço com RAGX teve uma negação de permissão de outra ferramenta (a do RAGX estava liberada). Antes desta rodada, o harness negava toda chamada ao RAGX (corrigido; ver CHANGELOG), e duas chamadas de fumaça custaram ~US$ 0,6.
