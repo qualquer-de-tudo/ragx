@@ -158,6 +158,7 @@ def on(
     """Põe o RAGX no Claude Code, em todos os projetos e perfis (ou só em `--profile`)."""
     from ragx.clients import register
     from ragx.clients.claude_agent import install_agent
+    from ragx.clients.claude_heal import record_choice
     from ragx.clients.claude_hint import (
         install_hint,
         install_nudge_hook,
@@ -170,6 +171,9 @@ def on(
     for c in _perfis(profile):
         r = register(c, command=command, dry_run=dry_run)
         results.append(r)
+        if r.ok and not dry_run:
+            # A escolha explícita (`--no-touch`) vira recusa; `claude heal` a respeita.
+            record_choice(c.id, {"hint": hint, "touch": touch, "nudge": nudge})
         if hint and r.ok:
             results.append(install_hint(c, command=command, dry_run=dry_run))
         if r.ok:
@@ -184,6 +188,57 @@ def on(
             if agent:
                 results.append(install_agent(c, dry_run=dry_run))
     _report(results, "RAGX ligado", as_json)
+
+
+@app.command("heal")
+def heal(
+    command: Annotated[
+        str, typer.Option("--command", help="Executável do RAGX gravado nos hooks que faltarem.")
+    ] = "ragx",
+    profile: ProfileOpt = None,
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Instala os hooks que faltam nos perfis em que o RAGX já está ligado.
+
+    Quem ligou o RAGX numa versão antiga ficou sem o aviso de edição e o lembrete de busca, e o
+    índice deixava de ver o que o agente edita. Só toca perfil ligado, nunca liga um desligado, e
+    respeita o que você recusou com `ragx claude on --no-touch` (ou `--no-nudge`, `--no-hint`).
+    """
+    from ragx.clients.claude_heal import heal_profile
+
+    feitos = [heal_profile(c, command=command, dry_run=dry_run) for c in _perfis(profile)]
+    if as_json:
+        payload = {
+            "healed": [
+                {"id": h.client.id, "name": _nome(h.client), "installed": list(h.installed),
+                 "skipped": list(h.skipped), "failed": list(h.failed)}
+                for h in feitos
+            ],
+            "changed": any(h.installed for h in feitos),
+            "profiles": _estado(),
+        }
+        if any(h.failed for h in feitos):
+            payload["error"] = "; ".join(
+                f"{_nome(h.client)}: não consegui instalar {', '.join(h.failed)}" for h in feitos if h.failed
+            )
+        console.print_json(json.dumps(payload, ensure_ascii=False))
+        raise typer.Exit(1 if "error" in payload else 0)
+    console.print()
+    if not feitos:
+        console.print("  [yellow]Claude Code não encontrado nesta máquina.[/]\n")
+        return
+    for h in feitos:
+        nome = escape(_nome(h.client))
+        if h.installed:
+            console.print(f"  [cyan]{nome}[/] instalou: {', '.join(h.installed)}")
+        else:
+            console.print(f"  [cyan]{nome}[/] [dim]em dia[/]")
+        if h.failed:
+            console.print(f"      [red]falhou:[/] {', '.join(h.failed)}")
+    console.print()
+    if any(h.failed for h in feitos):
+        raise typer.Exit(1)
 
 
 @app.command("status")

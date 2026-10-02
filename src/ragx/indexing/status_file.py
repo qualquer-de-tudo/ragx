@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -109,9 +110,31 @@ def write_status(
             data = _build(cfg, conn, last_error, hooks)
         target = cfg.state_dir / STATUS_NAME
         tmp = cfg.state_dir / f"{STATUS_NAME}.{os.getpid()}.tmp"
-        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(tmp, target)
+        try:
+            tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            _substituir(tmp, target)
+        except BaseException:
+            # Sem isto o temporário ficava para sempre ao lado do `status.json` (e o status, velho).
+            tmp.unlink(missing_ok=True)
+            raise
         return target
     except Exception:
         # Status é informativo: nunca derruba uma indexação.
         return None
+
+
+#: No Windows o `os.replace` falha com `PermissionError` enquanto um leitor (o painel, um editor) tem o
+#: destino aberto; costuma liberar em milissegundos, então tenta de novo antes de desistir.
+_TENTATIVAS = 5
+_ESPERA_S = 0.05
+
+
+def _substituir(tmp: Path, target: Path) -> None:
+    for tentativa in range(_TENTATIVAS):
+        try:
+            os.replace(tmp, target)
+            return
+        except PermissionError:
+            if tentativa == _TENTATIVAS - 1:
+                raise
+            time.sleep(_ESPERA_S * (tentativa + 1))

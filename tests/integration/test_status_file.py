@@ -83,6 +83,39 @@ def test_escrita_e_atomica_nao_deixa_temporario(proj: Path) -> None:
     assert leftovers == []
 
 
+def test_replace_bloqueado_por_um_leitor_tenta_de_novo_e_grava(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No Windows o painel com o `status.json` aberto faz o `os.replace` falhar por instantes."""
+    import os
+
+    index_project(load_config(proj))
+    real = os.replace
+    falhas = {"n": 0}
+
+    def replace_ocupado(src, dst):
+        if falhas["n"] < 2:
+            falhas["n"] += 1
+            raise PermissionError(13, "arquivo em uso")
+        return real(src, dst)
+
+    monkeypatch.setattr("ragx.indexing.status_file.os.replace", replace_ocupado)
+    monkeypatch.setattr("ragx.indexing.status_file.time.sleep", lambda s: None)
+    assert write_status(load_config(proj)) is not None
+    assert falhas["n"] == 2
+    assert [p.name for p in (proj / ".ragx").iterdir() if p.name.endswith(".tmp")] == []
+
+
+def test_replace_que_nunca_libera_nao_deixa_temporario_para_tras(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    index_project(load_config(proj))
+
+    def sempre_ocupado(src, dst):
+        raise PermissionError(13, "arquivo em uso")
+
+    monkeypatch.setattr("ragx.indexing.status_file.os.replace", sempre_ocupado)
+    monkeypatch.setattr("ragx.indexing.status_file.time.sleep", lambda s: None)
+    assert write_status(load_config(proj)) is None  # informativo: nunca derruba a indexação
+    assert [p.name for p in (proj / ".ragx").iterdir() if p.name.endswith(".tmp")] == []
+
+
 def test_running_e_nulo_quando_o_pid_foi_reutilizado(proj: Path) -> None:
     """RAGX-0153: PID vivo, mas o processo que gravou a trava não é o de hoje com esse número."""
     import os
