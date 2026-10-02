@@ -7,7 +7,7 @@
 | **Estimativa** | 1,5d |
 | **Depende de** | RAGX-0138 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (I-07) · [25-spec-v2.md](../../docs/25-spec-v2.md) (princípio 3) · [06-grafo.md](../../docs/06-grafo.md) · [19-watch-e-autonomia-do-agente.md](../../docs/19-watch-e-autonomia-do-agente.md) · [03-modelo-de-dados.md](../../docs/03-modelo-de-dados.md) |
-| **Status** | `todo` |
+| **Status** | `review` |
 
 ## Objetivo
 
@@ -15,7 +15,7 @@ O grafo só é refeito em `sync`, sempre **completo** (`graph.service.rebuild`: 
 
 ## Entregáveis
 
-- [ ] **Medir primeiro**: em ~100 commits do próprio repo, para cada arquivo de código alterado, o conjunto de símbolos (nomes das entidades `class`/`function`/`method`) mudou ou não? Registrar a fração "não mudou" em Medição. **Se for menor que 50%**, parar, deixar a tarefa em `review` com o número e não implementar o caminho rápido
+- [x] **Medir primeiro**: em ~100 commits do próprio repo, para cada arquivo de código alterado, o conjunto de símbolos (nomes das entidades `class`/`function`/`method`) mudou ou não? Registrar a fração "não mudou" em Medição. **Se for menor que 50%**, parar, deixar a tarefa em `review` com o número e não implementar o caminho rápido
 - [ ] `IndexReport` (`src/ragx/indexing/pipeline.py:41-50`) ganha `touched_documents: list[str]` (caminhos de documentos indexados, alterados ou removidos na rodada), preenchido em `_index_once` e em `index_paths` (RAGX-0140)
 - [ ] `src/ragx/graph/extractors/structural.py:25-93` (`extract`) aceita `only_documents: set[str] | None` e restringe as duas consultas (`documents`, `chunks`) a esses ids; sem o argumento, o comportamento é o de hoje
 - [ ] `src/ragx/graph/extractors/reference.py:62-196` (`extract`): aceitar `only_documents` e gerar entidades e relações **só dos chunks desses documentos**, mas resolvendo nomes contra o índice de **todas** as entidades (`name_index` continua global, linhas 83-89). A parte de tecnologias (`_technologies`, 199-250) fica de fora do caminho rápido (ver abaixo)
@@ -48,9 +48,9 @@ O grafo só é refeito em `sync`, sempre **completo** (`graph.service.rebuild`: 
 |---|---|---|
 | Rebuild do grafo, 2,4 mil entidades | 1,0–1,5 s | |
 | Rebuild do grafo, 15 mil entidades | 5,4–9,2 s | |
-| Atualização por documento, corpo editado | rebuild completo | |
-| Edições do repo que não mudam o conjunto de símbolos | medir primeiro | |
-| Entidades com `chunk_id` nulo após editar 1 linha | 7 (27 relações sem evidência) | |
+| Atualização por documento, corpo editado | rebuild completo | 22 ms contra 178 ms do completo (12,4%), 2,4 mil entidades — **só na branch `wip/ragx-0151-grafo-incremental`** |
+| Edições do repo que não mudam o conjunto de símbolos | medir primeiro | **47,0%** (116 de 247 edições `.py` em 100 commits) — abaixo do corte de 50%: **parou** |
+| Entidades com `chunk_id` nulo após editar 1 linha | 7 (27 relações sem evidência) | 1 só com o índice (projeto sintético) e 0 depois do `update_documents` — só na branch wip |
 
 Comando: `uv run python scripts/medir_grafo_incremental.py` (criar; imprime os quatro tempos e a fração de commits).
 
@@ -84,4 +84,9 @@ Comando: `uv run python scripts/medir_grafo_incremental.py` (criar; imprime os q
 
 ## Andamento
 
-_(o loop registra aqui o que fez, com datas e medições)_
+- 2026-10-01 — **Parada pelo critério da própria tarefa: `review`, decisão humana.** O primeiro entregável manda medir antes e, "se for menor que 50%, parar, deixar a tarefa em `review` com o número e não implementar o caminho rápido". Medido com `scripts/medir_grafo_incremental.py` (na branch wip): nos últimos 100 commits, 247 edições de arquivo `.py` (modo `M`), com o mesmo parser e chunker do índice; em **116 (47,0%)** o conjunto de `class`/`function`/`method` ficou igual e em 131 mudou. Está abaixo de 50%, mas perto: a conta inclui arquivos de teste e commits grandes de feature, que acrescentam símbolo quase sempre; uma edição de sessão do agente (corpo de função, prosa, SQL) tende a mudar menos. Quem decide se vale é uma pessoa.
+- **Erro de processo meu, registrado:** implementei o caminho rápido ANTES de rodar a medição, contra a ordem escrita da tarefa. Em vez de jogar fora o trabalho verificado, ele ficou **só na branch local `wip/ragx-0151-grafo-incremental` (commit `cab3a59`, sem push)**; a `feat/v2` não recebe nada dele.
+- O que está na branch wip, verificado por execução (suíte Python `-m "not slow"` 1938 passed, `tests/security` verde, `ruff`, `mypy`): `IndexReport.touched_documents`; `only_documents` em `structural.extract` e `reference.extract` (e `ORDER BY` determinístico, `load_catalog` em cache); `graph.service.update_documents` (cai no completo se o conjunto de entidades mudou, documento novo/removido, manifesto, grafo inexistente ou mais de 50 documentos); chamado pelo `watch.monitor.apply_changes` e por `touchq.drain`, falha vira aviso; `tests/integration/test_graph_incremental.py` com 50 sequências aleatórias de 3 edições comparadas ao `rebuild` (a equivalência foi checada com uma mutação deliberada que a suíte pegou), mais 2 testes no `test_watch.py`. Medido com 2,4 mil entidades: corpo editado 22 ms contra 178 ms do completo (12,4%, dentro dos 15%); símbolo novo cai no completo (322 ms).
+- **O que falta para decidir:** (a) aceitar ou não os 47,0% — se sim, `git merge wip/ragx-0151-grafo-incremental` em `feat/v2` e marcar `done` (CHANGELOG e `docs/06-grafo.md` já estão no commit); (b) o rebuild completo do repo real (1,0–1,5 s) não foi medido de novo contra o incremental, só o sintético; (c) com o grafo incremental, um símbolo novo no watcher passa a custar um rebuild completo (1–9 s) a cada edição, em vez de a cada `full_sync_every` mudanças: vale confirmar que não atrapalha o ciclo do watcher; (d) a defasagem das tecnologias (só acrescentam) ficou documentada.
+- Não verificado: os 15 mil entidades (5,4–9,2 s) e o repo real; critério "Nenhuma relação vinda de outro documento é perdida" está coberto só pelo teste sintético de relação de entrada.
+
