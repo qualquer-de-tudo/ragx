@@ -22,6 +22,8 @@ Depois de algumas horas de uso real da 1.0.0 num projeto de terceiros (perfil `e
 - [x] Conexões: card "Ajuste automático" (estado do Claude e do git, última rodada, interruptor, "Ajustar agora"), faixa de estado nos cartões, fatos em linha, comando manual recolhido, hooks por perfil em selos
 - [x] "Como funciona" no fim da barra lateral e refeito (caminho do dado em 5 passos, o que mantém o índice em dia, onde ficam os dados); texto do onboarding cita o hook de edição
 - [x] Atividade paginada (50 eventos / 20 sessões por página, `Pager`, filtro volta à página 1)
+- [x] Aviso de versão nova (notificação do sistema, aviso na tela e ponto em Preferências, uma vez por versão; checagem ao abrir e a cada 6 h) e "Instalar e reiniciar" em silêncio
+- [x] `scripts/e2e-update.mjs`: teste ponta a ponta da atualização no painel real (Playwright, pasta de dados temporária)
 - [x] Docs (`14-cli`, `GUIA-DE-USO`) e CHANGELOG
 
 ## Fora de escopo
