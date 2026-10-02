@@ -11,6 +11,10 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Micro-custos do `build_context` e do dicionário.** O MMR rodava em laço Python (agora vetorizado, 3,7 para 0,2 ms em
+  30 candidatos, mesma seleção em 200 sementes), a consulta era embutida duas vezes por `build_context` (agora uma, a
+  busca repassa o vetor) e o `dictionary.build` construía um `SecurityGate` que caminhava a árvore só para usar o
+  scanner (21 ms, agora 0). `ragx context "q"` sem `--tokens` volta a funcionar (RAGX-0150).
 - **`knowledge/` estável no Git: sync sem mudança não suja nada.** Um `ragx sync` sem nenhuma mudança deixava
   `manifest.json`, `dictionary.json` e `federation/service.json` sujos (por causa do `generated_at`) e trocava o mtime de
   134 dos 137 arquivos. Agora só se grava o arquivo cujo conteúdo mudou; o `generated_at` continua lá e só avança quando

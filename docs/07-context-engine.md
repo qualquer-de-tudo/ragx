@@ -65,6 +65,14 @@ def mmr(candidates, query_vec, lambda_=0.7, k=20):
 
 `lambda_ = 0.7` favorece relevância; `0.5` favorece cobertura. Configurável.
 
+**Como roda (RAGX-0150).** O MMR é vetorizado: a relevância é `V @ q` (uma multiplicação de matriz) e a redundância
+fica num vetor `max_sim`, atualizado com `np.maximum(max_sim, V @ V[melhor])` a cada escolha, em vez do laço duplo
+Python. A semântica é a mesma de antes (candidato sem vetor usa o `score` e redundância 0; sem nenhum escolhido ainda a
+redundância é 0; empate vai para o primeiro da ordem original), confirmada contra uma cópia da implementação antiga em
+200 sementes aleatórias. E a consulta é embutida **uma vez** por `build_context`: a busca calcula o vetor
+(`SearchOutcome.query_vec`, repassado por `GraphSearchOutcome`) e `_vectors_for` o reaproveita; só embute de novo
+quando ele não veio (busca em keyword, embedder fora do ar na busca).
+
 ## [5] Compressão
 
 Compressão **extrativa** e determinística. Nada de resumo gerado por LLM no MVP:

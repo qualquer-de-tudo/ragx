@@ -162,7 +162,7 @@ ragx graph rebuild
 
 ```bash
 ragx context "<query>"
-    --tokens N              (padrão: 3000)
+    --tokens N              (padrão: `[context] default_tokens`, 3000; 200 a 200000)
     --format markdown|json|xml
     --include-graph / --no-graph
     --depth N

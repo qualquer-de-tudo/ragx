@@ -21,7 +21,7 @@ from typing import Any
 
 from ragx.config import Config
 from ragx.core.ids import SCHEMA_VERSION
-from ragx.security.gate import SecurityGate
+from ragx.security.scanner import SecurityScanner, load_ruleset
 from ragx.storage.db import open_db, utcnow
 
 SCHEMA = 1
@@ -333,13 +333,15 @@ def _split_words(name: str) -> list[str]:
 def _scrub(cfg: Config, data: dict[str, Any]) -> tuple[dict[str, Any], int]:
     """Re-scan antes de gravar. O dicionário vai para o Git e para o `.rag`,
     então é superfície de vazamento de primeira classe."""
-    gate = SecurityGate(cfg.root, policy=cfg.security.policy)
+    # Só o scanner (RAGX-0150): o `SecurityGate` construía um `IgnoreEngine` e caminhava a árvore (28-41 ms) para usar
+    # apenas `gate.scanner`. Mesmos valores que o gate usa por padrão (`ruleset` padrão, `min_entropy=3.0`).
+    scanner = SecurityScanner(load_ruleset(), min_entropy=3.0)
     removed = 0
 
     def clean(node: Any) -> Any:
         nonlocal removed
         if isinstance(node, str):
-            findings = gate.scanner.scan_content("dictionary.json", node)
+            findings = scanner.scan_content("dictionary.json", node)
             if findings:
                 removed += 1
                 return "«RAGX:REDACTED»"

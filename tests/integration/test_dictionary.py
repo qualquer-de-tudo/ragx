@@ -169,3 +169,31 @@ def test_stats_refletem_o_indice(proj: Path) -> None:
 def test_convencoes_exigem_repeticao(proj: Path) -> None:
     for c in _build(proj)["conventions"]:
         assert c["occurrences"] >= 3, "convenção com menos de 3 ocorrências é ruído"
+
+
+def test_scrub_com_o_scanner_direto_redige_igual_ao_gate_completo(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """RAGX-0150: trocar o `SecurityGate` pelo scanner no `_scrub` não afrouxa nada."""
+    from ragx.config import load_config
+    from ragx.dictionary.builder import _scrub
+    from ragx.security.gate import SecurityGate
+
+    (tmp_path / "ragx.toml").write_text('[project]\nname = "d"\nid = "d"\n', encoding="utf-8")
+    cfg = load_config(tmp_path)
+    data = {
+        "nome": "ok", "titulo": "chave AKIAIOSFODNN7EXAMPLE no nome",
+        "lista": ["normal", "ghp_" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8"], "n": {"x": "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"},
+    }
+    novo, n_novo = _scrub(cfg, data)
+    gate = SecurityGate(cfg.root, policy=cfg.security.policy)
+
+    def ref(node):  # type: ignore[no-untyped-def]
+        if isinstance(node, str):
+            return "«RAGX:REDACTED»" if gate.scanner.scan_content("dictionary.json", node) else node
+        if isinstance(node, list):
+            return [ref(v) for v in node]
+        if isinstance(node, dict):
+            return {k: ref(v) for k, v in node.items()}
+        return node
+
+    assert novo == ref(data) and n_novo >= 2
+    assert "AKIAIOSFODNN7EXAMPLE" not in str(novo)

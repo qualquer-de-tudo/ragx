@@ -353,3 +353,46 @@ def test_fragmento_carrega_o_chunk_id(proj: Path) -> None:
     pack = build_context(load_config(proj), "autenticacao sessao", budget=900, use_cache=False)
     assert pack.fragments and all(len(f.chunk_id) == 32 for f in pack.fragments)
     assert '"chunk_id"' in render(pack, "json")
+
+
+# ── RAGX-0150: a consulta é embutida UMA vez ────────────────────────────
+@pytest.mark.parametrize("include_graph", [True, False])
+def test_consulta_embutida_uma_vez_por_build_context(
+    proj: Path, monkeypatch: pytest.MonkeyPatch, include_graph: bool
+) -> None:
+    from ragx.embeddings import build_embedder
+
+    cfg = load_config(proj)
+    emb = build_embedder(cfg)
+    chamadas: list[str] = []
+    original = emb.embed_query
+    monkeypatch.setattr(emb, "embed_query", lambda q: (chamadas.append(q), original(q))[1])
+    pack = build_context(cfg, "autenticacao sessao redis", budget=1500, include_graph=include_graph, use_cache=False)
+    assert pack.fragments
+    assert len(chamadas) == 1, chamadas
+
+
+def test_vectors_for_so_embute_quando_o_vetor_nao_veio(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sem o vetor da busca (keyword, cache, embedder fora na busca) `_vectors_for` embute UMA vez; com ele, nenhuma."""
+    import numpy as np
+
+    from ragx.context.engine import _vectors_for
+    from ragx.embeddings import build_embedder
+    from ragx.storage.db import open_db
+
+    cfg = load_config(proj)
+    with open_db(cfg.db_path, read_only=True) as conn:
+        ids = [r[0] for r in conn.execute("SELECT id FROM chunks LIMIT 5")]
+    emb = build_embedder(cfg)
+    chamadas: list[str] = []
+    original = emb.embed_query
+    monkeypatch.setattr(emb, "embed_query", lambda q: (chamadas.append(q), original(q))[1])
+
+    _v, qv = _vectors_for(cfg, ids, "autenticacao sessao")
+    assert len(chamadas) == 1 and qv is not None
+
+    chamadas.clear()
+    pronto = original("autenticacao sessao")
+    _v2, qv2 = _vectors_for(cfg, ids, "autenticacao sessao", pronto)
+    assert chamadas == [] and qv2 is not None
+    assert np.allclose(qv, qv2)  # o vetor reaproveitado é o mesmo que seria calculado

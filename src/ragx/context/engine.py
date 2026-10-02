@@ -121,7 +121,7 @@ def build_context(
 
     # [1] recuperação
     t0 = time.perf_counter()
-    candidates, expansion_stats = _retrieve(cfg, query, include_graph, depth, intent, filters)
+    candidates, expansion_stats, search_qvec = _retrieve(cfg, query, include_graph, depth, intent, filters)
     t_retrieve = (time.perf_counter() - t0) * 1000
     if not candidates:
         pack.stats = {"retrieve_ms": round(t_retrieve, 2), "candidates": 0}
@@ -138,7 +138,7 @@ def build_context(
     lit = dedupe_literal(candidates)
     dropped.extend((r.chunk_id, why) for r, why in lit.dropped)
 
-    vectors, query_vec = _vectors_for(cfg, [r.chunk_id for r in lit.kept], query)
+    vectors, query_vec = _vectors_for(cfg, [r.chunk_id for r in lit.kept], query, search_qvec)
     near = dedupe_near(lit.kept, vectors, cfg.context.dedup_threshold)
     dropped.extend((r.chunk_id, why) for r, why in near.dropped)
 
@@ -239,7 +239,7 @@ def _retrieve(
     depth: int | None,
     intent: dict[str, Any],
     filters: SearchFilters | None,
-) -> tuple[list[SearchResult], dict[str, Any]]:
+) -> tuple[list[SearchResult], dict[str, Any], np.ndarray | None]:
     """Pede bem mais do que cabe: o funil seguinte precisa ter o que descartar."""
     want = max(cfg.search.limit * 5, 25)
     if include_graph and cfg.graph.enabled:
@@ -259,12 +259,12 @@ def _retrieve(
             }
             if out.partial:
                 stats["partial_vectors"] = out.partial
-            return list(out.results), stats
+            return list(out.results), stats, out.query_vec
     res = search(cfg, query, mode="hybrid", limit=want, filters=filters)
     stats = {"graph_seeds": 0, "graph_nodes": 0}
     if res.partial:
         stats["partial_vectors"] = res.partial
-    return list(res.results), stats
+    return list(res.results), stats, res.query_vec
 
 
 def _apply_intent(results: list[SearchResult], intent: dict[str, Any]) -> list[SearchResult]:
@@ -331,9 +331,13 @@ def _to_fragments(
 
 
 def _vectors_for(
-    cfg: Config, chunk_ids: list[str], query: str
+    cfg: Config, chunk_ids: list[str], query: str, query_vec: np.ndarray | None = None
 ) -> tuple[dict[str, np.ndarray], np.ndarray | None]:
-    """Reaproveita os vetores JÁ gravados — dedup não re-embarca nada."""
+    """Reaproveita os vetores JÁ gravados — dedup não re-embarca nada.
+
+    `query_vec` é o vetor que a busca já calculou (RAGX-0150): a consulta é embutida UMA vez por `build_context`.
+    Só embute aqui quando ele não veio (busca em keyword, cache de contexto, embedder indisponível na busca).
+    """
     if not chunk_ids:
         return {}, None
     vectors: dict[str, np.ndarray] = {}
@@ -364,7 +368,7 @@ def _vectors_for(
 
     dim = len(next(iter(vectors.values())))
     try:
-        qv = l2_normalize(build_embedder(cfg).embed_query(query)[:dim])
+        qv = l2_normalize((query_vec if query_vec is not None else build_embedder(cfg).embed_query(query))[:dim])
     except Exception:
         return vectors, None
     return vectors, qv

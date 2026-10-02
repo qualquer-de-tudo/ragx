@@ -42,6 +42,8 @@ class SearchOutcome:
     #: o semântico RODOU, mas nem todo chunk tem vetor (o embedder caiu no meio):
     #: o resultado é válido e incompleto, que é diferente de `degraded`
     partial: str | None = None
+    #: o vetor da consulta, quando o semântico rodou: o `build_context` o reaproveita em vez de embutir de novo (RAGX-0150)
+    query_vec: np.ndarray | None = field(default=None, repr=False, compare=False)
 
 
 def search(
@@ -74,7 +76,7 @@ def search(
 
         if mode in ("semantic", "hybrid"):
             t0 = time.perf_counter()
-            sem, degraded, partial = _semantic(conn, cfg, query, candidates, filters)
+            sem, degraded, partial, out.query_vec = _semantic(conn, cfg, query, candidates, filters)
             out.timings_ms["semantic"] = (time.perf_counter() - t0) * 1000
             out.partial = partial
             if degraded:
@@ -119,8 +121,8 @@ def search(
 
 def _semantic(
     conn: sqlite3.Connection, cfg: Config, query: str, k: int, filters: SearchFilters
-) -> tuple[list[tuple[str, float]], str | None, str | None]:
-    """(hits, degraded, partial). Usa o modelo CONFIGURADO, não o mais recente do banco.
+) -> tuple[list[tuple[str, float]], str | None, str | None, np.ndarray | None]:
+    """(hits, degraded, partial, vetor da consulta). Usa o modelo CONFIGURADO, não o mais recente do banco.
 
     Antes `load_index(conn)` pegava o último modelo registrado: com outra dimensão
     estourava `ValueError: matmul` (fora do `try` do embedder) e, com a mesma
@@ -129,7 +131,7 @@ def _semantic(
     try:
         wanted = embedder_id(cfg)
     except Exception as exc:
-        return [], f"embedder indisponível ({type(exc).__name__}) — usando só keyword", None
+        return [], f"embedder indisponível ({type(exc).__name__}) — usando só keyword", None, None
 
     index = load_index(conn, wanted)
     if index.size == 0:
@@ -137,24 +139,24 @@ def _semantic(
             "SELECT model_id, COUNT(*) AS n FROM embeddings GROUP BY model_id"
         ).fetchall()
         if not outros:
-            return [], "sem embeddings — rode: ragx index --embed-only", None
+            return [], "sem embeddings — rode: ragx index --embed-only", None, None
         quais = ", ".join(f"{r['model_id']} ({r['n']} vetores)" for r in outros)
         return [], (
             f"o índice vetorial é de {quais}, mas a configuração pede {wanted} — "
             "usando só keyword; rode: ragx index --embed-only"
-        ), None
+        ), None, None
     try:
         embedder = build_embedder(cfg)
         qvec = embedder.embed_query(query)
     except Exception as exc:  # embedder fora do ar não derruba a busca
-        return [], f"embedder indisponível ({type(exc).__name__}) — usando só keyword", None
+        return [], f"embedder indisponível ({type(exc).__name__}) — usando só keyword", None, None
 
     precisa = index.dim if (index.has_full and cfg.embedding.rescore) else index.versioned_dim
     if qvec.size < precisa:
         return [], (
             f"o embedder devolveu {qvec.size} dimensões e o índice de {wanted} pede {precisa} — "
             "usando só keyword"
-        ), None
+        ), None, None
 
     mask = _filter_mask(conn, index.ids, filters)
     hits = index.search(qvec, k, mask=mask, rescore=cfg.embedding.rescore)
@@ -172,7 +174,7 @@ def _semantic(
                 f"vetores só grosseiros (int8@{index.versioned_dim}): {sem_float} chunks sem float32 "
                 "— rode: ragx index --embed-only"
             )
-    return hits, None, "; ".join(avisos) or None
+    return hits, None, "; ".join(avisos) or None, qvec
 
 
 def _filter_mask(

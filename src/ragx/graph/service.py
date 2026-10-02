@@ -10,6 +10,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
+
 from ragx.config import Config
 from ragx.core.models import SearchResult
 from ragx.graph.extractors import reference, structural
@@ -78,6 +80,8 @@ class GraphSearchOutcome:
     graph_only: int = 0
     timings_ms: dict[str, float] = field(default_factory=dict)
     partial: str | None = None  # vetores parciais da busca base (RAGX-0136)
+    #: o vetor da consulta da busca base, repassado ao `build_context` (RAGX-0150)
+    query_vec: np.ndarray | None = field(default=None, repr=False, compare=False)
 
 
 def graph_search(
@@ -95,6 +99,7 @@ def graph_search(
     base = search(cfg, query, mode="hybrid", limit=max(limit * 2, 20), filters=filters)
     out.timings_ms["search"] = (time.perf_counter() - t0) * 1000
     out.partial = base.partial
+    out.query_vec = base.query_vec
     if not base.results:
         return out
 

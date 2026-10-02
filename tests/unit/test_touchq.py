@@ -56,6 +56,10 @@ def test_dois_claim_concorrentes_devolvem_conjuntos_disjuntos(tmp_path: Path) ->
         t.start()
     for t in threads:
         t.join()
+    # Sob carga, quem perde a disputa pelo arquivo devolve vazio (e todos podem perder): o que importa é que NINGUÉM
+    # receba o mesmo caminho e que nada se perca; o que sobrou continua na fila e o próximo `claim` o pega.
+    while (resto := touchq.claim(sd)) is not None:
+        resultados.append(resto.paths)
     todos = [p for r in resultados for p in r]
     assert len(todos) == len(set(todos)) == 50  # ninguém recebeu o mesmo caminho
 

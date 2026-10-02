@@ -79,30 +79,40 @@ def mmr(
     if query_vec is None or not vectors or k <= 0:
         return DedupResult(tuple(results[:k]) if k else tuple(results), ())
 
+    # Vetorizado (RAGX-0150): a relevância é `V @ q` e a redundância vive num vetor `max_sim`, atualizado com
+    # `np.maximum(max_sim, V @ V[melhor])` a cada escolha. Semântica idêntica à do laço duplo de antes:
+    # candidato SEM vetor usa `cand.score` como relevância e redundância 0,0; sem nenhum escolhido ainda a
+    # redundância é 0,0; empate vai para o PRIMEIRO da ordem original (`np.argmax` devolve a primeira ocorrência).
     pool = list(results)
-    selected: list[SearchResult] = []
-    sel_vecs: list[np.ndarray] = []
+    n = len(pool)
+    tem = np.array([r.chunk_id in vectors for r in pool], dtype=bool)
+    if tem.any():
+        amostra = next(iter(vectors.values()))
+        mat = np.zeros((n, len(amostra)), dtype=amostra.dtype)
+        for i, r in enumerate(pool):
+            if tem[i]:
+                mat[i] = vectors[r.chunk_id]
+        relevance = np.where(tem, (mat @ query_vec).astype(np.float64), 0.0)
+    else:
+        mat = np.zeros((n, 0), dtype=np.float32)
+        relevance = np.zeros(n, dtype=np.float64)
+    relevance = np.where(tem, relevance, np.array([r.score for r in pool], dtype=np.float64))
+    max_sim = np.zeros(n, dtype=np.float64)
+    ativo = np.ones(n, dtype=bool)
+    escolhidos: list[int] = []
+    escolheu_vetor = False
 
-    while pool and len(selected) < k:
-        best: SearchResult | None = None
-        best_value = float("-inf")
-        for cand in pool:
-            v = vectors.get(cand.chunk_id)
-            relevance = float(v @ query_vec) if v is not None else cand.score
-            redundancy = (
-                max((float(v @ s) for s in sel_vecs), default=0.0)
-                if v is not None
-                else 0.0
-            )
-            value = lambda_ * relevance - (1.0 - lambda_) * redundancy
-            if value > best_value:
-                best_value, best = value, cand
-        if best is None:
-            break
-        selected.append(best)
-        bv = vectors.get(best.chunk_id)
-        if bv is not None:
-            sel_vecs.append(bv)
-        pool.remove(best)
+    while ativo.any() and len(escolhidos) < k:
+        redund = np.where(tem, max_sim, 0.0) if escolheu_vetor else np.zeros(n)
+        valor = np.where(ativo, lambda_ * relevance - (1.0 - lambda_) * redund, -np.inf)
+        melhor = int(np.argmax(valor))
+        escolhidos.append(melhor)
+        ativo[melhor] = False
+        if tem[melhor]:
+            max_sim = np.maximum(max_sim, (mat @ mat[melhor]).astype(np.float64)) if escolheu_vetor else (mat @ mat[melhor]).astype(np.float64)
+            escolheu_vetor = True
+
+    selected = [pool[i] for i in escolhidos]
+    pool = [pool[i] for i in range(n) if ativo[i]]
 
     return DedupResult(tuple(selected), tuple((r, "mmr") for r in pool))
