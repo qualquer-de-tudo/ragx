@@ -19,6 +19,7 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 - **Aviso de versão nova do painel.** Quando o GitHub Releases traz uma versão diferente da instalada, o painel avisa uma vez por versão: notificação do sistema (o clique abre
   Preferências), um aviso na tela e um ponto no item Preferências da barra. A conferência roda ao abrir e a cada 6 h, para o painel que fica dias aberto também notar
   (desligada em Preferências, não faz nenhuma chamada de rede).
+- **"Instalar e reiniciar" atualiza em silêncio e reabre o painel.** O instalador é assistido; sem os argumentos, o `quitAndInstall()` abria o assistente do NSIS no meio de uma atualização já confirmada.
 - **Atividade paginada** (50 eventos ou 20 sessões por página): o DOM tem o mesmo tamanho com 500 eventos ou com 10 mil.
 
 ### Corrigido

@@ -30,7 +30,7 @@ export interface UpdaterLike {
   allowPrerelease: boolean
   checkForUpdates: () => Promise<unknown>
   downloadUpdate: () => Promise<unknown>
-  quitAndInstall: () => void
+  quitAndInstall: (isSilent?: boolean, isForceRunAfter?: boolean) => void
   on: (event: string, listener: (...args: never[]) => void) => unknown
 }
 
@@ -123,7 +123,9 @@ export function createUpdater(deps: UpdaterDeps): Updater {
 
     install() {
       if (state.status !== 'downloaded') throw new Error('pedido recusado: não há atualização baixada')
-      autoUpdater.quitAndInstall()
+      // Silencioso e reabrindo o painel: o instalador é assistido (`oneClick: false`) e, sem isto, abriria o assistente do NSIS
+      // no meio de uma atualização que a pessoa já confirmou.
+      autoUpdater.quitAndInstall(true, true)
     },
   }
 }

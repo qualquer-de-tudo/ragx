@@ -90,6 +90,8 @@ describe('createUpdater', () => {
     emit('update-downloaded', { version: '1.1.0' })
     updater.install()
     expect(u.quitAndInstall).toHaveBeenCalledTimes(1)
+    // silencioso e reabrindo o painel (o instalador é assistido; sem isto abriria o assistente)
+    expect(u.quitAndInstall).toHaveBeenCalledWith(true, true)
   })
 
   it('sem atualização volta a idle', async () => {
