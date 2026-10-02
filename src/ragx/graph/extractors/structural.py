@@ -21,15 +21,33 @@ _CHUNK_KIND_TO_ENTITY = {
 }
 
 
-def extract(conn: sqlite3.Connection) -> tuple[list[Entity], list[Relation], dict[str, str]]:
-    """Devolve (entidades, relações, mapa chunk_id -> entity_id)."""
+def _in(only_documents: set[str]) -> tuple[str, list[str]]:
+    ids = sorted(only_documents)
+    return ",".join("?" * len(ids)), ids
+
+
+def extract(
+    conn: sqlite3.Connection, only_documents: set[str] | None = None
+) -> tuple[list[Entity], list[Relation], dict[str, str]]:
+    """Devolve (entidades, relações, mapa chunk_id -> entity_id).
+
+    `only_documents` (ids de documento, RAGX-0151) restringe as duas consultas a esses documentos; sem
+    ele, o comportamento é o de sempre (o projeto inteiro).
+    """
     entities: list[Entity] = []
     relations: list[Relation] = []
     by_chunk: dict[str, str] = {}
 
+    if only_documents is None:
+        doc_filter, chunk_filter, args = "", "", []
+    else:
+        ph, args = _in(only_documents)
+        doc_filter, chunk_filter = f" WHERE id IN ({ph})", f" AND document_id IN ({ph})"
     docs = {
         r["id"]: dict(r)
-        for r in conn.execute("SELECT id, rel_path, lang, doc_kind, title FROM documents")
+        for r in conn.execute(
+            f"SELECT id, rel_path, lang, doc_kind, title FROM documents{doc_filter}", args
+        )
     }
 
     file_entity: dict[str, Entity] = {}
@@ -48,8 +66,9 @@ def extract(conn: sqlite3.Connection) -> tuple[list[Entity], list[Relation], dic
     rows = [
         dict(r)
         for r in conn.execute(
-            """SELECT id, document_id, kind, symbol, parent_id, ordinal
-               FROM chunks WHERE symbol IS NOT NULL ORDER BY document_id, ordinal"""
+            f"""SELECT id, document_id, kind, symbol, parent_id, ordinal
+               FROM chunks WHERE symbol IS NOT NULL{chunk_filter} ORDER BY document_id, ordinal""",
+            args,
         )
     ]
 

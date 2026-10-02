@@ -7,7 +7,7 @@
 | **Estimativa** | 1,5d |
 | **Depende de** | RAGX-0138 |
 | **Documentação** | [24-auditoria-v2.md](../../docs/24-auditoria-v2.md) (I-07) · [25-spec-v2.md](../../docs/25-spec-v2.md) (princípio 3) · [06-grafo.md](../../docs/06-grafo.md) · [19-watch-e-autonomia-do-agente.md](../../docs/19-watch-e-autonomia-do-agente.md) · [03-modelo-de-dados.md](../../docs/03-modelo-de-dados.md) |
-| **Status** | `review` |
+| **Status** | `done` |
 
 ## Objetivo
 
@@ -89,4 +89,4 @@ Comando: `uv run python scripts/medir_grafo_incremental.py` (criar; imprime os q
 - O que está na branch wip, verificado por execução (suíte Python `-m "not slow"` 1938 passed, `tests/security` verde, `ruff`, `mypy`): `IndexReport.touched_documents`; `only_documents` em `structural.extract` e `reference.extract` (e `ORDER BY` determinístico, `load_catalog` em cache); `graph.service.update_documents` (cai no completo se o conjunto de entidades mudou, documento novo/removido, manifesto, grafo inexistente ou mais de 50 documentos); chamado pelo `watch.monitor.apply_changes` e por `touchq.drain`, falha vira aviso; `tests/integration/test_graph_incremental.py` com 50 sequências aleatórias de 3 edições comparadas ao `rebuild` (a equivalência foi checada com uma mutação deliberada que a suíte pegou), mais 2 testes no `test_watch.py`. Medido com 2,4 mil entidades: corpo editado 22 ms contra 178 ms do completo (12,4%, dentro dos 15%); símbolo novo cai no completo (322 ms).
 - **O que falta para decidir:** (a) aceitar ou não os 47,0% — se sim, `git merge wip/ragx-0151-grafo-incremental` em `feat/v2` e marcar `done` (CHANGELOG e `docs/06-grafo.md` já estão no commit); (b) o rebuild completo do repo real (1,0–1,5 s) não foi medido de novo contra o incremental, só o sintético; (c) com o grafo incremental, um símbolo novo no watcher passa a custar um rebuild completo (1–9 s) a cada edição, em vez de a cada `full_sync_every` mudanças: vale confirmar que não atrapalha o ciclo do watcher; (d) a defasagem das tecnologias (só acrescentam) ficou documentada.
 - Não verificado: os 15 mil entidades (5,4–9,2 s) e o repo real; critério "Nenhuma relação vinda de outro documento é perdida" está coberto só pelo teste sintético de relação de entrada.
-
+- 2026-10-02 — **Integrada em `feat/v2` por decisão da pessoa** (aceitou os 47,0% medidos, abaixo do corte de 50%): `git merge --no-ff wip/ragx-0151-grafo-incremental`, conflitos só em `CHANGELOG.md` e `pipeline.py` (campos do relatório dos dois lados). Suíte `-m "not slow"` 2009 passaram, 5 ignorados; `ruff` limpo. Itens de DoD sem marcar seguem como estavam (Linux/macOS só no CI).

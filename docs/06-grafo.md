@@ -230,6 +230,24 @@ Na indexação incremental: remover um documento remove (cascade) suas entidades
 estruturais; relações que apontavam para elas caem junto. Entidades semânticas
 órfãs viram lixo removido por `ragx vacuum`.
 
+### Atualização por documento (RAGX-0151)
+
+Entre dois `sync`, o watcher e o `touch` chamam `graph.service.update_documents(cfg, rel_paths)` com os
+documentos que a indexação tocou (`IndexReport.touched_documents`). O rebuild completo continua sendo a referência
+de correção: o resultado é o mesmo grafo, linha a linha (a suíte compara 50 sequências aleatórias de edições).
+
+- **Caminho rápido**, quando o conjunto de entidades de cada documento tocado não mudou (editar corpo de função,
+  comentário, prosa, coluna de tabela): as entidades NÃO são apagadas (o `ON DELETE CASCADE` derrubaria as relações
+  vindas de outros documentos); regravam-se só as relações que nascem dos chunks dos documentos tocados, e o
+  `chunk_id` das entidades e o `evidence_chunk_id` das relações voltam a apontar para os chunks novos.
+- **Cai no completo** (`fallback_full`) quando: o conjunto de entidades mudou (símbolo novo, removido ou renomeado,
+  tabela ou rota nova), o documento é novo ou sumiu, é manifesto de dependências (`composer.json`, `package.json`,
+  `pyproject.toml`, `requirements.txt`, `go.mod`, `Gemfile`), o grafo ainda não existe ou são mais de 50
+  documentos. Motivo: as relações de entrada vindas de outros documentos dependem dos nomes que existem.
+- **Tecnologias** (`technology`, `uses`) só são acrescentadas no caminho rápido; uma tecnologia que deixou de ser
+  usada sai no próximo rebuild completo (`sync`). Essa defasagem é a única diferença para o completo.
+- A camada semântica nunca é tocada, e uma falha do grafo vira aviso, nunca derruba a indexação.
+
 ## Modelo de confiança
 
 Toda entidade e relação carrega `confidence` (float) e `source` (a camada que

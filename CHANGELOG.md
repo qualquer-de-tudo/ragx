@@ -42,6 +42,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   contra 6,3 e 6,8 s com 4 workers (cerca de 2,1x); 400 arquivos: 2,25 s contra 1,38 s; reindexação sem mudança segue
   em ~0,2 s e não cria pool. Se o pool cair, o resto da rodada roda no processo principal e `ragx index --json` diz
   por quê (`parallel_jobs`, `parallel_fallback`) (RAGX-0152).
+- **Grafo atualizado por documento entre dois `sync`.** O grafo só era refeito inteiro no `sync` (ou a cada
+  `full_sync_every` mudanças no watcher): um símbolo novo não aparecia em `get_entity` e editar um corpo de função
+  deixava as entidades sem `chunk_id` e as relações sem evidência. Agora o watcher e o `touch` atualizam só os
+  documentos tocados (`graph.service.update_documents`) e caem no rebuild completo quando o conjunto de nomes muda. Medido
+  com 2,4 mil entidades: 22 ms contra 178 ms do completo (12%), e 0 entidades sem `chunk_id` depois de editar uma linha
+  (RAGX-0151).
 - **Micro-custos do `build_context` e do dicionário.** O MMR rodava em laço Python (agora vetorizado, 3,7 para 0,2 ms em
   30 candidatos, mesma seleção em 200 sementes), a consulta era embutida duas vezes por `build_context` (agora uma, a
   busca repassa o vetor) e o `dictionary.build` construía um `SecurityGate` que caminhava a árvore só para usar o
