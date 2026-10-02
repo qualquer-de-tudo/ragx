@@ -65,6 +65,9 @@ class IndexReport:
     imported_embeddings: int = 0
     coarse_only: int = 0
     embed_warning: str | None = None
+    #: caminhos de documentos indexados, alterados, bloqueados ou removidos na rodada (RAGX-0151):
+    #: é o que o grafo incremental precisa para atualizar só o que mudou
+    touched_documents: list[str] = field(default_factory=list)
 
 
 MAX_PENDING_RERUNS = 3
@@ -116,7 +119,7 @@ def index_project(
         report = _index_once(
             cfg, full, dry_run, progress, embed, embed_only, source, on_event, upgrade_coarse
         )
-        budget = _drain_pending(cfg, state_dir, budget)
+        budget = _drain_pending(cfg, state_dir, budget, report)
     finally:
         lock.release(state_dir)
         status_file.write_status(cfg)  # estado final, running = null
@@ -134,7 +137,7 @@ def index_project(
     # reinicia.
     while budget > 0 and lock.is_pending(state_dir) and lock.try_acquire(state_dir, "index", source):
         try:
-            budget = _drain_pending(cfg, state_dir, budget)
+            budget = _drain_pending(cfg, state_dir, budget, report)
         finally:
             lock.release(state_dir)
             status_file.write_status(cfg)
@@ -196,7 +199,7 @@ def index_paths(
     budget = MAX_PENDING_RERUNS
     try:
         report = _index_paths_once(cfg, rels, embed, source, on_event, gate)
-        budget = _drain_pending(cfg, state_dir, budget)
+        budget = _drain_pending(cfg, state_dir, budget, report)
     finally:
         lock.release(state_dir)
         # uma vez, no fim, sem perguntar os hooks ao git (uma edição não os muda)
@@ -270,6 +273,7 @@ def _index_paths_once(
             gone = [p for p in known if p not in seen_paths and p not in report.blocked_paths]
             if gone:
                 docs.delete_many(gone)
+                report.touched_documents.extend(gone)
             report.stats = _bump(report.stats, removed=len(gone))
             _flush_verdicts(ctx, gone=[p for p in ctx.verdicts if p not in ctx.walked])
             conn.commit()
@@ -313,14 +317,21 @@ def _index_paths_once(
     return report
 
 
-def _drain_pending(cfg: Config, state_dir: Path, budget: int) -> int:
-    """Roda pedidos pendentes em modo incremental, sem estourar o orçamento."""
+def _drain_pending(
+    cfg: Config, state_dir: Path, budget: int, report: IndexReport | None = None
+) -> int:
+    """Roda pedidos pendentes em modo incremental, sem estourar o orçamento.
+
+    Os documentos tocados nas rodadas extras entram em `report.touched_documents` (RAGX-0151).
+    """
     while budget > 0:
         pending = lock.take_pending(state_dir)
         if pending is None:
             break
-        _index_once(cfg, False, False, None, True, False,
-                    pending if pending in VALID_SOURCES else "cli", None)
+        extra = _index_once(cfg, False, False, None, True, False,
+                            pending if pending in VALID_SOURCES else "cli", None)
+        if report is not None:
+            report.touched_documents.extend(p for p in extra.touched_documents if p not in report.touched_documents)
         budget -= 1
     return budget
 
@@ -403,6 +414,7 @@ def _index_once(
             ]
             if gone and not dry_run:
                 docs.delete_many(gone)
+                report.touched_documents.extend(gone)
             report.stats = _bump(report.stats, removed=len(gone))
             # veredito de arquivo que sumiu (fora de pasta ilegível: lá não se sabe)
             _flush_verdicts(ctx, gone=[
@@ -561,6 +573,7 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
         if not dry_run:
             # Arquivo que virou sensível some do índice.
             docs.delete_many([walked.rel_path])
+            report.touched_documents.append(walked.rel_path)
             if not walked.cached_verdict:
                 events.clear_for(walked.rel_path)
                 events.record(run_id, d.findings)
@@ -625,6 +638,7 @@ def _handle(ctx: _Ctx, walked: WalkedFile) -> None:
         redacted=d.verdict is Verdict.ALLOW_REDACTED,
     )
     docs.upsert(doc)
+    report.touched_documents.append(walked.rel_path)
     trocou = chunks.replace_for_document(doc.id, produced)
     report.chunks_kept += trocou.kept
     report.chunks_removed += trocou.removed

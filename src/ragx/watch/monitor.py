@@ -99,6 +99,19 @@ def snapshot(
     return scan_fingerprints(cfg.root, gate or _gate(cfg), cfg.index.follow_symlinks, ignored_cache)
 
 
+def _atualizar_grafo(cfg: Config, state: WatchState, tocados: list[str]) -> None:
+    """Grafo só dos documentos tocados (RAGX-0151). Falha vira aviso: nunca derruba a indexação já feita.
+
+    Quando consolida, o `sync` refaz o grafo completo e esta chamada não acontece.
+    """
+    try:
+        from ragx.graph.service import update_documents
+
+        update_documents(cfg, tocados)
+    except Exception as exc:
+        state.warnings.append(f"grafo: {type(exc).__name__}: {exc}")
+
+
 def apply_changes(
     cfg: Config,
     state: WatchState,
@@ -129,6 +142,8 @@ def apply_changes(
         state.since_consolidation += 1
         if r.embed_error:
             state.warnings.append(f"embeddings: {r.embed_error.splitlines()[0]}")
+        if not consolidate and r.touched_documents:
+            _atualizar_grafo(cfg, state, r.touched_documents)
     except IndexBusyError:
         state.warnings.append("índice ocupado; atualização agendada")
         return

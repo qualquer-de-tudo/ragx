@@ -257,3 +257,75 @@ def test_arquivo_apagado_sai_do_indice_pelo_lote_por_caminho(cfg) -> None:
 def test_estado_expoe_a_duracao_do_ciclo(cfg) -> None:
     st = watch(cfg, max_cycles=5, sleep=lambda _s: None)
     assert st.last_cycle_ms is not None and st.idle_cycle_ms_p50 is not None
+
+
+# ── grafo incremental (RAGX-0151) ───────────────────────────────────────
+CORPO_ALFA = '''def alfa(x):
+    """Soma e acumula o valor recebido."""
+    total = x + {n}
+    for item in range(5):
+        total += item * x
+    return total
+'''
+
+
+@pytest.fixture()
+def cfg_grafo(tmp_path: Path):
+    from ragx.graph.service import rebuild
+
+    root = tmp_path / "projg"
+    root.mkdir()
+    (root / "ragx.toml").write_text(
+        '[project]\nname = "g"\nid = "g"\n\n'
+        '[embedding]\nprovider = "hashing"\ndim = 128\nversioned_dim = 64\n\n'
+        "[watch]\ninterval_s = 0.0\ndebounce_s = 0.0\nfull_sync_every = 50\n",
+        encoding="utf-8",
+    )
+    (root / "app.py").write_text(CORPO_ALFA.format(n=1), encoding="utf-8")
+    c = load_config(root)
+    index_project(c)
+    rebuild(c)
+    return c
+
+
+def _entidade_alfa(cfg) -> dict | None:
+    with open_db(cfg.db_path, read_only=True) as conn:
+        row = conn.execute("SELECT * FROM entities WHERE name = 'alfa'").fetchone()
+        return dict(row) if row else None
+
+
+def test_salvar_arquivo_atualiza_o_grafo_sem_esperar_full_sync_every(cfg_grafo) -> None:
+    cfg = cfg_grafo
+    antes = _entidade_alfa(cfg)
+    assert antes is not None and antes["chunk_id"] is not None
+    ciclo = {"n": 0}
+
+    def sleep(_s: float) -> None:
+        ciclo["n"] += 1
+        if ciclo["n"] == 1:
+            (cfg.root / "app.py").write_text(CORPO_ALFA.format(n=7), encoding="utf-8")
+
+    st = watch(cfg, max_cycles=4, sleep=sleep)
+    assert st.consolidations == 0, "o grafo tem de andar sem o sync completo"
+    depois = _entidade_alfa(cfg)
+    # o chunk mudou de id com o corpo novo; sem o grafo incremental a ponte ficava nula
+    assert depois is not None and depois["chunk_id"] is not None
+    assert depois["chunk_id"] != antes["chunk_id"]
+
+
+def test_falha_do_grafo_vira_aviso_e_a_indexacao_conclui(cfg_grafo, monkeypatch) -> None:
+    cfg = cfg_grafo
+
+    def quebra(*a, **k):
+        raise RuntimeError("grafo quebrado")
+
+    monkeypatch.setattr("ragx.graph.service.update_documents", quebra)
+    (cfg.root / "app.py").write_text(CORPO_ALFA.format(n=9), encoding="utf-8")
+    st = WatchState()
+    apply_changes(cfg, st, consolidate=False, paths=("app.py",))
+    assert st.last_error is None
+    assert st.indexed == 1
+    assert any(w.startswith("grafo: RuntimeError") for w in st.warnings), st.warnings
+    with open_db(cfg.db_path, read_only=True) as conn:
+        texto = conn.execute("SELECT content FROM chunks WHERE content LIKE '%+ 9%'").fetchone()
+    assert texto is not None  # o texto novo foi indexado apesar do grafo

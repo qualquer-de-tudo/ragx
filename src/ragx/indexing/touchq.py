@@ -168,6 +168,8 @@ class DrainResult:
     indexed: bool = False
     busy: bool = False
     error: str | None = None
+    #: o grafo não conseguiu acompanhar (RAGX-0151); a indexação concluiu e o lote NÃO volta à fila
+    graph_warning: str | None = None
 
 
 def drain(cfg: Any, source: str = "touch", wait_ms: int | None = None) -> DrainResult:
@@ -189,7 +191,7 @@ def drain(cfg: Any, source: str = "touch", wait_ms: int | None = None) -> DrainR
 
     resultado = DrainResult(paths=len(lote.paths))
     try:
-        index_paths(cfg, lote.paths, source=source)
+        relatorio = index_paths(cfg, lote.paths, source=source)
     except IndexBusyError:
         lote.give_back()
         resultado.busy = True
@@ -200,6 +202,13 @@ def drain(cfg: Any, source: str = "touch", wait_ms: int | None = None) -> DrainR
         return resultado
     lote.done()
     resultado.indexed = True
+    if relatorio.touched_documents:
+        try:
+            from ragx.graph.service import update_documents
+
+            update_documents(cfg, relatorio.touched_documents)
+        except Exception as exc:  # o grafo nunca derruba a indexação que já deu certo
+            resultado.graph_warning = f"{type(exc).__name__}: {exc}"
     return resultado
 
 

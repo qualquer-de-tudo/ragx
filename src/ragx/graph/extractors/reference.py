@@ -8,6 +8,7 @@ Ver docs/06-grafo.md.
 
 from __future__ import annotations
 
+import functools
 import re
 import sqlite3
 import tomllib
@@ -56,25 +57,47 @@ class ReferenceResult:
     unresolved: int = 0
 
 
+@functools.cache
 def load_catalog() -> dict[str, Any]:
-    return yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
+    """O catálogo é só lido: carregar o YAML uma vez por processo (RAGX-0151: o caminho incremental o chama a cada edição)."""
+    return yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
 
 
 def extract(
-    conn: sqlite3.Connection, known: dict[str, str], root: Path | None = None
+    conn: sqlite3.Connection,
+    known: dict[str, str],
+    root: Path | None = None,
+    only_documents: set[str] | None = None,
 ) -> ReferenceResult:
-    """`known` mapeia chunk_id -> entity_id (saída da camada 1)."""
+    """`known` mapeia chunk_id -> entity_id (saída da camada 1).
+
+    `only_documents` (ids de documento, RAGX-0151): só os chunks desses documentos geram entidades e relações,
+    mas os nomes continuam sendo resolvidos contra o índice de TODAS as entidades. As tecnologias rodam sobre
+    esses documentos e só acrescentam (o que deixou de ser usado sai no próximo rebuild completo).
+    """
     catalog = load_catalog()
     entities: list[Entity] = []
     relations: list[Relation] = []
     unresolved = 0
 
+    if only_documents is None:
+        only_sql, only_args = "", []
+        file_filter = ""
+    else:
+        only_args = sorted(only_documents)
+        ph = ",".join("?" * len(only_args))
+        only_sql = f" WHERE c.document_id IN ({ph})"
+        file_filter = f" AND document_id IN ({ph})"
+    # ORDER BY: a ordem decide, entre relações repetidas, qual evidência fica (a primeira) e, entre
+    # documentos que declaram a mesma tabela/rota, de quem ela é; sem ele dependia do plano do SQLite.
     rows = [
         dict(r)
         for r in conn.execute(
-            """SELECT c.id, c.document_id, c.kind, c.symbol, c.heading_path, c.content,
+            f"""SELECT c.id, c.document_id, c.kind, c.symbol, c.heading_path, c.content,
                       d.rel_path, d.lang, d.doc_kind
-               FROM chunks c JOIN documents d ON d.id = c.document_id"""
+               FROM chunks c JOIN documents d ON d.id = c.document_id{only_sql}
+               ORDER BY c.document_id, c.ordinal""",
+            only_args,
         )
     ]
 
@@ -90,7 +113,8 @@ def extract(
     file_entity_of_doc = {
         r["document_id"]: r["id"]
         for r in conn.execute(
-            "SELECT id, document_id FROM entities WHERE type = 'file' AND document_id IS NOT NULL"
+            f"SELECT id, document_id FROM entities WHERE type = 'file' AND document_id IS NOT NULL{file_filter}",
+            only_args,
         )
     }
 

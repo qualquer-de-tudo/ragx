@@ -7,7 +7,9 @@ a busca híbrida pura não encontra.
 from __future__ import annotations
 
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 from typing import Any
 
 import numpy as np
@@ -15,7 +17,7 @@ import numpy as np
 from ragx.config import Config
 from ragx.core.models import SearchResult
 from ragx.graph.extractors import reference, structural
-from ragx.graph.store import GraphStats, GraphStore
+from ragx.graph.store import EntityType, GraphStats, GraphStore
 from ragx.graph.traversal import Expansion, TraversalLimits, expand
 from ragx.search.hybrid import rrf
 from ragx.search.ranking import diversify, rerank
@@ -31,6 +33,10 @@ class RebuildReport:
     pruned: int = 0
     duration_ms: int = 0
     stats: GraphStats = field(default_factory=GraphStats)
+    #: `update_documents` (RAGX-0151): quantos documentos foram atualizados, se caiu no rebuild completo e por quê
+    documents: int = 0
+    fallback_full: bool = False
+    reason: str | None = None
 
 
 def rebuild(cfg: Config, layers: tuple[int, ...] = (1, 2)) -> RebuildReport:
@@ -69,6 +75,117 @@ def rebuild(cfg: Config, layers: tuple[int, ...] = (1, 2)) -> RebuildReport:
 
     report.duration_ms = int((time.perf_counter() - t0) * 1000)
     return report
+
+
+#: manifestos de dependências: mudar um muda as tecnologias do projeto inteiro, e o caminho rápido só acrescenta
+_MANIFESTOS = frozenset({
+    "composer.json", "package.json", "pyproject.toml", "requirements.txt", "go.mod", "Gemfile",
+})
+#: acima disto o rebuild completo é mais simples e quase tão barato quanto atualizar um a um
+MAX_DOCUMENTOS_INCREMENTAL = 50
+_FONTES = ("structural", "reference")
+_TIPOS_DO_DOCUMENTO = ("contains", "imports", "calls", "mentions")
+
+
+def _lotes(itens: list[str], n: int = 400) -> Iterable[list[str]]:
+    for i in range(0, len(itens), n):
+        yield itens[i : i + n]
+
+
+def _queda(cfg: Config, motivo: str, n_docs: int) -> RebuildReport:
+    report = rebuild(cfg)
+    report.fallback_full = True
+    report.reason = motivo
+    report.documents = n_docs
+    return report
+
+
+def update_documents(cfg: Config, rel_paths: Iterable[str]) -> RebuildReport:
+    """Atualiza o grafo só dos documentos tocados (RAGX-0151); cai no `rebuild` completo quando a mudança não é local.
+
+    O rebuild completo é a referência de correção: o resultado daqui é o mesmo grafo (exceto `technology` e
+    `uses`, que só acrescentam). Cai no completo quando o conjunto de ENTIDADES de algum documento tocado muda
+    (símbolo novo, removido ou renomeado, tabela ou rota nova), porque as relações de entrada vindas de outros
+    documentos dependem dos nomes que existem; quando o documento sumiu, é novo ou é manifesto de dependências;
+    quando o grafo ainda não existe; ou quando são documentos demais.
+
+    No caminho rápido as entidades NÃO são apagadas (`ON DELETE CASCADE` derrubaria as relações vindas de outros
+    documentos): só se regravam as relações que nascem dos chunks dos documentos tocados. A camada semântica
+    (`source = 'semantic'`) nunca é tocada.
+    """
+    rels = list(dict.fromkeys(rel_paths))
+    if not rels:
+        return RebuildReport()
+    if len(rels) > MAX_DOCUMENTOS_INCREMENTAL:
+        return _queda(cfg, f"{len(rels)} documentos (mais de {MAX_DOCUMENTOS_INCREMENTAL})", len(rels))
+    if any(PurePosixPath(r).name in _MANIFESTOS for r in rels):
+        return _queda(cfg, "manifesto de dependências", len(rels))
+
+    t0 = time.perf_counter()
+    report = RebuildReport(documents=len(rels))
+    with open_db(cfg.db_path) as conn:
+        motivo = _atualizar(cfg, conn, rels, report)
+    if motivo is not None:  # fora do `with`: o rebuild abre a própria conexão e não pode concorrer com esta
+        return _queda(cfg, motivo, len(rels))
+    report.duration_ms = int((time.perf_counter() - t0) * 1000)
+    return report
+
+
+def _atualizar(cfg: Config, conn: Any, rels: list[str], report: RebuildReport) -> str | None:
+    """O caminho rápido. Devolve o motivo da queda (nada foi gravado) ou `None` quando atualizou e deu commit."""
+    ph = ",".join("?" * len(rels))
+    doc_ids = {r["id"] for r in conn.execute(f"SELECT id FROM documents WHERE rel_path IN ({ph})", rels)}
+    if len(doc_ids) != len(rels):
+        return "documento removido ou novo no índice"
+    if conn.execute("SELECT 1 FROM entities WHERE source = 'structural' LIMIT 1").fetchone() is None:
+        return "grafo ainda não construído"
+
+    ids = sorted(doc_ids)
+    dph = ",".join("?" * len(ids))
+    fph = ",".join("?" * len(_FONTES))
+    antes = {
+        r["id"]
+        for r in conn.execute(
+            f"SELECT id FROM entities WHERE document_id IN ({dph}) AND source IN ({fph})", [*ids, *_FONTES]
+        )
+    }
+
+    ents, rels_estruturais, by_chunk = structural.extract(conn, doc_ids)
+    res = reference.extract(conn, by_chunk, cfg.root, doc_ids)
+    todas = [*ents, *res.entities]
+    depois = {e.id for e in todas if e.type is not EntityType.TECHNOLOGY}
+    if depois != antes:
+        return "conjunto de entidades mudou"
+
+    store = GraphStore(conn)
+    # 1) só as relações que nascem dos chunks dos documentos tocados (a origem está num deles; para
+    #    `documented_by` o documento é o DESTINO). `uses` e a camada semântica ficam como estão.
+    tph = ",".join("?" * len(_TIPOS_DO_DOCUMENTO))
+    conn.execute(
+        f"""DELETE FROM relations WHERE source IN ({fph}) AND (
+              (type IN ({tph}) AND src_id IN (SELECT id FROM entities WHERE document_id IN ({dph})))
+              OR (type = 'documented_by' AND dst_id IN (SELECT id FROM entities WHERE document_id IN ({dph}))))""",
+        [*_FONTES, *_TIPOS_DO_DOCUMENTO, *ids, *ids],
+    )
+    # 2) entidades: upsert (mantém o id e, com ele, as relações dos outros documentos)
+    report.entities += store.upsert_entities(todas)
+    for e in ents:
+        if e.type is EntityType.FILE:  # o upsert faz COALESCE; um título que sumiu tem de sumir
+            conn.execute("UPDATE entities SET summary = ? WHERE id = ?", (e.summary, e.id))
+    # 3) relações: estruturais primeiro, depois as referenciais com as duas pontas existindo
+    report.relations += store.upsert_relations(rels_estruturais)
+    pontas = sorted({x for rel in res.relations for x in (rel.src_id, rel.dst_id)})
+    existem: set[str] = set()
+    for lote in _lotes(pontas):
+        lph = ",".join("?" * len(lote))
+        existem.update(r["id"] for r in conn.execute(f"SELECT id FROM entities WHERE id IN ({lph})", lote))
+    report.relations += store.upsert_relations(
+        rel for rel in res.relations if rel.src_id in existem and rel.dst_id in existem
+    )
+    report.unresolved = res.unresolved
+    conn.commit()
+    report.stats = store.stats()
+    return None
 
 
 @dataclass
