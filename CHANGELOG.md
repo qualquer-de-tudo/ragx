@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **`knowledge/` estável no Git: sync sem mudança não suja nada.** Um `ragx sync` sem nenhuma mudança deixava
+  `manifest.json`, `dictionary.json` e `federation/service.json` sujos (por causa do `generated_at`) e trocava o mtime de
+  134 dos 137 arquivos. Agora só se grava o arquivo cujo conteúdo mudou; o `generated_at` continua lá e só avança quando
+  outra coisa mudou. Medido: 3 arquivos sujos para 0; editar uma função mexe em 7 a 8 arquivos. `ragx sync --json` traz
+  `knowledge_files_changed` (RAGX-0148).
 - **`ragx watch` com ciclo ocioso mais barato.** A cada 2 s o watcher reconstruía o `SecurityGate` e o `IgnoreEngine` e
   fazia 5 syscalls por arquivo. Agora o gate é construído uma vez (refeito só quando um `.gitignore`, `.dockerignore`
   ou `.ragignore` muda), o veredito de ignore fica em cache, a enumeração usa `os.scandir` e o lote vai por

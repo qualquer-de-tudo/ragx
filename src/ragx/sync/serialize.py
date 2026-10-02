@@ -25,6 +25,7 @@ from ragx.config import Config
 from ragx.core.ids import CHUNKER_VERSION, SCHEMA_VERSION, shard_of
 from ragx.sizing.budget import Budget
 from ragx.storage.db import get_meta, open_db, utcnow
+from ragx.sync.stable_write import write_bytes_if_changed, write_text_if_changed
 
 MANIFEST = "manifest.json"
 BASE_MANIFEST = "base.json"
@@ -42,6 +43,8 @@ class SerializeReport:
     shards: int = 0
     bytes_written: int = 0
     files_written: int = 0
+    #: arquivos EFETIVAMENTE regravados nesta rodada (RAGX-0148); `files_written` conta o que existe em disco
+    files_changed: int = 0
     removed: int = 0
     warnings: list[str] = field(default_factory=list)
 
@@ -56,10 +59,14 @@ def artifact_name(rel_path: str) -> str:
     return flat
 
 
-def _dump_json(path: Path, data: object) -> int:
+#: quantos arquivos o `serialize` em curso regravou de fato (zera a cada `serialize`)
+_changed = [0]
+
+
+def _dump_json(path: Path, data: object, volatile: tuple[str, ...] = ()) -> int:
     body = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8", newline="\n")
+    if write_text_if_changed(path, body, volatile):
+        _changed[0] += 1
     return len(body.encode("utf-8"))
 
 
@@ -67,13 +74,14 @@ def _dump_jsonl(path: Path, rows: list[dict]) -> int:
     body = "".join(
         json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows
     )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8", newline="\n")
+    if write_text_if_changed(path, body):
+        _changed[0] += 1
     return len(body.encode("utf-8"))
 
 
 def serialize(cfg: Config, out_dir: str = "knowledge") -> SerializeReport:
     report = SerializeReport()
+    _changed[0] = 0
     target = cfg.root / out_dir
     target.mkdir(parents=True, exist_ok=True)
 
@@ -108,6 +116,7 @@ def serialize(cfg: Config, out_dir: str = "knowledge") -> SerializeReport:
         report.bytes_written += _write_manifest(conn, target, cfg, report)
 
     report.files_written = sum(1 for p in target.rglob("*") if p.is_file())
+    report.files_changed = _changed[0]
     _check_artifacts(cfg, target, report)
     return report
 
@@ -206,9 +215,8 @@ def _write_embeddings(
             blob += bytes.fromhex(chunk_id)
             blob += struct.pack("<ff", float(scale), float(offset))
             blob += vec[:dim].ljust(dim, b"\x00")
-        path = folder / fname
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(bytes(blob))
+        if write_bytes_if_changed(folder / fname, bytes(blob)):
+            _changed[0] += 1
         written += len(blob)
         report.shards += 1
 
@@ -305,6 +313,7 @@ def _write_manifest(
             },
             "generated_at": utcnow(),
         },
+        volatile=("generated_at",),
     )
 
 

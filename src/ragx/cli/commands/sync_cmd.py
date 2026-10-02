@@ -76,6 +76,7 @@ def sync(
             "chunks": r.chunks, "embedded": r.embedded,
             "entities": r.entities, "relations": r.relations,
             "knowledge_bytes": r.serialized.bytes_written if r.serialized else 0,
+            "knowledge_files_changed": r.serialized.files_changed if r.serialized else 0,
             "warnings": r.warnings, "duration_ms": r.duration_ms,
         }, ensure_ascii=False))
         return

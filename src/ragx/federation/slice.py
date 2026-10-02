@@ -157,8 +157,9 @@ def _glossary(cfg: Config) -> list[dict[str, Any]]:
 
 def _write(path: Path, data: Any) -> int:
     body = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8", newline="\n")
+    from ragx.sync.stable_write import write_text_if_changed
+
+    write_text_if_changed(path, body, volatile=("generated_at",))  # RAGX-0148
     return len(body.encode("utf-8"))
 
 

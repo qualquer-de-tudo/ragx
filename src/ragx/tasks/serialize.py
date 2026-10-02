@@ -47,13 +47,11 @@ class TaskSyncReport:
 
 
 def _dump(path: Path, data: Any) -> int:
+    from ragx.sync.stable_write import write_text_if_changed
+
     body = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    atual = path.read_text(encoding="utf-8") if path.is_file() else None
-    if atual == body:
-        return 0  # diff vazio quando nada mudou
-    path.write_text(body, encoding="utf-8", newline="\n")
-    return 1
+    # `generated_at` do manifesto não conta: diff vazio quando nada mudou de verdade (RAGX-0148)
+    return 1 if write_text_if_changed(path, body, volatile=("generated_at",)) else 0
 
 
 def _prune(folder: Path, keep: set[str]) -> int:

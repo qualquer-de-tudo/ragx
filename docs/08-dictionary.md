@@ -153,6 +153,7 @@ em centenas.
    (se exceder, o builder agrega em vez de listar tudo).
 4. Regeneração sobre índice inalterado produz arquivo **byte-idêntico**
    (chaves ordenadas, sem timestamp volátil fora de `generated_at`; o
-   `generated_at` fica fora do hash de comparação).
+   `generated_at` fica fora do hash de comparação e, desde a RAGX-0148, o
+   arquivo nem é regravado: o mtime também não muda).
 5. Nenhum valor de segredo ou de variável de ambiente aparece em qualquer arquivo
    de `knowledge/`.

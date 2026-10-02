@@ -21,6 +21,14 @@ agents/**
 ragx.toml
 .gitattributes
 ```
+**Estabilidade (RAGX-0148).** `ragx sync` só grava o arquivo de `knowledge/` cujo CONTEÚDO mudou: o corpo novo é
+comparado com o que está no disco (`sync/stable_write.py`) e, se for igual, o arquivo não é tocado, nem o mtime.
+`generated_at` (em `manifest.json`, `dictionary.json` > `project`, `federation/service.json` e `tasks/manifest.json`)
+fica de fora dessa comparação: ele só é atualizado quando outra coisa no arquivo mudou, então um `sync` sem mudança
+deixa o `git status` limpo (antes deixava 3 arquivos sujos). O campo continua lá, porque a extensão do VS Code o lê
+como "última sincronização". `ragx sync --json` traz `knowledge_files_changed`. Arquivo existente ilegível ou com JSON
+inválido é regravado, e conteúdo diferente do novo (um segredo plantado, por exemplo) é sempre sobrescrito.
+
 
 Nunca versionado:
 

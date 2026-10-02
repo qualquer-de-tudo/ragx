@@ -407,3 +407,25 @@ def test_superficie_mcp_no_fio(indexado: Path) -> None:
             texto = "".join(b.text for b in r.content)
             assert getattr(r, "structured_content", None) is None
             assert leaked(texto) == [], f"{nome} vazou ao receber {secret[:12]}…"
+
+
+def test_dictionary_json_preexistente_com_segredo_e_sobrescrito_pelo_sync(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """RAGX-0148: a comparação nunca preserva conteúdo diferente do novo (que já vem limpo por `_scrub`)."""
+    from ragx.config import load_config
+    from ragx.indexing.pipeline import index_project
+    from ragx.sync.service import sync
+
+    root = tmp_path / "p"
+    root.mkdir()
+    (root / "ragx.toml").write_text(
+        '[project]\nname = "s"\nid = "s"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    (root / "a.py").write_text("def a():\n    return 1\n", encoding="utf-8")
+    cfg = load_config(root)
+    index_project(cfg)
+    plantado = root / "knowledge" / "dictionary.json"
+    plantado.parent.mkdir(parents=True, exist_ok=True)
+    plantado.write_text('{"project": {"generated_at": "x"}, "segredo": "AKIAIOSFODNN7EXAMPLE"}\n', encoding="utf-8")
+    sync(cfg, full=True)
+    assert "AKIAIOSFODNN7EXAMPLE" not in plantado.read_text(encoding="utf-8")

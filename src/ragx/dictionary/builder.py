@@ -359,7 +359,10 @@ def write(cfg: Config, data: dict[str, Any], out_dir: str | None = None) -> Dict
     target.mkdir(parents=True, exist_ok=True)
     path = target / "dictionary.json"
     body = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    path.write_text(body, encoding="utf-8", newline="\n")
+    # `generated_at` (em `project`) muda sozinho a cada geração: só regrava se o CONTEÚDO mudou (RAGX-0148)
+    from ragx.sync.stable_write import write_text_if_changed
+
+    write_text_if_changed(path, body, volatile=("generated_at",))
     return DictionaryReport(path=str(path), bytes_written=len(body.encode("utf-8")))
 
 
