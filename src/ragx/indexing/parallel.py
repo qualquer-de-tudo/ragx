@@ -264,7 +264,10 @@ def _enviar(pool: ProcessPoolExecutor, lote: _Lote, stats: ParallelStats) -> _Lo
     try:
         lote.futuro = pool.submit(process_batch, candidatos)
         stats.batches += 1
-    except BrokenProcessPool as exc:
+    except (BrokenProcessPool, RuntimeError, OSError) as exc:
+        # `RuntimeError`: o `spawn` recusa subir processo quando o programa principal não tem a guarda
+        # `if __name__ == "__main__"` ("bootstrapping phase"), como num script solto; `OSError`: sem recurso para o processo.
+        # Em qualquer um dos dois o resto da rodada roda no processo principal, com o mesmo resultado.
         stats.fell_back = f"pool indisponível ({type(exc).__name__})"
     return lote
 

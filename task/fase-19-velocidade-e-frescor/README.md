@@ -1,6 +1,6 @@
 # Fase 19: Velocidade e frescor
 
-25 tarefas, derivadas da [auditoria 24](../../docs/24-auditoria-v2.md) (seções 3, 4 e 5) e da [spec 25](../../docs/25-spec-v2.md) (seção 5.1, requisitos R-V1 a R-V13). Cobrem o caminho quente de leitura e o de escrita: poda de diretórios, embedder, `refresh`, `load_index`, caches, `replace_for_document`, hooks e frescor de edições não commitadas.
+26 tarefas, derivadas da [auditoria 24](../../docs/24-auditoria-v2.md) (seções 3, 4 e 5) e da [spec 25](../../docs/25-spec-v2.md) (seção 5.1, requisitos R-V1 a R-V13). Cobrem o caminho quente de leitura e o de escrita: poda de diretórios, embedder, `refresh`, `load_index`, caches, `replace_for_document`, hooks e frescor de edições não commitadas.
 
 O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre código velho**, e dois defeitos pequenos quebram as duas promessas. A poda de diretórios fica desligada em subárvore com `.gitignore` aninhado que tenha negação (M-01): 19.120 arquivos vistos para 643 mantidos, 12,8 s dos 15 s de uma indexação sem mudança. O `refresh` por MCP roda índice e `sync` completo e regrava `knowledge/` (M-02, I-01): 26 s em processo, 72 a 91 s via MCP, contra 1,0 s do `index` puro. Somam-se `localhost` do Ollama custando ~2 s por requisição no Windows (I-03), `load_index` em laço Python em toda busca (C-02: 69 a 80 ms, cerca de 75% da busca quente), cache do `build_context` que serviu o pack de outro filtro (C-04) e nenhuma reindexação por caminho: edição não commitada nunca entra no índice por conta própria (I-02, M-10). As metas medíveis são S4 a S10 e S12 da spec 25.
 
@@ -33,6 +33,7 @@ O produto promete **não deixar o Claude lento** e **nunca raciocinar sobre cód
 | [RAGX-0151](RAGX-0151-grafo-incremental-por-documento.md) | Grafo incremental por documento | P3 | 1,5d | `done` |
 | [RAGX-0152](RAGX-0152-primeiro-indice-em-paralelo-pool-de-processos.md) | Primeiro índice em paralelo (pool de processos) | P3 | 1d | `review` |
 | [RAGX-0153](RAGX-0153-cache-de-modelos-por-usuario-e-trava-com-pid-reutilizado.md) | Cache de modelos por usuário e trava com PID reutilizado | P3 | 0,5d | `done` |
+| [RAGX-0196](RAGX-0196-varredura-sem-mudanca-em-20-mil-arquivos.md) | Varredura sem mudança em 20 mil arquivos (S4) | P3 | 1d | `review` |
 
 ## Dependências
 

@@ -255,6 +255,28 @@ def test_erro_em_worker_propaga_com_o_caminho_e_desliga_o_pool(
     assert "pkg2/mod_6.py" in erro
 
 
+def test_programa_sem_guarda_de_main_cai_para_o_sequencial_com_o_mesmo_resultado(
+    tmp_path: Path, falso: type[_ExecutorFalso], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """O `spawn` levanta `RuntimeError` num script sem `if __name__ == "__main__"`: a indexação não pode quebrar por isso."""
+    seq, par = tmp_path / "seq", tmp_path / "par"
+    seq.mkdir()
+    par.mkdir()
+    _montar(seq, jobs=1)
+    _montar(par, jobs=2)
+
+    def recusa(self, fn, *args):  # type: ignore[no-untyped-def]
+        raise RuntimeError("An attempt has been made to start a new process before the current process has finished its bootstrapping phase.")
+
+    monkeypatch.setattr(_ExecutorFalso, "submit", recusa)
+    r_par = index_project(load_config(par))
+    index_project(load_config(seq))
+    assert r_par.parallel_fallback is not None and "RuntimeError" in r_par.parallel_fallback
+    a, b = _tabelas(load_config(seq)), _tabelas(load_config(par))
+    for nome in a:
+        assert a[nome] == b[nome], nome
+
+
 @pytest.mark.parametrize("onde", ["submit", "resultado"])
 def test_pool_que_cai_refaz_o_resto_no_principal_com_o_mesmo_resultado(
     tmp_path: Path, falso: type[_ExecutorFalso], onde: str

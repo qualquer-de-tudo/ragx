@@ -518,6 +518,7 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- **Primeiro índice em paralelo cai para o sequencial também quando o programa não tem a guarda `if __name__ == "__main__"`.** No Windows o spawn reexecuta o programa que chamou o `index`; sem a guarda o pool levantava `RuntimeError` e derrubava a indexação. Agora `RuntimeError` e `OSError` do pool viram o mesmo recuo do `BrokenProcessPool`, com resultado idêntico ao sequencial (RAGX-0152).
 - **Editar um arquivo não derruba mais os vetores nem as pontes do grafo dos chunks que não
   mudaram.** `ChunkRepo.replace_for_document` apagava todos os chunks do documento e
   reinseria; como `embeddings.chunk_id` é `ON DELETE CASCADE` e `entities.chunk_id` /

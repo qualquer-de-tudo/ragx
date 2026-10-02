@@ -22,7 +22,7 @@ correspondente; regras do board em [README.md](README.md); plano geral em
 | **11** | [Multiprojeto + Federação](fase-11-multiprojeto-federacao/) | 🔴 obrigatória p/ microsserviços | 9 | ~8,5d |
 | **14** | [Evolução do RAG](fase-14-evolucao-do-rag/) | 🔴 obrigatória p/ qualidade | 18 | ~20d |
 | | **Total (fases 0 a 14)** | | **80** | **~57,75d** |
-| **19** | [Velocidade e frescor](fase-19-velocidade-e-frescor/) | 🔴 v2 | 25 | ~18d |
+| **19** | [Velocidade e frescor](fase-19-velocidade-e-frescor/) | 🔴 v2 | 26 | ~19d |
 | **20** | [Economia de tokens](fase-20-economia-de-tokens/) | 🔴 v2 | 12 | ~11,5d |
 | **21** | [Recuperação v2](fase-21-recuperacao-v2/) | 🟠 v2 | 5 | ~8d |
 | **22** | [Painel v2](fase-22-painel-v2/) | 🟠 v2 | 25 | ~17,75d |
