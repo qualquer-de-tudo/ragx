@@ -77,6 +77,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "bd7b09d96df0e3f13d2eeb4f04d81d6d",
+    "confidence": 1.0,
+    "document_id": "e7c6cad44c3497c428001f9ec676c45b",
+    "id": "06e9e0679e4250a9a4c414c72fc1d2ee",
+    "name": "gerar#part-2",
+    "qualified_name": "scripts/gerar_benchmarks.py::gerar#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "d7322cdbdde776bd0d29089968cd56fb",
     "confidence": 1.0,
     "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
@@ -1089,6 +1100,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "c346aa5ada7c5e449d94c0c21cb0c84e",
+    "confidence": 1.0,
+    "document_id": "9d812dd36a216d6f44ed01324007695e",
+    "id": "647266a7b32149ad6fe6f00fee64f182",
+    "name": "test_metas_do_json_sao_coerentes_com_o_ultimo_valor",
+    "qualified_name": "tests/unit/test_benchmarks_doc.py::test_metas_do_json_sao_coerentes_com_o_ultimo_valor",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "69260146e8edb95991e41c80fcb7dc7c",
@@ -1362,6 +1384,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "e7c6cad44c3497c428001f9ec676c45b",
+    "id": "785cd007cadbd11143b6b6ce66676645",
+    "name": "gerar_benchmarks.py",
+    "qualified_name": "scripts/gerar_benchmarks.py",
+    "source": "structural",
+    "summary": "Gera `docs/27-benchmarks.md` a partir de `src/app/src/data/benchmarks.json`, a fonte única dos Benchmarks do painel.\n\n    uv run python scripts/gerar_benchmarks.py           # reescreve a página\n    uv run python scripts/gerar_benchmarks.py --check   # sai com 1 se a página não bate com o JSON\n\nPara publicar um resultado novo: acrescente o ponto às métricas (ou uma métrica nova), a entrada na linha do tempo e rode isto.\n`tests/unit/test_benchmarks_doc.py` falha se a página e o JSON divergirem.",
+    "type": "file"
   },
   {
     "chunk_id": "da9390d670a4d5db5823fc688b85b2d5",
@@ -1921,7 +1954,7 @@
     "name": "HowItWorksPage.tsx",
     "qualified_name": "src/app/src/pages/HowItWorksPage.tsx",
     "source": "structural",
-    "summary": "import { HOW_KEEPS, HOW_LOCAL, HOW_STEPS } from '../components/onboarding/howItWorks'",
+    "summary": "import { useState } from 'react'",
     "type": "file"
   },
   {

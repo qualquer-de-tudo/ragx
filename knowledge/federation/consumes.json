@@ -220,10 +220,10 @@
       "confidence": 0.85,
       "contract": null,
       "detected_by": "reference",
-      "handler": "ab#part-1",
+      "handler": "ab#part-2",
       "normalized": "--execute",
       "raw": "--execute",
-      "source": "src/ragx/cli/commands/ab_cmd.py:26"
+      "source": "src/ragx/cli/commands/ab_cmd.py:38"
     },
     {
       "confidence": 0.85,
@@ -445,10 +445,10 @@
       "confidence": 0.85,
       "contract": null,
       "detected_by": "reference",
-      "handler": "ab#part-1",
+      "handler": "ab#part-2",
       "normalized": "--max-calls",
       "raw": "--max-calls",
-      "source": "src/ragx/cli/commands/ab_cmd.py:26"
+      "source": "src/ragx/cli/commands/ab_cmd.py:38"
     },
     {
       "confidence": 0.85,
@@ -616,10 +616,10 @@
       "confidence": 0.85,
       "contract": null,
       "detected_by": "reference",
-      "handler": "ab#part-1",
+      "handler": "eval_cmd#part-1",
       "normalized": "--queries",
       "raw": "--queries",
-      "source": "src/ragx/cli/commands/ab_cmd.py:26"
+      "source": "src/ragx/cli/commands/eval_cmd.py:17"
     },
     {
       "confidence": 0.85,
@@ -764,6 +764,15 @@
       "normalized": "--semantic",
       "raw": "--semantic",
       "source": "src/ragx/cli/commands/dictionary_cmd.py:18"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "ab#part-1",
+      "normalized": "--setting-sources",
+      "raw": "--setting-sources",
+      "source": "src/ragx/cli/commands/ab_cmd.py:26"
     },
     {
       "confidence": 0.85,
@@ -931,6 +940,15 @@
       "confidence": 0.85,
       "contract": null,
       "detected_by": "reference",
+      "handler": "ab#part-1",
+      "normalized": "--with-hooks",
+      "raw": "--with-hooks",
+      "source": "src/ragx/cli/commands/ab_cmd.py:26"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
       "handler": "remove_cmd",
       "normalized": "--yes",
       "raw": "--yes",
@@ -1016,6 +1034,15 @@
       "normalized": "error",
       "raw": "error",
       "source": "src/app/electron/system/http.ts:3"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "_gerador",
+      "normalized": "gerar.benchmarks",
+      "raw": "gerar_benchmarks",
+      "source": "tests/unit/test_benchmarks_doc.py:17"
     },
     {
       "confidence": 0.85,

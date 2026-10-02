@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "418c51d1d28721f2a5237b6e8efa4d1fcb92fae62dc0575eaa59bc0d3c8abc0f",
+  "doc_kind": "code",
+  "id": "e7c6cad44c3497c428001f9ec676c45b",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/gerar_benchmarks.py",
+  "size_bytes": 6490,
+  "title": "Gera `docs/27-benchmarks.md` a partir de `src/app/src/data/benchmarks.json`, a fonte única dos Benchmarks do painel.\n\n    uv run python scripts/gerar_benchmarks.py           # reescreve a página\n    uv run python scripts/gerar_benchmarks.py --check   # sai com 1 se a página não bate com o JSON\n\nPara publicar um resultado novo: acrescente o ponto às métricas (ou uma métrica nova), a entrada na linha do tempo e rode isto.\n`tests/unit/test_benchmarks_doc.py` falha se a página e o JSON divergirem."
+}

@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "623eaf30e66b874baf51672ee1295e1988a34a157891a8a2613346f0e1c7a204",
+  "content_hash": "c39529fe6777644e7b0c4738e44bbbe5c2fa0827266b98641ae519e48742ccc5",
   "doc_kind": "code",
   "id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/search/ab.py",
-  "size_bytes": 15865,
+  "size_bytes": 17874,
   "title": "Harness de A/B de economia: as mesmas tarefas, com e sem o RAGX (RAGX-0162, S14).\n\n\"O RAGX economiza X%\" não é afirmável sem medir: o baseline do painel e do `ragx trial` é o arquivo\ninteiro (`size_bytes/4`), e um agente com `Grep` não leria 16 arquivos inteiros. A única medição honesta é\num A/B: cada tarefa roda por `claude -p` em braços (`without`: sem MCP; `full` e `slim`: o servidor do RAGX\nem cada perfil), com o MESMO modelo e as MESMAS ferramentas nativas, e se compara o consumo que o próprio\nClaude Code reporta, só nas tarefas em que os dois braços ACHARAM o arquivo certo (economia sem acerto não\nconta, a mesma lógica da cobertura de fonte do `trial`).\n\nEste módulo é o harness. Ele NÃO roda nada por conta própria: `dry_run` só imprime o plano, `SimulatedRunner`\ngera números determinísticos (marcados `simulated`, nunca apresentados como economia real) e o\n`ClaudeRunner` só é chamado quando a pessoa pede `ragx ab --execute` com as guardas de custo.\n\nNão persiste o TEXTO da resposta: só `hit`, os caminhos citados e contagens."
 }
