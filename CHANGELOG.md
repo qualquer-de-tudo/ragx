@@ -9,6 +9,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.0.0] — 2026-10-02
+
 ### Adicionado
 
 - **`ragx bench models`: benchmark local de modelos de embedding e reranker.** Mede, numa cópia do índice e nos dois conjuntos de avaliação, só o que já
