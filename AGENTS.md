@@ -41,8 +41,20 @@ uv tool install --editable --force --python 3.12 ".[all]"
 
 ## Testes e lint
 
+Ciclo rápido (medido em 01/10/2026, Windows):
+
 ```bash
-uv run pytest -m "not slow"     # suíte rápida (1087 testes)
+cd src/app && npm run check     # lint + tsc + vitest em paralelo: ~13 s (antes ~125 s em série)
+uv run pytest -m "not slow" -n auto   # Python em paralelo: ~39 s (antes ~245 s)
+uv run pytest tests/security    # só quando mexer em leitura de arquivo ou no Security Gate
+```
+
+Rode a suíte Python só quando a mudança tocar Python; para o painel, `npm run check` basta. Edite arquivos com as
+ferramentas de edição, não com `python - <<EOF` / heredoc de shell com aspas aninhadas: no Windows isso quebrou o
+escape dezenas de vezes.
+
+```bash
+uv run pytest -m "not slow"     # suíte rápida (1087 testes), em série
 uv run pytest tests/security    # suíte de segurança isolada — ver marker abaixo
 uv run ruff check .
 uv run mypy src/ragx/core src/ragx/security   # strict nestes dois pacotes

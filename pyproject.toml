@@ -80,3 +80,8 @@ markers = [
 [tool.coverage.run]
 source = ["src/ragx"]
 branch = true
+
+[dependency-groups]
+dev = [
+    "pytest-xdist>=3.8.0",
+]

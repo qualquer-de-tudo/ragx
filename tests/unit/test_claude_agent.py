@@ -96,7 +96,8 @@ def test_arquivo_da_pessoa_com_o_mesmo_nome_nao_e_sobrescrito(casa: Path) -> Non
     alheio.parent.mkdir(parents=True)
     alheio.write_text("---\nname: ragx-explorer\ndescription: meu\n---\nmeu texto\n", encoding="utf-8")
     r = runner.invoke(app, ["claude", "agent", "install"])
-    assert r.exit_code == 1 and "não é do RAGX" in r.output
+    # o Rich quebra a linha conforme o tamanho do caminho temporário (cada worker do xdist tem o seu)
+    assert r.exit_code == 1 and "não é do RAGX" in " ".join(r.output.split())
     assert alheio.read_text(encoding="utf-8").endswith("meu texto\n")
     runner.invoke(app, ["claude", "agent", "remove"])  # e o remove também o deixa
     assert alheio.exists()

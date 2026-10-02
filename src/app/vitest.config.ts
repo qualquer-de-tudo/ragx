@@ -12,6 +12,8 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'jsdom',
+      // não varre builds antigos nem o que o Electron empacotou
+      exclude: ['**/node_modules/**', 'dist/**', 'dist-electron/**', 'release/**', 'resources/**'],
       setupFiles: ['./src/test/setup.ts'],
     },
   }),
