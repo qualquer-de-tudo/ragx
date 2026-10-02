@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Resultados da v2 medidos de novo, com o que não bateu.** `docs/26-resultados-v2.md` repete os 14 SLOs da spec 25 com o código
+  final: 10 atingidos (S1 2.958 tokens, S5 1,77 s, S6 1,4 s, S7 75 ms, S8 99 ms, S9 40 ms, S10 22 ms, S11 ≈4 filhos/min visível e 0
+  minimizada, S12 e S13), S2 só com o perfil `slim` (370 tokens; o padrão `full` fica em 2.680), **S4 não atingida** (7,69 s com 20 mil
+  arquivos contra 1,5 s; 0,21 s no repo real), S3 e S14 `n/a` (RAGX-0111 e A/B real pendentes). Documentação conferida contra o código:
+  contagem de testes (`AGENTS.md`), perfil `slim` e `stale_paths`, 17 tipos de tarefa do painel, índices das fases 19 a 22 (RAGX-0195).
+
 - **Worktree novo não reembute o que o irmão já embutiu.** Cada `git worktree` subia o índice do zero: no clone de
   teste (9 mil chunks, fastembed) o primeiro índice de um worktree novo levava 127 s, igual ao índice a frio, com todos
   os chunks reembutidos. O cache de embedding agora é um só por repositório (`<.git comum>/ragx/cache`, lendo também o

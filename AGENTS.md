@@ -54,7 +54,7 @@ ferramentas de edição, não com `python - <<EOF` / heredoc de shell com aspas 
 escape dezenas de vezes.
 
 ```bash
-uv run pytest -m "not slow"     # suíte rápida (1087 testes), em série
+uv run pytest -m "not slow"     # suíte rápida (1950 testes), em série
 uv run pytest tests/security    # suíte de segurança isolada — ver marker abaixo
 uv run ruff check .
 uv run mypy src/ragx/core src/ragx/security   # strict nestes dois pacotes

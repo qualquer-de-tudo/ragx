@@ -325,7 +325,7 @@ O servidor expõe 33 ferramentas (perfil `full`, o padrão), mas só `build_cont
 custam tokens em todo turno e quase nunca são chamadas. O custo fixo (nome + descrição + schema de
 entrada de cada ferramenta, no prompt de TODA requisição ao modelo) é **~2.600 tokens** no `full`.
 
-O perfil **`slim`** expõe 6, com os mesmos nomes e argumentos do `full`, e custa **~360 tokens**
+O perfil **`slim`** expõe 6, com os mesmos nomes e argumentos do `full`, e custa **~370 tokens**
 (−86%):
 
 | Ferramenta | Para quê |

@@ -170,6 +170,14 @@ Vetor **parcial** (o embedder caiu no meio de uma indexação) é outra coisa: o
 `ragx search --json`, na resposta MCP (só quando existe) e em `stats.partial_vectors` do
 `ContextPack`. A correção é `ragx index --embed-only`.
 
+### Frescor: `stale_paths` (RAGX-0141)
+
+Uma edição ainda não reindexada não pode ser invisível. O hook `PostToolUse` do Claude Code enfileira o arquivo editado
+(`ragx touch`); antes de buscar, o servidor MCP reindexa a fila (`touchq.settle`). O que ainda ficou para trás (índice
+ocupado, falha) volta na resposta como `stale_paths` (até 20 caminhos) e `stale_count`, em vez de a busca fingir que está
+tudo em dia. Só aparecem caminhos que o Security Gate admitiria pelo nome. Detalhes e a latência medida em
+[09-mcp.md](09-mcp.md#frescor-fila-de-edição-e-stale_paths-ragx-0141).
+
 Saída da CLI:
 
 ```text

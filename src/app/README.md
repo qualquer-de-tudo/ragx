@@ -525,7 +525,7 @@ registro do hub também falha, com o motivo. O texto de erro vem do bloco
 `erro:` do stderr (os processos rodam com `COLUMNS=500` para o Rich não
 quebrar a mensagem), e comandos globais rodam na pasta do usuário.
 
-O catálogo é fechado: só estes 16 tipos existem, e cada um sabe qual
+O catálogo é fechado: só estes 17 tipos existem, e cada um sabe qual
 comando roda.
 
 | `kind`            | Comando                                                                                                                |
@@ -541,6 +541,7 @@ comando roda.
 | `hooks-uninstall` | `ragx hooks uninstall <pasta>`                                                                                          |
 | `remove-from-hub` | `ragx project unregister -- <nome>`                                                                                    |
 | `mcp-register`    | `ragx mcp install --client claude-code`                                                                                |
+| `ragx-install`    | (Windows) encerra servidores MCP e indexações do RAGX em andamento; `uv tool install --force --no-config --python <python do pacote> <wheel>[all]`; depois `ragx mcp install --client claude-code`. Falta de pacote vira `JobRejected` sem processo |
 | `ollama-start`    | `docker start ollama` (Docker) ou `ollama serve` destacado e espera da API (local); qual dos dois é decidido por `chooseStartMode` (ver abaixo) |
 | `ollama-pull`     | segue o modo: `docker exec ollama ollama pull <modelo>` (Docker) ou `ollama pull <modelo>` (local)                     |
 | `ollama-use-native` | `winget install -e --id Ollama.Ollama --silent --accept-package-agreements --accept-source-agreements` (se não estiver instalado), `docker stop ollama` (se estiver rodando), `ollama serve` destacado (se não estiver rodando), espera da API e `ollama pull <modelo>` para cada modelo em uso. Instala antes de parar o container: se o `winget` falhar, o Docker continua servindo |

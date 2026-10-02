@@ -36,6 +36,9 @@ responde busca híbrida, monta contexto para agentes e expõe tudo via MCP.
 | [21 — Orquestração de tarefas](21-orquestracao-de-tarefas.md) | SQLite, DAG, lease, retry, scheduler, worker | 13 |
 | [22 — VS Code e desempenho](22-vscode-e-desempenho.md) | Conexão, prontidão, reconexão, onde o tempo vai | 14 |
 | [23 — Auditoria do RAG](23-auditoria-e-evolucao-do-rag.md) | Onde a recuperação perde precisão e tempo, e a proposta | — |
+| [24 — Auditoria v2](24-auditoria-v2.md) | Achados de velocidade, tokens, frescor e painel, com número | 19–22 |
+| [25 — Spec v2](25-spec-v2.md) | Princípios, SLOs S1 a S14 e escopo da v2 | 19–22 |
+| [26 — Resultados v2](26-resultados-v2.md) | O que foi medido de novo com o código final, contra os SLOs | 19–22 |
 | [Roadmap](roadmap.md) | Fases, dependências, critérios de aceite | todas |
 | [ADRs](adr/) | Decisões arquiteturais registradas | — |
 

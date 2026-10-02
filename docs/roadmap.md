@@ -169,3 +169,20 @@ Ordem de grandeza para **um desenvolvedor**, não compromisso de prazo:
 
 O orçamento de tamanho e a identidade de projeto acrescentam ~2 dias à Fase 1 e
 ~1 dia à Fase 9. É o custo de não ter que migrar o schema depois.
+
+## Fases 19 a 22 — a v2
+
+Depois das fases 0 a 11 (e 14 a 18, descritas nos `README.md` de `task/`), a **v2** responde a três promessas: gastar
+menos tokens, não deixar o Claude lento e nunca raciocinar sobre código velho. Vem da [auditoria 24](24-auditoria-v2.md),
+os SLOs S1 a S14 estão na [spec 25](25-spec-v2.md) e o que foi medido de novo com o código final, em
+[26 — Resultados v2](26-resultados-v2.md). Ordem de execução e regras do loop: [`task/ROTEIRO-V2.md`](../task/ROTEIRO-V2.md).
+
+| Fase | Tema | Tarefas | Esforço |
+|------|------|---------|---------|
+| 19 | Velocidade e frescor (caminho quente, escrita, índice incremental) | 25 | ~18d |
+| 20 | Economia de tokens (fio do MCP, perfil `slim`, dedupe, hooks) | 12 | ~11,5d |
+| 21 | Recuperação v2 (prefixo contextual, conjunto-ouro, repo map, worktrees) | 5 | ~8d |
+| 22 | Painel v2 (consumo, design, adoção, tray, atualização) | 25 | ~17,75d |
+
+Dependências entre fases: a 21 herda 14 tarefas ainda pendentes da fase 14 (modelo, prefixos, conjunto de avaliação), e é por
+isso que parte dela está `blocked`. O status de cada tarefa vive no `README.md` da fase.

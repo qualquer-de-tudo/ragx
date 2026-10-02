@@ -69,7 +69,7 @@ ragx graph rebuild                        # grafo de entidades e relações
 ragx dictionary generate                  # mapa barato do projeto
 ragx context "implementar SSO" --tokens 3000
 ragx watch                                # o índice acompanha o que você edita
-ragx mcp serve                            # 33 ferramentas para o agente
+ragx mcp serve                            # 33 ferramentas (perfil full); --profile slim expõe 6
 ```
 
 Regras compartilhadas entre todos os seus projetos:

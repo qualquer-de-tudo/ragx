@@ -21,11 +21,16 @@ correspondente; regras do board em [README.md](README.md); plano geral em
 | **10** | [Hardening + Release](fase-10-hardening/) | 🔴 obrigatória | 6 | ~3,5d |
 | **11** | [Multiprojeto + Federação](fase-11-multiprojeto-federacao/) | 🔴 obrigatória p/ microsserviços | 9 | ~8,5d |
 | **14** | [Evolução do RAG](fase-14-evolucao-do-rag/) | 🔴 obrigatória p/ qualidade | 18 | ~20d |
-| | **Total** | | **80** | **~57,75d** |
+| | **Total (fases 0 a 14)** | | **80** | **~57,75d** |
+| **19** | [Velocidade e frescor](fase-19-velocidade-e-frescor/) | 🔴 v2 | 25 | ~18d |
+| **20** | [Economia de tokens](fase-20-economia-de-tokens/) | 🔴 v2 | 12 | ~11,5d |
+| **21** | [Recuperação v2](fase-21-recuperacao-v2/) | 🟠 v2 | 5 | ~8d |
+| **22** | [Painel v2](fase-22-painel-v2/) | 🟠 v2 | 25 | ~17,75d |
+| | **Total da v2 (fases 19 a 22)** | | **67** | **~55,25d** |
 
 > Estimativas são ordem de grandeza para um desenvolvedor, não compromisso de prazo.
 >
-> **Este índice detalhado vai até a Fase 14.** As Fases 15 a 18 estão nos `README.md` das próprias pastas, e as Fases 19 a 22 (a v2, RAGX-0129 a 0195) em [ROTEIRO-V2.md](ROTEIRO-V2.md), que traz IDs, dependências e ordem de execução.
+> **O total das fases 0 a 14 não inclui as Fases 15 a 18**, que estão nos `README.md` das próprias pastas. As Fases 19 a 22 (a v2, RAGX-0129 a 0195) entram na tabela com a soma da coluna Est. de cada `README.md` de fase; IDs, dependências e ordem de execução estão em [ROTEIRO-V2.md](ROTEIRO-V2.md), e os números medidos em [26-resultados-v2.md](../docs/26-resultados-v2.md).
 
 ## Fase 0 — Fundação + Security Gate
 
