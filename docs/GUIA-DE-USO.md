@@ -61,7 +61,7 @@ A explicação do passo 1 fica sempre disponível na tela **Como funciona**.
 | **Detalhe do projeto** | Quatro abas: *Visão geral*, *Economia de tokens*, *Histórico* e *Manutenção*. |
 | **Atividade** | O que os agentes e a CLI estão fazendo, ao vivo: chamadas MCP, sessões do Claude, comandos no terminal. Nunca mostra o texto da consulta. A lista é paginada (50 eventos ou 20 sessões por página). |
 | **Conexões** | CLI, Claude Code e Ollama, com correção de um clique. |
-| **Como funciona** | Fica no fim da barra lateral: o caminho do dado em cinco passos, o que mantém o índice em dia e onde ficam os dados. |
+| **Como funciona** | Fica no fim da barra lateral. Aba **Como funciona**: o caminho do dado em cinco passos, o que mantém o índice em dia e onde ficam os dados. Aba **Benchmarks**: o que o RAGX mediu de si mesmo (antes, depois, meta, método), a medição contra um agente sem RAGX, a qualidade da busca e a linha do tempo das etapas. Os mesmos números estão em [27-benchmarks.md](27-benchmarks.md). |
 
 ### Selos de estado de um projeto
 

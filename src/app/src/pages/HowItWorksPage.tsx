@@ -1,8 +1,17 @@
+import { useState } from 'react'
 import { HOW_KEEPS, HOW_LOCAL, HOW_STEPS } from '../components/onboarding/howItWorks'
+import { BenchmarksView } from '../components/benchmarks/BenchmarksView'
+import { Segmented } from '../components/ui/Segmented'
+
+type Tab = 'como' | 'benchmarks'
+
+/** A aba escolhida vale até fechar o painel (como a visão da Atividade). */
+let tabPref: Tab = 'como'
 
 /**
- * Tela "Como funciona" (fim da barra lateral): o caminho do dado em cinco passos, o que mantém o índice em dia sozinho
- * e onde ficam os dados. O passo 1 do onboarding usa o texto corrido de `HOW_IT_WORKS`.
+ * Tela "Como funciona" (fim da barra lateral). Duas abas: a explicação (o caminho do dado em cinco passos, o que mantém o
+ * índice em dia sozinho e onde ficam os dados) e os Benchmarks públicos (o que o RAGX mediu de si mesmo, com a linha do
+ * tempo). O passo 1 do onboarding usa o texto corrido de `HOW_IT_WORKS`.
  */
 export function HowItWorksPage({
   onRestart,
@@ -12,72 +21,96 @@ export function HowItWorksPage({
   /** Leva para Conexões, onde se vê o estado dos hooks. Sem ele, o botão não aparece. */
   onOpenConnections?: () => void
 }) {
+  const [tab, setTabState] = useState<Tab>(tabPref)
+  const setTab = (t: Tab) => {
+    tabPref = t
+    setTabState(t)
+  }
   return (
     <section className="page how-page">
       <header className="page-head">
         <div>
           <h1 className="page-title">Como funciona</h1>
-          <p className="page-lede">Do seu código ao Claude Code, tudo dentro da sua máquina.</p>
+          <p className="page-lede">
+            {tab === 'como'
+              ? 'Do seu código ao Claude Code, tudo dentro da sua máquina.'
+              : 'O que o RAGX mediu de si mesmo, etapa por etapa.'}
+          </p>
         </div>
+        <Segmented
+          label="Seção"
+          value={tab}
+          options={[
+            { value: 'como', label: 'Como funciona' },
+            { value: 'benchmarks', label: 'Benchmarks' },
+          ]}
+          onChange={setTab}
+        />
       </header>
 
-      <section className="card how-flow" aria-labelledby="how-flow-title">
-        <h2 className="card-title" id="how-flow-title">
-          O caminho do dado
-        </h2>
-        <ol className="how-steps">
-          {HOW_STEPS.map((s, i) => (
-            <li key={s.title} className="how-step">
-              <span className="how-step-n" aria-hidden="true">
-                {i + 1}
-              </span>
-              <h3 className="how-step-title">{s.title}</h3>
-              <p className="how-step-text">{s.text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
+      {tab === 'benchmarks' ? (
+        <BenchmarksView />
+      ) : (
+        <>
+          <section className="card how-flow" aria-labelledby="how-flow-title">
+            <h2 className="card-title" id="how-flow-title">
+              O caminho do dado
+            </h2>
+            <ol className="how-steps">
+              {HOW_STEPS.map((s, i) => (
+                <li key={s.title} className="how-step">
+                  <span className="how-step-n" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <h3 className="how-step-title">{s.title}</h3>
+                  <p className="how-step-text">{s.text}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
 
-      <div className="how-cols">
-        <section className="card how-keep" aria-labelledby="how-keep-title">
-          <h2 className="card-title" id="how-keep-title">
-            O que mantém o índice em dia
-          </h2>
-          <ul className="how-list">
-            {HOW_KEEPS.map((k) => (
-              <li key={k.title}>
-                <p className="how-list-title">{k.title}</p>
-                <p className="how-list-text">{k.text}</p>
-              </li>
-            ))}
-          </ul>
-          {onOpenConnections && (
-            <button type="button" className="btn btn-sm how-link" onClick={onOpenConnections}>
-              Ver os hooks em Conexões
+          <div className="how-cols">
+            <section className="card how-keep" aria-labelledby="how-keep-title">
+              <h2 className="card-title" id="how-keep-title">
+                O que mantém o índice em dia
+              </h2>
+              <ul className="how-list">
+                {HOW_KEEPS.map((k) => (
+                  <li key={k.title}>
+                    <p className="how-list-title">{k.title}</p>
+                    <p className="how-list-text">{k.text}</p>
+                  </li>
+                ))}
+              </ul>
+              {onOpenConnections && (
+                <button type="button" className="btn btn-sm how-link" onClick={onOpenConnections}>
+                  Ver os hooks em Conexões
+                </button>
+              )}
+            </section>
+
+            <section className="card how-local" aria-labelledby="how-local-title">
+              <h2 className="card-title" id="how-local-title">
+                Onde ficam seus dados
+              </h2>
+              <ul className="how-list how-list-plain">
+                {HOW_LOCAL.map((t) => (
+                  <li key={t}>
+                    <p className="how-list-text">{t}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+
+          <div className="how-foot">
+            <p className="dim">Quer rever a configuração inicial?</p>
+            <button type="button" className="btn" onClick={onRestart}>
+              Refazer configuração
             </button>
-          )}
-        </section>
-
-        <section className="card how-local" aria-labelledby="how-local-title">
-          <h2 className="card-title" id="how-local-title">
-            Onde ficam seus dados
-          </h2>
-          <ul className="how-list how-list-plain">
-            {HOW_LOCAL.map((t) => (
-              <li key={t}>
-                <p className="how-list-text">{t}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <div className="how-foot">
-        <p className="dim">Quer rever a configuração inicial?</p>
-        <button type="button" className="btn" onClick={onRestart}>
-          Refazer configuração
-        </button>
-      </div>
+          </div>
+        </>
+      )}
     </section>
   )
 }

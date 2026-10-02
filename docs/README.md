@@ -39,6 +39,7 @@ responde busca híbrida, monta contexto para agentes e expõe tudo via MCP.
 | [24 — Auditoria v2](24-auditoria-v2.md) | Achados de velocidade, tokens, frescor e painel, com número | 19–22 |
 | [25 — Spec v2](25-spec-v2.md) | Princípios, SLOs S1 a S14 e escopo da v2 | 19–22 |
 | [26 — Resultados v2](26-resultados-v2.md) | O que foi medido de novo com o código final, contra os SLOs | 19–22 |
+| [27 — Benchmarks](27-benchmarks.md) | Números públicos, com antes, depois, método e linha do tempo (gerado do JSON do painel) | 23 |
 | [Roadmap](roadmap.md) | Fases, dependências, critérios de aceite | todas |
 | [ADRs](adr/) | Decisões arquiteturais registradas | — |
 

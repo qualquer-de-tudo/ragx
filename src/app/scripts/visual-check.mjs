@@ -185,6 +185,7 @@ const SCREENS = [
   { id: 'conexoes', run: async (page) => { await page.getByRole('button', { name: 'Conexões' }).first().click() } },
   { id: 'preferencias', run: async (page) => { await page.getByRole('button', { name: 'Preferências' }).first().click() } },
   { id: 'como-funciona', run: async (page) => { await page.getByRole('button', { name: 'Como funciona' }).first().click() } },
+  { id: 'como-funciona-benchmarks', run: async (page) => { await page.getByRole('button', { name: 'Como funciona' }).first().click(); await page.getByRole('radio', { name: 'Benchmarks' }).click() } },
   { id: 'paleta', run: async (page) => { await page.keyboard.press('Control+k'); await page.getByRole('combobox', { name: 'Buscar comando' }).waitFor() } },
   { id: 'atalhos', run: async (page) => { await page.keyboard.press('Shift+?') ; await page.getByRole('dialog', { name: 'Atalhos de teclado' }).waitFor() } },
   { id: 'onboarding', url: '/?onboarding=1', run: async () => {} },

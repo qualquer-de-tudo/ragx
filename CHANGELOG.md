@@ -9,6 +9,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Benchmarks públicos no painel (Como funciona → Benchmarks).** O que o RAGX mediu de si mesmo, com antes, depois, meta, método, data e máquina: 11 métricas em 4 grupos
+  (10 de 11 metas atingidas; a do índice sem mudança em 20 mil arquivos aparece como não atingida), a medição contra um agente sem RAGX com o veredito como ele foi
+  (inconclusivo em tokens faturáveis, custo −18%, turnos 6 → 3), a qualidade da busca com intervalo de confiança e uma linha do tempo das etapas. A fonte é um JSON
+  embutido no painel (nenhuma chamada de rede); `docs/27-benchmarks.md` é gerado dele por `scripts/gerar_benchmarks.py` e um teste falha se divergirem.
+
 ### Corrigido
 
 - **`ragx ab --execute`: o braço com RAGX nunca conseguia usar o RAGX.** Em `claude -p` as ferramentas de MCP exigem permissão e ninguém a aprova, então toda

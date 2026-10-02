@@ -92,6 +92,10 @@ de propósito** — fixtures do próprio Security Gate. Não são um vazamento r
   `ragx dictionary generate` alteram arquivos rastreados; isso é esperado,
   não um efeito colateral para reverter.
 
+## Benchmarks
+
+Os números públicos do produto vivem em `src/app/src/data/benchmarks.json` (o painel os mostra em *Como funciona → Benchmarks*). Ao medir algo novo ou fechar uma release, acrescente o ponto e a entrada da linha do tempo e rode `uv run python scripts/gerar_benchmarks.py`; `tests/unit/test_benchmarks_doc.py` falha se `docs/27-benchmarks.md` divergir. Número entra com método e data, meta não atingida e resultado inconclusivo entram como tais.
+
 ## CHANGELOG
 
 Toda PR que muda comportamento, corrige bug ou adiciona algo visível ao

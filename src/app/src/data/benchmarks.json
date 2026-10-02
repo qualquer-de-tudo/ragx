@@ -1,0 +1,223 @@
+{
+  "schema": 1,
+  "updated": "2026-10-02",
+  "environment": "Windows 11, Intel i5-13600KF, 31,8 GB de RAM, GPU AMD RX 7700 XT (Ollama)",
+  "intro": "Números medidos pelo próprio RAGX, com a data, o método e a máquina. Onde a meta não foi atingida, está dito. Onde o resultado é inconclusivo, também.",
+  "snapshots": [
+    { "id": "beta5", "version": "1.0.0-beta.5", "date": "2026-09-30", "title": "Linha de base (auditoria da v2)" },
+    { "id": "v1.0.0", "version": "1.0.0", "date": "2026-10-02", "title": "Lançamento da v1" }
+  ],
+  "metrics": [
+    {
+      "id": "wire-context",
+      "group": "Economia de tokens",
+      "name": "Contexto entregue por consulta",
+      "detail": "build_context com orçamento de 3.000 tokens, medido no fio do MCP",
+      "unit": "tokens",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 7684 },
+        { "snapshot": "v1.0.0", "value": 2958 }
+      ],
+      "goal": { "value": 3200, "met": true },
+      "method": "scripts/medir_fio.py --tool build_context --arg tokens=3000 (tiktoken cl100k, que não é o tokenizador do Claude)"
+    },
+    {
+      "id": "fixed-mcp",
+      "group": "Economia de tokens",
+      "name": "Custo fixo das ferramentas por sessão",
+      "detail": "o que as ferramentas do MCP custam em toda sessão, no perfil padrão (slim)",
+      "unit": "tokens",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 2660 },
+        { "snapshot": "v1.0.0", "value": 385 }
+      ],
+      "goal": { "value": 600, "met": true },
+      "method": "ragx mcp tools --json, régua compacta (chars/4). O perfil full (33 ferramentas) segue em 2.723."
+    },
+    {
+      "id": "dictionary-l0",
+      "group": "Economia de tokens",
+      "name": "Mapa do projeto, nível 0",
+      "detail": "get_dictionary: o primeiro olhar do agente no projeto",
+      "unit": "tokens",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 8660 },
+        { "snapshot": "v1.0.0", "value": 556 }
+      ],
+      "goal": { "value": 800, "met": true },
+      "method": "scripts/medir_fio.py --tool get_dictionary --arg level=0 (tiktoken)"
+    },
+    {
+      "id": "first-search",
+      "group": "Velocidade",
+      "name": "Primeira busca de uma sessão",
+      "detail": "search_hybrid com o processo recém-aberto",
+      "unit": "ms",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 3000, "note": "faixa medida: 3,0 a 5,0 s; usamos o melhor extremo" },
+        { "snapshot": "v1.0.0", "value": 40 }
+      ],
+      "goal": { "value": 600, "met": true },
+      "method": "scripts/medir_mcp_frio.py --espera 5 (5 amostras)"
+    },
+    {
+      "id": "warm-search",
+      "group": "Velocidade",
+      "name": "Busca com o processo aquecido",
+      "detail": "search_hybrid, mediana de 20",
+      "unit": "ms",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 104, "note": "faixa medida: 104 a 172 ms; usamos o melhor extremo" },
+        { "snapshot": "v1.0.0", "value": 22 }
+      ],
+      "goal": { "value": 60, "met": true },
+      "method": "search(cfg, q, mode=\"hybrid\", limit=10) em laço, depois de uma chamada de aquecimento (sem o transporte MCP)"
+    },
+    {
+      "id": "hint",
+      "group": "Velocidade",
+      "name": "Dica de início de sessão",
+      "detail": "ragx claude hint, no SessionStart do Claude Code",
+      "unit": "ms",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 481, "note": "faixa medida: 481 a 659 ms; usamos o melhor extremo" },
+        { "snapshot": "v1.0.0", "value": 75 }
+      ],
+      "goal": { "value": 120, "met": true },
+      "method": "scripts/medir_hooks.py --n 12 (mediana)"
+    },
+    {
+      "id": "commit-hook",
+      "group": "Velocidade",
+      "name": "Tempo que o git commit espera pelo hook",
+      "detail": "parte síncrona do post-commit",
+      "unit": "ms",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 539, "note": "faixa medida: 539 a 1.041 ms; usamos o melhor extremo" },
+        { "snapshot": "v1.0.0", "value": 99 }
+      ],
+      "goal": { "value": 150, "met": true },
+      "method": "scripts/medir_hooks.py --n 12 (mediana)"
+    },
+    {
+      "id": "refresh",
+      "group": "Frescor",
+      "name": "Reindexar depois de editar 1 a 4 arquivos",
+      "detail": "refresh incremental, processo já aquecido",
+      "unit": "s",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 26, "note": "faixa medida: 26 a 91 s; usamos o melhor extremo" },
+        { "snapshot": "v1.0.0", "value": 1.77 }
+      ],
+      "goal": { "value": 3, "met": true },
+      "method": "WriteAPI(load_config(), True).refresh() com um arquivo alterado"
+    },
+    {
+      "id": "edit-visible",
+      "group": "Frescor",
+      "name": "Edição não commitada visível na busca",
+      "detail": "do salvar o arquivo até a busca por palavra-chave achá-lo",
+      "unit": "s",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": null, "note": "indefinida: só aparecia no próximo commit ou refresh" },
+        { "snapshot": "v1.0.0", "value": 1.4 }
+      ],
+      "goal": { "value": 5, "met": true },
+      "method": "ragx touch real num projeto de 40 arquivos, sondando a busca a cada 50 ms (5 rodadas)"
+    },
+    {
+      "id": "no-change-20k",
+      "group": "Frescor",
+      "name": "Índice sem mudança, 20 mil arquivos",
+      "detail": "projeto sintético de 20.000 arquivos, nenhum alterado",
+      "unit": "s",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 7.6, "note": "faixa medida: 7,6 a 15 s; usamos o melhor extremo" },
+        { "snapshot": "v1.0.0", "value": 3.7, "note": "7,69 s na rodada do relatório e 3,7 s na seguinte, com a máquina mais livre" }
+      ],
+      "goal": { "value": 1.5, "met": false },
+      "method": "scripts/medir_indice_inicial.py --arquivos 20000 --provider hashing --jobs 4 --segunda-rodada",
+      "caveat": "Meta não atingida: o custo que sobra é por arquivo, em Python (stat, regras de ignore, pathlib), sem atalho seguro."
+    },
+    {
+      "id": "panel-spawns",
+      "group": "Painel",
+      "name": "Processos que o painel abre por minuto",
+      "detail": "12 projetos, janela visível",
+      "unit": "proc/min",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "beta5", "value": 290 },
+        { "snapshot": "v1.0.0", "value": 4.1 }
+      ],
+      "goal": { "value": 20, "met": true },
+      "method": "scripts/measure-runtime.mjs (contador de processos filhos, 12 projetos)"
+    }
+  ],
+  "ab": {
+    "date": "2026-10-02",
+    "title": "Contra um agente sem RAGX, no seu projeto",
+    "setup": "Monorepo TypeScript de terceiros, 3.480 arquivos. 18 tarefas geradas do histórico do git (a mensagem do commit é a pergunta, os arquivos alterados são o gabarito), 2 braços, 1 repetição, Sonnet, no máximo 15 turnos: 36 chamadas reais. O braço sem RAGX não recebe nenhum hook do RAGX.",
+    "verdict": "Inconclusivo em tokens faturáveis; custo e turnos menores.",
+    "rows": [
+      { "label": "Tokens faturáveis (mediana por tarefa)", "without": "27.569", "with": "26.040", "note": "economia pareada +0,8%, IC95% de −1,8% a +15,0%, 11 pares: inconclusivo" },
+      { "label": "Custo (soma das 18 tarefas)", "without": "US$ 3,26", "with": "US$ 2,68", "note": "−18%" },
+      { "label": "Turnos (mediana)", "without": "6", "with": "3", "note": "metade" },
+      { "label": "Achou o arquivo certo", "without": "15 de 18", "with": "14 de 18", "note": "diferença que 18 tarefas não separam do acaso" },
+      { "label": "Usou o RAGX", "without": "não se aplica", "with": "10 de 18 tarefas", "note": "1 chamada cada, ~900 tokens por resposta" }
+    ],
+    "reading": "Quase todo o custo faturável é um piso fixo de ~26 mil tokens (o prompt do próprio projeto), que o RAGX não toca, e as perguntas de \"onde está X\" um Grep já resolve em poucos turnos. Onde o Grep sofreu (12 e 13 turnos), o RAGX respondeu em 2 e 3. Um projeto, 18 tarefas fáceis, 1 repetição: não mede tarefas de entendimento amplo.",
+    "method": "RAGX_AB_REAL=1 ragx ab --execute --max-calls 36 --arms without,slim --limit 18 --model sonnet --max-turns 15 --setting-sources project,local --with-hooks"
+  },
+  "retrieval": {
+    "title": "Qualidade da busca",
+    "intro": "Em quantas consultas o arquivo certo aparece entre os 5 primeiros (recall@5, modo híbrido), com intervalo de confiança de 95%, em dois conjuntos independentes neste repositório: 132 consultas escritas à mão e 134 geradas do histórico do git.",
+    "date": "2026-10-02",
+    "rows": [
+      { "model": "MiniLM (fastembed, 384d)", "manual": 0.62, "manualCi": [0.54, 0.7], "git": 0.6, "gitCi": [0.51, 0.68], "queryMs": 3.6 },
+      { "model": "nomic-embed-text (Ollama, 768d)", "manual": 0.71, "manualCi": [0.63, 0.78], "git": 0.65, "gitCi": [0.57, 0.72], "queryMs": 14.9 }
+    ],
+    "note": "Os intervalos se sobrepõem: é um indício consistente nos dois conjuntos, não uma prova. O nomic custa ~4× a latência de consulta e o dobro do espaço dos vetores.",
+    "method": "ragx bench models (cópia do índice, 9.329 chunks; nada baixado, nada saiu da máquina)"
+  },
+  "timeline": [
+    {
+      "date": "2026-09-30",
+      "version": "1.0.0-beta.5",
+      "title": "A auditoria mede a linha de base",
+      "text": "Antes de mexer em qualquer coisa, a v2 mediu onde o RAGX estava: contexto de 7.684 tokens por consulta, 2.660 de custo fixo, refresh de 26 a 91 s, primeira busca de 3 a 5 s.",
+      "metrics": ["wire-context", "fixed-mcp", "refresh", "first-search"]
+    },
+    {
+      "date": "2026-10-02",
+      "version": "1.0.0",
+      "title": "A v1 sai com 12 das 14 metas medidas e atingidas",
+      "text": "Contexto 62% menor, perfil slim como padrão (385 tokens fixos), busca em 22 ms, hooks abaixo de 100 ms, painel com 4 processos por minuto em vez de 290. O índice sem mudança em 20 mil arquivos (3,7 s contra 1,5 s) e a economia real de tokens ficaram de fora.",
+      "metrics": ["wire-context", "fixed-mcp", "dictionary-l0", "warm-search", "commit-hook", "panel-spawns", "no-change-20k"]
+    },
+    {
+      "date": "2026-10-02",
+      "version": "1.0.0",
+      "title": "Benchmark local de modelos de embedding",
+      "text": "O nomic-embed-text leva o recall@5 de 0,62 para 0,71 no conjunto manual e de 0,60 para 0,65 no do git, ao custo de ~4× a latência de consulta.",
+      "metrics": []
+    },
+    {
+      "date": "2026-10-02",
+      "version": "1.0.1",
+      "title": "Primeira medição real contra um agente sem RAGX",
+      "text": "36 chamadas reais num projeto de terceiros: custo 18% menor e metade dos turnos; tokens faturáveis inconclusivos. O teste também achou um defeito do próprio medidor, que negava toda chamada ao RAGX, corrigido antes de valer.",
+      "metrics": []
+    }
+  ]
+}

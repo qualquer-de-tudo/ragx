@@ -24,6 +24,8 @@ Depois de algumas horas de uso real da 1.0.0 num projeto de terceiros (perfil `e
 - [x] Atividade paginada (50 eventos / 20 sessões por página, `Pager`, filtro volta à página 1)
 - [x] Aviso de versão nova (notificação do sistema, aviso na tela e ponto em Preferências, uma vez por versão; checagem ao abrir e a cada 6 h) e "Instalar e reiniciar" em silêncio
 - [x] `scripts/e2e-update.mjs`: teste ponta a ponta da atualização no painel real (Playwright, pasta de dados temporária)
+- [x] Benchmarks públicos: aba em Como funciona (métricas com antes, depois, meta e método; A/B; qualidade da busca; linha do tempo), `src/app/src/data/benchmarks.json` como fonte, `docs/27-benchmarks.md` gerado e testado
+- [x] `ragx ab`: braços com RAGX liberam o servidor MCP (`--allowedTools`), `permission_denials` no relatório, `--with-hooks` e `--setting-sources`; A/B real rodado (S14)
 - [x] Docs (`14-cli`, `GUIA-DE-USO`) e CHANGELOG
 
 ## Fora de escopo

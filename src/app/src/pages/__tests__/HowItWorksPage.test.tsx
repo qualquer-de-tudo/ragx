@@ -43,6 +43,18 @@ describe('HowItWorksPage', () => {
     expect(screen.queryByRole('button', { name: 'Ver os hooks em Conexões' })).not.toBeInTheDocument()
   })
 
+  it('a aba Benchmarks troca o conteúdo e a escolha vale até fechar o painel', () => {
+    const { unmount } = render(<HowItWorksPage onRestart={() => {}} />)
+    expect(screen.getByRole('region', { name: 'O caminho do dado' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'Benchmarks' }))
+    expect(screen.queryByRole('region', { name: 'O caminho do dado' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Linha do tempo' })).toBeInTheDocument()
+    unmount()
+    render(<HowItWorksPage onRestart={() => {}} />)
+    expect(screen.getByRole('radio', { name: 'Benchmarks' })).toBeChecked()
+    fireEvent.click(screen.getByRole('radio', { name: 'Como funciona' }))
+  })
+
   it('o texto corrido do onboarding continua com cinco parágrafos', () => {
     expect(HOW_IT_WORKS).toHaveLength(5)
   })
