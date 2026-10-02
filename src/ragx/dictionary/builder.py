@@ -76,6 +76,7 @@ def build(cfg: Config, semantic: bool = False) -> tuple[dict[str, Any], Dictiona
                 "ragx_schema": SCHEMA_VERSION,
             },
             "technologies": _technologies(entities, relations, doc_path),
+            "repo_map": _repo_map(conn),
             "services": _services(conn, entities, relations, doc_path),
             "modules": _modules(conn, docs),
             "entrypoints": _entrypoints(entities, doc_path),
@@ -218,6 +219,19 @@ def _init_da_pasta(conn: sqlite3.Connection, modulo: str) -> str | None:
         except (SyntaxError, ValueError):
             return None
     return None
+
+
+# ── repo map (RAGX-0168) ────────────────────────────────────────────────
+#: tokens do mapa DENTRO do dicionário completo; o `repo_map()` avulso aceita até 600
+_REPO_MAP_TOKENS = 250
+
+
+def _repo_map(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    """Os arquivos de código mais centrais (PageRank sobre `calls`/`imports`/`extends`), com até 3 símbolos cada. Sem arestas
+    de código no grafo (índice sem `graph rebuild`), lista vazia."""
+    from ragx.graph.rank import ranked_files, select_by_budget, to_dicts
+
+    return to_dicts(select_by_budget(ranked_files(conn), _REPO_MAP_TOKENS))
 
 
 # ── seções determinísticas ──────────────────────────────────────────────
@@ -519,19 +533,21 @@ def _split_words(name: str) -> list[str]:
 # ── níveis de leitura (RAGX-0111) ───────────────────────────────────────
 #: `get_dictionary(level=N)`: o agente começa barato e aprofunda. Os níveis são RECORTES DE LEITURA do mesmo
 #: `dictionary.json` (o formato em disco não muda), e cada um é superconjunto do anterior: mesmas seções, mais itens e
-#: mais campos por item. Custo medido neste repositório: nível 0 ≈ 400 tokens, nível 1 ≈ 1.700, nível 2 (completo) ≈ 3.700.
+#: mais campos por item. Custo medido neste repositório: nível 0 ≈ 700 tokens, nível 1 ≈ 2.100, nível 2 (completo) ≈ 3.800 (com o repo map).
 LEVELS = (0, 1, 2)
 
 #: por nível: seção -> (máximo de itens, campos mantidos por item; `None` = o item inteiro)
 _NIVEIS: dict[int, dict[str, tuple[int, tuple[str, ...] | None]]] = {
     0: {
         "technologies": (8, ("name",)),
+        "repo_map": (10, ("path", "symbols")),
         "services": (8, ("name",)),
         "modules": (6, ("name", "summary")),
         "entrypoints": (5, ("kind", "value")),
     },
     1: {
         "technologies": (_MAX_ITEMS, ("name", "confidence")),
+        "repo_map": (25, ("path", "symbols")),
         "services": (12, ("name", "path", "summary")),
         "modules": (_MAX_ITEMS, ("name", "summary", "files")),
         "entrypoints": (_MAX_ITEMS, None),
@@ -633,7 +649,7 @@ def _fit_budget(data: dict[str, Any], target: int = _TOKEN_TARGET) -> dict[str, 
         return count_tokens(json.dumps(data, ensure_ascii=False))
 
     # Corta primeiro as seções mais verbosas e menos densas em informação.
-    for section, floor in (("glossary", 8), ("docs", 15), ("services", 15),
+    for section, floor in (("glossary", 5), ("docs", 10), ("services", 12),
                            ("data_stores", 10), ("modules", 10)):
         while size() > target and isinstance(data.get(section), list) and len(data[section]) > floor:
             data[section] = data[section][: max(len(data[section]) * 2 // 3, floor)]

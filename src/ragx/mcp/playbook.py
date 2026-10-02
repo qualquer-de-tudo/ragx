@@ -19,9 +19,9 @@ from ragx.config import Config
 _LEITURA = """\
 ## 1. Antes de responder qualquer coisa
 
-`get_dictionary(level=0)` — ~400 tokens com o projeto, as tecnologias, os módulos e os
-pontos de entrada. Aprofunde só se precisar: `level=1` (~1.700 tokens, serviços e convenções)
-e `level=2` (completo, ~3.700). É barato e evita a maior fonte de erro do agente: inventar
+`get_dictionary(level=0)` — ~700 tokens com o projeto, as tecnologias, o mapa dos arquivos mais
+centrais, os módulos e os pontos de entrada. Aprofunde só se precisar: `level=1` (~2.100 tokens,
+serviços e convenções) e `level=2` (completo, ~3.800). É barato e evita a maior fonte de erro do agente: inventar
 a arquitetura do projeto.
 
 ## 2. Para localizar

@@ -104,6 +104,8 @@ OUTRO processo (o Windows recicla PIDs em segundos), o dono morreu e a trava é 
 apagar `index.lock` à mão (RAGX-0153). Trava de versão anterior, sem `proc`, continua valendo só pelo número.
 
 ```bash
+ragx graph rank [--top N] [--tokens 600] [--json]
+                                       # os arquivos mais centrais (PageRank) e o mapa que cabe no orçamento
 ragx gold build [--limit N] [--max-files 8] [--out tests/eval/gold-git.yaml] [--dry-run]
                                        # conjunto-ouro derivado do git: a mensagem do commit é a consulta
 ragx worktree status [PATH] [--json]   # worktrees do repositório, chunks em comum e o cache de embedding compartilhado

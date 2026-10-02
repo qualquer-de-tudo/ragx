@@ -179,7 +179,7 @@ _INSTRUCTIONS = """# {name}
 Você tem acesso ao conhecimento indexado via MCP. **Não peça "me explique o
 projeto"** — isso é caro e impreciso. Em vez disso:
 
-1. `get_dictionary(level=0)` — projeto, tecnologias, módulos e pontos de entrada (~400 tokens); `level=1` e `2` aprofundam.
+1. `get_dictionary(level=0)` — projeto, tecnologias, mapa dos arquivos centrais, módulos e pontos de entrada (~700 tokens); `level=1` e `2` aprofundam.
 2. `search_hybrid` — localize o que interessa.
 3. `build_context` — monte o contexto da tarefa dentro de um orçamento.
 4. `get_chunk` — aprofunde em um trecho específico.

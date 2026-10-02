@@ -143,7 +143,7 @@ SLIM_TOOLS = ("get_dictionary", "search_hybrid", "build_context", "get_chunk", "
 
 #: Descrições do `slim`: curtas e com a função primeiro (a descrição é custo fixo em todo turno).
 _SLIM_DESCRIPTIONS = {
-    "get_dictionary": "Mostra o mapa do projeto por níveis: level=0 (~400 tokens, comece aqui), 1 (~1.700), 2 (completo, ~3.700).",
+    "get_dictionary": "Mostra o mapa do projeto por níveis: level=0 (~700 tokens, comece aqui), 1 (~2.100), 2 (completo, ~3.800).",
     "search_hybrid": "Localiza código e docs por busca híbrida (semântica + palavra-chave): onde algo está.",
     "build_context": "Monta o contexto de uma tarefa (trechos com arquivo e linhas) dentro de um orçamento de tokens.",
     "get_chunk": "Abre o texto completo de um chunk pelo chunk_id de um resultado.",
@@ -811,7 +811,7 @@ def build_server(
             "get_playbook", cfg,
         )
 
-    @_tool(description="Mostra o mapa do projeto por níveis: level=0 (~400 tokens, comece aqui), 1 (~1.700), 2 (completo, ~3.700, o padrão). Use primeiro, para se orientar.")
+    @_tool(description="Mostra o mapa do projeto por níveis: level=0 (~700 tokens, comece aqui), 1 (~2.100), 2 (completo, ~3.800, o padrão). Use primeiro, para se orientar.")
     def get_dictionary(section: str | None = None, level: int = 2) -> dict[str, Any]:
         return _guarded(lambda: api.get_dictionary(section, level), "get_dictionary", cfg)
 

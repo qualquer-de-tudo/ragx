@@ -230,6 +230,21 @@ Na indexação incremental: remover um documento remove (cascade) suas entidades
 estruturais; relações que apontavam para elas caem junto. Entidades semânticas
 órfãs viram lixo removido por `ragx vacuum`.
 
+### Ranking de arquivos e repo map (RAGX-0168)
+
+`graph/rank.py` calcula um PageRank no nível do ARQUIVO. As relações de CÓDIGO (`calls`, `imports`, `extends`, `implements`)
+são projetadas de entidade para `document_id`, com peso `weight * confidence` somado por par de arquivos; prosa
+(`documented_by`, `mentions`) e estrutura (`contains`) não pesam. A aresta cujo destino tem um nome **ambíguo** (mais de 3
+entidades com o mesmo nome) é descartada, só aqui: o extrator referencial casa uma chamada pelo NOME, e sem esse filtro `get`,
+`status` e `cfg` viram hubs falsos. Iteração de potência em NumPy (amortecimento 0,85, até 50 iterações, massa dos nós sem saída
+redistribuída), rank arredondado a 6 casas e desempate pelo caminho: a saída é determinística e entra em `knowledge/`.
+`repo_map(cfg, tokens=600)` devolve os melhores arquivos de código (camada `knowledge`) com até 3 símbolos de maior grau de
+entrada, cortados pelo orçamento; `ragx graph rank` mostra a posição de cada arquivo. O dicionário carrega o mapa na seção
+`repo_map`. Neste repositório (193 arquivos no ranking, 20 ms): o mapa de 600 tokens leva 36 arquivos e cobre **27 dos 114**
+`relevant_paths` de código do conjunto de avaliação, contra 11 do controle "os 36 arquivos com mais chunks" (2,5 vezes). O ranking
+privilegia o que todo o resto USA (`db.py`, `config.py`, `repositories.py`, `models.py`, `errors.py`), não os orquestradores
+(`pipeline.py`, `engine.py`): peso de aresta reversa de 0,1 a 1,0 não mudou isso de forma útil.
+
 ### Atualização por documento (RAGX-0151)
 
 Entre dois `sync`, o watcher e o `touch` chamam `graph.service.update_documents(cfg, rel_paths)` com os

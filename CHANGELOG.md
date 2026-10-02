@@ -11,6 +11,11 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Repo map: os arquivos mais centrais do projeto, por PageRank sobre o grafo.** O dicionário não ordenava arquivo nenhum por importância.
+  Agora `graph/rank.py` calcula o PageRank das relações de código no nível do arquivo (sem prosa, e descartando nomes ambíguos que
+  criam hubs falsos como `get`), e o mapa entra no `get_dictionary`: 10 arquivos no nível 0, que passou a custar ~700 tokens (o
+  completo, ~3.800). `ragx graph rank` mostra o ranking. O mapa de 600 tokens cobre 27 dos 114 arquivos de código que as consultas de
+  avaliação esperam, contra 11 do controle por quantidade de chunks; calcular o ranking leva 20 ms (RAGX-0168).
 - **`ragx gold build`: conjunto-ouro derivado do git.** A mensagem do commit é a consulta e os arquivos alterados são os documentos
   relevantes: 134 consultas geradas em 1 s dos 251 commits deste repositório, sem mão-de-obra e crescendo sozinhas, com IC95% do
   recall@5 de 0,15 a 0,17 nos três modos (antes, com 26 consultas manuais, ~0,33). Só hash, assunto e caminhos saem do git (nunca autor,

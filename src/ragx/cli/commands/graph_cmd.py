@@ -249,3 +249,30 @@ def rebuild(
     if report.unresolved:
         console.print(f"  [dim]{report.unresolved} import(s) não resolvido(s) (externos)[/]")
     console.print(f"\n  Tempo {report.duration_ms / 1000:.1f} s\n")
+
+
+@app.command("rank")
+def rank(
+    top: Annotated[int, typer.Option("--top", help="quantos arquivos listar")] = 40,
+    tokens: Annotated[int, typer.Option("--tokens", help="orçamento do mapa, em tokens")] = 600,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Os arquivos de código mais centrais (PageRank sobre o grafo) e o mapa compacto que cabe no orçamento (RAGX-0168)."""
+    from ragx.graph.rank import MapEntry, format_line, ranked_files, select_by_budget, to_dicts
+    from ragx.storage.db import open_db
+
+    cfg = load_config()
+    with open_db(cfg.db_path, read_only=True) as conn:
+        todos = ranked_files(conn)
+    mapa = select_by_budget(todos, tokens)
+    if as_json:
+        console.print_json(json.dumps({"map": to_dicts(mapa), "ranking": to_dicts(todos[:top])}, ensure_ascii=False))
+        return
+    if not todos:
+        console.print("\n[yellow]Grafo sem relações de código.[/] Rode: [bold]ragx graph rebuild[/]\n")
+        return
+    console.print(f"\n[bold]Posição dos {min(top, len(todos))} primeiros arquivos[/]  [dim]({len(todos)} no ranking)[/]\n")
+    for i, e in enumerate(todos[:top], start=1):
+        marca = "[green]*[/]" if any(m.path == e.path for m in mapa) else " "
+        console.print(f" {marca} {i:>3}  {e.rank:.4f}  {format_line(MapEntry(e.path, e.rank, e.symbols))}")
+    console.print(f"\n  [dim]* = entra no mapa de {tokens} tokens ({len(mapa)} arquivos)[/]\n")

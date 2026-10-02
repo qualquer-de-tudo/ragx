@@ -253,3 +253,80 @@ def test_mcp_get_dictionary_com_nivel_e_secao(proj: Path) -> None:
     assert "depends_on" in api.get_dictionary("services")["data"]["dictionary"]["services"][0]
     erro = api.get_dictionary(level=7)
     assert erro["ok"] is False and erro["error"]["code"] == "invalid_argument"
+
+
+# ── 0168: repo map ──────────────────────────────────────────────────────
+@pytest.fixture(scope="module")
+def proj_mapa(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    root = tmp_path_factory.mktemp("dictmap")
+    (root / "ragx.toml").write_text(
+        '[project]\nname = "demo"\nid = "demo"\n\n[embedding]\nprovider = "hashing"\ndim = 64\nversioned_dim = 32\n',
+        encoding="utf-8",
+    )
+    corpo = "def {nome}(x):\n    \"\"\"Calcula {nome}.\"\"\"\n    total = 0\n    for k in range(x):\n        total += k\n    return {chamada}\n"
+    (root / "src").mkdir()
+    (root / "src" / "base.py").write_text(corpo.format(nome="funcao_basica", chamada="total"), encoding="utf-8")
+    for i in range(4):
+        (root / "src" / f"uso{i}.py").write_text(
+            "from base import funcao_basica\n\n\n" + corpo.format(nome=f"usa_basica_{i}", chamada="funcao_basica(total)"),
+            encoding="utf-8",
+        )
+    # a camada `tests/`, `task/` e `knowledge/` também chamam a base: não podem entrar no mapa
+    for pasta in ("tests", "task", "knowledge"):
+        (root / pasta).mkdir()
+        (root / pasta / "x.py").write_text(
+            "from base import funcao_basica\n\n\n" + corpo.format(nome=f"chama_{pasta}", chamada="funcao_basica(total)"),
+            encoding="utf-8",
+        )
+    cfg = load_config(root)
+    index_project(cfg)
+    rebuild(cfg)
+    return root
+
+
+def test_secao_repo_map_respeita_o_orcamento_e_nao_traz_task_knowledge_nem_testes(proj_mapa: Path) -> None:
+    data = _build(proj_mapa)
+    mapa = data["repo_map"]
+    assert mapa and mapa[0]["path"] == "src/base.py"  # o mais chamado fica em primeiro
+    assert not [m["path"] for m in mapa if m["path"].startswith(("task/", "knowledge/", "tests/"))]
+    assert all(len(m["symbols"]) <= 3 and m["rank"] > 0 for m in mapa)
+    texto = "\n".join(f"{m['path']}: {', '.join(m['symbols'])}" for m in mapa)
+    assert count_tokens(texto) <= builder._REPO_MAP_TOKENS
+
+
+def test_o_mapa_aparece_no_nivel_0_e_o_nivel_0_cabe_em_800_tokens(proj_mapa: Path) -> None:
+    n0 = builder.at_level(_build(proj_mapa), 0)
+    assert n0["repo_map"] and set(n0["repo_map"][0]) == {"path", "symbols"}
+    assert count_tokens(json.dumps(n0, ensure_ascii=False)) <= 800
+
+
+def test_repo_map_avulso_e_identico_em_duas_execucoes_e_apos_rebuild(proj_mapa: Path) -> None:
+    from ragx.graph.rank import repo_map
+
+    cfg = load_config(proj_mapa)
+    a = repo_map(cfg, tokens=600)
+    assert a == repo_map(cfg, tokens=600)
+    rebuild(cfg)  # sem mudança de código
+    assert a == repo_map(cfg, tokens=600)
+    from ragx.graph.rank import MapEntry, format_line
+
+    assert count_tokens("\n".join(format_line(MapEntry(m["path"], m["rank"], tuple(m["symbols"]))) for m in a)) <= 600
+
+
+def test_mcp_get_dictionary_nivel_0_inclui_o_mapa(proj_mapa: Path) -> None:
+    from ragx.mcp.server import KnowledgeAPI
+
+    out = KnowledgeAPI(load_config(proj_mapa)).get_dictionary(level=0)
+    assert out["ok"] and out["data"]["dictionary"]["repo_map"][0]["path"] == "src/base.py"
+
+
+def test_comando_graph_rank_lista_e_marca_o_que_entra_no_mapa(proj_mapa: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from typer.testing import CliRunner
+
+    from ragx.cli.main import app
+
+    monkeypatch.chdir(proj_mapa)
+    r = CliRunner().invoke(app, ["graph", "rank", "--top", "5"])
+    assert r.exit_code == 0 and "src/base.py" in r.output
+    j = CliRunner().invoke(app, ["graph", "rank", "--json"])
+    assert j.exit_code == 0 and json.loads(j.output)["map"][0]["path"] == "src/base.py"

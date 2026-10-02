@@ -95,6 +95,7 @@ knowledge/
 | `modules` | estrutura de diretórios + contagem de chunks; a pasta que concentra mais de 25% do código é aberta em mais um nível (`src/ragx` vira `src/ragx/indexing`); `summary` do README, do `__init__.py` ou do README de uma pasta-mãe (nunca o da raiz) | sim |
 | `entrypoints` | rotas, `main`, scripts de `package.json`, `Dockerfile CMD` | sim |
 | `data_stores` | `CREATE TABLE`, migrations, modelos ORM (sem tabelas de `tests/` e `fixtures/`) | sim |
+| `repo_map` | PageRank sobre as relações de código do grafo (`calls`, `imports`, `extends`, `implements`), projetado para o nível do arquivo; só código da camada `knowledge` (fora `task/`, `knowledge/`, testes); até 3 símbolos por arquivo, os de maior grau de entrada | sim |
 | `concepts` | o que cada documento de `docs/` descreve: o título dele e as classes que ele documenta (relação `documented_by` do grafo), sem símbolo genérico (citado por mais de 4 documentos) | sim |
 | `conventions` | detecção de padrão repetido (>= 3 ocorrências) | sim |
 | `glossary` | siglas e termos de domínio extraídos de headings e docstrings | parcial |
@@ -106,7 +107,7 @@ do README da pasta ou do docstring do `__init__.py`. **Sem docstring, `summary` 
 melhora o que o extrativo produziu.
 
 **Densidade (RAGX-0110).** O dicionário tem um teto de ~4.000 tokens (`_TOKEN_TARGET`): neste repositório caiu de 10.935 (auditoria)
-PARA 3.701, com mais informação por item (resumo em vez de lista de símbolos). Nenhum símbolo `_privado` entra.
+PARA 3.808 (com o repo map), com mais informação por item (resumo em vez de lista de símbolos). Nenhum símbolo `_privado` entra.
 
 Regra dura: **tudo que é determinístico é gerado sem LLM**. O modo `--semantic` só
 preenche `concepts`, `glossary` e `summaries`, e marca cada item com
@@ -140,7 +141,7 @@ Por CLI:
 
 ```bash
 ragx dictionary show --section services
-ragx dictionary show --level 0          # o mapa em ~400 tokens
+ragx dictionary show --level 0          # o mapa em ~700 tokens
 ```
 
 Por MCP (Fase 6), é a ferramenta que todo agente deve chamar primeiro:
@@ -155,9 +156,9 @@ formato em disco não muda) e cada um é superconjunto do anterior:
 
 | `level` | O que traz | Tokens (neste repositório) |
 |---|---|---:|
-| `0` | projeto, estatísticas, tecnologias, 8 serviços (só nomes), 6 módulos com resumo, pontos de entrada | ~400 |
-| `1` | tudo do `0` + 12 serviços com caminho e resumo, todos os módulos, convenções, 10 documentos | ~1.700 |
-| `2` (padrão) | o dicionário completo, como sempre foi | ~3.700 |
+| `0` | projeto, estatísticas, tecnologias, os 10 arquivos mais centrais (`repo_map`), 8 serviços (só nomes), 6 módulos com resumo, pontos de entrada | ~700 |
+| `1` | tudo do `0` + 15 arquivos no mapa, 12 serviços com caminho e resumo, os módulos, convenções, 10 documentos | ~2.100 |
+| `2` (padrão) | o dicionário completo, como sempre foi | ~3.800 |
 
 `section` e `level` se combinam: `section="services", level=1` devolve só os serviços no recorte do nível 1. O playbook e as
 `instructions` do servidor mandam começar por `level=0`.
