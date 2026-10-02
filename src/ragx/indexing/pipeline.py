@@ -22,6 +22,7 @@ from ragx.core.ids import CHUNKER_VERSION, content_hash, document_id
 from ragx.core.models import Document, IndexStats, Verdict
 from ragx.indexing import freshness, lock, parsers, status_file
 from ragx.indexing.chunkers import ChunkOptions, chunk_document
+from ragx.indexing.context import ensure_context
 from ragx.indexing.embed import embed_pending
 from ragx.indexing.parallel import ParallelStats, Prepared, WorkerSpec, process_stream, resolve_jobs
 from ragx.indexing.verdicts import BLOCKED, CACHED_SKIPS
@@ -241,6 +242,7 @@ def _index_paths_once(
         runs = RunRepo(conn)
 
         pedidos = set(rels)
+        ensure_context(conn)  # prefixo de contexto e vetores em dia com a versão (RAGX-0166)
         known = {p: v for p, v in docs.fingerprints().items() if p in pedidos}
         seen_paths: set[str] = set()
         # branch e commit vêm da última run COMPLETA, sem chamar o git; `dirty = 1` porque
@@ -371,6 +373,8 @@ def _index_once(
         events = SecurityEventRepo(conn)
         runs = RunRepo(conn)
 
+        if not dry_run:
+            ensure_context(conn)  # prefixo de contexto e vetores em dia com a versão (RAGX-0166)
         known = docs.fingerprints()
         seen_paths: set[str] = set()
         unreadable_dirs: set[str] = set()

@@ -69,7 +69,7 @@ caller — ver [ADR-0004](adr/ADR-0004-embeddings.md).
 ## Busca keyword
 
 ```sql
-SELECT c.id, bm25(chunks_fts, 1.0, 4.0, 2.0) AS score
+SELECT c.id, bm25(chunks_fts, 1.0, 4.0, 2.0, 0.5) AS score
 FROM chunks_fts
 JOIN chunks c ON c.rowid = chunks_fts.rowid
 WHERE chunks_fts MATCH :q
@@ -77,8 +77,11 @@ ORDER BY score
 LIMIT :k;
 ```
 
-Pesos do BM25 por coluna: `content=1.0`, `symbol=4.0`, `heading_path=2.0` — casar no
-nome do símbolo vale muito mais que casar no corpo.
+Pesos do BM25 por coluna: `content=1.0`, `symbol=4.0`, `heading_path=2.0`, `context=0.5` — casar no
+nome do símbolo vale muito mais que casar no corpo, e o contexto (caminho, palavras do símbolo, assinatura, docstring; ver
+[04 — Indexação](04-indexacao.md)) serve para ACHAR, não para ordenar. Varredura do peso do contexto no conjunto de 152 consultas
+(keyword recall@5 / MRR): 0 → 0,705 / 0,473; 0,25 → 0,697 / 0,489; **0,5 → 0,697 / 0,503**; 1,0 → 0,682 / 0,508; 2,0 → 0,705 / 0,523.
+Nenhum valor se distingue dos outros dentro do IC (±0,08); ficou o 0,5 da tarefa, que mantém o MRR do híbrido no melhor ponto.
 
 Preparação da query (`search/keyword.py`):
 

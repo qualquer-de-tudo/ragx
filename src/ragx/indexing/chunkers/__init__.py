@@ -10,7 +10,11 @@ Invariantes (ADR-0005):
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import ast
+import re
+import textwrap
+from dataclasses import dataclass, replace
+from pathlib import PurePosixPath
 
 from ragx.core.ids import CHUNKER_VERSION, chunk_id, content_hash, document_id
 from ragx.core.models import Chunk, ChunkKind, DocKind, ParseNode, ParseResult
@@ -39,7 +43,10 @@ def chunk_document(
         for node in parsed.nodes:
             _emit_doc(node, rel_path, doc_id, lines, opts, out, counter)
 
-    return _dedupe_ids(_merge_tiny(out, opts, rel_path), rel_path)
+    finais = _dedupe_ids(_merge_tiny(out, opts, rel_path), rel_path)
+    # O contexto sai do chunk FINAL (depois de fundir e desambiguar): `_merge_tiny` e `_dedupe_ids` reconstroem `Chunk`
+    # campo a campo e não precisam saber dele.
+    return [replace(c, context=build_context_text(rel_path, c)) for c in finais]
 
 
 class _Counter:
@@ -265,14 +272,78 @@ def _merge_tiny(chunks: list[Chunk], opts: ChunkOptions, rel_path: str) -> list[
     ]
 
 
+_CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+_ASSINATURA_MAX = 160
+_DOC_MAX = 200
+
+
+def _palavras(texto: str) -> str:
+    """`AuthService.login` -> `auth service login`; só devolve algo se algum identificador separar de fato (CamelCase)."""
+    todas: list[str] = []
+    separou = False
+    for tok in re.split(r"[\s._\-/:]+", texto):
+        partes = [p.lower() for p in _CAMEL.split(tok) if p]
+        separou = separou or len(partes) > 1
+        todas.extend(partes)
+    return " ".join(todas) if separou else ""
+
+
+def _assinatura_e_doc(chunk: Chunk) -> tuple[str | None, str | None]:
+    """Primeira linha da assinatura e primeira frase do docstring (Python). `(None, None)` para o resto."""
+    if chunk.kind not in (ChunkKind.CLASS, ChunkKind.FUNCTION, ChunkKind.METHOD):
+        return None, None
+    assinatura = None
+    for linha in chunk.content.splitlines():
+        t = linha.strip()
+        if t and not t.startswith(("@", "#")):
+            assinatura = t if len(t) <= _ASSINATURA_MAX else t[: _ASSINATURA_MAX - 1] + "…"
+            break
+    doc = None
+    try:
+        tree = ast.parse(textwrap.dedent(chunk.content))
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
+                texto = ast.get_docstring(node)
+                if texto:
+                    primeira = texto.strip().splitlines()[0].strip()
+                    corte = primeira.find(". ")
+                    primeira = primeira[: corte + 1] if corte > 0 else primeira
+                    doc = primeira if len(primeira) <= _DOC_MAX else primeira[: _DOC_MAX - 1] + "…"
+                break
+    except (SyntaxError, ValueError):
+        pass  # chunk que não é Python completo (corpo cortado, outra linguagem): fica só a assinatura
+    return assinatura, doc
+
+
+def build_context_text(rel_path: str, chunk: Chunk) -> str:
+    """O prefixo de contexto do chunk (RAGX-0166), determinístico e sem LLM: puro, mesma entrada, mesma saída.
+
+    Caminho do arquivo, o título da seção ou `tipo símbolo`, as palavras do símbolo separadas (`AuthService` ->
+    `auth service`, que é o que faz a busca por palavra achar o nome em CamelCase), a primeira linha da assinatura e a
+    primeira frase do docstring. Ele é derivado do conteúdo que o Security Gate JÁ liberou: segredo redigido não vaza por aqui.
+    """
+    partes = [rel_path]
+    rotulo = chunk.heading_path or (f"{chunk.kind.value} {chunk.symbol}" if chunk.symbol else None)
+    if rotulo:
+        partes.append(rotulo)
+    palavras = _palavras(f"{PurePosixPath(rel_path).stem} {chunk.symbol or ''}")
+    if palavras:
+        partes.append(palavras)
+    assinatura, doc = _assinatura_e_doc(chunk)
+    if assinatura:
+        partes.append(assinatura)
+    if doc:
+        partes.append(doc)
+    return " › ".join(partes)
+
+
 def context_prefix(rel_path: str, chunk: Chunk) -> str:
-    """Prefixo usado só na geração do embedding — nunca gravado em chunks.content."""
-    parts = [rel_path]
-    if chunk.heading_path:
-        parts.append(chunk.heading_path)
-    elif chunk.symbol:
-        parts.append(f"{chunk.kind.value} {chunk.symbol}")
-    return f"[{' › '.join(parts)}]\n{chunk.content}"
+    """O texto que vai ao embedder: `[contexto]` + conteúdo; nunca gravado em `chunks.content`.
+
+    Usa o contexto já gravado no chunk e, se ele ainda não existe (banco anterior à RAGX-0166, chunk importado), monta na hora.
+    """
+    contexto = chunk.context if chunk.context is not None else build_context_text(rel_path, chunk)
+    return f"[{contexto}]\n{chunk.content}"
 
 
 def _dedupe_ids(chunks: list[Chunk], rel_path: str) -> list[Chunk]:

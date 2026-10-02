@@ -123,15 +123,28 @@ Regras:
 
 ### Enriquecimento de contexto
 
-Cada chunk é armazenado com o texto original, mas ganha um **prefixo de contexto**
-no momento de gerar o embedding (não gravado em `chunks.content`):
+Cada chunk é armazenado com o texto original, mas ganha um **prefixo de contexto determinístico** (RAGX-0166), gravado em
+`chunks.context` (nunca em `chunks.content`) e usado dos DOIS lados: no FTS (4ª coluna de `chunks_fts`) e no texto que vai ao
+embedder:
 
 ```text
-[src/auth/AuthService.php › class AuthService › método login]
+[src/auth/service.py › method AuthService.login › auth service login › def login(self, credentials): › Valida o token no provedor.]
 <conteúdo do chunk>
 ```
 
-Isso melhora recall sem poluir o texto devolvido ao agente.
+O prefixo junta o caminho do arquivo, o título da seção ou `tipo símbolo`, as palavras do símbolo separadas (`AuthService` vira
+`auth service`, que é o que faz a busca por palavra achar o nome em CamelCase), a primeira linha da assinatura (até 160 caracteres)
+e a primeira frase do docstring (Python, até 200). É função pura de dados que já estão no banco e do conteúdo que o Security Gate JÁ
+liberou: um segredo redigido não vaza pelo prefixo, e o contexto NÃO entra em `knowledge/` (a serialização escolhe os campos). Isso
+melhora recall sem poluir o texto devolvido ao agente. O `chunk_id` continua sendo o hash do conteúdo.
+
+**Cache de embedding por texto embutido.** A chave do `EmbeddingCache` deixou de ser o `content_hash` do chunk e passou a ser o hash
+do TEXTO EMBUTIDO (contexto + conteúdo): um prefixo novo, ou o mesmo conteúdo em outro caminho, não reaproveita o vetor de outro texto.
+
+**Versão do contexto.** `indexing/context.py` guarda `meta.context_version`. Quando a versão gravada difere de `CONTEXT_VERSION`
+(banco anterior à migração `0009`, ou uma mudança futura em `build_context_text`), `ensure_context` refaz `chunks.context` de TODOS
+os chunks a partir do que já está no banco, sem reler arquivo nem reindexar, e apaga os vetores, que voltam para a fila do embedder
+(do cache, quando o texto embutido não mudou). Roda no começo de toda rodada de indexação e é uma leitura de `meta` quando está em dia.
 
 ## Indexação incremental
 

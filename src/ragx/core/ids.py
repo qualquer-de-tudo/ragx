@@ -16,7 +16,7 @@ CHUNKER_VERSION = "1"
 """Versão do fatiamento. Bump obrigatório em QUALQUER mudança de chunking:
 muda todos os IDs de propósito, forçando reindexação em vez de corromper o índice."""
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 """Deve bater com a mais alta migração em src/ragx/storage/migrations/*.sql —
 ver test_schema_version_bate_com_a_migracao_mais_recente em test_ids.py."""
 RULESET_VERSION = "builtin@1"

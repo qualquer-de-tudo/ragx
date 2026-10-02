@@ -37,6 +37,7 @@ o schema é pequeno e explícito.
 | `0006_run_provenance.sql` | 9 | `index_runs`: `git_branch`, `git_commit`, `git_dirty`, `source` |
 | `0007_vec_gen.sql` | 19 | `meta('vec_gen')` e gatilhos em `embeddings` (geração dos vetores, RAGX-0134) |
 | `0008_file_verdicts.sql` | 19 | `file_verdicts` (veredito guardado de arquivo fora do índice, RAGX-0139) |
+| `0009_chunk_context.sql` | 21 | `chunks.context` e `chunks_fts` com a 4ª coluna (prefixo de contexto, RAGX-0166) |
 
 > A tabela de migrações acima foi corrigida contra os arquivos em
 > `src/ragx/storage/migrations/` (listava `0005_dictionary`, `0006_agents`, `0007_sync` e
@@ -198,6 +199,7 @@ CREATE TABLE chunks (
   content_hash  TEXT NOT NULL,
   token_count   INTEGER NOT NULL,
   created_at    TEXT NOT NULL,
+  context       TEXT,                  -- prefixo de contexto determinístico (0009, RAGX-0166); nulo em banco antigo
   UNIQUE (document_id, ordinal)
 );
 CREATE INDEX idx_chunks_doc    ON chunks(document_id);
@@ -214,6 +216,7 @@ CREATE VIRTUAL TABLE chunks_fts USING fts5(
   content,
   symbol,
   heading_path,
+  context,                             -- 4ª coluna (0009)
   content = 'chunks',
   content_rowid = 'rowid',
   tokenize = 'unicode61 remove_diacritics 2'

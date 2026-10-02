@@ -111,6 +111,9 @@ class Chunk:
     symbol: str | None = None
     heading_path: str | None = None
     parent_id: str | None = None
+    #: Prefixo de contexto determinístico (RAGX-0166): caminho, tipo e símbolo, assinatura e primeira frase do docstring.
+    #: Vai ao FTS e ao embedding; NUNCA muda `content`. Fora do `chunk_id`: o id continua sendo o do conteúdo.
+    context: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

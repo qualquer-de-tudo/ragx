@@ -14,7 +14,8 @@ _WORD = re.compile(r"[\wÀ-ɏ]+", re.UNICODE)
 _FTS_OPERATORS = {"AND", "OR", "NOT", "NEAR"}
 
 # Casar no NOME do símbolo vale muito mais que casar no corpo.
-BM25_WEIGHTS = (1.0, 4.0, 2.0)  # content, symbol, heading_path
+#: o `context` (caminho, palavras do símbolo, assinatura, docstring) pesa pouco: serve para achar, não para ordenar (RAGX-0166)
+BM25_WEIGHTS = (1.0, 4.0, 2.0, 0.5)  # content, symbol, heading_path, context
 
 
 def split_identifier(token: str) -> list[str]:
@@ -65,7 +66,7 @@ def search(
     match = prepare_query(query, raw=raw)
     w = BM25_WEIGHTS
     sql = f"""
-        SELECT c.id AS cid, bm25(chunks_fts, {w[0]}, {w[1]}, {w[2]}) AS score
+        SELECT c.id AS cid, bm25(chunks_fts, {w[0]}, {w[1]}, {w[2]}, {w[3]}) AS score
         FROM chunks_fts
         JOIN chunks c ON c.rowid = chunks_fts.rowid
         JOIN documents d ON d.id = c.document_id

@@ -161,7 +161,7 @@ class ChunkRepo:
             r["id"]: r
             for r in self.conn.execute(
                 """SELECT id, ordinal, parent_id, kind, symbol, heading_path, start_line,
-                          end_line, content, content_hash, token_count
+                          end_line, content, content_hash, token_count, context
                    FROM chunks WHERE document_id = ?""",
                 (doc_id,),
             )
@@ -196,13 +196,13 @@ class ChunkRepo:
             self.conn.executemany(
                 """INSERT INTO chunks
                    (id, document_id, ordinal, parent_id, kind, symbol, heading_path,
-                    start_line, end_line, content, content_hash, token_count, created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    start_line, end_line, content, content_hash, token_count, created_at, context)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 [
                     (
                         c.id, c.document_id, c.ordinal, c.parent_id, c.kind.value, c.symbol,
                         c.heading_path, c.start_line, c.end_line, c.content, c.content_hash,
-                        c.token_count, now,
+                        c.token_count, now, c.context,
                     )
                     for c in adicionados
                 ],
@@ -211,10 +211,10 @@ class ChunkRepo:
         for c in sobreviventes:
             old = atuais[c.id]
             novo = (c.ordinal, c.parent_id, c.kind.value, c.symbol, c.heading_path,
-                    c.start_line, c.end_line, c.content, c.content_hash, c.token_count)
+                    c.start_line, c.end_line, c.content, c.content_hash, c.token_count, c.context)
             antigo = (old["ordinal"], old["parent_id"], old["kind"], old["symbol"], old["heading_path"],
                       old["start_line"], old["end_line"], old["content"], old["content_hash"],
-                      old["token_count"])
+                      old["token_count"], old["context"])
             # A comparação usa o estado de ANTES (`atuais`), inclusive o `parent_id` que o
             # passo 1 zerou nos órfãos: o pai antigo saiu, então a linha sempre difere.
             if novo == antigo:
@@ -222,13 +222,15 @@ class ChunkRepo:
             self.conn.execute(
                 """UPDATE chunks SET ordinal = ?, parent_id = ?, kind = ?, symbol = ?,
                        heading_path = ?, start_line = ?, end_line = ?, content = ?,
-                       content_hash = ?, token_count = ? WHERE id = ?""",
+                       content_hash = ?, token_count = ?, context = ? WHERE id = ?""",
                 (*novo, c.id),
             )
             stats.updated += 1
-            # O prefixo de contexto (`kind`, `symbol`, `heading_path`) entra no texto que foi
+            # O prefixo de contexto (`kind`, `symbol`, `heading_path`, assinatura, docstring) entra no texto que foi
             # embutido: se mudou, o vetor ficou velho e o chunk volta para a fila do embedder.
-            if (old["symbol"], old["heading_path"], old["kind"]) != (c.symbol, c.heading_path, c.kind.value):
+            if (old["symbol"], old["heading_path"], old["kind"], old["context"]) != (
+                c.symbol, c.heading_path, c.kind.value, c.context
+            ):
                 self.conn.execute("DELETE FROM embeddings WHERE chunk_id = ?", (c.id,))
         return stats
 
@@ -242,13 +244,13 @@ class ChunkRepo:
         self.conn.executemany(
             """INSERT INTO chunks
                (id, document_id, ordinal, parent_id, kind, symbol, heading_path,
-                start_line, end_line, content, content_hash, token_count, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                start_line, end_line, content, content_hash, token_count, created_at, context)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             [
                 (
                     c.id, c.document_id, c.ordinal, c.parent_id, c.kind.value, c.symbol,
                     c.heading_path, c.start_line, c.end_line, c.content, c.content_hash,
-                    c.token_count, now,
+                    c.token_count, now, c.context,
                 )
                 for c in chunks
             ],

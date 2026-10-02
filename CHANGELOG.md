@@ -11,6 +11,14 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Prefixo de contexto determinístico no FTS e no embedding.** O prefixo que o `docs/04` prometia existia só no embedding; o FTS não
+  via o caminho do arquivo, as palavras de `AuthService` nem a assinatura. Agora cada chunk guarda `context` (caminho, `tipo símbolo`,
+  palavras do símbolo, assinatura, primeira frase do docstring), indexado como 4ª coluna do FTS (peso 0,5) e usado no texto embutido;
+  `chunks.content` não muda e o contexto não vai para `knowledge/`. A chave do cache de embedding virou o hash do texto embutido. No
+  conjunto de 152 consultas (antes/depois): keyword recall@5 0,689 → 0,697 e MRR 0,474 → 0,503; semantic 0,538 → 0,576; hybrid 0,621 →
+  0,621 e MRR 0,490 → 0,521; nada piorou, e os ganhos cabem dentro do IC (±0,08). `ragx index` sem mudança segue em ~0,2 s com 0 chunks
+  reembutidos; o primeiro índice depois da migração refaz os contextos a partir do banco e reembute tudo (113 s neste repositório,
+  com o fastembed) (RAGX-0166).
 - **Conjunto de avaliação de 26 para 152 consultas.** Com n=26 o IC95% do recall@5 tinha ~0,33 de largura e nenhuma mudança
   de recuperação era falsificável; agora são 132 consultas com resposta (IC de ~0,15 a 0,17 em todos os modos) e 20 sem resposta, em
   seis classes (relacionamento, depuração, arquitetura, configuração, factual e sem resposta), com dificuldade e nota em cada caso.

@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from ragx.config import Config
+from ragx.core.ids import content_hash
 from ragx.embeddings import build_embedder, embedder_id
 from ragx.embeddings.base import Embedder, EmbeddingCache
 from ragx.indexing.chunkers import context_prefix
@@ -197,7 +198,7 @@ def _abrir_cache(cfg: Config, model_id: str) -> EmbeddingCache:
 #: a cada quantos lotes grava o que já foi embutido (RAGX-0146): `ragx index` morto no meio retoma do ponto em que parou
 CHECKPOINT_EVERY = 10
 
-_Row = tuple[str, str, str, str, str, str | None, str | None]
+_Row = tuple[str, str, str, str, str, str | None, str | None, str | None]
 
 
 def _embed_all(
@@ -210,11 +211,15 @@ def _embed_all(
     report: EmbedReport,
     progress: Callable[[int, int], None] | None,
 ) -> None:
-    cached = cache.get_many([row[1] for row in pending])
+    # A chave do cache é o hash do TEXTO EMBUTIDO (contexto + conteúdo), não o do conteúdo: um prefixo novo (ou um arquivo
+    # renomeado) não pode reaproveitar o vetor de outro texto (RAGX-0166).
+    textos = {row[0]: _prefixed(row[3], row[2], row[0], row[4], row[5], row[6], row[7]) for row in pending}
+    chaves = {cid: content_hash(t) for cid, t in textos.items()}
+    cached = cache.get_many(list(dict.fromkeys(chaves.values())))
     todo: list[_Row] = []
     ready: list[tuple[str, np.ndarray]] = []
     for row in pending:
-        vec = cached.get(row[1])
+        vec = cached.get(chaves[row[0]])
         if vec is not None and vec.size == embedder.dim:
             ready.append((row[0], vec))
             report.from_cache += 1
@@ -233,12 +238,9 @@ def _embed_all(
         for n, i in enumerate(range(0, len(todo), batch), start=1):
             window = todo[i : i + batch]
             # Prefixo de contexto entra SÓ no embedding, nunca em chunks.content.
-            texts = [
-                _prefixed(rel_path, content, cid, kind, symbol, heading)
-                for cid, _h, content, rel_path, kind, symbol, heading in window
-            ]
+            texts = [textos[row[0]] for row in window]
             vecs = embedder.embed_documents(texts)
-            cache.put_many([(row[1], vec) for row, vec in zip(window, vecs, strict=True)])
+            cache.put_many([(chaves[row[0]], vec) for row, vec in zip(window, vecs, strict=True)])
             ready.extend((row[0], vec) for row, vec in zip(window, vecs, strict=True))
             done += len(window)
             if progress:
@@ -252,7 +254,8 @@ def _embed_all(
 
 
 def _prefixed(
-    rel_path: str, content: str, chunk_id: str, kind: str, symbol: str | None, heading_path: str | None
+    rel_path: str, content: str, chunk_id: str, kind: str, symbol: str | None, heading_path: str | None,
+    context: str | None = None,
 ) -> str:
     """O texto que vai ao embedder: prefixo de contexto + conteúdo, montado da linha já lida (sem `SELECT`)."""
     from ragx.core.models import Chunk, ChunkKind
@@ -260,6 +263,6 @@ def _prefixed(
     stub = Chunk(
         id=chunk_id, document_id="", ordinal=0, kind=ChunkKind(kind),
         start_line=0, end_line=0, content=content, content_hash="", token_count=0,
-        symbol=symbol, heading_path=heading_path,
+        symbol=symbol, heading_path=heading_path, context=context,
     )
     return context_prefix(rel_path, stub)
