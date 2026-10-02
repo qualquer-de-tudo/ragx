@@ -2,83 +2,933 @@
 # É o que impede "melhorei a busca" virar opinião.
 
 - query: "como o gate de segurança decide bloquear um arquivo"
+  class: factual
+  difficulty: hard
+  note: "o gate decide por nome, conteúdo e política; o doc explica as fases"
   relevant_paths: ["src/ragx/security/gate.py", "docs/02-seguranca.md"]
 
 - query: "onde ficam as regras de detecção de segredo"
+  class: factual
+  difficulty: easy
+  note: "padrões em patterns.yaml e o scanner que os aplica"
   relevant_paths: ["src/ragx/security/rules/patterns.yaml", "src/ragx/security/scanner.py"]
 
 - query: "SecurityGate"
+  class: factual
+  difficulty: easy
+  note: "consulta pelo nome da classe, definida em gate.py"
   relevant_paths: ["src/ragx/security/gate.py"]
 
 - query: "entropia de Shannon"
+  class: factual
+  difficulty: easy
+  note: "o cálculo de entropia mora em entropy.py"
   relevant_paths: ["src/ragx/security/entropy.py"]
 
 - query: "como os identificadores dos chunks são gerados"
+  class: factual
+  difficulty: hard
+  note: "ids.py define o hash; o modelo de dados descreve o id"
   relevant_paths: ["src/ragx/core/ids.py", "docs/03-modelo-de-dados.md"]
 
 - query: "por que o conteúdo do chunk não vai para o Git"
+  class: arquitetura
+  difficulty: hard
+  note: "decisão registrada no ADR-0010 e no orçamento de tamanho"
   relevant_paths:
     - "docs/adr/ADR-0010-conteudo-nao-versionado-e-embeddings-quantizados.md"
     - "docs/16-orcamento-de-tamanho.md"
 
 - query: "quantização int8 dos vetores"
+  class: factual
+  difficulty: easy
+  note: "quantização em embeddings/base.py e a política no doc de orçamento"
   relevant_paths: ["src/ragx/embeddings/base.py", "docs/16-orcamento-de-tamanho.md"]
 
 - query: "fusão RRF"
+  class: factual
+  difficulty: easy
+  note: "reciprocal rank fusion em search/hybrid.py e o doc de busca"
   relevant_paths: ["src/ragx/search/hybrid.py", "docs/05-busca.md"]
 
 - query: "IgnoreEngine"
+  class: factual
+  difficulty: easy
+  note: "consulta pelo nome da classe, definida em ignore_engine.py"
   relevant_paths: ["src/ragx/security/ignore_engine.py"]
 
 - query: "como funciona a indexação incremental"
+  class: factual
+  difficulty: hard
+  note: "o pipeline implementa e o doc de indexação explica"
   relevant_paths: ["src/ragx/indexing/pipeline.py", "docs/04-indexacao.md"]
 
 - query: "orçamento de tamanho do conhecimento versionado"
+  class: configuracao
+  difficulty: hard
+  note: "sizing/budget.py e o doc 16"
   relevant_paths: ["src/ragx/sizing/budget.py", "docs/16-orcamento-de-tamanho.md"]
 
 - query: "prefixos search_document e search_query"
+  class: factual
+  difficulty: easy
+  note: "o provider do Ollama os aplica e o ADR-0004 justifica"
   relevant_paths: ["src/ragx/embeddings/ollama.py", "docs/adr/ADR-0004-embeddings.md"]
 
 - query: "migrações do banco de dados"
+  class: factual
+  difficulty: hard
+  note: "storage/db.py aplica as migrações e o doc de modelo de dados as lista"
   relevant_paths: ["src/ragx/storage/db.py", "docs/03-modelo-de-dados.md"]
 
 - query: "chunker de código classe e método"
+  class: factual
+  difficulty: hard
+  note: "o chunker e a seção de chunking do doc de indexação"
   relevant_paths: ["src/ragx/indexing/chunkers/__init__.py", "docs/04-indexacao.md"]
 
 - query: "por que o MCP não acessa o filesystem"
+  class: arquitetura
+  difficulty: hard
+  note: "ADR-0006 e o doc de MCP"
   relevant_paths: ["docs/adr/ADR-0006-mcp-casca-fina.md", "docs/09-mcp.md"]
 
 - query: "federação entre projetos e contratos"
+  class: arquitetura
+  difficulty: hard
+  note: "doc 17 e ADR-0011"
   relevant_paths:
     - "docs/17-multiprojeto-e-federacao.md"
     - "docs/adr/ADR-0011-federacao-entre-projetos.md"
 
 - query: "hub multiprojeto na máquina do desenvolvedor"
+  class: factual
+  difficulty: hard
+  note: "o doc de multiprojeto descreve o hub local"
   relevant_paths: ["docs/17-multiprojeto-e-federacao.md"]
 
 - query: "redactor preview mascarado do segredo"
+  class: factual
+  difficulty: easy
+  note: "redactor.py gera o preview mascarado"
   relevant_paths: ["src/ragx/security/redactor.py"]
 
 - query: "BM25 pesos por coluna"
+  class: factual
+  difficulty: easy
+  note: "BM25_WEIGHTS em search/keyword.py e o doc de busca"
   relevant_paths: ["src/ragx/search/keyword.py", "docs/05-busca.md"]
 
 - query: "walker recusa symlink fora da raiz"
+  class: factual
+  difficulty: easy
+  note: "walk.py recusa links e o doc de indexação descreve a ameaça A8"
   relevant_paths: ["src/ragx/walk.py", "docs/04-indexacao.md"]
 
 - query: "contagem de tokens"
+  class: factual
+  difficulty: easy
+  note: "tokens.py define count_tokens"
   relevant_paths: ["src/ragx/tokens.py"]
 
 - query: "parser de markdown e headings"
+  class: factual
+  difficulty: easy
+  note: "indexing/parsers/markdown.py"
   relevant_paths: ["src/ragx/indexing/parsers/markdown.py"]
 
 - query: "context engine e orçamento de tokens"
+  class: factual
+  difficulty: easy
+  note: "o doc 07 descreve o motor e o orçamento"
   relevant_paths: ["docs/07-context-engine.md"]
 
 - query: "reidratação de conteúdo a partir do working tree"
+  class: factual
+  difficulty: hard
+  note: "o doc de git sync e o de orçamento explicam a reidratação"
   relevant_paths: ["docs/12-git-sync.md", "docs/16-orcamento-de-tamanho.md"]
 
 - query: "dicionário de conhecimento do projeto"
+  class: factual
+  difficulty: easy
+  note: "o doc 08 descreve o dicionário"
   relevant_paths: ["docs/08-dictionary.md"]
 
 - query: "política strict e balanced de segurança"
+  class: configuracao
+  difficulty: easy
+  note: "as políticas do gate e o doc de segurança"
   relevant_paths: ["src/ragx/security/gate.py", "docs/02-seguranca.md"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Ampliação do conjunto (RAGX-0099). Cada caso traz `class`, `difficulty` e `note`
+# (por que aqueles caminhos são os relevantes). Escrito À MÃO a partir do que cada
+# arquivo faz, e não gerado a partir dos chunks: gerar a pergunta de dentro do trecho
+# mede só se a busca acha o trecho de onde a pergunta saiu (circular).
+# `class`: factual | relacionamento | depuracao | arquitetura | configuracao | sem_resposta
+# `difficulty`: easy (o termo da pergunta aparece no arquivo) | hard (paráfrase, sem o termo exato)
+# `sem_resposta`: o corpus NÃO responde; relevant_paths vazio; entra numa métrica própria.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── relacionamento: "quem chama X", "o que depende de Y" ──────────────────
+- query: "quem chama o SecurityGate"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/walk.py", "src/ragx/indexing/pipeline.py"]
+  note: "o walker e o pipeline constroem e usam o gate antes de qualquer byte"
+
+- query: "o que depende do GraphStore"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/graph/service.py", "src/ragx/graph/traversal.py"]
+  note: "o serviço do grafo grava e a travessia lê pelo store"
+
+- query: "quem usa o EmbeddingCache"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/indexing/embed.py", "src/ragx/embeddings/base.py"]
+  note: "definido em embeddings/base.py e aberto por indexing/embed.py"
+
+- query: "quais módulos importam o IgnoreEngine"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/security/gate.py", "src/ragx/walk.py"]
+  note: "o gate o constrói e o walker usa can_prune e should_ignore"
+
+- query: "quem chama index_paths"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/watch/monitor.py", "src/ragx/indexing/touchq.py"]
+  note: "o watcher e a drenagem da fila de toque reindexam por caminho"
+
+- query: "quem chama build_context"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/mcp/server.py", "src/ragx/cli/commands/context_cmd.py"]
+  note: "a ferramenta MCP e o comando `ragx context` são os dois chamadores"
+
+- query: "quem consulta o veredito guardado de arquivo não indexável"
+  class: relacionamento
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/verdicts.py", "src/ragx/walk.py"]
+  note: "tabela file_verdicts: o walker devolve a decisão guardada sem abrir o arquivo"
+
+- query: "quem chama replace_for_document"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/indexing/pipeline.py", "src/ragx/storage/repositories.py"]
+  note: "definido no ChunkRepo e usado ao tratar cada arquivo no pipeline"
+
+- query: "quem usa holder_alive"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/indexing/lock.py", "src/ragx/indexing/status_file.py"]
+  note: "a trava e o status.json decidem se o dono ainda vive"
+
+- query: "o que consome o SearchOutcome"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/search/service.py", "src/ragx/graph/service.py"]
+  note: "a busca o produz e o graph_search o reaproveita"
+
+- query: "quais comandos reindexam o projeto"
+  class: relacionamento
+  difficulty: hard
+  relevant_paths: ["src/ragx/cli/commands/index_cmd.py", "src/ragx/watch/monitor.py", "src/ragx/githooks.py"]
+  note: "index, watch e os hooks de git disparam a indexação"
+
+- query: "quem gera o dictionary.json"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/dictionary/builder.py", "src/ragx/sync/service.py"]
+  note: "o builder o monta e o sync o regrava"
+
+- query: "quais classes implementam o protocolo Embedder"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/embeddings/ollama.py", "src/ragx/embeddings/hashing.py", "src/ragx/embeddings/fastembed_provider.py"]
+  note: "os três providers: ollama, hashing e fastembed"
+
+- query: "quem chama o rebuild do grafo"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/sync/service.py", "src/ragx/cli/commands/graph_cmd.py"]
+  note: "o sync e `ragx graph rebuild`"
+
+- query: "de que depende o hub de federação"
+  class: relacionamento
+  difficulty: hard
+  relevant_paths: ["src/ragx/federation/hub.py", "src/ragx/federation/linker.py"]
+  note: "o hub registra projetos e o linker resolve vínculos entre eles"
+
+- query: "quem usa o contador de tokens"
+  class: relacionamento
+  difficulty: hard
+  relevant_paths: ["src/ragx/tokens.py", "src/ragx/context/engine.py"]
+  note: "tokens.py define count_tokens e o engine o usa para o orçamento"
+
+- query: "quem chama o scanner de segredos"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/security/gate.py", "src/ragx/dictionary/builder.py"]
+  note: "o gate varre o conteúdo e o dicionário re-varre antes de gravar"
+
+- query: "quem escreve o status.json do índice"
+  class: relacionamento
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/status_file.py", "src/ragx/indexing/pipeline.py"]
+  note: "write_status é chamado ao fim da indexação"
+
+- query: "quem chama o hook-run"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/githooks.py", "src/ragx/cli/commands/hooks_cmd.py"]
+  note: "o bloco do hook de git invoca `ragx hook-run`, que é o comando oculto de hooks_cmd"
+
+- query: "quem usa a fila de toque"
+  class: relacionamento
+  difficulty: easy
+  relevant_paths: ["src/ragx/indexing/touchq.py", "src/ragx/cli/commands/touch_cmd.py"]
+  note: "o módulo da fila e o comando `ragx touch`"
+
+# ── depuração: mensagens de erro, sintomas ────────────────────────────────
+- query: "IndexBusyError índice ocupado por outro processo"
+  class: depuracao
+  difficulty: easy
+  relevant_paths: ["src/ragx/core/errors.py", "src/ragx/indexing/pipeline.py"]
+  note: "o erro é definido em core/errors e levantado quando a trava está ocupada"
+
+- query: "FOREIGN KEY constraint failed ao indexar em paralelo"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/lock.py"]
+  note: "o docstring da trava conta que dois escritores no mesmo banco produziram esse erro"
+
+- query: "sem embeddings rode ragx index --embed-only"
+  class: depuracao
+  difficulty: easy
+  relevant_paths: ["src/ragx/search/service.py", "docs/05-busca.md"]
+  note: "a mensagem de degradação da busca semântica"
+
+- query: "o índice vetorial é de outro modelo mas a configuração pede este"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/search/service.py", "docs/05-busca.md"]
+  note: "degradação quando o modelo configurado difere do dos vetores gravados"
+
+- query: "refresh responde write_disabled no modo leitura"
+  class: depuracao
+  difficulty: easy
+  relevant_paths: ["src/ragx/mcp/operations.py", "docs/09-mcp.md"]
+  note: "o servidor somente leitura recusa as ferramentas de escrita"
+
+- query: "embedder indisponível usando só keyword"
+  class: depuracao
+  difficulty: easy
+  relevant_paths: ["src/ragx/search/service.py"]
+  note: "mensagem de degradação quando o embedder cai"
+
+- query: "provider de embedding desconhecido"
+  class: depuracao
+  difficulty: easy
+  relevant_paths: ["src/ragx/embeddings/__init__.py"]
+  note: "UsageError de build_embedder com a lista ollama, fastembed, hashing"
+
+- query: "ModuleNotFoundError fastembed instalar ragx[embed]"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/embeddings/fastembed_provider.py", "install/README.md"]
+  note: "a dependência opcional e o que fazer quando falta"
+
+- query: "OpenProcess ERROR_ACCESS_DENIED processo de outro usuário na trava"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/lock.py"]
+  note: "pid_alive e proc_token tratam o acesso negado como processo vivo"
+
+- query: "a trava de indexação nunca é liberada com PID reutilizado"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/lock.py", "docs/04-indexacao.md"]
+  note: "proc_token e holder_alive distinguem o PID reciclado"
+
+- query: "arquivo salvo no editor some do índice"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/walk.py", "docs/04-indexacao.md"]
+  note: "arquivo travado no momento do save vira unreadable, não removido"
+
+- query: "chave AWS AKIA apareceu no índice"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/security/scanner.py", "docs/02-seguranca.md"]
+  note: "regras de padrão e o gate que redige ou bloqueia"
+
+- query: ".env foi bloqueado e não aparece na busca"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/security/rules/filenames.yaml", "src/ragx/security/gate.py"]
+  note: "deny-list de nomes de arquivo antes de abrir o arquivo"
+
+- query: "no such table entities schema do banco desatualizado"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/storage/db.py", "src/ragx/storage/migrations/0004_graph.sql"]
+  note: "migrações aplicadas na abertura do banco; a tabela entities vem da 0004"
+
+- query: "conexão recusada na porta 11434 do ollama"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/embeddings/ollama.py", "docs/15-configuracao.md"]
+  note: "o cliente do Ollama e a configuração da base_url"
+
+- query: "requisição ao localhost leva 2 segundos no Windows"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/config.py", "docs/15-configuracao.md"]
+  note: "resolve_base_url troca localhost por 127.0.0.1"
+
+- query: "commit demora meio segundo por causa do hook"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/entry.py", "src/ragx/hooklight.py"]
+  note: "entrada leve que evita importar o CLI inteiro no hook"
+
+- query: "o método trivial sumiu do grafo"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/chunkers/__init__.py", "docs/06-grafo.md"]
+  note: "método abaixo de min_tokens é fundido com o vizinho e deixa de ser entidade"
+
+- query: "context pack passou do orçamento de tokens"
+  class: depuracao
+  difficulty: hard
+  relevant_paths: ["src/ragx/context/budget.py", "docs/07-context-engine.md"]
+  note: "alocação de orçamento e o que sai do pacote"
+
+# ── arquitetura: "por que a decisão Z" (deve cair em ADR) ─────────────────
+- query: "por que SQLite como store único"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/adr/ADR-0002-sqlite-como-store-unico.md"]
+  note: "a decisão e as alternativas descartadas"
+
+- query: "por que o servidor MCP é uma casca fina"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/adr/ADR-0006-mcp-casca-fina.md"]
+  note: "o MCP só delega e não lê o filesystem"
+
+- query: "por que o gate de segurança roda antes do parser"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/adr/ADR-0008-security-gate-antes-do-parser.md", "docs/02-seguranca.md"]
+  note: "nenhum byte chega ao parser sem passar pelo gate"
+
+- query: "por que três camadas de conhecimento no grafo"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/adr/ADR-0009-tres-camadas-de-conhecimento.md", "docs/06-grafo.md"]
+  note: "estrutural, referencial e semântica"
+
+- query: "por que federar projetos em vez de um índice único"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0011-federacao-entre-projetos.md", "docs/17-multiprojeto-e-federacao.md"]
+  note: "a decisão do hub e da fatia pública"
+
+- query: "por que o agente pode escrever no índice"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0012-poder-do-agente-sobre-o-indice.md"]
+  note: "o poder do agente sobre o índice e seus limites"
+
+- query: "por que um conhecimento base compartilhado entre projetos"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0013-conhecimento-base-compartilhado.md", "docs/18-conhecimento-base.md"]
+  note: "fontes externas sob @base/ com opt-in"
+
+- query: "por que a orquestração de tarefas é local"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0014-orquestracao-local-e-o-que-e-versionavel.md", "docs/21-orquestracao-de-tarefas.md"]
+  note: "SQLite local e o que entra no Git"
+
+- query: "quem executa a tarefa decomposta"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0015-quem-executa-a-tarefa.md"]
+  note: "o RAGX decompõe e despacha; quem executa é o agente"
+
+- query: "por que o instalador do painel traz tudo junto"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0016-instalador-completo-do-painel.md"]
+  note: "o .exe instala painel e CLI com um clique"
+
+- query: "por que Python e uv"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/adr/ADR-0001-python-e-toolchain.md"]
+  note: "linguagem e toolchain"
+
+- query: "por que a busca vetorial é feita em memória"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0003-busca-vetorial.md"]
+  note: "matriz numpy carregada do SQLite, sem índice vetorial externo"
+
+- query: "por que o binário se chama ragx"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/adr/ADR-0007-nome-do-binario.md"]
+  note: "a decisão do nome"
+
+- query: "por que embeddings locais com ollama ou fastembed"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0004-embeddings.md"]
+  note: "local-first, sem enviar código para a nuvem"
+
+- query: "por que AST para Python e texto para o resto"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/adr/ADR-0005-parsing-e-chunking.md"]
+  note: "a estratégia de parsing e as razões"
+
+- query: "quais são os objetivos do projeto"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/00-visao-geral.md"]
+  note: "objetivos O1 a O5 e o problema que o RAGX resolve"
+
+- query: "como as camadas do sistema se organizam"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/01-arquitetura.md"]
+  note: "visão em camadas e responsabilidades"
+
+- query: "quais tabelas existem no banco de conhecimento"
+  class: arquitetura
+  difficulty: easy
+  relevant_paths: ["docs/03-modelo-de-dados.md"]
+  note: "o modelo de dados do SQLite"
+
+- query: "o que a v2 prometeu e o que foi medido"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/25-spec-v2.md", "docs/26-resultados-v2.md"]
+  note: "a spec com os SLOs e o relatório de resultados"
+
+- query: "qual a ameaça de symlink que aponta para fora da raiz"
+  class: arquitetura
+  difficulty: hard
+  relevant_paths: ["docs/02-seguranca.md", "src/ragx/security/links.py"]
+  note: "ameaça A8 e a recusa de links"
+
+# ── configuração: "onde se ajusta o limite de W" ──────────────────────────
+- query: "onde se ajusta o tamanho máximo de arquivo indexado"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/15-configuracao.md", "src/ragx/config.py"]
+  note: "index.max_file_bytes"
+
+- query: "como ligar o perfil slim do servidor MCP"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/09-mcp.md", "docs/15-configuracao.md"]
+  note: "[mcp] profile, RAGX_MCP_PROFILE ou --profile"
+
+- query: "variável de ambiente para escolher o provider de embedding"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/15-configuracao.md", "src/ragx/config.py"]
+  note: "RAGX_EMBEDDING_PROVIDER e o mapeamento RAGX_<SECAO>_<CHAVE>"
+
+- query: "onde fica o modelo do fastembed baixado"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/15-configuracao.md", "src/ragx/embeddings/__init__.py"]
+  note: "embedding.model_cache_dir e o cache legado do projeto"
+
+- query: "quantos processos o primeiro índice usa"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/15-configuracao.md", "docs/04-indexacao.md"]
+  note: "index.jobs e o pool de processos"
+
+- query: "como desligar a atualização automática do painel"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["src/app/README.md"]
+  note: "preferência Verificar atualizações do painel"
+
+- query: "intervalo de varredura e debounce do watcher"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/19-watch-e-autonomia-do-agente.md", "src/ragx/config.py"]
+  note: "[watch] interval_s e debounce_s"
+
+- query: "política strict ou permissive do gate"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/02-seguranca.md", "src/ragx/security/gate.py"]
+  note: "security.policy e o limiar de bloqueio"
+
+- query: "teto de tokens do contexto montado"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/07-context-engine.md", "src/ragx/config.py"]
+  note: "o orçamento padrão do build_context"
+
+- query: "como excluir uma pasta da indexação"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/15-configuracao.md", "docs/04-indexacao.md"]
+  note: "index.exclude e o .ragignore"
+
+- query: "seguir symlinks ao indexar"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/04-indexacao.md", "src/ragx/config.py"]
+  note: "index.follow_symlinks, desligado por padrão"
+
+- query: "onde se configura a base URL do Ollama"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/15-configuracao.md", "src/ragx/config.py"]
+  note: "embedding.base_url e OLLAMA_HOST"
+
+- query: "orçamento de tamanho dos arquivos versionados em knowledge"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/16-orcamento-de-tamanho.md", "src/ragx/sizing/budget.py"]
+  note: "limites do Git e quantização"
+
+- query: "como habilitar a escrita no servidor MCP"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/09-mcp.md", "src/ragx/cli/commands/mcp_cmd.py"]
+  note: "ragx mcp serve --write ou mcp.allow_write"
+
+- query: "como pedir resposta curta nas buscas do MCP"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/09-mcp.md", "src/ragx/config.py"]
+  note: "response_format concise e mcp.response_format"
+
+- query: "onde fica o hub multiprojeto"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/17-multiprojeto-e-federacao.md", "src/ragx/config.py"]
+  note: "hub.path, padrão ~/.ragx/hub"
+
+- query: "nível de log e retenção dos logs"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["docs/15-configuracao.md", "src/ragx/config.py"]
+  note: "[log] level, dir e retain_days"
+
+- query: "como fixar as ferramentas do VS Code ao servidor MCP"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["vscode-plugin/package.json", "docs/22-vscode-e-desempenho.md"]
+  note: "ragx.mcpArgs sobe o servidor com o perfil full"
+
+- query: "dimensão e quantização dos vetores versionados"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/16-orcamento-de-tamanho.md", "docs/15-configuracao.md"]
+  note: "versioned_dim e versioned_quant"
+
+- query: "limite de resposta em bytes das ferramentas MCP"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/09-mcp.md", "src/ragx/config.py"]
+  note: "mcp.max_response_bytes"
+
+- query: "tamanho máximo do chunk em tokens"
+  class: configuracao
+  difficulty: easy
+  relevant_paths: ["src/ragx/config.py", "docs/04-indexacao.md"]
+  note: "chunk.max_tokens e min_tokens"
+
+- query: "quando o watcher consolida com sync completo"
+  class: configuracao
+  difficulty: hard
+  relevant_paths: ["docs/19-watch-e-autonomia-do-agente.md", "src/ragx/watch/monitor.py"]
+  note: "watch.full_sync_every"
+
+# ── factual / hard: paráfrase, sem o termo exato ──────────────────────────
+- query: "como o sistema evita reembutir um texto que já foi embutido"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/embeddings/base.py", "src/ragx/indexing/embed.py"]
+  note: "EmbeddingCache por hash do conteúdo"
+
+- query: "como saber se o índice ficou velho em relação ao git"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/freshness.py", "src/ragx/indexing/status_file.py"]
+  note: "frescor comparando commit e branch"
+
+- query: "como evitar trechos repetidos no contexto devolvido"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/context/dedup.py", "docs/07-context-engine.md"]
+  note: "deduplicação e MMR"
+
+- query: "o que acontece quando dois processos indexam ao mesmo tempo"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/indexing/lock.py", "docs/04-indexacao.md"]
+  note: "trava de arquivo e pedido pendente"
+
+- query: "como as relações do grafo ganham peso e confiança"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["docs/06-grafo.md", "src/ragx/graph/store.py"]
+  note: "modelo de confiança extracted versus inferred"
+
+- query: "como se limita o número de chamadas por minuto no servidor MCP"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/mcp/server.py"]
+  note: "limitador por minuto das ferramentas"
+
+- query: "como um arquivo binário é tratado na indexação"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/walk.py", "docs/04-indexacao.md"]
+  note: "sonda de NUL nos primeiros bytes e skipped:binary"
+
+- query: "como se calcula o identificador de um documento"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/core/ids.py", "docs/03-modelo-de-dados.md"]
+  note: "document_id é o hash do caminho normalizado"
+
+- query: "como funciona o registro de vários projetos num só lugar"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/federation/hub.py", "docs/17-multiprojeto-e-federacao.md"]
+  note: "o hub registra projetos por project.id"
+
+- query: "por que testes aparecem depois do código nos resultados"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/tiers.py", "src/ragx/search/ranking.py"]
+  note: "camadas work, test e doc e o reordenamento"
+
+- query: "como o sistema adivinha a intenção da pergunta"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/context/intents.yaml", "src/ragx/context/engine.py"]
+  note: "classificação por sinais e estratégia por intenção"
+
+- query: "como estimar quantos tokens o contexto economiza"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/search/trial.py", "src/ragx/context/baseline.py"]
+  note: "ragx trial e o baseline de leitura de arquivos inteiros"
+
+- query: "como o perfil do agente é gerado para um projeto"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/agents/profile.py", "docs/10-agent-training.md"]
+  note: "instructions geradas a partir do dicionário"
+
+- query: "como empacotar o conhecimento para levar a outra máquina"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/portability/package.py", "docs/11-export-import.md"]
+  note: "export e import do pacote .rag"
+
+- query: "como refazer o índice a partir do que está no Git"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/sync/rehydrate.py", "docs/12-git-sync.md"]
+  note: "reidratação do knowledge versionado"
+
+- query: "como o pedido do usuário vira uma lista de tarefas"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/tasks/decomposer.py", "src/ragx/tasks/planner.py"]
+  note: "decomposição e planejamento do trabalho"
+
+- query: "como decidir se executa agora ou documenta antes"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/tasks/analyzer.py", "docs/20-task-analyzer.md"]
+  note: "o analisador classifica a solicitação"
+
+- query: "quantas vezes uma tarefa é tentada de novo"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/tasks/worker.py", "docs/21-orquestracao-de-tarefas.md"]
+  note: "lease, retry e agendamento do worker"
+
+- query: "como a extensão do VS Code fala com o RAGX"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["docs/22-vscode-e-desempenho.md", "vscode-plugin/src/rag/McpClient.ts"]
+  note: "cliente MCP com fallback para a CLI"
+
+- query: "quanto tempo leva a primeira busca depois de subir o servidor"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/mcp/warmup.py", "docs/09-mcp.md"]
+  note: "aquecimento do embedder em segundo plano"
+
+- query: "como arquivos grandes ignorados não custam leitura"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/walk.py", "docs/04-indexacao.md"]
+  note: "ignore e tamanho decididos antes de abrir o arquivo"
+
+- query: "como o painel sabe que o índice de um projeto está defasado"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/app/README.md", "src/ragx/indexing/status_file.py"]
+  note: "status.json lido pelo painel"
+
+- query: "o que o comando doctor verifica"
+  class: factual
+  difficulty: easy
+  relevant_paths: ["src/ragx/cli/commands/doctor.py", "docs/14-cli.md"]
+  note: "checagens de ambiente, banco e embedder"
+
+- query: "como o ragx descobre a raiz do projeto"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/config.py"]
+  note: "find_root sobe até achar o ragx.toml"
+
+- query: "como as consultas viram termos para o FTS5"
+  class: factual
+  difficulty: hard
+  relevant_paths: ["src/ragx/search/keyword.py", "docs/05-busca.md"]
+  note: "preparação da consulta e pesos BM25"
+
+# ── sem resposta: o corpus não trata do assunto ───────────────────────────
+- query: "receita de pão de queijo"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "assunto fora do domínio do repositório"
+
+- query: "quem ganhou a copa do mundo de 2014"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "assunto fora do domínio do repositório"
+
+- query: "história do Império Romano"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"
+
+- query: "plano de saúde com coparticipação"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"
+
+- query: "treinar uma rede neural convolucional para classificar imagens"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "regras do campeonato mundial de xadrez"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "como tricotar um cachecol"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "dicas para treinar para uma maratona"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "algoritmo de ordenação quicksort"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "como funciona o protocolo BGP"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "melhor time de futebol do Brasil"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "tabela periódica dos elementos químicos"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"
+
+- query: "como fazer café coado"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"
+
+- query: "como plantar tomate em vaso"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "como afinar um violão"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "calcular o imposto de renda de pessoa física"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio"
+
+- query: "calcular a área de um triângulo"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"
+
+- query: "como fazer pão caseiro com fermento natural"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"
+
+- query: "melhores praias do Nordeste"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"
+
+- query: "como cuidar de um gato filhote"
+  class: sem_resposta
+  difficulty: easy
+  relevant_paths: []
+  note: "fora do domínio do repositório"

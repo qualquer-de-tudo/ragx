@@ -40,7 +40,7 @@ def main() -> None:
     cfg = load_config()
     if a.seed_top_k is not None:
         cfg.graph.seed_top_k = a.seed_top_k
-    casos = load_cases(a.consultas if a.consultas.is_absolute() else cfg.root / a.consultas)[: a.n]
+    casos = load_cases(a.consultas if a.consultas.is_absolute() else cfg.root / a.consultas, only_answerable=True)[: a.n]
     filtros = SearchFilters(lang=a.lang, path_glob=a.path)
 
     linhas = []

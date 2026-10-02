@@ -11,6 +11,12 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Conjunto de avaliação de 26 para 152 consultas.** Com n=26 o IC95% do recall@5 tinha ~0,33 de largura e nenhuma mudança
+  de recuperação era falsificável; agora são 132 consultas com resposta (IC de ~0,15 a 0,17 em todos os modos) e 20 sem resposta, em
+  seis classes (relacionamento, depuração, arquitetura, configuração, factual e sem resposta), com dificuldade e nota em cada caso.
+  `ragx eval` mostra o recall por classe e o falso positivo das consultas sem resposta; `ragx trial` e `ragx ab` ignoram as sem
+  resposta. Com o conjunto novo o `keyword` (recall@5 0,69) vence o `hybrid` (0,62) e o `semantic` (0,54), e o relacionamento é a
+  classe mais fraca (RAGX-0099). As consultas novas foram escritas por um agente: revisão humana recomendada.
 - **Dicionário enxuto, com resumos e em níveis.** O `get_dictionary`, a primeira chamada que o playbook manda fazer, custava 10.935
   tokens (7.680 no início desta rodada) e nenhum item tinha `summary`. Agora: resumos extrativos sem LLM (docstring da classe, do
   módulo ou README da pasta; **100% dos serviços e 70% dos módulos** neste repositório, e `null` quando não há o que citar),

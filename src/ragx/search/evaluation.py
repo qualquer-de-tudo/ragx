@@ -19,11 +19,24 @@ from ragx.search.service import search
 MODES = ("keyword", "semantic", "hybrid")
 
 
+#: classes de consulta do conjunto (RAGX-0099); `sem_resposta` é a que o corpus NÃO responde
+CLASSES = ("factual", "relacionamento", "depuracao", "arquitetura", "configuracao", "sem_resposta")
+DIFFICULTIES = ("easy", "hard")
+NO_ANSWER = "sem_resposta"
+
+
 @dataclass(frozen=True, slots=True)
 class EvalCase:
     query: str
     relevant_paths: tuple[str, ...]
     note: str = ""
+    cls: str = "factual"
+    difficulty: str = "easy"
+
+    @property
+    def no_answer(self) -> bool:
+        """Consulta que o corpus não responde: não conta como falha de recall; entra numa métrica própria."""
+        return self.cls == NO_ANSWER
 
 
 #: Acima desta largura, o conjunto de consultas não distingue os modos, e
@@ -41,6 +54,18 @@ class ModeMetrics:
     failures: list[tuple[str, int | None]] = field(default_factory=list)
     #: Intervalo de confiança de 95% do recall@5.
     recall_ci: tuple[float, float] = (0.0, 0.0)
+    #: recall@5 por classe e por dificuldade: `(acertos, consultas)` (RAGX-0099)
+    by_class: dict[str, tuple[int, int]] = field(default_factory=dict)
+    by_difficulty: dict[str, tuple[int, int]] = field(default_factory=dict)
+    #: consultas sem resposta e quantas delas trouxeram um resultado tão bem pontuado quanto os acertos de verdade
+    no_answer_cases: int = 0
+    no_answer_false_positives: int = 0
+    #: o limiar de pontuação usado (10º percentil do top-1 das consultas respondidas que acertaram)
+    no_answer_threshold: float | None = None
+
+    @property
+    def no_answer_fp_rate(self) -> float | None:
+        return self.no_answer_false_positives / self.no_answer_cases if self.no_answer_cases else None
 
     @property
     def ci_width(self) -> float:
@@ -70,7 +95,8 @@ def wilson_ci(hits: int, n: int, z: float = 1.96) -> tuple[float, float]:
     return (max(0.0, centro - meio), min(1.0, centro + meio))
 
 
-def load_cases(path: Path) -> list[EvalCase]:
+def load_cases(path: Path, only_answerable: bool = False) -> list[EvalCase]:
+    """`only_answerable`: sem as consultas `sem_resposta`, para quem usa os casos como TAREFAS (`trial`, `ab`)."""
     if not path.is_file():
         raise UsageError(f"conjunto de avaliação não encontrado: {path}")
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or []
@@ -79,9 +105,13 @@ def load_cases(path: Path) -> list[EvalCase]:
             query=item["query"],
             relevant_paths=tuple(item.get("relevant_paths", [])),
             note=item.get("note", ""),
+            cls=item.get("class", "factual"),
+            difficulty=item.get("difficulty", "easy"),
         )
         for item in raw
     ]
+    if only_answerable:
+        cases = [c for c in cases if not c.no_answer]
     if not cases:
         raise UsageError(f"conjunto de avaliação vazio: {path}")
     return cases
@@ -125,24 +155,54 @@ def evaluate(
 ) -> list[ModeMetrics]:
     out: list[ModeMetrics] = []
     for mode in modes:
-        m = ModeMetrics(mode=mode, cases=len(cases))
+        respondidas = [c for c in cases if not c.no_answer]
+        m = ModeMetrics(mode=mode, cases=len(respondidas))
         recall = mrr = ndcg = 0.0
-        for case in cases:
+        top1_dos_acertos: list[float] = []
+        for case in respondidas:
             res = search(cfg, case.query, mode=mode, limit=10)
             paths = [r.document_path for r in res.results]
             top5 = set(paths[:5])
-            if any(p in top5 for p in case.relevant_paths):
+            acertou = any(p in top5 for p in case.relevant_paths)
+            for grupo, chave in ((m.by_class, case.cls), (m.by_difficulty, case.difficulty)):
+                h, t = grupo.get(chave, (0, 0))
+                grupo[chave] = (h + int(acertou), t + 1)
+            if acertou:
                 recall += 1.0
+                if res.results:
+                    top1_dos_acertos.append(float(res.results[0].score))
             rank = _first_hit_rank(paths, case.relevant_paths)
             if rank:
                 mrr += 1.0 / rank
             if rank is None or rank > 5:
                 m.failures.append((case.query, rank))
             ndcg += _ndcg(paths, case.relevant_paths)
-        n = max(len(cases), 1)
+        n = max(len(respondidas), 1)
         m.recall_at_5 = recall / n
         m.mrr = mrr / n
         m.ndcg_at_10 = ndcg / n
         m.recall_ci = wilson_ci(int(recall), n)
+        _sem_resposta(cfg, cases, mode, top1_dos_acertos, m)
         out.append(m)
     return out
+
+
+def _sem_resposta(cfg: Config, cases: list[EvalCase], mode: str, top1_dos_acertos: list[float], m: ModeMetrics) -> None:
+    """Falso positivo das consultas sem resposta.
+
+    Sem uma pontuação calibrada (a RAGX-0101 separa score bruto de relevância normalizada) não há "nota de corte" óbvia,
+    então o limiar vem dos próprios acertos: o 10º percentil do top-1 das consultas respondidas que acertaram. Uma
+    consulta SEM resposta cujo top-1 fica nesse patamar ou acima seria apresentada com a mesma confiança de um acerto de
+    verdade: falso positivo. É uma régua relativa ao modo; serve para comparar versões, não como probabilidade.
+    """
+    sem = [c for c in cases if c.no_answer]
+    m.no_answer_cases = len(sem)
+    if not sem or not top1_dos_acertos:
+        return
+    ordenados = sorted(top1_dos_acertos)
+    limiar = ordenados[int(0.10 * (len(ordenados) - 1))]
+    m.no_answer_threshold = limiar
+    for case in sem:
+        res = search(cfg, case.query, mode=mode, limit=10)
+        if res.results and float(res.results[0].score) >= limiar:
+            m.no_answer_false_positives += 1

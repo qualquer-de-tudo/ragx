@@ -52,7 +52,7 @@ def ab(
 
     caminho = queries or (cfg.root / "tests" / "eval" / "queries.yaml")
     if caminho.is_file():
-        casos = load_cases(caminho)
+        casos = load_cases(caminho, only_answerable=True)
     elif cfg.db_path.exists():
         casos = auto_cases(cfg, limit=limit)
     else:

@@ -60,7 +60,7 @@ def trial_cmd(
                 "indexe o projeto ou crie o arquivo"
             )
     else:
-        cases = load_cases(path)
+        cases = load_cases(path, only_answerable=True)
     results = run_trial(cfg, cases, budget=budget, grep_files=grep_files)
 
     total_baseline = sum(r.baseline_tokens for r in results)

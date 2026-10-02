@@ -45,6 +45,14 @@ def eval_cmd(
                             "mrr": round(m.mrr, 4),
                             "ndcg_at_10": round(m.ndcg_at_10, 4),
                             "failures": [{"query": q, "rank": r} for q, r in m.failures],
+                            "by_class": {k: {"hits": h, "n": t, "recall_at_5": round(h / t, 4)} for k, (h, t) in m.by_class.items()},
+                            "by_difficulty": {k: {"hits": h, "n": t, "recall_at_5": round(h / t, 4)} for k, (h, t) in m.by_difficulty.items()},
+                            "no_answer": {
+                                "cases": m.no_answer_cases,
+                                "false_positives": m.no_answer_false_positives,
+                                "false_positive_rate": None if m.no_answer_fp_rate is None else round(m.no_answer_fp_rate, 4),
+                                "threshold": None if m.no_answer_threshold is None else round(m.no_answer_threshold, 4),
+                            },
                         }
                         for m in metrics
                     ],
@@ -54,7 +62,8 @@ def eval_cmd(
         )
         return
 
-    console.print(f"\n[bold]Avaliação[/] — {len(cases)} consultas\n")
+    sem = sum(1 for c in cases if c.no_answer)
+    console.print(f"\n[bold]Avaliação[/] — {len(cases)} consultas ({len(cases) - sem} com resposta, {sem} sem)\n")
     console.print(f"  {'Modo':<12}{'Recall@5':>10}{'IC 95%':>16}{'MRR':>9}{'nDCG@10':>10}")
     console.print(f"  {'-' * 57}")
     for m in metrics:
@@ -81,6 +90,22 @@ def eval_cmd(
         console.print(
             "      entre eles cabe dentro do ruído. Amplie o conjunto antes de concluir."
         )
+
+    if any(m.by_class for m in metrics):
+        console.print("\n  [bold]Recall@5 por classe[/]  [dim](acertos/consultas)[/]")
+        for classe in sorted({k for m in metrics for k in m.by_class}):
+            partes = [
+                f"{m.mode} {m.by_class[classe][0]}/{m.by_class[classe][1]}"
+                for m in metrics
+                if classe in m.by_class
+            ]
+            console.print(f"    {classe:<16}{'   '.join(partes)}")
+        for m in metrics:
+            if m.no_answer_cases and m.no_answer_fp_rate is not None:
+                console.print(
+                    f"  [dim]sem resposta, {m.mode}: {m.no_answer_false_positives}/{m.no_answer_cases} com resultado "
+                    f"tão bem pontuado quanto um acerto (falso positivo)[/]"
+                )
 
     by_mode = {m.mode: m for m in metrics}
     if {"hybrid", "semantic", "keyword"} <= set(by_mode):

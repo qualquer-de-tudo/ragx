@@ -237,6 +237,35 @@ Meta original da Fase 2: **hybrid > semantic > keyword** em Recall@5, com
 hybrid >= 0.80. **Essa meta não foi atingida**, e a investigação apontou três
 causas, todas documentadas com evidência:
 
+### O conjunto ampliado (RAGX-0099)
+
+O conjunto tinha 26 consultas. Hoje `tests/eval/queries.yaml` tem **152**, das quais **132 com resposta** e 20 sem, e cada
+caso traz `class` (`factual`, `relacionamento`, `depuracao`, `arquitetura`, `configuracao`, `sem_resposta`), `difficulty` (`easy`:
+o termo da pergunta aparece no arquivo; `hard`: paráfrase) e `note` (por que aqueles caminhos são os relevantes). As consultas
+novas foram escritas à mão a partir do que cada arquivo faz, e não geradas dos chunks (isso seria circular: mede só se a busca
+acha o trecho de onde a pergunta saiu). **Atenção:** quem escreveu foi um agente de IA, não uma pessoa que conhece o
+repositório; os `relevant_paths` listam o(s) arquivo(s) certo(s), mas outro arquivo também pode responder, e então o recall
+medido é um piso. Vale revisão humana, e o teste `tests/unit/test_eval_conjunto.py` impede o conjunto de encolher
+(≥ 150 consultas, a largura do IC95% no pior caso abaixo de 0,20, cobertura mínima por classe, nota em todo caso e todo
+caminho existente).
+
+`ragx eval` calcula recall@5, MRR e nDCG@10 só sobre as consultas COM resposta, mostra o recall por classe e por dificuldade
+(`--json`: `by_class`, `by_difficulty`) e dá às consultas SEM resposta uma métrica própria: a fração delas cujo melhor
+resultado tem pontuação igual ou maior que o 10º percentil dos acertos de verdade (falso positivo; é uma régua relativa ao modo,
+enquanto a pontuação não for calibrada, RAGX-0101). Medido em 02/10/2026 (`fastembed:paraphrase-multilingual-MiniLM-L12-v2`):
+
+| Modo | Recall@5 | IC 95% | Largura | MRR | nDCG@10 | Sem resposta, falso positivo |
+|---|---:|---|---:|---:|---:|---:|
+| keyword | 0,69 | [0,61–0,76] | 0,15 | 0,47 | 0,45 | 3/20 |
+| semantic | 0,54 | [0,45–0,62] | 0,17 | 0,43 | 0,38 | 1/20 |
+| hybrid | 0,62 | [0,54–0,70] | 0,16 | 0,49 | 0,43 | 3/20 |
+
+Os intervalos agora cabem em 0,20, e o resultado é mais firme que o de n=26: **`keyword` e `hybrid` ficam mais perto do que
+parecia, e o `semantic` fica claramente atrás do `keyword`**; o `hybrid` tem o melhor MRR mas não o melhor recall@5. Por classe
+(acertos/consultas, keyword / semantic / hybrid): relacionamento 11/20, 4/20, 9/20; depuração 14/19, 9/19, 11/19; arquitetura
+20/23, 17/23, 19/23; configuração 19/24, 16/24, 19/24; factual 27/46, 25/46, 24/46. As perguntas de relacionamento ("quem chama X")
+são as mais fracas em todos os modos, o que aponta para o grafo (RAGX-0145) e não para a fusão.
+
 ### 1. RRF premia consenso
 
 É a fraqueza conhecida do algoritmo. Rastreando a consulta
