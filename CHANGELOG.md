@@ -9,6 +9,13 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **`ragx ab --execute`: o braço com RAGX nunca conseguia usar o RAGX.** Em `claude -p` as ferramentas de MCP exigem permissão e ninguém a aprova, então toda
+  chamada era negada e o A/B mediria "sem RAGX" nos dois braços (visto em duas chamadas de fumaça: 0 chamadas ao RAGX em 12 e 8 turnos). Os braços com RAGX passam
+  `--allowedTools mcp__ragx`; o relatório registra `permission_denials` e o comando avisa se houve negação. Novas opções `--with-hooks` (dica e lembrete só no braço
+  com RAGX) e `--setting-sources` (igual em todos os braços). Primeira chamada que passou: 1 chamada ao RAGX, 2,6 mil tokens faturáveis e US$ 0,035 contra 28 a 62 mil e US$ 0,21 a 0,37 sem.
+
 ## [1.0.1] — 2026-10-02
 
 ### Adicionado
@@ -26,10 +33,6 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
-- **`ragx ab --execute`: o braço com RAGX nunca conseguia usar o RAGX.** Em `claude -p` as ferramentas de MCP exigem permissão e ninguém a aprova, então toda
-  chamada era negada e o A/B mediria "sem RAGX" nos dois braços (visto em duas chamadas de fumaça: 0 chamadas ao RAGX em 12 e 8 turnos). Os braços com RAGX passam
-  `--allowedTools mcp__ragx`; o relatório registra `permission_denials` e o comando avisa se houve negação. Novas opções `--with-hooks` (dica e lembrete só no braço
-  com RAGX) e `--setting-sources` (igual em todos os braços). Primeira chamada que passou: 1 chamada ao RAGX, 2,6 mil tokens faturáveis e US$ 0,035 contra 28 a 62 mil e US$ 0,21 a 0,37 sem.
 - **`status.json` não deixa mais um `.tmp` órfão nem fica velho no Windows.** Quando o painel tinha o arquivo aberto, o `os.replace` falhava, o erro era engolido e o
   temporário ficava para sempre ao lado do `status.json`. Agora a troca tenta de novo (5 vezes, até 0,75 s) e o temporário é apagado se a troca falha.
 
