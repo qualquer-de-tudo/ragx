@@ -94,7 +94,8 @@ def test_resolve_aceita_absoluto_e_relativo_e_normaliza(tmp_path: Path) -> None:
     (raiz / "src" / "b.py").write_text("x\n", encoding="utf-8")
     assert touchq.resolve(raiz, raiz / "src" / "b.py") == "src/b.py"
     assert touchq.resolve(raiz, "src/b.py") == "src/b.py"
-    assert touchq.resolve(raiz, "src\\b.py") in ("src/b.py", None)  # `\` só é separador no Windows
+    # `\` só é separador no Windows; em Linux e macOS é um caractere válido de nome: `src\b.py` é um arquivo na raiz
+    assert touchq.resolve(raiz, "src\\b.py") in ("src/b.py", "src\\b.py", None)
     assert touchq.resolve(raiz, "./src/../src/b.py") == "src/b.py"
     if sys.platform == "win32":
         assert touchq.resolve(raiz, str(raiz).upper() + "\\SRC\\B.PY") is not None  # `C:\a\b.py` == `a/b.py`
