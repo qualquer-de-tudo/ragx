@@ -7,7 +7,7 @@
       "handler": null,
       "normalized": "close",
       "raw": "close",
-      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:12"
+      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:102"
     },
     {
       "confidence": 0.85,
@@ -16,7 +16,16 @@
       "handler": null,
       "normalized": "data",
       "raw": "data",
-      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:12"
+      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:102"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "download-progress",
+      "raw": "download-progress",
+      "source": "src/app/electron/__tests__/updater.test.ts:72"
     },
     {
       "confidence": 0.85,
@@ -25,7 +34,34 @@
       "handler": null,
       "normalized": "error",
       "raw": "error",
-      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:118"
+      "source": "src/app/electron/data/__tests__/run-ragx-command.test.ts:121"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "hide",
+      "raw": "hide",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:5"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "keyboardevent",
+      "raw": "KeyboardEvent",
+      "source": "src/app/src/hooks/__tests__/useShortcuts.test.tsx:19"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "lock-screen",
+      "raw": "lock-screen",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:46"
     },
     {
       "confidence": 0.85,
@@ -41,9 +77,90 @@
       "contract": null,
       "detected_by": "reference",
       "handler": null,
+      "normalized": "minimize",
+      "raw": "minimize",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:5"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
       "normalized": "payment.captured",
       "raw": "payment.captured",
       "source": "tests/integration/test_federation.py:1"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "restore",
+      "raw": "restore",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:5"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "resume",
+      "raw": "resume",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:46"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "show",
+      "raw": "show",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:5"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "suspend",
+      "raw": "suspend",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:46"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "unlock-screen",
+      "raw": "unlock-screen",
+      "source": "src/app/electron/system/__tests__/window-activity.test.ts:46"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "update-available",
+      "raw": "update-available",
+      "source": "src/app/electron/__tests__/updater.test.ts:62"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "update-downloaded",
+      "raw": "update-downloaded",
+      "source": "src/app/electron/__tests__/updater.test.ts:72"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "update-not-available",
+      "raw": "update-not-available",
+      "source": "src/app/electron/__tests__/updater.test.ts:95"
     }
   ],
   "http": [
@@ -60,10 +177,10 @@
       "confidence": 1.0,
       "contract": null,
       "detected_by": "graph",
-      "handler": null,
+      "handler": "Camada 2 — referencial (determinística, heurística)",
       "normalized": "POST /api/login",
       "raw": "POST /api/login",
-      "source": "tests/integration/test_dictionary.py:1"
+      "source": "docs/06-grafo.md:62"
     },
     {
       "confidence": 1.0,
@@ -139,7 +256,7 @@
       "handler": null,
       "normalized": "chunks",
       "raw": "chunks",
-      "source": "src/ragx/storage/migrations/0002_documents.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -148,7 +265,7 @@
       "handler": null,
       "normalized": "cross_links",
       "raw": "cross_links",
-      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -166,7 +283,7 @@
       "handler": null,
       "normalized": "documents",
       "raw": "documents",
-      "source": "src/ragx/storage/migrations/0002_documents.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -175,7 +292,7 @@
       "handler": null,
       "normalized": "embedding_models",
       "raw": "embedding_models",
-      "source": "src/ragx/storage/migrations/0003_embeddings.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -184,7 +301,7 @@
       "handler": null,
       "normalized": "embeddings",
       "raw": "embeddings",
-      "source": "src/ragx/storage/migrations/0003_embeddings.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -193,7 +310,7 @@
       "handler": null,
       "normalized": "entities",
       "raw": "entities",
-      "source": "src/ragx/storage/migrations/0004_graph.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -202,7 +319,7 @@
       "handler": null,
       "normalized": "federation_items",
       "raw": "federation_items",
-      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -211,7 +328,16 @@
       "handler": null,
       "normalized": "federation_surface",
       "raw": "federation_surface",
-      "source": "src/ragx/storage/migrations/0005_federation.sql"
+      "source": "docs/03-modelo-de-dados.md"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "file_verdicts",
+      "raw": "file_verdicts",
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -247,7 +373,7 @@
       "handler": null,
       "normalized": "meta",
       "raw": "meta",
-      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+      "source": "src/ragx/storage/migrations/0001_init.sql"
     },
     {
       "confidence": 1.0,
@@ -256,7 +382,7 @@
       "handler": null,
       "normalized": "projects",
       "raw": "projects",
-      "source": "src/ragx/tasks/migrations/0001_orchestration.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -265,7 +391,7 @@
       "handler": null,
       "normalized": "relations",
       "raw": "relations",
-      "source": "src/ragx/storage/migrations/0004_graph.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -409,7 +535,7 @@
       "handler": null,
       "normalized": "unresolved",
       "raw": "unresolved",
-      "source": "src/ragx/storage/migrations/hub/0001_hub.sql"
+      "source": "docs/03-modelo-de-dados.md"
     },
     {
       "confidence": 1.0,
@@ -418,7 +544,16 @@
       "handler": null,
       "normalized": "users",
       "raw": "users",
-      "source": "tests/unit/test_parsers.py"
+      "source": "docs/06-grafo.md"
+    },
+    {
+      "confidence": 1.0,
+      "contract": null,
+      "detected_by": "graph",
+      "handler": null,
+      "normalized": "vecs",
+      "raw": "vecs",
+      "source": "src/ragx/embeddings/base.py"
     }
   ]
 }

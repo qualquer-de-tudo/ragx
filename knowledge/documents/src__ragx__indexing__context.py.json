@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "68d5c70fc4084c5d910119db8b8279f1936601ff16e89b5c404611638d18a795",
+  "doc_kind": "code",
+  "id": "3b245ddec233e699a31a636a33a83c2f",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/context.py",
+  "size_bytes": 2237,
+  "title": "Versão e preenchimento do prefixo de contexto dos chunks (RAGX-0166).\n\nO contexto de um chunk é função PURA de dados que já estão no banco (caminho do documento, tipo, símbolo, título e o próprio\nconteúdo, que o Security Gate já liberou). Por isso, ao subir a `CONTEXT_VERSION` (ou ao migrar um banco antigo) não é preciso\nreler arquivo nenhum nem reindexar: `ensure_context` recalcula o contexto de todos os chunks a partir do banco e invalida os\nvetores, que foram feitos com o texto antigo."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "85f3f887d668a764f1fecc44baad206db33d185480fa1fb7ee6fb9141b4b13f9",
+  "doc_kind": "code",
+  "id": "280d88e47ace4ebc1755965a118c5700",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_varredura.py",
+  "size_bytes": 2027,
+  "title": "Mede a varredura de uma árvore SEM mudança (RAGX-0196, S4): o custo por arquivo de `iter_candidates`.\n\n    uv run python scripts/medir_varredura.py [--arquivos 20000]\n\nGera `--arquivos` arquivos pequenos em pastas temporárias, monta o mapa `size+mtime` como o `index` sem mudança o teria e\ncronometra `iter_candidates` (a decisão barata de cada arquivo: ignore, veredito, `unchanged`). Não indexa nada e não\ntoca em nenhum projeto real; imprime a mediana de 5 rodadas."
+}

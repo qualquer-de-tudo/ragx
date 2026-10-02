@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c7da46e307e0672adbbcb19fdc38c7a4da922bcd65d5747958c21569bbf0b4e4",
+  "doc_kind": "code",
+  "id": "45a07cce13209ddf82447f792e54dcfc",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/search/bench.py",
+  "size_bytes": 14104,
+  "title": "Benchmark local de modelos de embedding e de reranker (RAGX-0169): o HARNESS, não a decisão.\n\nMede, no corpus do próprio projeto, só o que JÁ está em disco: um candidato ausente é relatado como `ausente` (com a linha de como\nbaixar, para uma pessoa), nunca baixado nem contado como zero. Nenhum byte do projeto sai da máquina (ADR-0004): o Ollama só é\nconsultado em loopback, e o `.ragx/knowledge.db` real NUNCA é escrito, porque cada candidato roda numa CÓPIA do índice.\n\nAdotar um modelo é decisão de uma pessoa (RAGX-0103); isto só dá os números."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "0945d58e1ea08763280207e12a47feb06ca266a52a4ad6059586be81dbf4e2b2",
+  "doc_kind": "code",
+  "id": "26e991cb0c08817052ff57e4f3c748e7",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_clone_novo.py",
+  "size_bytes": 3671,
+  "title": "Mede o `ragx sync` num clone novo (RAGX-0144): textos enviados ao embedder, tempo e recall.\n\n    uv run python scripts/medir_clone_novo.py [PASTA-DO-REPO] [--sem-import] [--sem-modelo-copiado]\n\nClona `PASTA-DO-REPO` (padrão: o diretório atual) com `git clone` numa pasta temporária, copia a pasta de\nmodelos do fastembed do repositório de origem (para não baixar 240 MB de novo: não faz parte da medição),\nroda `sync` e imprime:\n\n- textos enviados ao embedder durante o `sync` (antes da correção: todos os chunks);\n- tempo do `sync` e vetores importados / ainda só grosseiros;\n- recall@5, MRR e nDCG@10 do modo híbrido nas consultas de `tests/eval/queries.yaml`, com o int8 importado\n  e depois de completar o float32 (`embed_pending(upgrade_coarse=True)`).\n\n`--sem-import` apaga `knowledge/embeddings` do clone antes do `sync`, reproduzindo o comportamento de antes\n(reembutir tudo)."
+}

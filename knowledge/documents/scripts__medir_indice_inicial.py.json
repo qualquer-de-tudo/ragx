@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "ecc18f4fb2bd6ce89c03a1ffcdd80a51dd552c836c6360a58d4b7bbdcc292c8e",
+  "doc_kind": "code",
+  "id": "e3e7af6733200f54bd183a91a2c1b069",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_indice_inicial.py",
+  "size_bytes": 5897,
+  "title": "Mede o primeiro índice de um projeto sintético, por fase do `embed_pending` (RAGX-0146).\n\n    uv run python scripts/medir_indice_inicial.py --arquivos 400 --provider hashing\n\nGera `--arquivos` arquivos Python (várias funções cada, ~9 chunks por arquivo), roda `ragx index` com o provider\n`hashing` (isola o cache do modelo) e imprime o tempo total e o de cada fase do embedding: leitura do cache (`get`\nou `get_many`), montagem do prefixo (`_prefixed`), `embed_documents`, escrita do cache (`put` ou `put_many`) e\n`store_vectors`. Funciona nas duas formas do cache (por arquivo e SQLite em lote), medindo o que existir."
+}

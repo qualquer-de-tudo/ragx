@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "025b7b55144df60697dc6f1ba0cc1cb7be53873e6dd6b113f637ca042500b1af",
+  "doc_kind": "code",
+  "id": "5cb980844c1313413d28f42da735d85c",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_dedupe_sessao.py",
+  "size_bytes": 2388,
+  "title": "Mede o dedupe de sessão em 3 consultas sobrepostas (RAGX-0159).\n\n    uv run python scripts/medir_dedupe_sessao.py [--tokens 3000]\n\nRoda as 3 consultas em sequência por `KnowledgeAPI.build_context`, uma vez com o dedupe de sessão e uma\nsem, e imprime os tokens entregues por chamada, quantos `chunk_id` se repetem entre as chamadas e os\ntokens economizados. Usa o índice do projeto atual (somente leitura)."
+}

@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "64a1bc91dc2cd02b48a15e81a920f757477d5178d742da90c3db07e6ba93ca82",
+  "content_hash": "7265dcc87a28b08094dac4660190cc195ca439bf271296730c0a809c9fdf80d6",
   "doc_kind": "code",
   "id": "3e76b186bd6b2b9beed65462ba001138",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/storage/vectors.py",
-  "size_bytes": 9404,
+  "size_bytes": 11823,
   "title": "Busca vetorial: força bruta exata em NumPy, em dois estágios.\n\n[1] grosseira sobre int8@versioned_dim — sempre disponível, inclusive logo\n    após um git clone, sem embedder e sem rede\n[2] rescoring com float32@dim — só quando os vetores locais existem\n\nVer ADR-0003 e ADR-0010."
 }

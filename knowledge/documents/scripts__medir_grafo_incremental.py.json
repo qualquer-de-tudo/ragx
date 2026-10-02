@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "06f4de1f411240e27cc48416a07a4ca859b7165f875dee883e250605cc5bcd4e",
+  "doc_kind": "code",
+  "id": "ff6a06f75f3f5502b90d73cacf6b59c3",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_grafo_incremental.py",
+  "size_bytes": 6556,
+  "title": "Mede o grafo incremental por documento (RAGX-0151), sem tocar no `knowledge/` do repositório.\n\n    uv run python scripts/medir_grafo_incremental.py [--commits 100] [--modulos 400]\n\n1. Fração de edições que NÃO mudam o conjunto de símbolos: nos últimos `--commits` commits do repositório, para\n   cada arquivo Python alterado (modo `M`), compara os nomes `class`/`function`/`method` antes e depois com o\n   mesmo parser e chunker do índice. Se a fração for pequena, o caminho rápido quase nunca vale.\n2. Tempos, num projeto sintético temporário com `--modulos` módulos: rebuild completo, `update_documents` de um\n   corpo editado e de um símbolo novo (que cai no completo), e quantas entidades ficam sem `chunk_id` depois de\n   editar uma linha só com o índice (antes) e depois do `update_documents`."
+}

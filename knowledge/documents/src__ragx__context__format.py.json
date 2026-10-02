@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "867b01eb27002ddd39171947bb502149a9324cf1a5a63546d4a8e35441e76060",
+  "doc_kind": "code",
+  "id": "c4e39ae6296a4931f55bfeba545c82b0",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/context/format.py",
+  "size_bytes": 3121,
+  "title": "Texto do contexto em markdown, em funções puras.\n\nFica separado de `render.py` de propósito: o `budget` (que decide quantos\nfragmentos cabem) e o `engine` (que mede o que saiu) precisam contar EXATAMENTE\no mesmo texto que o agente vai receber, e `render.py` importa o `engine`.\nNenhuma função daqui conhece `ContextPack`.\n\nAntes, o orçamento assumia 12 tokens de cabeçalho por fragmento e\n`estimated_tokens` somava só o conteúdo: o cabeçalho real (`## [i] caminho:linhas\n› nome`) custa ~33, e um pedido de 3.000 tokens chegava a 7.983 no fio (RAGX-0154)."
+}

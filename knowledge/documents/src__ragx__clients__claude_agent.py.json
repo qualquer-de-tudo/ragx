@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "5226a183e0acec059099322a3d57d67658aeb12b5d2ce4c09b94449299a92387",
+  "doc_kind": "code",
+  "id": "8c4a3a031a303c2a960d89b69c67fd7b",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/clients/claude_agent.py",
+  "size_bytes": 5242,
+  "title": "O subagente `ragx-explorer`, instalável no perfil do Claude Code (RAGX-0161).\n\nExplorar código num repositório grande enche o contexto do agente principal com leituras que ele não\nvai reusar. Um subagente isola a exploração e devolve só o resumo, e põe o RAGX NO CAMINHO do modelo em\nvez de depender de ele lembrar (3 de 38 sessões chamaram o RAGX). O RAGX não instalava nenhum subagente.\n\nOpt-in: um subagente novo aparece na lista da pessoa, então só `ragx claude agent install` (ou\n`ragx claude on --agent`) o cria. O arquivo mora no perfil (`<perfil>/agents/ragx-explorer.md`), nunca\nno repositório do usuário, e leva o marcador `<!-- ragx:managed v1 -->`: só o arquivo com o marcador é\natualizado ou removido; um arquivo da pessoa com o mesmo nome nunca é sobrescrito."
+}

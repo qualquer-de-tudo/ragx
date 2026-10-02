@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "95d87e92aa329305269f599f806033708d9f2851752a8f77131131c99b85df51",
+  "content_hash": "45b72c998b0fa43d17ec1312b04dd9ef413aa5cf5c668c5b4dca4ac3ca5ef5d4",
   "doc_kind": "code",
   "id": "be3cfbc14ffd5a60e68753895e6c3fcd",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/perf.py",
-  "size_bytes": 7480,
+  "size_bytes": 8931,
   "title": "Quanto do tempo de uma sessão do Claude Code vai para o RAGX.\n\nO servidor MCP responde em milissegundos; o que pesa é o que acontece em volta:\ncada ferramenta chamada é uma volta a mais do modelo. Por isso a medição parte\ndos transcripts do Claude Code (`~/.claude/projects/*/*.jsonl`), que carimbam\ncada mensagem, e não só do tempo que o servidor diz ter gasto.\n\nO tempo de uma sessão é dividido em três, sempre pela diferença entre carimbos\nconsecutivos:\n\n- **humano** — a pessoa lendo e digitando. Não entra em nada;\n- **modelo** — o intervalo até uma mensagem do assistente. Vira \"do RAGX\" quando\n  aquele turno emitiu uma chamada a `mcp__ragx__*`;\n- **ferramenta** — o intervalo até o resultado. Vira \"do RAGX\" quando todas as\n  ferramentas daquele resultado são do RAGX.\n\nÉ uma estimativa, e as regras abaixo escolhem errar para menos: chamadas em\nparalelo com ferramenta de fora não são atribuídas ao RAGX, e pausas longas\n(máquina dormindo) contam como ociosidade."
 }

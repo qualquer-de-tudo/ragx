@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "78bf15c2aeff61b461c994d5206698650420b2da0dca716a77b8465b5fad6bcd",
+  "doc_kind": "code",
+  "id": "58488338f4218b9dd9cd18bf91f0c8ab",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/integration/test_replace_for_document.py",
+  "size_bytes": 9907,
+  "title": "`ChunkRepo.replace_for_document` preserva o que não mudou (RAGX-0138).\n\nEra \"apaga tudo e reinsere\": como `embeddings.chunk_id` é `ON DELETE CASCADE` e\n`entities.chunk_id` / `relations.evidence_chunk_id` são `ON DELETE SET NULL`, editar\num arquivo derrubava os vetores e as pontes do grafo de TODOS os chunks dele, mesmo\ndos que não mudaram. Como o `chunk.id` é hash de (caminho, conteúdo, versão), o id já\né o diff: quem tem o mesmo id sobrevive."
+}

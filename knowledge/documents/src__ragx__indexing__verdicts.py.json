@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "ca2de99040615a89aec66d4a08abf3252fc47472a85c59d803e03c6af5741993",
+  "doc_kind": "code",
+  "id": "23a3bb182ce000869f891eef36a41b78",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/verdicts.py",
+  "size_bytes": 3015,
+  "title": "Contexto de validade do veredito guardado (`file_verdicts`, RAGX-0139).\n\nO veredito de um arquivo fora do índice só vale enquanto TUDO de que o Security Gate e o\nparser dependem for o mesmo. Esta função resume isso numa string; quando ela muda, o cache\ninteiro é descartado e os arquivos são reavaliados. Na dúvida, não usar o cache: um veredito\nvelho é pior que uma releitura."
+}

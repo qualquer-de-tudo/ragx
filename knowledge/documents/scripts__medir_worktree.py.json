@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "2a847ec0e6ea64a9d798b8301f84856be56e4dd03a8aa5837054c6f7c14e91fb",
+  "doc_kind": "code",
+  "id": "630b85465db025ea96c2539f254fd0e1",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_worktree.py",
+  "size_bytes": 4567,
+  "title": "Mede o custo do índice em worktree e em troca de branch (RAGX-0170), num clone local TEMPORARIO.\n\n    uv run python scripts/medir_worktree.py [--recuar 5] [--sem-hook]\n\nNunca toca o repositório real: `git clone --local` do diretório atual para uma pasta temporária, com HOME\nredirecionado (nada vai para o hub nem para `~/.ragx` de verdade) e o cache de modelos do fastembed apontado para\no do repositório (só leitura: sem download).\n\nMede, com `ragx index --json` em cada raiz:\n1. o índice a frio do clone;\n2. o primeiro índice de um `git worktree add` novo (sem semente, sem cache compartilhado);\n3. a troca de branch no mesmo worktree (ida e volta);\n4. se o `post-checkout` disparado por `git worktree add` indexa a raiz PRINCIPAL em vez da do worktree novo."
+}

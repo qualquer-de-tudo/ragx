@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "1ca6b67d6b851cc2255bdfdc71e0c61d63a88ff3661cb920f7045f0ead4a9576",
+  "doc_kind": "code",
+  "id": "44e1f907cd4bd2cfb26962d4a1f46935",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/context/session.py",
+  "size_bytes": 3026,
+  "title": "O que já foi entregue nesta sessão, para não reenviar o mesmo chunk inteiro (RAGX-0159).\n\nNuma sessão, o agente refaz perguntas parecidas e o `build_context` reenviava os mesmos chunks. O\n`dedup` do engine só limpa a repetição DENTRO de um pack; este livro-razão cuida da repetição ENTRE\npacks: um chunk já entregue volta como referência (`caminho:linhas [id]`), e `get_chunk` o reabre.\n\nEm memória, um por processo (o servidor MCP sobe um por sessão do cliente). Guarda só o id do chunk, o\ncaminho, as linhas, os tokens e quando foi entregue: **nunca o conteúdo**. Limitações conhecidas, e por\nisso o TTL é curto: o servidor não sabe quando o cliente compactou o contexto ou deu `/clear`, e não\ndistingue o agente principal de um subagente (que compartilha o servidor, mas não o contexto)."
+}

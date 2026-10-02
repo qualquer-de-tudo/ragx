@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "248e31bc1c7683e5037805e300c55d865deff08e63adbc0aff421343edb531b2",
+  "doc_kind": "code",
+  "id": "0e08143a725554332a233227caf576d3",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_grafo.py",
+  "size_bytes": 4589,
+  "title": "Mede a expansão do grafo sobre o conjunto de consultas do repositório (RAGX-0145).\n\n    uv run python scripts/medir_grafo.py [--consultas tests/eval/queries.yaml] [--n 12]         [--path \"src/ragx/*\"] [--lang python]\n\nPara cada consulta roda `graph_search` (a mesma chamada de `build_context`, pedindo `limit=25`) e\nimprime: sementes, nós visitados e expandidos, se truncou, quantos chunks vieram SÓ do grafo, o tempo\ndo grafo sem a busca base e, com `--path`/`--lang`, quantos resultados ficaram fora do filtro. No fim,\nrecall@5 e MRR do resultado do grafo contra `relevant_paths`, e a ordem dos IDs numa 2ª execução\n(determinismo)."
+}

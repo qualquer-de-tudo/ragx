@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "ce56961b040eddabe799cd128a7c8b4b7facc597b0bf3a9b42e5d1f15d7af8c0",
+  "doc_kind": "code",
+  "id": "11a014ce9d7e6c26be57225137670d66",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/cli/commands/ab_cmd.py",
+  "size_bytes": 8224,
+  "title": "`ragx ab` — o A/B de economia: as mesmas tarefas, com e sem o RAGX (RAGX-0162).\n\nPor padrão NÃO executa nada: `--dry-run` imprime as chamadas planejadas e o total. `--simulate` roda o\nharness de ponta a ponta com números sintéticos (marcados `simulated`). `--execute` roda `claude -p` DE\nVERDADE, gasta a cota da sua conta e por isso só vale com `RAGX_AB_REAL=1` e `--max-calls N`."
+}

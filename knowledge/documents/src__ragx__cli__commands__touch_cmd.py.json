@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "6ff9ea644368df6025222b6dc8f75b83e9b6efae9a782723a30f7c90f6c8d844",
+  "doc_kind": "code",
+  "id": "da43c9987a648a4d70511ff6cb2c6ad0",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/cli/commands/touch_cmd.py",
+  "size_bytes": 3042,
+  "title": "`ragx touch` — o hook `PostToolUse` do Claude Code avisa que um arquivo foi editado.\n\nO Claude Code roda este comando depois de cada `Edit`, `Write` ou `MultiEdit`, com um JSON no\nstdin (`tool_input.file_path`). O comando só ENFILEIRA o caminho (`.ragx/touch.queue`) e dispara,\ndestacado, a drenagem que reindexa só os arquivos tocados (`index_paths`, RAGX-0140): o agente\nnão espera, e a próxima busca já vê a edição.\n\nSai SEMPRE com código 0, como `ragx claude hint`: um erro aqui sujaria ou atrasaria toda edição\ndo agente, em qualquer pasta, e a ausência do RAGX nunca é motivo para isso."
+}

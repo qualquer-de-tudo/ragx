@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "a2641d1b49023a4868f26365b3fe24a964ae7436124b6111e7dbd7383d2c33f6",
+  "doc_kind": "code",
+  "id": "4ca30ce71e191d84d95b48797a97eb61",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_fio.py",
+  "size_bytes": 5519,
+  "title": "Mede o que o cliente MCP recebe de verdade: o texto da resposta de uma ferramenta.\n\nO que conta para o orçamento do agente não é o `estimated_tokens` que o servidor\ndeclara, é o texto que chega ao contexto. Este script sobe o servidor em\nprocesso, chama a ferramenta pelo mesmo caminho do cliente (`call_tool`) e conta\nos caracteres e os tokens do que sairia no fio.\n\n    uv run python scripts/medir_fio.py --tool build_context --tokens 3000\n    uv run python scripts/medir_fio.py --tool search_hybrid --query \"gate de segurança\"\n    uv run python scripts/medir_fio.py --tool tools_list          # custo fixo das ferramentas\n    uv run python scripts/medir_fio.py --tool get_dictionary --arg section=services\n\nContadores: o do RAGX (`count_tokens`, que já usa `tiktoken` quando instalado), o\n`tiktoken` direto (cl100k) e `chars/4`, que é o que a auditoria usou nas ferramentas. Nenhum dos dois é o tokenizador do Claude: servem para\ncomparar antes e depois, não como verdade absoluta.\n\nUsado pelas tarefas RAGX-0154, 0155, 0157 e 0165."
+}

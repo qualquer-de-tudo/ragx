@@ -77,6 +77,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "771dc89d5e6ee1b5b1fd21a120d7b434",
+    "confidence": 1.0,
+    "document_id": "0e08143a725554332a233227caf576d3",
+    "id": "0803cb037875dfbb5023bf5a56c82fbe",
+    "name": "main#part-1",
+    "qualified_name": "scripts/medir_grafo.py::main#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "f8a42e320391237b4d9562267117cf3e",
     "confidence": 1.0,
     "document_id": "9efa09d8230443f3d74eee77c9fe73ce",
@@ -110,6 +121,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "6d94c876f9bb7c155c42bfde6ac9cf0d",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "0b57e483c998ec23ae4bc141d92a196f",
+    "name": "_indexado",
+    "qualified_name": "tests/unit/test_hooklight.py::_indexado",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "71fa00dcb4ecb844eab4f973eff6e3d2",
     "confidence": 1.0,
     "document_id": "9541c418d371c9f2449f1bac3c3ad13c",
@@ -121,9 +143,9 @@
     "type": "function"
   },
   {
-    "chunk_id": "033ba0d50215b2e273c5493d6caa82a2",
+    "chunk_id": "1b53a85cbbba652e88ff766a876785c4",
     "confidence": 1.0,
-    "document_id": "75e6952a1c38bf66702fb2a430e2d96d",
+    "document_id": "38e535c31a34cc0896bcf174793098a4",
     "id": "0e3101b36e20e18b6e53083c2bd1418f",
     "name": "federation_surface",
     "qualified_name": "federation_surface",
@@ -154,6 +176,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "aab9c7f05ceb365fd5773bdb7904c624",
+    "confidence": 1.0,
+    "document_id": "b5951eb9f6d83724cb1a3bafb4e09956",
+    "id": "129ebfa3c9cc09fa36c4450123ab4e1c",
+    "name": "close",
+    "qualified_name": "src/ragx/embeddings/base.py::EmbeddingCache.close",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
     "chunk_id": "b237a69eaf2d3da58bdd262d6154f0c4",
     "confidence": 1.0,
     "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
@@ -163,6 +196,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "99a9e6116282d515e628552a1b7f541e",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "14edd80327d4e5e938d124a683a70177",
+    "name": "record_session_start",
+    "qualified_name": "src/ragx/hooklight.py::record_session_start",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -187,12 +231,45 @@
     "type": "method"
   },
   {
+    "chunk_id": "7c718a7fa88663a41bb49b0e8a982943",
+    "confidence": 1.0,
+    "document_id": "c0c128a82645d774a323eec1798b6f95",
+    "id": "16aefce382d9e928733272ea8e043c4b",
+    "name": "test_passou_do_teto_vira_ponto_1_e_o_log_recomeca_pequeno",
+    "qualified_name": "tests/unit/test_log_rotation.py::test_passou_do_teto_vira_ponto_1_e_o_log_recomeca_pequeno",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "f57c9c15e92073a5ed75364104dd98d6",
     "confidence": 1.0,
     "document_id": "5e29c2433b275bc3b7edac5259f236e4",
     "id": "1808eac370a69759807b9d6c334085e9",
     "name": "_git",
     "qualified_name": "scripts/versao.py::_git",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "95211e9dd9eb2bf5080b03036edd2db4",
+    "confidence": 1.0,
+    "document_id": "f0ebf418eb639779d9d72559baa3ab9e",
+    "id": "192efb73af71dfd5f140e76ce953a3fc",
+    "name": "_c",
+    "qualified_name": "tests/unit/test_gold.py::_c",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "a5ca80968f7c5ded5287c21c628093ba",
+    "confidence": 1.0,
+    "document_id": "26e991cb0c08817052ff57e4f3c748e7",
+    "id": "1b461013cfe9cd99d1bf57774920cfee",
+    "name": "main#part-1",
+    "qualified_name": "scripts/medir_clone_novo.py::main#part-1",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -218,6 +295,28 @@
     "source": "reference",
     "summary": null,
     "type": "endpoint"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "df218709f18d8c3001f1257837d7ed4f",
+    "id": "1e3d0463a4813357b2796641d70cb956",
+    "name": "mcp_tools_slim.json",
+    "qualified_name": "tests/fixtures/mcp_tools_slim.json",
+    "source": "structural",
+    "summary": "mcp_tools_slim.json",
+    "type": "file"
+  },
+  {
+    "chunk_id": "b2d528483ed69c6c7b2411f0a8252145",
+    "confidence": 1.0,
+    "document_id": "d886896513435d8c82c6597ab876ef5e",
+    "id": "1eac4d7374208761dbf5d140ab95e53b",
+    "name": "dump",
+    "qualified_name": "src/ragx/mcp/tools.py::dump",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "15e34e9a1452c997d354069ae50ccb63",
@@ -275,6 +374,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "90d19f33b81d805d85831a11bce016e4",
+    "confidence": 1.0,
+    "document_id": "ac79c3be18d2f7289e8c1680f6fb151c",
+    "id": "24098fc3f0c4a633f790c6a87ae430f4",
+    "name": "test_stdin_de_cada_ferramenta_enfileira_o_arquivo",
+    "qualified_name": "tests/e2e/test_cli_touch.py::test_stdin_de_cada_ferramenta_enfileira_o_arquivo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "48d89a74d87b39ffcd5482fb1665f6b3",
     "confidence": 1.0,
     "document_id": "afc38ac4e5e44fc8bb25b84ec7e46b5d",
@@ -297,9 +407,9 @@
     "type": "method"
   },
   {
-    "chunk_id": "b137b8de8dba2894f847e0270145188c",
+    "chunk_id": "161818fd56d2b6be08bec1ef51d06cbe",
     "confidence": 1.0,
-    "document_id": "d845451e6cf8fa2b4765c8eaf33da76a",
+    "document_id": "38e535c31a34cc0896bcf174793098a4",
     "id": "26a927a354e0af12b6f6ce02851422f1",
     "name": "chunks",
     "qualified_name": "chunks",
@@ -314,6 +424,28 @@
     "id": "2d5cf4b379caeae5b09cf100e8e1485d",
     "name": "test_caminho_inexistente_devolve_falso_sem_lancar",
     "qualified_name": "tests/unit/test_links.py::test_caminho_inexistente_devolve_falso_sem_lancar",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d804b787dc2bcf97b5e85194213aefb4",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "2d7e37f368521d3403a097513d7f50c2",
+    "name": "run_hint",
+    "qualified_name": "src/ragx/hooklight.py::run_hint",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "248f36dece1d5d81a6ad624139a6a80c",
+    "confidence": 1.0,
+    "document_id": "2eb19be6531eac9d56b90fc49a3b3b03",
+    "id": "2da70913b07e194dd8deff4f6cf4cb99",
+    "name": "_devolver_arquivo",
+    "qualified_name": "src/ragx/indexing/touchq.py::_devolver_arquivo",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -337,7 +469,7 @@
     "name": "main.ts",
     "qualified_name": "src/app/electron/main.ts",
     "source": "structural",
-    "summary": "import { app, BrowserWindow, dialog, ipcMain } from 'electron'",
+    "summary": "import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, nativeTheme, Notification, powerMonitor, Tray } from 'electron'",
     "type": "file"
   },
   {
@@ -350,6 +482,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "1dc1b75e98ef4e8839015ebe65bac2b5",
+    "id": "30af0dd3aa1607303b6c6f5dec1dca38",
+    "name": "ipcError.ts",
+    "qualified_name": "src/app/src/ipcError.ts",
+    "source": "structural",
+    "summary": "/**",
+    "type": "file"
   },
   {
     "chunk_id": "afd541efaafbad2ce352753316fa8389",
@@ -372,6 +515,39 @@
     "source": "structural",
     "summary": "import { describe, expect, it, vi, beforeEach } from 'vitest'",
     "type": "file"
+  },
+  {
+    "chunk_id": "4939dfb43ffbddd12675fa22943fdebd",
+    "confidence": 1.0,
+    "document_id": "4b477ae2dcbd1086c4de6d9e68d20f73",
+    "id": "324ed9134e73548951858edad64525ee",
+    "name": "_toques",
+    "qualified_name": "tests/unit/test_claude_profiles_hint.py::_toques",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "f2e66164d13222669e74926e918a4a19",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "33a2f753038143d59ccfb97d6f2a6792",
+    "name": "paired_savings",
+    "qualified_name": "src/ragx/search/ab.py::paired_savings",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e55df27062e791df671f2f4b027da32c",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "33d3049356d2275cc68f651dcf4ff4bf",
+    "name": "Leve",
+    "qualified_name": "src/ragx/hooklight.py::Leve",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
   },
   {
     "chunk_id": "7f6487ee99bf5b3ad4bb73a81c153965",
@@ -424,6 +600,28 @@
     "id": "369d33532da35b702500c6011efa87cd",
     "name": "command_prefix",
     "qualified_name": "src/ragx/githooks.py::command_prefix",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "ae5c1d7a7fc666706b1b021d4ca246a4",
+    "confidence": 1.0,
+    "document_id": "df629e7bff4c9c1a7e9ebe0f4481f64a",
+    "id": "384120e3d52ffedd483c040b41265b27",
+    "name": "test_a_linha_de_referencias_nao_carrega_conteudo",
+    "qualified_name": "tests/unit/test_session_ledger.py::test_a_linha_de_referencias_nao_carrega_conteudo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "ad6a020d63e34259922d2464fbf041aa",
+    "confidence": 1.0,
+    "document_id": "ac79c3be18d2f7289e8c1680f6fb151c",
+    "id": "38e1c39315f33a9894aaef941bfdb8c7",
+    "name": "_hook",
+    "qualified_name": "tests/e2e/test_cli_touch.py::_hook",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -484,6 +682,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "2e2d92a4259740f228dd3699752311b7",
+    "confidence": 1.0,
+    "document_id": "44e1f907cd4bd2cfb26962d4a1f46935",
+    "id": "44376b13f05f2be3ff2cef5a8721bce8",
+    "name": "from_config",
+    "qualified_name": "src/ragx/context/session.py::from_config",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "282f4becab4a582cb7dd577977196a3e",
     "confidence": 1.0,
     "document_id": "99ef45b2019b3060dbf62efdca75f31e",
@@ -495,7 +704,29 @@
     "type": "function"
   },
   {
-    "chunk_id": "5fb5899feaaa1baf7759b26d9d5f0c09",
+    "chunk_id": "761a5d46a6f05faf009cd6112b0271b4",
+    "confidence": 1.0,
+    "document_id": "11a014ce9d7e6c26be57225137670d66",
+    "id": "46412fb35696e768940c067bfe7f8f01",
+    "name": "_commit",
+    "qualified_name": "src/ragx/cli/commands/ab_cmd.py::_commit",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "79186f33c0ce95d86b4e36a14874d116",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "47b76143bfdfa24c5f1abe6502350c2a",
+    "name": "_norm",
+    "qualified_name": "src/ragx/search/ab.py::_norm",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "cbb9084eb8ad3239c155b942d16e1dd2",
     "confidence": 1.0,
     "document_id": "f8a310e4156a2afa13f685da62e0348f",
     "id": "4c11bde3b4fd6610b37c4b145ef2d084",
@@ -539,6 +770,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "aba1946937296666e0f282866e02258f",
+    "confidence": 1.0,
+    "document_id": "23a3bb182ce000869f891eef36a41b78",
+    "id": "50485fc357bb2be99e47f9a2b3bd6c50",
+    "name": "_rules_digest",
+    "qualified_name": "src/ragx/indexing/verdicts.py::_rules_digest",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "44d6e5671176fae80720391cce87b422",
     "confidence": 1.0,
     "document_id": "e12099d6259d1730da3782fb1928ade9",
@@ -550,12 +792,23 @@
     "type": "function"
   },
   {
-    "chunk_id": "7698b1820de7e0684e2e5634c29e0e5f",
+    "chunk_id": "9625c4fae9da1fae59c99b2dc01b8c92",
     "confidence": 1.0,
     "document_id": "5e4f1c20438e22c74d80f54db5751059",
     "id": "517510633960ccaad0fa27baec67be8c",
     "name": "off",
     "qualified_name": "src/ragx/cli/commands/claude_cmd.py::off",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "28a2322adaec159784eeb0a1d33b8932",
+    "confidence": 1.0,
+    "document_id": "7098e7bacf0ace9830b8f1c2a907917d",
+    "id": "51be9e63b6f759b08fbd19c205f77c9a",
+    "name": "models#part-2",
+    "qualified_name": "src/ragx/cli/commands/bench_cmd.py::models#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -594,6 +847,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "da82ee86ea08b1aeff5e2cb82c9443f9",
+    "confidence": 1.0,
+    "document_id": "af48a270ac5da445ad66c38d7c6b6af6",
+    "id": "55570ba3ff71dd422308a1d668a2cd5b",
+    "name": "test_digest_das_regras_cobre_os_tres_arquivos",
+    "qualified_name": "tests/unit/test_verdict_context.py::test_digest_das_regras_cobre_os_tres_arquivos",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "47ebc493652aba2188882a1224791cff",
+    "id": "569ca9e39a249457d068e526217216af",
+    "name": "csp.test.ts",
+    "qualified_name": "src/app/src/__tests__/csp.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
     "chunk_id": "110ff469ca7647a89e5b8d4cc0b497de",
     "confidence": 1.0,
     "document_id": "7ecf97d3f68f2f32725ac4d0f2961f03",
@@ -612,7 +887,7 @@
     "name": "ProjectsPage.tsx",
     "qualified_name": "src/app/src/pages/ProjectsPage.tsx",
     "source": "structural",
-    "summary": "import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'",
+    "summary": "import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'",
     "type": "file"
   },
   {
@@ -668,6 +943,28 @@
     "qualified_name": "task/fase-00-fundacao-seguranca/RAGX-0002-configuracao-ragx-toml-env-vars-e-precedencia.md",
     "source": "structural",
     "summary": "RAGX-0002 — Configuração: ragx.toml, env vars e precedência",
+    "type": "file"
+  },
+  {
+    "chunk_id": "ed7ff7d188b0c7179b1929adb91d613a",
+    "confidence": 1.0,
+    "document_id": "45a07cce13209ddf82447f792e54dcfc",
+    "id": "60a4834322c3fed4b8c77487cabef49c",
+    "name": "ModeResult",
+    "qualified_name": "src/ragx/search/bench.py::ModeResult",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "abd4166db954137fbe3c7190aecbd85b",
+    "id": "61ae0fe3b7a5b4af3cc0b79ca620fc4b",
+    "name": "useShortcuts.test.tsx",
+    "qualified_name": "src/app/src/hooks/__tests__/useShortcuts.test.tsx",
+    "source": "structural",
+    "summary": "import { afterEach, describe, expect, it, vi } from 'vitest'",
     "type": "file"
   },
   {
@@ -825,7 +1122,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "bfeb06055e4c1ab0766287fb8c822ed0",
+    "chunk_id": "f754489097034b250c4994dabadab308",
+    "confidence": 1.0,
+    "document_id": "630b85465db025ea96c2539f254fd0e1",
+    "id": "7ae8a1d3cffd5082d5d38157cb2de2aa",
+    "name": "sh",
+    "qualified_name": "scripts/medir_worktree.py::sh",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "506043c5acac5fb5713282699b6ea20c",
     "confidence": 1.0,
     "document_id": "b4cd3410b52e596a9c55e0aa62cf2f48",
     "id": "7e7432535008402ec4c56f299b7fc956",
@@ -858,6 +1166,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "1d4f88f0a618ca2216b35e7e2182e970",
+    "confidence": 1.0,
+    "document_id": "b17db1655f03e599bccaf44cd9320979",
+    "id": "833310b34b66af0f1b9717118592a7da",
+    "name": "test_resp_chars_e_o_tamanho_exato_do_texto_devolvido",
+    "qualified_name": "tests/integration/test_mcp_telemetry.py::test_resp_chars_e_o_tamanho_exato_do_texto_devolvido",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "48552a14035220391e3c7820482177ba",
     "confidence": 1.0,
     "document_id": "f12a13554d2457b958fea2ae5530754a",
@@ -880,12 +1199,12 @@
     "type": "function"
   },
   {
-    "chunk_id": "a1251d333c5726c41675a407e80f0aa5",
+    "chunk_id": "673c9a7c36411380ba9fae2e3186b032",
     "confidence": 1.0,
-    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
-    "id": "892e11730fb913e15b2d7e2408bdf352",
-    "name": "_status",
-    "qualified_name": "src/ragx/clients/claude_hint.py::_status",
+    "document_id": "add9e69383ed03a7acacbe1f82b1451a",
+    "id": "891e5fb3931c7728aef0268620ab39db",
+    "name": "_cfg_modelos",
+    "qualified_name": "tests/unit/test_embeddings.py::_cfg_modelos",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -913,7 +1232,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "15ed159fb6fd6b67ec1afef8f2f84a13",
+    "chunk_id": "61afa71fe082b967802d726e22015fa4",
     "confidence": 1.0,
     "document_id": "67364f8a78d5a5fc24e8c4b3d2d60152",
     "id": "8db90cd377cad8fbf92367a499e4affd",
@@ -948,6 +1267,17 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "7f9fc81eae481a2ed6f75c7c4bf40d1f",
+    "id": "8efc04436c7bfdf9394c9df6caa15cd0",
+    "name": "snapshotShare.test.ts",
+    "qualified_name": "src/app/src/__tests__/snapshotShare.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "68304f8ac2dc467f42a9837e7f557d0b",
     "id": "8fa81d03b43ac210f5897350e93e86a1",
     "name": "RAGX-0161-subagente-ragx-explorer-instalavel.md",
@@ -966,6 +1296,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": "27304e0b3b93f4dfeddbb81d3878a6c6",
+    "confidence": 1.0,
+    "document_id": "1d6acb648da66917a1b1e4f5128c7955",
+    "id": "97447ab3afc8fe51c027385f827b4bd2",
+    "name": "_mmr_antigo",
+    "qualified_name": "tests/unit/test_mmr_vetorizado.py::_mmr_antigo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "a01c01cb83dd308012c3549b77800cd9",
@@ -1012,7 +1353,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "dfa493e6e875311c51b8357c40b4d2d4",
+    "chunk_id": "244e49b5043013f45e37b48a73c3d821",
     "confidence": 1.0,
     "document_id": "ab28a9900891fa613b861aecc2a3af53",
     "id": "9ea92573cc90039a56ab3a15e4c7ad1e",
@@ -1089,12 +1430,45 @@
     "type": "file"
   },
   {
-    "chunk_id": "0e6f7f2ff02b9162bf73467e3903dcdf",
+    "chunk_id": "8c7a695a7397c04030a5db520e14bd71",
+    "confidence": 1.0,
+    "document_id": "470636e040bae66473f3cd088c9ab2c9",
+    "id": "a6e85db367e5b7dac76fa3c416ccdc0e",
+    "name": "worktrees",
+    "qualified_name": "src/ragx/gitinfo.py::worktrees",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "c55c0232e22f67666aec4853820e7127",
     "confidence": 1.0,
     "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
     "id": "a87d9c833f5d43e96c29c5a55ff96234",
     "name": "build_server#part-4",
     "qualified_name": "src/ragx/mcp/server.py::build_server#part-4",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "c979e366269c8201c17263c6d9fb86d9",
+    "confidence": 1.0,
+    "document_id": "a9fba6a4821f14aa026d2ff908f9d864",
+    "id": "a8d7ba533a258792692e4e9900cea807",
+    "name": "test_try_acquire_grava_o_proc_do_dono",
+    "qualified_name": "tests/unit/test_index_lock.py::test_try_acquire_grava_o_proc_do_dono",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3f7663d72f0b1180bc3736e907990fe1",
+    "confidence": 1.0,
+    "document_id": "376195e833198f61a1adcaad9be31b32",
+    "id": "ab15c543e567317b8f057546f5fd3d40",
+    "name": "_index_paths_once#part-1",
+    "qualified_name": "src/ragx/indexing/pipeline.py::_index_paths_once#part-1",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1109,6 +1483,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "28e3ad544caad97ae578c7b941219b96",
+    "id": "ac8b79a36b8ef0e64c356ce773bb4aab",
+    "name": "ProjectGlance.test.tsx",
+    "qualified_name": "src/app/src/components/project/__tests__/ProjectGlance.test.tsx",
+    "source": "structural",
+    "summary": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
   },
   {
     "chunk_id": "8ae77210567bb882d5777e60a61a2544",
@@ -1135,6 +1520,28 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "ed24ac8c859c3bd15104e1f3e30ca52d",
+    "id": "b259f033fca1aad35d501c9d291eaf4c",
+    "name": "test_cli_ab.py",
+    "qualified_name": "tests/e2e/test_cli_ab.py",
+    "source": "structural",
+    "summary": "`ragx ab`: o plano, o simulado e as guardas de custo (RAGX-0162).",
+    "type": "file"
+  },
+  {
+    "chunk_id": "9081d39848dbd247d47074aeb19bdfa7",
+    "confidence": 1.0,
+    "document_id": "b6b3ec49cac190913b50d8adbfd395f4",
+    "id": "b2b52cc323f1a01e4506bcd9a50cf287",
+    "name": "test_toda_descricao_tem_ate_200_caracteres_e_comeca_por_verbo",
+    "qualified_name": "tests/integration/test_mcp_estavel.py::test_toda_descricao_tem_ate_200_caracteres_e_comeca_por_verbo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "715d60d672d574b36f35f332b34907fa",
     "id": "b4fb31a33fc4a96573b73fb0f9b36363",
     "name": "exemplo.md",
@@ -1142,6 +1549,17 @@
     "source": "structural",
     "summary": "Skill de exemplo",
     "type": "file"
+  },
+  {
+    "chunk_id": "17f65ab55ccd9e0d4715611445d87640",
+    "confidence": 1.0,
+    "document_id": "6748b25689773747d50f29c12233c01b",
+    "id": "b5ba7073a85553e5a44a58ba4a87f44a",
+    "name": "_resumo_da_pasta",
+    "qualified_name": "src/ragx/dictionary/builder.py::_resumo_da_pasta",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "05f876d61eb130ceca680e02f66558b4",
@@ -1155,6 +1573,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "17f028b0f7a8c27317cb769d1fd5b17c",
+    "confidence": 1.0,
+    "document_id": "e5369752316bb9d73b843bb67f6e3d16",
+    "id": "b635e9533d470873f323d0c9f638a2b1",
+    "name": "test_candidato_que_falha_vira_incompativel_e_nao_derruba_os_outros",
+    "qualified_name": "tests/integration/test_bench_modelos.py::test_candidato_que_falha_vira_incompativel_e_nao_derruba_os_outros",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "42a5d6eddcd510926284963b1cc0b2f6",
+    "id": "b761a853be057faadda44976e5961488",
+    "name": "skeleton.test.tsx",
+    "qualified_name": "src/app/src/components/ui/__tests__/skeleton.test.tsx",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "9ed9a5e50929fae24636d1d3b6eca9e0",
@@ -1166,23 +1606,23 @@
     "type": "file"
   },
   {
+    "chunk_id": "04acc5a927d6a78081e4f5f9d765320a",
+    "confidence": 1.0,
+    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
+    "id": "b7faa843a740ec9d6f828fcb371f5c6c",
+    "name": "_entrada_de_toque",
+    "qualified_name": "src/ragx/clients/claude_hint.py::_entrada_de_toque",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "4ada3b19ce26c969bd0ce5ed316c2233",
     "confidence": 1.0,
     "document_id": "371b2713f1004985da268f6bd6a25582",
     "id": "b7fad4e39a0807d2f5dae449b2a8a80d",
     "name": "run_cmd",
     "qualified_name": "src/ragx/cli/commands/task_cmd.py::run_cmd",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
-    "chunk_id": "14439e67234ec10b3cbc247fbb01d305",
-    "confidence": 1.0,
-    "document_id": "941f6b614648b28ab6a935c0edef8f71",
-    "id": "b9673b13c193427ca5e3f7d032fadfd2",
-    "name": "test_generated_at_fica_fora_do_digest",
-    "qualified_name": "tests/integration/test_dictionary.py::test_generated_at_fica_fora_do_digest",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1232,6 +1672,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "009c2cc658ba8ca5750fad1abe71b1a1",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "bb87c1131e5cbafd756d3db005f523d7",
+    "name": "ClaudeRunner",
+    "qualified_name": "src/ragx/search/ab.py::ClaudeRunner",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "b94ed31e16f8c92c41141143b1474590",
     "confidence": 1.0,
     "document_id": "6ccd1ca48dafd6a8cdd05956085de4d1",
@@ -1265,6 +1716,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "8f2f6d4f3551758fb3bd39055d602bf9",
+    "confidence": 1.0,
+    "document_id": "821e708bde7c2785b09d1229d5f73b65",
+    "id": "bff5c2f37bbcbf76d00e2e7f19302039",
+    "name": "test_sem_grafo_construido_cai_no_completo",
+    "qualified_name": "tests/integration/test_graph_incremental.py::test_sem_grafo_construido_cai_no_completo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "27aec4012c57c45b70aad993c8f56e84",
     "confidence": 1.0,
     "document_id": "f4088ba713de6bb351c2afbd58547d57",
@@ -1282,6 +1744,17 @@
     "id": "c214fac3f8122e14405f02cb9e403d15",
     "name": "test_publica_com_fallback_quando_link_fisico_nao_e_suportado",
     "qualified_name": "tests/unit/test_index_lock.py::test_publica_com_fallback_quando_link_fisico_nao_e_suportado",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "678788a65c98398b38717f626fa532d5",
+    "confidence": 1.0,
+    "document_id": "b4cd3410b52e596a9c55e0aa62cf2f48",
+    "id": "c33fcda3304871f105a7659cf8c2ce48",
+    "name": "_to_fragments#part-2",
+    "qualified_name": "src/ragx/context/engine.py::_to_fragments#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1309,6 +1782,17 @@
     "type": "method"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "23a3bb182ce000869f891eef36a41b78",
+    "id": "c67ab4d3e6ec44ab83eb14f9eab973ef",
+    "name": "verdicts.py",
+    "qualified_name": "src/ragx/indexing/verdicts.py",
+    "source": "structural",
+    "summary": "Contexto de validade do veredito guardado (`file_verdicts`, RAGX-0139).\n\nO veredito de um arquivo fora do índice só vale enquanto TUDO de que o Security Gate e o\nparser dependem for o mesmo. Esta função resume isso numa string; quando ela muda, o cache\ninteiro é descartado e os arquivos são reavaliados. Na dúvida, não usar o cache: um veredito\nvelho é pior que uma releitura.",
+    "type": "file"
+  },
+  {
     "chunk_id": "747d7c9b44eef5a40cf75de0a8a1b4dd",
     "confidence": 1.0,
     "document_id": "f19bf83cddf9d0c2a2e7e23a444ba08d",
@@ -1320,7 +1804,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "3c730d5efdc8d9e6d62ac969ba5b3019",
+    "chunk_id": "a231890f45667660c265f67ab2faefdd",
     "confidence": 1.0,
     "document_id": "6cfe33ee53e317f5f7ad839c3b57dc8b",
     "id": "c7e5f8c345868a83a2b83778db5ff6e1",
@@ -1375,7 +1859,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "263ba9a4f842372013ef4153ed2ab395",
+    "chunk_id": "c64ba9bf6e833deedc7bd55878a7e905",
     "confidence": 1.0,
     "document_id": "c5c4993d0e177bd426e96e929ed0fe36",
     "id": "cfa4d393247d60ccb47f9f816dcc1184",
@@ -1540,6 +2024,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "3fe7fe98941a297ad06cc886c46abfe6",
+    "confidence": 1.0,
+    "document_id": "0d31060cd04ae47b5746db6dc622d3d8",
+    "id": "d8ac548380351029e1df9565b3808d46",
+    "name": "test_versao_antiga_com_o_marcador_e_atualizada_com_backup",
+    "qualified_name": "tests/unit/test_claude_agent.py::test_versao_antiga_com_o_marcador_e_atualizada_com_backup",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "1f0f87961d3d6f34d9f050d83647fb41",
@@ -1557,6 +2052,28 @@
     "id": "d971b023d5c44d78d37d9721c6ac00c2",
     "name": "test_token_count_preenchido",
     "qualified_name": "tests/unit/test_chunkers.py::test_token_count_preenchido",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "0e08143a725554332a233227caf576d3",
+    "id": "da300163d04d35ebb00625c12967782a",
+    "name": "medir_grafo.py",
+    "qualified_name": "scripts/medir_grafo.py",
+    "source": "structural",
+    "summary": "Mede a expansão do grafo sobre o conjunto de consultas do repositório (RAGX-0145).\n\n    uv run python scripts/medir_grafo.py [--consultas tests/eval/queries.yaml] [--n 12]         [--path \"src/ragx/*\"] [--lang python]\n\nPara cada consulta roda `graph_search` (a mesma chamada de `build_context`, pedindo `limit=25`) e\nimprime: sementes, nós visitados e expandidos, se truncou, quantos chunks vieram SÓ do grafo, o tempo\ndo grafo sem a busca base e, com `--path`/`--lang`, quantos resultados ficaram fora do filtro. No fim,\nrecall@5 e MRR do resultado do grafo contra `relevant_paths`, e a ordem dos IDs numa 2ª execução\n(determinismo).",
+    "type": "file"
+  },
+  {
+    "chunk_id": "38eb79c9abb1a7254e39c1c2f94453ee",
+    "confidence": 1.0,
+    "document_id": "f0ebf418eb639779d9d72559baa3ab9e",
+    "id": "da3b1f537f3d07335fe9c39ad8158935",
+    "name": "test_a_ordem_e_estavel_por_data_e_hash",
+    "qualified_name": "tests/unit/test_gold.py::test_a_ordem_e_estavel_por_data_e_hash",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1584,6 +2101,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "58f2a65af6373720e0b68b23cc8526a3",
+    "confidence": 1.0,
+    "document_id": "2054d51a66701e5dbbd33ed1fdb31d0b",
+    "id": "dcce9da3b8c41ef51fdbba56ba9742d9",
+    "name": "modelos",
+    "qualified_name": "scripts/medir_modelo_e_trava.py::modelos",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "bdc3d53e2865081a15a852e362696429",
     "confidence": 1.0,
     "document_id": "56b383a2a82751d848ea30dc28fe0237",
@@ -1595,7 +2123,18 @@
     "type": "class"
   },
   {
-    "chunk_id": "69bc276f9d43ac55f4cc5ec858e41bf2",
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "061a932f0d8ba379267a334aecf82cc1",
+    "id": "dd1393938f3663de7c45288d2d2894d9",
+    "name": "environment-light.test.ts",
+    "qualified_name": "src/app/electron/ollama/__tests__/environment-light.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "49c61655da36645ef60b298d3b9011a6",
     "confidence": 1.0,
     "document_id": "5532b7db8287cb63c11e614d9f714c34",
     "id": "e3d41d63a3d8288174f373205b5ed18b",
@@ -1639,17 +2178,6 @@
     "type": "function"
   },
   {
-    "chunk_id": "d95c86de5848899479a37eb6f295f74a",
-    "confidence": 1.0,
-    "document_id": "7ecf97d3f68f2f32725ac4d0f2961f03",
-    "id": "e9ea49b3914d22cc41feaf530779dd21",
-    "name": "claude_origin",
-    "qualified_name": "src/ragx/clients/registry.py::claude_origin",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "642fc7f16bbca5e0abd0f4ddddfb11e4",
     "confidence": 1.0,
     "document_id": "6fc6c9e83fef8eca05b6de6a5ef06d69",
@@ -1683,6 +2211,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "550a3f23ece3c5ab1f51ceb78569ccba",
+    "confidence": 1.0,
+    "document_id": "0d31060cd04ae47b5746db6dc622d3d8",
+    "id": "eface9f3a9d01e49eeef77de04682493",
+    "name": "test_status_json_traz_agent_por_perfil",
+    "qualified_name": "tests/unit/test_claude_agent.py::test_status_json_traz_agent_por_perfil",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "e9a3498f500780c213118730c46c3e07",
     "confidence": 1.0,
     "document_id": "49ae69f7f150965fb4b0bc8489adfc88",
@@ -1700,6 +2239,17 @@
     "id": "f35cc953aeff27558d37d69b262e8fab",
     "name": "_is_doc",
     "qualified_name": "src/ragx/tasks/analyzer.py::_is_doc",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "cbec05be1cf23fad4a359790e0508e22",
+    "confidence": 1.0,
+    "document_id": "d7b9698f7ddbebcb6ca2a0412db0cbf7",
+    "id": "f39a8c036fbeac5cfe019fe695ef87d6",
+    "name": "test_cache_le_do_local_e_importa_para_o_compartilhado",
+    "qualified_name": "tests/integration/test_worktree_cache.py::test_cache_le_do_local_e_importa_para_o_compartilhado",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1727,7 +2277,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "7a01b721b643e0af35cfc5089b7db3f5",
+    "chunk_id": "753a90b3f50ca897aca49643b763494a",
     "confidence": 1.0,
     "document_id": "9fbc9068d62421779d14859093f08d43",
     "id": "fcb97563e7fb0afa54edf36864b5a17f",

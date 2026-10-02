@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "ef3262196b523728408d7484f214d97f2c08381261c995e1e9e62ca1729cb5a1",
+  "doc_kind": "code",
+  "id": "b9eb92af108c24152082433eb89edbad",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/graph/rank.py",
+  "size_bytes": 7497,
+  "title": "PageRank sobre o grafo de referências, no nível do arquivo, e o repo map compacto (RAGX-0168).\n\nO agente que chega num repositório não sabe quais arquivos importam. O mapa do Aider (PageRank sobre quem referencia quem)\ndá essa ordem em ~1k tokens. Aqui o insumo é o grafo que o RAGX já tem: as relações de CÓDIGO (`calls`, `imports`, `extends`,\n`implements`) projetadas para o nível do arquivo. Prosa (`documented_by`, `mentions`) NÃO pesa: documentação que cita um nome\nnão torna o arquivo central.\n\nA armadilha: o extrator referencial casa uma chamada pelo NOME com qualquer entidade homônima (confiança 0,75). Sem um filtro,\n`get`, `status` e `cfg` viram hubs falsos e o PageRank premia nomes genéricos, não arquivos centrais. Por isso a aresta cujo\ndestino tem um nome AMBÍGUO (mais de `AMBIGUOUS_NAME` entidades com o mesmo nome) é descartada, só aqui, no ranking.\n\nDeterminístico (o resultado entra em `knowledge/` versionado): rank arredondado a 6 casas, desempate pelo caminho, nenhum\ntimestamp. Sem dependência nova: iteração de potência em NumPy."
+}

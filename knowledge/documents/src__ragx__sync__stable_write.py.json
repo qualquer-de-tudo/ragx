@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "a160e74440690d6fcba8b042a6538e841662d3e020f5258201fb846eab7659f8",
+  "doc_kind": "code",
+  "id": "caa8f40f82cda6773c1b6ebd860d3aef",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/sync/stable_write.py",
+  "size_bytes": 2097,
+  "title": "Escrita que só toca o arquivo quando o CONTEÚDO mudou (RAGX-0148).\n\n`knowledge/` é versionado para ser reidratado: um `sync` sem mudança que reescreve `generated_at` (e o mtime) deixa\narquivos rastreados sujos em todo commit. Aqui o corpo novo é comparado com o que já está no disco; se for igual, o\narquivo não é tocado. `volatile` lista chaves JSON que a comparação ignora (`generated_at`): se SÓ elas mudaram, o\narquivo fica como está; se o conteúdo mudou, o corpo novo (com o `generated_at` novo) é gravado."
+}

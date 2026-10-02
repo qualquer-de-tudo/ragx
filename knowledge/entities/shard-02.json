@@ -55,12 +55,34 @@
     "type": "file"
   },
   {
+    "chunk_id": "a715e943992ac83e87ecac177a244de3",
+    "confidence": 1.0,
+    "document_id": "94accd3a4c698a0c49f434f68229773e",
+    "id": "0469f12276190bcccd8b927aab9b67c8",
+    "name": "_gerar",
+    "qualified_name": "scripts/medir_watch.py::_gerar",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "64f7c8b0433968d4f6844e4bfb651291",
     "confidence": 1.0,
     "document_id": "a846041b2b42ac1e9fda8060ac26ebda",
     "id": "05647722bb8ebf27a593242607bfd1fb",
     "name": "_norm_event",
     "qualified_name": "src/ragx/federation/surface.py::_norm_event",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "96919a32678efa674f3477ee6e7de8bd",
+    "confidence": 1.0,
+    "document_id": "bcd1c4f1fbe322b6ce99582245070a52",
+    "id": "05aaee224720e82462cd6c3a7313a330",
+    "name": "report",
+    "qualified_name": "src/ragx/worktrees.py::report",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -110,6 +132,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "c073549c76b8c4986caf1c06acda166c",
+    "confidence": 1.0,
+    "document_id": "11a014ce9d7e6c26be57225137670d66",
+    "id": "0a3603b2559504c8672476e96d29a1ad",
+    "name": "ab#part-3",
+    "qualified_name": "src/ragx/cli/commands/ab_cmd.py::ab#part-3",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "f63c77737e45db0f4efbedd2c809a81b",
     "confidence": 1.0,
     "document_id": "8b084fd7662091fba829ee70753bc5bc",
@@ -130,6 +163,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": "c1a5c8b45183665fdc5d96d673b5c1f6",
+    "confidence": 1.0,
+    "document_id": "d7b9698f7ddbebcb6ca2a0412db0cbf7",
+    "id": "0ca0f742a9531dd0ac5aee11f98861c1",
+    "name": "test_chunk_diferente_no_worktree_e_embutido_e_o_resto_vem_do_cache",
+    "qualified_name": "tests/integration/test_worktree_cache.py::test_chunk_diferente_no_worktree_e_embutido_e_o_resto_vem_do_cache",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "b8cf7c0b58e08555a68018975b78403d",
@@ -165,6 +209,28 @@
     "type": "file"
   },
   {
+    "chunk_id": "911cb5c3ddb826ef0b0e02ce902a1f61",
+    "confidence": 1.0,
+    "document_id": "d7b9698f7ddbebcb6ca2a0412db0cbf7",
+    "id": "0f32c2d22e31d5d3f6cfbed1541aa1c3",
+    "name": "test_pasta_comum_sem_permissao_cai_para_o_cache_local",
+    "qualified_name": "tests/integration/test_worktree_cache.py::test_pasta_comum_sem_permissao_cai_para_o_cache_local",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "10407f1b688be9325a44992e021d73e5",
+    "confidence": 1.0,
+    "document_id": "b6b3ec49cac190913b50d8adbfd395f4",
+    "id": "0ffec5b213517c86bedaed11081ead7e",
+    "name": "_listar",
+    "qualified_name": "tests/integration/test_mcp_estavel.py::_listar",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "aced6900054b415fdf02cab71ab16a86",
     "confidence": 1.0,
     "document_id": "b17db1655f03e599bccaf44cd9320979",
@@ -198,12 +264,45 @@
     "type": "function"
   },
   {
+    "chunk_id": "b17886bb7e220c17917765d859490e6b",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "17967502c73a4be110a0bce3c2909c9c",
+    "name": "_enviar",
+    "qualified_name": "src/ragx/indexing/parallel.py::_enviar",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "b350c444cec7f9bb4962b05e96bf079b",
+    "confidence": 1.0,
+    "document_id": "af48a270ac5da445ad66c38d7c6b6af6",
+    "id": "1a4c29c20e677a47a821914493fa597e",
+    "name": "test_estavel_entre_chamadas",
+    "qualified_name": "tests/unit/test_verdict_context.py::test_estavel_entre_chamadas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "ee5e23e7264b3a2b8aeacc8bdc65b4f4",
     "confidence": 1.0,
     "document_id": "1d54f9e46eae32e243bf4d7120a90466",
     "id": "1a64d1526b08940298bf747fbfca8cf9",
     "name": "promote",
     "qualified_name": "src/ragx/cli/commands/agent_cmd.py::promote",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "713305359fa41f917fc5a1d370f14bee",
+    "confidence": 1.0,
+    "document_id": "df2560aa22d616b7590f1e76ad9bfcd2",
+    "id": "1adf643248bbf18b5813129a1c3744e7",
+    "name": "test_banco_corrompido_e_renomeado_e_recriado",
+    "qualified_name": "tests/unit/test_embedding_cache.py::test_banco_corrompido_e_renomeado_e_recriado",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -231,7 +330,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "d5c9ea8c0128f2e74a9c678f8fb4e8a9",
+    "chunk_id": "49ad1b972342a0ea334b1db17bb10c47",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "1c96880281ffa8c6506ed5096e0af00f",
@@ -248,6 +347,17 @@
     "id": "1eeeb6a20f6ed24505a9b3b4c7245504",
     "name": "register",
     "qualified_name": "src/ragx/clients/registry.py::register",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "b128a9eb1f47ea797c3448e900f6c72b",
+    "confidence": 1.0,
+    "document_id": "4849449b69e25693e393e62fa729fdf4",
+    "id": "1fd26af2e2b176c577e7a02458814fc2",
+    "name": "_projeto",
+    "qualified_name": "scripts/medir_hooks.py::_projeto",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -330,9 +440,9 @@
     "type": "function"
   },
   {
-    "chunk_id": "b1b0d93ecdef36046d767f4d6288f1f6",
+    "chunk_id": "92424b1e27e7866a9540cd340bab82ad",
     "confidence": 1.0,
-    "document_id": "7d3ee6e4b6e3eeca859d79612ee62a9f",
+    "document_id": "38e535c31a34cc0896bcf174793098a4",
     "id": "268afef25114b24256f377542801de69",
     "name": "projects",
     "qualified_name": "projects",
@@ -341,7 +451,18 @@
     "type": "table"
   },
   {
-    "chunk_id": "e261c2d2436a6fb481f27dfa23d0234b",
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "bafe6d443af3f62b49e581618c55fcd1",
+    "id": "269b7da2de9c17365cef5c4bb148119c",
+    "name": "snapshotCache.test.ts",
+    "qualified_name": "src/app/src/__tests__/snapshotCache.test.ts",
+    "source": "structural",
+    "summary": "import { afterEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "e9594acfc75860c89f59f97c296c410b",
     "confidence": 1.0,
     "document_id": "67364f8a78d5a5fc24e8c4b3d2d60152",
     "id": "272d5b9223b695b77b9cfe1ddcfbc711",
@@ -358,6 +479,28 @@
     "id": "285172c2f9e2e64081e4879e7950a457",
     "name": "svg_lockup",
     "qualified_name": "src/app/scripts/brand.py::svg_lockup",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "302f2b857512f99fb87edb01e79f032b",
+    "confidence": 1.0,
+    "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
+    "id": "286fc492326e866408370d85baa26a56",
+    "name": "build_context#part-2",
+    "qualified_name": "src/ragx/mcp/server.py::KnowledgeAPI.build_context#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "b0b1ebb6eb79d38f55884607e673c267",
+    "confidence": 1.0,
+    "document_id": "f3e4546b2d84bb7c5a7b5faa8acef79b",
+    "id": "28c96182a738718beac2ee2820c8288b",
+    "name": "test_index_paths_nao_faz_o_veredito_virar_fresh_por_engano",
+    "qualified_name": "tests/integration/test_freshness.py::test_index_paths_nao_faz_o_veredito_virar_fresh_por_engano",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -396,12 +539,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "d1716c0f45e23b89e0ca7e2b40880087",
+    "confidence": 1.0,
+    "document_id": "1d6acb648da66917a1b1e4f5128c7955",
+    "id": "2c4881b28e2f753c72567e19a5522851",
+    "name": "_caso",
+    "qualified_name": "tests/unit/test_mmr_vetorizado.py::_caso",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "c28a0149730f4a5afe0c65a95428674e",
     "confidence": 1.0,
     "document_id": "00e74032961225ee57b7ee37f011e873",
     "id": "2c78af5234656141165c07fe99c68477",
     "name": "test_chunk_fundido_tem_id_coerente_com_o_conteudo",
     "qualified_name": "tests/unit/test_chunkers.py::test_chunk_fundido_tem_id_coerente_com_o_conteudo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "ac4d002a67aebeca5b4e40da572b4967",
+    "confidence": 1.0,
+    "document_id": "18e9e1d54f0f2cde92b0966da3a28875",
+    "id": "2c9e04b219f59d637a8b16917d06fd1d",
+    "name": "allocate#part-1",
+    "qualified_name": "src/ragx/context/budget.py::allocate#part-1",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -418,7 +583,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "c1ec8c3d378063573f07ed2256643f21",
+    "chunk_id": "8dac9d8783dba855231152b88c1bc5f1",
+    "confidence": 1.0,
+    "document_id": "6cfe33ee53e317f5f7ad839c3b57dc8b",
+    "id": "2f3731e21427e55b6a17080acf13a87b",
+    "name": "_lotes",
+    "qualified_name": "src/ragx/graph/service.py::_lotes",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "42ee9c3f7d9cc6e558ee2ac1bd4dd034",
     "confidence": 1.0,
     "document_id": "56b383a2a82751d848ea30dc28fe0237",
     "id": "31a51c724ffa54b5095547f6309902b4",
@@ -475,6 +651,17 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "a940f717fac1fc75895cfd48f3c81877",
+    "id": "361fbfe24dfac7a88c2f08d91074df51",
+    "name": "theme.test.ts",
+    "qualified_name": "src/app/src/__tests__/theme.test.ts",
+    "source": "structural",
+    "summary": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "ae8f4c36bbe3b76cc3f3c5f1ce6e1302",
     "id": "368b5322caf221b2944800d21c722856",
     "name": "RAGX-0014-migracao-e-repositorios-de-documents-chunks-fts5.md",
@@ -484,12 +671,45 @@
     "type": "file"
   },
   {
+    "chunk_id": "4e470f81334c8423046bd852f4ab3098",
+    "confidence": 1.0,
+    "document_id": "1271d16e3ce2a202f6c630f1219544e4",
+    "id": "371d39c25bd3e6e3e4f140a91fb18ae1",
+    "name": "_juntas",
+    "qualified_name": "tests/unit/test_warmup_threads.py::_juntas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "92064e9393f5f9b2a1e12b9125ff827d",
     "confidence": 1.0,
     "document_id": "414750f1615a0ed9acbfad17570bb55c",
     "id": "373f2762c1a1449279c65d9bcdd19f62",
     "name": "register",
     "qualified_name": "src/ragx/federation/hub.py::register",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "17a549f5eb06443e1aa9398a16c8c5d4",
+    "confidence": 1.0,
+    "document_id": "b9eb92af108c24152082433eb89edbad",
+    "id": "37533322a1cc102277cbd7e97dc10830",
+    "name": "file_rank#part-2",
+    "qualified_name": "src/ragx/graph/rank.py::file_rank#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "59889382e1ae38d33e8f424855762971",
+    "confidence": 1.0,
+    "document_id": "c4e39ae6296a4931f55bfeba545c82b0",
+    "id": "39641862c7cc80ecd01a286518d04ecc",
+    "name": "label",
+    "qualified_name": "src/ragx/context/format.py::label",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -528,6 +748,17 @@
     "type": "method"
   },
   {
+    "chunk_id": "ed0e27259499efb1ba04864719cc165a",
+    "confidence": 1.0,
+    "document_id": "5cb980844c1313413d28f42da735d85c",
+    "id": "3aa876624fbc372b5a9b90d9fe4841a6",
+    "name": "main",
+    "qualified_name": "scripts/medir_dedupe_sessao.py::main",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "2e459efc89b844569049b5be8731a609",
     "confidence": 1.0,
     "document_id": "ef132d81f3e90e8a929bdc232d267695",
@@ -539,12 +770,34 @@
     "type": "class"
   },
   {
+    "chunk_id": "fa0cee43b8e356367f3002dae58b11f5",
+    "confidence": 1.0,
+    "document_id": "a87922af4b9aba7d3029a47479453894",
+    "id": "3d09819236a3d520269bc47c17814a35",
+    "name": "test_cap_mede_o_texto_compacto",
+    "qualified_name": "tests/unit/test_mcp_tools.py::test_cap_mede_o_texto_compacto",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "c942eadeb1f647e82754c850d4c637fe",
     "confidence": 1.0,
     "document_id": "6cfe33ee53e317f5f7ad839c3b57dc8b",
     "id": "3dfed9424ece851e45ef21ffda2a4a7f",
     "name": "rebuild",
     "qualified_name": "src/ragx/graph/service.py::rebuild",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "9b5609d529d359f634727f673981a07f",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "4481bd22abff0cc890c14f1b88b9dc0c",
+    "name": "resolve_jobs",
+    "qualified_name": "src/ragx/indexing/parallel.py::resolve_jobs",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -559,6 +812,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "02799b069893b1884ead0370f2eb2d64",
+    "id": "452dd8a270f661e8549426a7f5bd6a9d",
+    "name": "Skeleton.tsx",
+    "qualified_name": "src/app/src/components/ui/Skeleton.tsx",
+    "source": "structural",
+    "summary": "import type { CSSProperties, ReactNode } from 'react'",
+    "type": "file"
   },
   {
     "chunk_id": null,
@@ -616,6 +880,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "c189de7229349a0209d62692ec5a7967",
+    "confidence": 1.0,
+    "document_id": "a87922af4b9aba7d3029a47479453894",
+    "id": "4e3a0a521e5101824cfe4d0c5daeea2f",
+    "name": "test_compact_remove_chaves_nulas_inclusive_em_dicts_dentro_de_listas",
+    "qualified_name": "tests/unit/test_mcp_tools.py::test_compact_remove_chaves_nulas_inclusive_em_dicts_dentro_de_listas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "e69c42cd90469bd42e218376985043ed",
@@ -671,6 +946,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "be43a02c66e1015a0d507e1375934add",
+    "confidence": 1.0,
+    "document_id": "68e5e6f3e96353b28ec601765fcfd37f",
+    "id": "5409fb321e39799a788e381f6b482a86",
+    "name": "test_o_probe_do_ollama_recusa_um_host_remoto_antes_de_qualquer_chamada",
+    "qualified_name": "tests/unit/test_bench.py::test_o_probe_do_ollama_recusa_um_host_remoto_antes_de_qualquer_chamada",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "16d55f522ab85abfecd72dcaa7f4c744",
     "confidence": 1.0,
     "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
@@ -699,6 +985,17 @@
     "id": "5907d782068504cb1b5d2de743c8ab37",
     "name": "_check_secrets",
     "qualified_name": "src/ragx/agents/trainer.py::_check_secrets",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "032297e673574a2edd2ad66dd8017914",
+    "confidence": 1.0,
+    "document_id": "2a2faabfb4cf7c780fee723b130cb220",
+    "id": "59619ce213569e65fa89544240c0cdf9",
+    "name": "cfg",
+    "qualified_name": "tests/integration/test_mcp_warmup.py::cfg",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -772,6 +1069,17 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "ebf8651bee49f74986ec021565a1310a",
+    "id": "649481324f56e9af66f968a6d77e29d6",
+    "name": "ragx-version-cache.test.ts",
+    "qualified_name": "src/app/electron/connections/__tests__/ragx-version-cache.test.ts",
+    "source": "structural",
+    "summary": "import { beforeEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "864655d7a092cd2d12f92644fcc012e7",
     "id": "64da5692417d5430485155a592b9179a",
     "name": "RAGX-0166-prefixo-contextual-deterministico-antes-de-embutir-e-indexar.md",
@@ -792,6 +1100,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "1c61a9d7ce5a9e10edb18d33b6435c1a",
+    "confidence": 1.0,
+    "document_id": "547e9b2c00c28582a5fbade91b173699",
+    "id": "64f5de329d2e18886a53db6f24e97594",
+    "name": "Funil",
+    "qualified_name": "src/ragx/search/gold.py::Funil",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "0a3219bcf8476abcea995aa45206b522",
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
@@ -809,6 +1128,17 @@
     "id": "667c0f62c4041d7cbb5c32ba5620b718",
     "name": "test_configuracao_antiga_com_localhost_ganha_a_correcao",
     "qualified_name": "tests/unit/test_ollama_url.py::test_configuracao_antiga_com_localhost_ganha_a_correcao",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d1d0e67255a7696cd921513e36e87fd6",
+    "confidence": 1.0,
+    "document_id": "e2b5132f8a0288ed8eb0e5935b3748f1",
+    "id": "68cffd2254895b1df83cda68a4cc043a",
+    "name": "test_sementes_nao_contam_contra_max_nodes",
+    "qualified_name": "tests/integration/test_graph_expansao.py::test_sementes_nao_contam_contra_max_nodes",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -858,6 +1188,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "821e708bde7c2785b09d1229d5f73b65",
+    "id": "700237f2fccafd8a0f8427c16b962bfa",
+    "name": "test_graph_incremental.py",
+    "qualified_name": "tests/integration/test_graph_incremental.py",
+    "source": "structural",
+    "summary": "Grafo incremental por documento (RAGX-0151): `update_documents` tem de dar o MESMO grafo que o `rebuild`.\n\nA referência de correção é o rebuild completo: depois de cada edição o grafo atualizado por documento é\ncomparado, linha a linha, com o de um `rebuild` rodado no mesmo banco. A exceção declarada é a das tecnologias\n(`technology` e `uses`), que no caminho rápido só acrescentam e por isso podem ser superconjunto.",
+    "type": "file"
+  },
+  {
     "chunk_id": "b9b0d7d6863452d2c4dc965002f520f7",
     "confidence": 1.0,
     "document_id": "7a150d1b0f0f80b583916bd159598f81",
@@ -880,7 +1221,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "8485e9c1401f90c5c12308bbc5a231ed",
+    "chunk_id": "c69631c429434b1e50b47dc8a78ba102",
     "confidence": 1.0,
     "document_id": "6748b25689773747d50f29c12233c01b",
     "id": "774c614227c57b7a136ca1c37949ae1f",
@@ -899,6 +1240,17 @@
     "qualified_name": "src/app/src/App.tsx",
     "source": "structural",
     "summary": "import { useCallback, useEffect, useMemo, useRef, useState } from 'react'",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "5cb980844c1313413d28f42da735d85c",
+    "id": "7b3db982dd21b7c2ad7f7c47b6887f1f",
+    "name": "medir_dedupe_sessao.py",
+    "qualified_name": "scripts/medir_dedupe_sessao.py",
+    "source": "structural",
+    "summary": "Mede o dedupe de sessão em 3 consultas sobrepostas (RAGX-0159).\n\n    uv run python scripts/medir_dedupe_sessao.py [--tokens 3000]\n\nRoda as 3 consultas em sequência por `KnowledgeAPI.build_context`, uma vez com o dedupe de sessão e uma\nsem, e imprime os tokens entregues por chamada, quantos `chunk_id` se repetem entre as chamadas e os\ntokens economizados. Usa o índice do projeto atual (somente leitura).",
     "type": "file"
   },
   {
@@ -990,23 +1342,23 @@
     "type": "function"
   },
   {
-    "chunk_id": "b896c83d670f983a8d0709678058744c",
-    "confidence": 1.0,
-    "document_id": "6748b25689773747d50f29c12233c01b",
-    "id": "8d345bd2aeac40dd6cc7bc23c4c30bf4",
-    "name": "_concepts",
-    "qualified_name": "src/ragx/dictionary/builder.py::_concepts",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "e06b8fff7f9117741a9a97e1d62bd284",
     "confidence": 1.0,
     "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
     "id": "8d5d8a2233bd5ffad75015a248ebca63",
     "name": "remove_hint",
     "qualified_name": "src/ragx/clients/claude_hint.py::remove_hint",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "4857c70febf09eb191cfedcd7ec7ef4a",
+    "confidence": 1.0,
+    "document_id": "c0b52290cc862826d4fd55c8cd8a9fc5",
+    "id": "8e32f702690b7a39176a2133e31b80cb",
+    "name": "test_chunk_editado_entre_as_chamadas_volta_como_conteudo",
+    "qualified_name": "tests/integration/test_session_dedupe.py::test_chunk_editado_entre_as_chamadas_volta_como_conteudo",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1023,12 +1375,23 @@
     "type": "file"
   },
   {
-    "chunk_id": "e50ee8de35c8bc9a8b05ad839dde53b1",
+    "chunk_id": "7e343c1c47931224ed1b11e3b2a17010",
     "confidence": 1.0,
     "document_id": "f2521afe7e0713a6108d67135869ece3",
     "id": "8fb86f425919a1ee70da0453e5da342d",
     "name": "_dump",
     "qualified_name": "src/ragx/tasks/serialize.py::_dump",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "f58398323ff3e1db85c090cd3e26d183",
+    "confidence": 1.0,
+    "document_id": "857268f8997abc7566c982ef824c9f83",
+    "id": "91cceae25a0c1c4437ed250fa8d4b825",
+    "name": "holder_alive",
+    "qualified_name": "src/ragx/indexing/lock.py::holder_alive",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1100,6 +1463,39 @@
     "type": "function"
   },
   {
+    "chunk_id": "ce9f200eeedc26bb63d79f1e236e126d",
+    "confidence": 1.0,
+    "document_id": "f6012f2c36cd6086b037d4e6fe4152b1",
+    "id": "9a779fb22a56d246b332d03383100db5",
+    "name": "_inteiro",
+    "qualified_name": "src/ragx/sync/embeddings_import.py::_inteiro",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "848437514723345f5862981c23cee3c3",
+    "id": "9a95a992b979a6b4cb223749c2cdb8ef",
+    "name": "sessions.ts",
+    "qualified_name": "src/app/src/sessions.ts",
+    "source": "structural",
+    "summary": "import type { ActivityEvent } from './types/ragx-bridge'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "8f92ccd095e46abfcf864199f629d0f2",
+    "confidence": 1.0,
+    "document_id": "6748b25689773747d50f29c12233c01b",
+    "id": "9bda9f92489b06bfb119f18ab71fd616",
+    "name": "_eh_so_dados",
+    "qualified_name": "src/ragx/dictionary/builder.py::_eh_so_dados",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "05e0c402052a9d9e5167ad3cfd31e5ed",
@@ -1111,7 +1507,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "b37aaf72cf8bf198e7d8f00da39609ca",
+    "chunk_id": "f27a5f836d7c52a3504d47c5bb5867d9",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "a428943291e39f6718e0fb615ece24cb",
@@ -1179,6 +1575,17 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "c1e5b2ce0282a82114e97ad9b8419cb3",
+    "id": "ac919262e53d61387b2bcae82f095a04",
+    "name": "test_gold_secrets.py",
+    "qualified_name": "tests/security/test_gold_secrets.py",
+    "source": "structural",
+    "summary": "O conjunto-ouro derivado do git não carrega segredo de assunto de commit (RAGX-0167).",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "3e6bc1e02fd1d881a7dd5ada75d39d32",
     "id": "ae316d128474a8fc22d39bdfb0325572",
     "name": "test_metricas_avaliacao.py",
@@ -1199,17 +1606,6 @@
     "type": "function"
   },
   {
-    "chunk_id": "1205d3515c6267014ecc469cb8ae5f74",
-    "confidence": 1.0,
-    "document_id": "b4cd3410b52e596a9c55e0aa62cf2f48",
-    "id": "b35114e2039dd58f45563d1f444bf607",
-    "name": "_to_fragments",
-    "qualified_name": "src/ragx/context/engine.py::_to_fragments",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "76fa9bdf785a6de5fa87688844d91fb8",
@@ -1219,6 +1615,28 @@
     "source": "structural",
     "summary": "RAGX-0043 — Dictionary builder determinístico",
     "type": "file"
+  },
+  {
+    "chunk_id": "d405d8a959c961bc5e5812736ff44fd7",
+    "confidence": 1.0,
+    "document_id": "1db928e8181bf2bd8be736df7d0c9361",
+    "id": "b509c8e2374107e598d1df9dcc7f8852",
+    "name": "test_get_chunk_de_um_hit_concise_devolve_o_conteudo_inteiro",
+    "qualified_name": "tests/integration/test_mcp.py::test_get_chunk_de_um_hit_concise_devolve_o_conteudo_inteiro",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "772063de6b38c315748c4f6bf7666bec",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "b66d3972f952a97adff5be7bd71c7d4d",
+    "name": "test_configuracao_minima_bate_com_load_config",
+    "qualified_name": "tests/unit/test_hooklight.py::test_configuracao_minima_bate_com_load_config",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "c99e9031ed8cfe13600e95fafb55b024",
@@ -1243,7 +1661,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "44d6a160e049874bf2aed06ffe4501b7",
+    "chunk_id": "a2be91e117c7b0910adbd820a8b04fc3",
     "confidence": 1.0,
     "document_id": "2913d52eabdda7d53cb90471c720c66f",
     "id": "baf4c782592f67ca97f65052c8d65c5b",
@@ -1276,7 +1694,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "999d0a4c78df1a658c299380bb99b1a8",
+    "chunk_id": "626da4bcca2b0d96b98d938669bc3e20",
     "confidence": 1.0,
     "document_id": "20372e90447466afb2e560dec9ef2010",
     "id": "bc58d3120216008ef8aa26631ae363a4",
@@ -1331,6 +1749,17 @@
     "type": "table"
   },
   {
+    "chunk_id": "fcadb021663b3c935a82a3842a0079e6",
+    "confidence": 1.0,
+    "document_id": "23a3bb182ce000869f891eef36a41b78",
+    "id": "bede26728305c3bfec2fea1c59542e07",
+    "name": "prepare",
+    "qualified_name": "src/ragx/indexing/verdicts.py::prepare",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "44f8901e326e2e8fd0cbf893de49ed13",
@@ -1353,12 +1782,23 @@
     "type": "method"
   },
   {
-    "chunk_id": "deaf4d518869f4abe437c0f3d0536833",
+    "chunk_id": "8396ed1a7459d8ef3e91a292c172865d",
     "confidence": 1.0,
     "document_id": "376195e833198f61a1adcaad9be31b32",
     "id": "c42b454274177c089f285fcffa6399c3",
     "name": "_drain_pending",
     "qualified_name": "src/ragx/indexing/pipeline.py::_drain_pending",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "565a67be97cd677de24896a4371a773a",
+    "confidence": 1.0,
+    "document_id": "5e854ddcd982f2007031f6709280e069",
+    "id": "c480d5029f710e847e8ee84f9ecf242f",
+    "name": "_chamar",
+    "qualified_name": "tests/integration/test_mcp_wire.py::_chamar",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1375,6 +1815,28 @@
     "type": "class"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "29a2f38f561197b08154d7bec7120cd2",
+    "id": "c6409b02ead631138d68f7326cb6c2cc",
+    "name": "menu.ts",
+    "qualified_name": "src/app/electron/menu.ts",
+    "source": "structural",
+    "summary": "import type { MenuItemConstructorOptions } from 'electron'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "74a73ca22ba608eba9aeaf9caf926845",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "c7d0fd82860aacd77e1d4da9d950d05a",
+    "name": "test_os_nomes_de_ferramenta_da_dica_existem_nos_dois_perfis",
+    "qualified_name": "tests/unit/test_hooklight.py::test_os_nomes_de_ferramenta_da_dica_existem_nos_dois_perfis",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "c88e2e88512cc8a7a54ee84a44278d8b",
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
@@ -1386,12 +1848,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "4d91ac4d786cdc811a27222ea4011635",
+    "confidence": 1.0,
+    "document_id": "68e5e6f3e96353b28ec601765fcfd37f",
+    "id": "ca3f8d323daabfb92d90256eb158b3c2",
+    "name": "test_probe_do_ollama_distingue_presente_ausente_e_daemon_fora",
+    "qualified_name": "tests/unit/test_bench.py::test_probe_do_ollama_distingue_presente_ausente_e_daemon_fora",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "22fe04d07e2731e4d21e710db051eb6e",
     "confidence": 1.0,
     "document_id": "5b8a9853985bb8b35cf31658e21db033",
     "id": "ccb03502e9255debb9af3d6aa0fe03a8",
     "name": "_prune_noise",
     "qualified_name": "src/ragx/context/compress.py::_prune_noise",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "6e1ad64e2fb4295c8ed1b1512b487892",
+    "confidence": 1.0,
+    "document_id": "45a07cce13209ddf82447f792e54dcfc",
+    "id": "cd8de972a7b38f43469569b19cfbd859",
+    "name": "run_embedding#part-1",
+    "qualified_name": "src/ragx/search/bench.py::run_embedding#part-1",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1419,12 +1903,34 @@
     "type": "function"
   },
   {
-    "chunk_id": "85b3e65ce697b919d9d251ef47ff8954",
+    "chunk_id": "7b7fa8041d8a9af8d4134ba7fad40584",
+    "confidence": 1.0,
+    "document_id": "821e708bde7c2785b09d1229d5f73b65",
+    "id": "d3483982f12dc4589043662fe04ef833",
+    "name": "test_relacao_de_entrada_sobrevive_a_edicao_do_alvo",
+    "qualified_name": "tests/integration/test_graph_incremental.py::test_relacao_de_entrada_sobrevive_a_edicao_do_alvo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "5751a373636f83b74269912e0c7101cb",
     "confidence": 1.0,
     "document_id": "56b383a2a82751d848ea30dc28fe0237",
     "id": "d3a87da29688afd4d9b07c4d7e8d52e0",
     "name": "context_prefix",
     "qualified_name": "src/ragx/indexing/chunkers/__init__.py::context_prefix",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "8f8d78c80fcdbaaed68eec497c05773b",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "d45bdef29bab2179a8a7808fc2e76309",
+    "name": "test_session_start_grava_a_mesma_linha_de_atividade",
+    "qualified_name": "tests/unit/test_hooklight.py::test_session_start_grava_a_mesma_linha_de_atividade",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1441,7 +1947,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "6a3fd0f3207406410ffd7bc27a1ff53e",
+    "chunk_id": "1524b88c68091d8365c2d6ffee9f863e",
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "d7c8b6024d68f3c7f87d5c52023e24f8",
@@ -1551,7 +2057,18 @@
     "type": "method"
   },
   {
-    "chunk_id": "6886024662f30b6d9bcdea2f1ab53460",
+    "chunk_id": "99ccbae7d56224e8eee7d97b300c2e47",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "dee94162f384d1adf4ab749bce29d192",
+    "name": "write_mcp_files",
+    "qualified_name": "src/ragx/search/ab.py::write_mcp_files",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "f23abd1a16229df553f9b29eda82f68c",
     "confidence": 1.0,
     "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
     "id": "df746ec2191dffdbd2b1a8a074443e45",
@@ -1595,6 +2112,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "f4d107836ab6f8e74ce3a2c358c0e466",
+    "confidence": 1.0,
+    "document_id": "31a72e954520324f60655c42f8111189",
+    "id": "e4da0f6295e5f9d7eb80aaf9439443a4",
+    "name": "test_repo_map_avulso_e_identico_em_duas_execucoes_e_apos_rebuild",
+    "qualified_name": "tests/integration/test_dictionary_niveis.py::test_repo_map_avulso_e_identico_em_duas_execucoes_e_apos_rebuild",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "d7205c6d825faf93d35da50ade730da9",
     "confidence": 1.0,
     "document_id": "77211d381a07f55b08aed1d00737086c",
@@ -1606,7 +2134,29 @@
     "type": "function"
   },
   {
-    "chunk_id": "e1060ab7d6de5c6839a639e2b558e4d4",
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "60a865a199e5e7345d803ba5a2f7ac7b",
+    "id": "e74ad062042c6880d4cc2e862a04de66",
+    "name": "indexHealth.ts",
+    "qualified_name": "src/app/src/indexHealth.ts",
+    "source": "structural",
+    "summary": "import type { JobKind, ProjectSnapshot } from './types/ragx-bridge'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "c544ca1dab367381eb53693870e6806f",
+    "confidence": 1.0,
+    "document_id": "dd70080c3e2b9f1c29c34f6342eb6f75",
+    "id": "e79fbfe2b2d71f4b3d2b8af60cf2c7ae",
+    "name": "__init__",
+    "qualified_name": "src/ragx/storage/repositories.py::VerdictRepo.__init__",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "02731065fd747397284afe2faff934d1",
     "confidence": 1.0,
     "document_id": "6cfe33ee53e317f5f7ad839c3b57dc8b",
     "id": "e7c0c6b21815e7bae2a285cbe2da3b77",
@@ -1623,6 +2173,17 @@
     "id": "e89903b21dbaa83093c22af4ebc05c7b",
     "name": "_rescore",
     "qualified_name": "src/ragx/federation/search.py::_rescore",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d19a278c10c11351dae7f465758334d9",
+    "confidence": 1.0,
+    "document_id": "821e708bde7c2785b09d1229d5f73b65",
+    "id": "e9ac4102601e5fd1448d5522619d2e25",
+    "name": "test_camada_semantica_nao_e_tocada",
+    "qualified_name": "tests/integration/test_graph_incremental.py::test_camada_semantica_nao_e_tocada",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1683,6 +2244,28 @@
     "type": "table"
   },
   {
+    "chunk_id": "c92712293569b774bc754f1fbab7f21d",
+    "confidence": 1.0,
+    "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
+    "id": "f135f3a280ce89f683ef962efa7039b2",
+    "name": "degrees_for",
+    "qualified_name": "src/ragx/graph/store.py::GraphStore.degrees_for",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "f1364ef086d415e4635284199c06ceca",
+    "confidence": 1.0,
+    "document_id": "df629e7bff4c9c1a7e9ebe0f4481f64a",
+    "id": "f15af2f248a4c05490e6b6ca534fe187",
+    "name": "test_o_id_da_referencia_tem_o_mesmo_tamanho_do_fio",
+    "qualified_name": "tests/unit/test_session_ledger.py::test_o_id_da_referencia_tem_o_mesmo_tamanho_do_fio",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "b2b92c58b09d4ac4929336a0843d9404",
     "confidence": 1.0,
     "document_id": "add9e69383ed03a7acacbe1f82b1451a",
@@ -1711,6 +2294,17 @@
     "id": "f91b78126efdd691ec2034097c7a154e",
     "name": "test_on_instala_a_dica_no_settings_de_cada_perfil",
     "qualified_name": "tests/unit/test_claude_profiles_hint.py::test_on_instala_a_dica_no_settings_de_cada_perfil",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "576f929e2df9fe01ff85d2828a378ca4",
+    "confidence": 1.0,
+    "document_id": "1d6acb648da66917a1b1e4f5128c7955",
+    "id": "fa2ed4521bb8f017439016d892a6015b",
+    "name": "test_so_candidatos_sem_vetor_usa_o_score",
+    "qualified_name": "tests/unit/test_mmr_vetorizado.py::test_so_candidatos_sem_vetor_usa_o_score",
     "source": "structural",
     "summary": null,
     "type": "function"

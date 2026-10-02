@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "f918d5ac035b0e5e42c48dc761b49bc2db8758617d65539c3ecfbd1faabe7e5d",
+  "doc_kind": "code",
+  "id": "e4ca7efa11f2c37db87dd7c836c37450",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_knowledge_estavel.py",
+  "size_bytes": 4519,
+  "title": "Mede a estabilidade de `knowledge/` (RAGX-0148), num projeto sintético temporário.\n\n    uv run python scripts/medir_knowledge_estavel.py [--arquivos 40]\n\n1. `ragx sync` duas vezes sem mudança: quantos arquivos de `knowledge/` mudam (hash) e quantos têm o mtime trocado;\n2. edita UMA função, `sync`: quantos arquivos mudam, por pasta (`chunks/`, `documents/`, `entities/`, `relations/`...).\nNunca toca o `knowledge/` do repositório do RAGX: tudo roda em `tempfile`."
+}

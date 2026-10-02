@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "fd2d6304a2d9e9da9bf684d9c3aded116d32b4d65ddbb5e1e0770f548d47d75b",
+  "doc_kind": "code",
+  "id": "821e708bde7c2785b09d1229d5f73b65",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/integration/test_graph_incremental.py",
+  "size_bytes": 14917,
+  "title": "Grafo incremental por documento (RAGX-0151): `update_documents` tem de dar o MESMO grafo que o `rebuild`.\n\nA referência de correção é o rebuild completo: depois de cada edição o grafo atualizado por documento é\ncomparado, linha a linha, com o de um `rebuild` rodado no mesmo banco. A exceção declarada é a das tecnologias\n(`technology` e `uses`), que no caminho rápido só acrescentam e por isso podem ser superconjunto."
+}

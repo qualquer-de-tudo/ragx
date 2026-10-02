@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "f104c76c70f3e374817a7516b9013eb0ce0e4a3d7952659c6d01ff9913f04796",
+  "doc_kind": "code",
+  "id": "d4efcfed4f8b7b3c20d4ea717b51d2f6",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/entry.py",
+  "size_bytes": 1521,
+  "title": "Ponto de entrada de `ragx` e `rag` (só stdlib), RAGX-0143.\n\n`ragx.cli.main` importa typer, rich, pydantic e 25 módulos de comando antes de olhar o primeiro\nargumento: cerca de 480 ms. Os três comandos que os hooks rodam a cada sessão, edição e commit não\nprecisam de nada disso, então este módulo olha `sys.argv` primeiro:\n\n- `ragx claude hint`            -> `ragx.hooklight.run_hint`\n- `ragx claude nudge`           -> `ragx.hooklight.run_nudge`\n- `ragx touch --stdin-json`     -> `ragx.hooklight.run_touch`\n- `ragx hook-run EVENT --root`  -> `ragx.hooklight.run_hook`\n\nTodo o resto (e qualquer variação desses três que a entrada leve não reconheça) vai para a CLI\ncompleta, com o mesmo comportamento e as mesmas mensagens de erro de antes."
+}

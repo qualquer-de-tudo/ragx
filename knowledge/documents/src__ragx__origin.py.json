@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "3a142905db19c92ce1397a200fd02176944bf5a640fc67d23a9b7b8ce5f2923c",
+  "doc_kind": "code",
+  "id": "74392b09ddeb64593cec001faf0cddb8",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/origin.py",
+  "size_bytes": 1927,
+  "title": "Quem está rodando este processo, se for o Claude Code (só stdlib).\n\nFica fora de `ragx.clients` de propósito: `ragx/clients/__init__.py` importa o `registry` inteiro, e\nos hooks que rodam em toda sessão (`ragx.hooklight`, RAGX-0143) não podem pagar isso só para\ndescobrir o perfil. `ragx.clients.registry` reexporta as duas funções."
+}

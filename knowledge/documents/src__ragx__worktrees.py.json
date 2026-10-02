@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "ecc36ad4e9f4a975c004a264686e23deb5cbb9c0763fc595eac396f2507f8865",
+  "doc_kind": "code",
+  "id": "bcd1c4f1fbe322b6ce99582245070a52",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/worktrees.py",
+  "size_bytes": 3156,
+  "title": "Worktrees do mesmo repositório e o que eles compartilham (RAGX-0170).\n\nSó metadados e contagens: nenhum conteúdo de arquivo é lido aqui. Cada worktree tem o PRÓPRIO índice\n(`<raiz>/.ragx/knowledge.db`); o que é comum é o cache de embedding, em `<pasta .git comum>/ragx/cache`, por\n`content_hash` do chunk. Esta função diz, para cada worktree, quantos chunks (conteúdos distintos) ele tem em comum\ncom o da raiz consultada, que é o que o cache compartilhado poupa de reembutir."
+}

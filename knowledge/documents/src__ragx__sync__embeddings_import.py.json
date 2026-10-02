@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "57ea22925add6099da58305d8936f0598029839cc3ae2718dd4f2893d2fc3961",
+  "doc_kind": "code",
+  "id": "f6012f2c36cd6086b037d4e6fe4152b1",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/sync/embeddings_import.py",
+  "size_bytes": 4471,
+  "title": "Importa os embeddings versionados de `knowledge/embeddings/` para um banco novo (RAGX-0144).\n\nO projeto versiona o vetor int8 de cada chunk justamente para que um clone responda buscas sem\nrecalcular nada, mas `serialize.read_embeddings` não tinha nenhum chamador: num clone novo, o\nprimeiro `ragx index` reembedava todos os chunks. Este módulo faz o caminho de volta.\n\nRegras (a segurança deste caminho é a mesma da indexação: nada de conteúdo entra por aqui):\n\n- **Só o mesmo modelo.** O manifesto precisa citar `embedder_id(cfg)` e a mesma `versioned_dim`; senão\n  nada é importado (e nada é apagado). `embed_pending` apaga os vetores de qualquer modelo diferente\n  do atual na rodada seguinte, então importar de outro modelo seria desfeito.\n- **Só chunk que existe.** Cada linha precisa ter `chunk_id` em `chunks`: o chunk já passou pelo\n  Security Gate na indexação. Um shard que cita o chunk de um arquivo hoje bloqueado ou apagado não\n  grava nada, e a contagem de `embeddings` nunca passa a de `chunks`.\n- **Só vetor válido.** `versioned_dim` bytes, escala e deslocamento finitos. O int8 entra como veio\n  (já truncado e renormalizado por `serialize`): não renormaliza duas vezes.\n- **Nunca sobrescreve.** `INSERT OR IGNORE`: um vetor completo (float32) que o banco já tem fica.\n- **Um shard por vez**, sem montar os 6,5 mil vetores (ou os 100 mil) na memória."
+}

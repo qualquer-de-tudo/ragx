@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "829a72d799db01897959d85307bb5b76ad0372e122ecfa04a69371c1245bff40",
+  "doc_kind": "code",
+  "id": "afdd740fbe5af821f205975da513e913",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/mcp/warmup.py",
+  "size_bytes": 2103,
+  "title": "Aquecimento do servidor MCP (RAGX-0142).\n\nA primeira `search_hybrid` de cada processo custava 3,0 a 3,3 s: construir o embedder (modelo ONNX,\ntokenizer, imports) e o `tiktoken`. O servidor vive a sessão inteira e fica ocioso depois do\n`initialize`; este módulo usa esse tempo, numa thread `daemon`, para deixar tudo pronto antes da\nprimeira pergunta.\n\nNunca atrasa nem derruba o servidor: cada passo é isolado, o erro vai para `.ragx/logs/errors.log` e\nnão propaga. E só aquece pasta com índice: o servidor registrado globalmente numa pasta que não é\nprojeto RAGX não carrega 680 MB à toa."
+}

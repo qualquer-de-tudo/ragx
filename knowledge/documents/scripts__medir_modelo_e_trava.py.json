@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "f7866ffc80447706b471bbaff8b41e70a408564ed4818784c592d1b45871cada",
+  "doc_kind": "code",
+  "id": "2054d51a66701e5dbbd33ed1fdb31d0b",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_modelo_e_trava.py",
+  "size_bytes": 2853,
+  "title": "Mede as duas arestas da RAGX-0153, sem tocar em nenhum projeto real.\n\n    uv run python scripts/medir_modelo_e_trava.py [--download]\n\n1. Tamanho de `.ragx/cache/models` em `--projeto` (padrão: o diretório atual).\n2. Com `--download`: quanto leva o PRIMEIRO uso do fastembed numa pasta de modelos vazia (download + carga) e o\n   segundo (só a carga), em pasta temporária.\n3. A trava \"imortal\": um `index.lock` com o PID de um processo VIVO qualquer (o deste mesmo script, com o `proc`\n   de OUTRO processo gravado, quando o campo existir) bloqueia `try_acquire`?"
+}

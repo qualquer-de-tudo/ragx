@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "cbf10ce2bead0e69f747482b10832ee4f0d16bd763b1a6f4762f4f7c84ba072d",
+  "content_hash": "ca5ff35f10a037c08ccdc7ccaa7eb63cb0533c9487d68e016b14601e2e0b4b7c",
   "doc_kind": "code",
   "id": "56b383a2a82751d848ea30dc28fe0237",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/indexing/chunkers/__init__.py",
-  "size_bytes": 10553,
+  "size_bytes": 13820,
   "title": "Chunkers: transformam estrutura sintática em chunks autocontidos.\n\nInvariantes (ADR-0005):\n  1. chunk de código é uma unidade compilável ou quase\n  2. bloco de código e tabela em Markdown nunca são partidos\n  3. parent_id preserva a hierarquia método -> classe -> arquivo\n  4. unidade acima de max_tokens é dividida por blocos lógicos, não por caractere\n  5. fatiamento é determinístico"
 }

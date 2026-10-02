@@ -4,7 +4,7 @@
       "AGENTS.md",
       "README.md"
     ],
-    "seen": 244,
+    "seen": 333,
     "term": "RAGX"
   },
   {
@@ -12,7 +12,7 @@
       "docs/adr/ADR-0001-python-e-toolchain.md",
       "docs/adr/ADR-0002-sqlite-como-store-unico.md"
     ],
-    "seen": 48,
+    "seen": 52,
     "term": "ADR"
   },
   {
@@ -20,47 +20,23 @@
       "docs/09-mcp.md",
       "docs/adr/ADR-0006-mcp-casca-fina.md"
     ],
-    "seen": 39,
+    "seen": 50,
     "term": "MCP"
   },
   {
     "evidence": [
       "docs/14-cli.md",
-      "src/app/src/components/shell/LivePill.tsx"
+      "scripts/medir_hooks.py"
     ],
-    "seen": 26,
+    "seen": 29,
     "term": "CLI"
   },
   {
     "evidence": [
-      "src/ragx/agents/profile.py",
-      "src/ragx/base/source.py"
+      "scripts/medir_grafo_incremental.py",
+      "src/ragx/agents/profile.py"
     ],
-    "seen": 11,
+    "seen": 15,
     "term": "NÃO"
-  },
-  {
-    "evidence": [
-      "src/ragx/agents/evaluator.py",
-      "src/ragx/context/compress.py"
-    ],
-    "seen": 6,
-    "term": "LLM"
-  },
-  {
-    "evidence": [
-      "scripts/versao.py",
-      "task/fase-00-fundacao-seguranca/RAGX-0011-pipeline-de-ci-em-linux-e-windows.md"
-    ],
-    "seen": 5,
-    "term": "CI"
-  },
-  {
-    "evidence": [
-      "src/ragx/clients/claude_hint.py",
-      "src/ragx/clients/registry.py"
-    ],
-    "seen": 5,
-    "term": "JSON"
   }
 ]

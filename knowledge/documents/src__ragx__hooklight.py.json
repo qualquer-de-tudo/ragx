@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c0fc8c84ac1628e47adcbf8fbdc4cf895e9fd1c763d777d54f6a6244b0430c8f",
+  "doc_kind": "code",
+  "id": "06009bdfdf85097b702025e3497430db",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/hooklight.py",
+  "size_bytes": 20311,
+  "title": "Entrada leve dos hooks que rodam em TODA sessão e TODO commit (RAGX-0143).\n\n`ragx claude hint` (o `SessionStart` do Claude Code, que roda até em subagente) levava 481 a 659 ms,\ne o hook de git bloqueava o commit por 539 a 1.041 ms, contra 41 a 56 ms de um Python vazio. A causa:\no ponto de entrada importava typer, rich, pydantic e 25 módulos de comando antes de olhar o primeiro\nargumento. Este módulo faz o trabalho desses dois caminhos usando SÓ a stdlib (e `ragx.origin`,\n`ragx.diagnostics`, que também são stdlib), e `ragx.entry` despacha para ele antes de importar a CLI.\n\nRegras:\n\n- Só stdlib. Importar este módulo não carrega typer, rich, pydantic, numpy, yaml, pathspec nem\n  `ragx.config`/`ragx.core`/`ragx.storage`/`ragx.clients` (um teste confere num subprocesso).\n- Lê só artefatos próprios do RAGX: `ragx.toml`, `.ragx/status.json` e o `registry.json` do hub.\n  Nunca o conteúdo de um arquivo do projeto, e não percorre diretório (o teste arquitetural proíbe\n  `read_bytes`, `rglob`, `walk`, `scandir`, `iterdir` e `glob` aqui).\n- Nunca falha: erro em qualquer ponto vira silêncio e código 0, porque um erro aqui atrasaria ou\n  sujaria o início de toda sessão e todo commit, em qualquer pasta.\n\nO texto da dica tem UMA fonte, esta: `ragx.clients.claude_hint.hint_text` delega para cá."
+}

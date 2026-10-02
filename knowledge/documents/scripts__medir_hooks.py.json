@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "e718c8e66f8e62261c0ff93cec085ece6a721270be73f0cd5e4daa2e582a6d15",
+  "doc_kind": "code",
+  "id": "4849449b69e25693e393e62fa729fdf4",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_hooks.py",
+  "size_bytes": 3720,
+  "title": "Mede o custo dos hooks que rodam em TODA sessão e TODO commit (RAGX-0143, S7 e S8).\n\n    uv run python scripts/medir_hooks.py --n 12 [--entrada ragx.entry]\n\nCria um projeto sintético indexado (com `git init`), roda cada comando N vezes por\n`python -m <entrada>` e imprime mediana, mínimo e máximo em ms:\n\n- `claude hint`: o `SessionStart` do Claude Code (S7, meta de 120 ms);\n- `hook-run post-commit`: a parte síncrona do hook de commit (S8, meta de 150 ms);\n- `hook-run post-checkout A B 0` (arquivo): devia ser um no-op.\n\n`--entrada ragx.cli.main` mede o caminho antigo (a CLI completa); `ragx.entry`, o novo. Sem\n`--entrada`, mede os dois."
+}

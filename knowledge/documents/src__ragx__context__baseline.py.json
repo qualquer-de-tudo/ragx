@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "13dd6ebbfd0d7124a0bce1696cf9cc347c6b57f4a6482f7f4899464c379d08c6",
+  "doc_kind": "code",
+  "id": "34be4927b6917ac423da5479ebbbd533",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/context/baseline.py",
+  "size_bytes": 1448,
+  "title": "O \"sem RAGX\" do gráfico de economia: tamanho dos arquivos de onde o contexto saiu.\n\nSoma `chunks.token_count` dos documentos-fonte, lido do índice (nunca do disco),\nna MESMA unidade do que o `build_context` entrega (o contador de tokens). Antes\nera `size_bytes // 4`: em markdown erra por ~30% (docs/09-mcp.md: 4.265 contra\n5.993 tokens reais), e a economia aparecia em duas unidades diferentes.\n\nIsto é um LIMITE SUPERIOR (\"arquivos inteiros\"), não a economia real: um agente com\nGrep não leria os arquivos todos. Quem pode afirmar a economia real é o A/B da 0162.\nMora aqui, e não em `ragx.mcp`, porque é lógica, e o servidor é casca fina (ADR-0006)."
+}

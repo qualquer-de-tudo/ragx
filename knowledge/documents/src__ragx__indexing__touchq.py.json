@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "0c7e9693b2bde76f85308d74a1dc196ec3a41c0057aeebe90a5f075a586898f5",
+  "doc_kind": "code",
+  "id": "2eb19be6531eac9d56b90fc49a3b3b03",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/touchq.py",
+  "size_bytes": 11877,
+  "title": "Fila de arquivos tocados: o que o Claude editou e o índice ainda não viu.\n\nEdição não commitada nunca entrava no índice por conta própria: só os hooks de git (commit,\ncheckout, merge) existiam, e o único caminho manual era o `refresh`, que custava de 26 a 91 s.\nO hook `PostToolUse` do Claude Code só ENFILEIRA o caminho editado aqui (uma linha anexada a\n`.ragx/touch.queue`: o custo é de milissegundos) e quem consome é `drain`, que chama\n`index_paths` (RAGX-0140) só nos arquivos tocados. O servidor MCP drena antes de buscar.\n\nEste módulo é só stdlib no topo (o hook roda a cada edição) e NUNCA lê o conteúdo de um\narquivo do projeto: só nomes. O que entra no índice passa pelo Security Gate dentro de\n`index_paths`, como qualquer outro arquivo.\n\nFormato: `touch.queue`, uma linha por caminho relativo POSIX. `enqueue` é um único `os.write`\nem `O_APPEND` (atômico para linhas curtas); `claim` toma o lote inteiro por `os.replace`, a\nmesma técnica atômica de `lock.mark_pending`: dois consumidores concorrentes nunca recebem o\nmesmo caminho."
+}

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "c06eb8be31c259cc5b537f13ebfd0a34fea5244a5d0c90837d5c6661ea30c0e2",
+  "doc_kind": "code",
+  "id": "bc5a03108a91de64dcc625e939150260",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/indexing/parallel.py",
+  "size_bytes": 12280,
+  "title": "Leitura, Gate, parse e chunking em paralelo para o primeiro índice (RAGX-0152).\n\nO primeiro índice (e o `--full`) lia, passava pelo Gate, parseava e fatiava um arquivo de cada vez; num\nprojeto com milhares de arquivos isso era a maior parte do tempo. Aqui o estágio caro vai para um pool de\nPROCESSOS, e o processo principal continua sendo o único que escreve no banco:\n\n    varredura (principal) ──> Candidate ──> worker: read_candidate + parse + chunk ──> principal: upsert\n\n- A varredura e as decisões baratas (`walk.iter_candidates`: ignore, veredito guardado, `unchanged`, tamanho,\n  nome na deny-list) ficam no principal e não mudam.\n- Cada worker constrói UM `SecurityGate` completo (inclusive o `IgnoreEngine`): o Gate não tem atalho\n  (ADR-0008). Todo byte é lido por `walk.read_candidate`, e este módulo nunca abre arquivo por conta própria.\n- Os resultados voltam NA ORDEM da varredura, de modo que a escrita é a mesma do caminho sequencial.\n- Abaixo de `PARALLEL_MIN_FILES` candidatos a ler, ou com `jobs = 1`, nada disto roda: nenhum pool é criado.\n- Se a infraestrutura do pool cair (processo morto, `spawn` que não consegue reimportar o módulo principal), o\n  lote em andamento e o resto da rodada são refeitos no processo principal. Erro do NOSSO código num arquivo\n  (`WorkerError`) não é infraestrutura: propaga, com o caminho.\n\nEste módulo não importa `ragx.config` nem `typer`: cada worker em `spawn` pagaria o custo de importá-los."
+}

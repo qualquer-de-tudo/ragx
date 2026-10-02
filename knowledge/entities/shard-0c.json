@@ -1,6 +1,6 @@
 [
   {
-    "chunk_id": "68a67b22537a0890c0c575833c8d9d16",
+    "chunk_id": "98115c7941cf79e12649e5f469b60a38",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
     "id": "0167c39c3973b3feede20a0f341ca57e",
@@ -22,6 +22,17 @@
     "type": "class"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "50e28f613d29dcfeac614fbc7177ea9c",
+    "id": "03fce72ce388a47ee92bb6e48f40fc14",
+    "name": "commands.ts",
+    "qualified_name": "src/app/src/commands.ts",
+    "source": "structural",
+    "summary": "import type { Route } from './route'",
+    "type": "file"
+  },
+  {
     "chunk_id": "dbc0de57add3d4fe359be898240d3bd3",
     "confidence": 1.0,
     "document_id": "014d19a8bba431f9d9af9e36ef6827df",
@@ -33,18 +44,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "5ba9c68d0bb5ae2de4af90d8086822ce",
+    "chunk_id": "68d40cfc051d2deb0ded615f901c90df",
     "confidence": 1.0,
-    "document_id": "941f6b614648b28ab6a935c0edef8f71",
-    "id": "08b8874c50acbdfe2ae5bb88a272eed6",
-    "name": "test_load_sem_arquivo_devolve_none",
-    "qualified_name": "tests/integration/test_dictionary.py::test_load_sem_arquivo_devolve_none",
+    "document_id": "c0c128a82645d774a323eec1798b6f95",
+    "id": "0c7af2ac65bf1686d89a225078707750",
+    "name": "test_retain_days_zero_nao_apaga_nada",
+    "qualified_name": "tests/unit/test_log_rotation.py::test_retain_days_zero_nao_apaga_nada",
     "source": "structural",
     "summary": null,
     "type": "function"
   },
   {
-    "chunk_id": "0dab166151d19dc29d503d6d602f14e5",
+    "chunk_id": "e3aa26ad9cc2d8d2718ed453a4a91e1e",
     "confidence": 1.0,
     "document_id": "b17db1655f03e599bccaf44cd9320979",
     "id": "0d4ac36c1cebfdecacb3eb897ea8eecf",
@@ -99,7 +110,29 @@
     "type": "class"
   },
   {
-    "chunk_id": "e19eaffba1597d2c716daba11657b78d",
+    "chunk_id": "835b2883d8332f023864e79aac77b9a2",
+    "confidence": 1.0,
+    "document_id": "dd70080c3e2b9f1c29c34f6342eb6f75",
+    "id": "0e76ce7c8ad9bf6a7ba5910b232e207f",
+    "name": "put_many",
+    "qualified_name": "src/ragx/storage/repositories.py::VerdictRepo.put_many",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "bfaaebeae53faa18ebc60c242dccb7a7",
+    "confidence": 1.0,
+    "document_id": "b051f51bda5aa4a66b4f580f31c83c2b",
+    "id": "0ebb16fcff1b0917bcdfab5ce182cd98",
+    "name": "test_teto_de_lote_devolve_a_sobra_para_a_fila",
+    "qualified_name": "tests/unit/test_touchq.py::test_teto_de_lote_devolve_a_sobra_para_a_fila",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "fec2c31ae293e0cec1b8393c286da19a",
     "confidence": 1.0,
     "document_id": "e5559af3184736f5ffb93194dea28c58",
     "id": "1121fa2ce4cbe633fb10b37adf87d659",
@@ -116,6 +149,17 @@
     "id": "112ee3ec98e828d3bf526cd4d19677d9",
     "name": "_cfg_tmp",
     "qualified_name": "tests/unit/test_context_units.py::_cfg_tmp",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "15642aa131b68b41ab5f1a558c4934da",
+    "confidence": 1.0,
+    "document_id": "e3e7af6733200f54bd183a91a2c1b069",
+    "id": "1241650c72bc4ec7ba2ae2373df19063",
+    "name": "_medir",
+    "qualified_name": "scripts/medir_indice_inicial.py::_medir",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -141,6 +185,17 @@
     "source": "structural",
     "summary": "RAGX-0010 — Fixture de segredos e suíte das cinco superfícies",
     "type": "file"
+  },
+  {
+    "chunk_id": "46888ded122f6dbe450c1ec8b2ba8901",
+    "confidence": 1.0,
+    "document_id": "eb3c24c29a8ea6da59488d35ee415e4a",
+    "id": "15d25a0c6160ddf295a6ea3c0b0fdf03",
+    "name": "_decisao_guardada",
+    "qualified_name": "src/ragx/walk.py::_decisao_guardada",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -176,6 +231,17 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "3ef23e5ffc0063b9837b76ea09760e74",
+    "id": "201c749cf995985291f102533beab1b2",
+    "name": "primitives.test.tsx",
+    "qualified_name": "src/app/src/components/ui/__tests__/primitives.test.tsx",
+    "source": "structural",
+    "summary": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
+  },
+  {
     "chunk_id": "b61804f4f4996d9702ff8c090000d979",
     "confidence": 1.0,
     "document_id": "50ff9683032b8f22cb4d05c68259b0d1",
@@ -196,6 +262,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "2098968a7eb1867f43d2cad3c86e8dd6",
+    "id": "2192ad0c867bec83cd9485208bdef898",
+    "name": "test_cli_context.py",
+    "qualified_name": "tests/e2e/test_cli_context.py",
+    "source": "structural",
+    "summary": "`ragx context` sem `--tokens` (RAGX-0150).",
+    "type": "file"
   },
   {
     "chunk_id": null,
@@ -266,6 +343,28 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "4dce62878d5966e5dd822090e9cf1a17",
+    "id": "27ae007c94effb7cd82873cc2c8915fa",
+    "name": "spawn-counter.ts",
+    "qualified_name": "src/app/electron/system/spawn-counter.ts",
+    "source": "structural",
+    "summary": "/**",
+    "type": "file"
+  },
+  {
+    "chunk_id": "89bf1f4c75bf8651121759ba0d1e4cab",
+    "confidence": 1.0,
+    "document_id": "f0ebf418eb639779d9d72559baa3ab9e",
+    "id": "2993b94c820d9594eac04635913b374c",
+    "name": "test_prefixo_e_sufixo_do_assunto_saem",
+    "qualified_name": "tests/unit/test_gold.py::test_prefixo_e_sufixo_do_assunto_saem",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "65249e98a089947b1c491517adcc64c5",
     "id": "29c03e5c29297ddc33ae87c661e10d4c",
     "name": "test_index_lock_pipeline.py",
@@ -273,6 +372,28 @@
     "source": "structural",
     "summary": null,
     "type": "file"
+  },
+  {
+    "chunk_id": "b764310184f8c8641361111a77c00c4d",
+    "confidence": 1.0,
+    "document_id": "6748b25689773747d50f29c12233c01b",
+    "id": "2aca150c46623cdf0c0b0cb86eb0cfee",
+    "name": "_concepts#part-2",
+    "qualified_name": "src/ragx/dictionary/builder.py::_concepts#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "fcdfa3cf3e149c59ebaf22c8b26fa777",
+    "confidence": 1.0,
+    "document_id": "81830318d31c08768f7936f743b10959",
+    "id": "2b96d7acbcbbd87cc0a1b8fda9f228fa",
+    "name": "doc",
+    "qualified_name": "tests/unit/test_graph_rank.py::Grafo.doc",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": "24935db993d415a90c2c163f7d39404d",
@@ -284,6 +405,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "199291cc4b6f50918884153ae7bc260a",
+    "id": "2c1d28ac4cc409cd0da105323ac7329c",
+    "name": "git-files.test.ts",
+    "qualified_name": "src/app/electron/data/__tests__/git-files.test.ts",
+    "source": "structural",
+    "summary": "import fs from 'node:fs'",
+    "type": "file"
   },
   {
     "chunk_id": "514ee49b8339df96d7601ea20c215502",
@@ -325,6 +457,17 @@
     "id": "2e95cd0c8921417c55f6aa75af52e197",
     "name": "test_mcp_abre_o_banco_somente_leitura",
     "qualified_name": "tests/security/test_architecture.py::test_mcp_abre_o_banco_somente_leitura",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "86e67cecc8c800b71979fb74b878f393",
+    "confidence": 1.0,
+    "document_id": "1d6acb648da66917a1b1e4f5128c7955",
+    "id": "2edee67c5d8148794ef64ff9502226fc",
+    "name": "test_30_candidatos_em_poucos_ms",
+    "qualified_name": "tests/unit/test_mmr_vetorizado.py::test_30_candidatos_em_poucos_ms",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -380,6 +523,28 @@
     "id": "384d793cb99ce641e87156d245cad83b",
     "name": "show",
     "qualified_name": "src/ragx/cli/commands/federation_cmd.py::show",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "9daff60af6a9d8a0072d1f7d7df30286",
+    "confidence": 1.0,
+    "document_id": "be3cfbc14ffd5a60e68753895e6c3fcd",
+    "id": "3a019dbc2ec0858f36855474daa07aed",
+    "name": "footprint_tokens",
+    "qualified_name": "src/ragx/perf.py::footprint_tokens",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "c0e23eb450dbb1011a4c890717514fcd",
+    "confidence": 1.0,
+    "document_id": "5e854ddcd982f2007031f6709280e069",
+    "id": "3a54157c2ccf587cd792a29c3dcc0434",
+    "name": "test_resposta_e_compacta_e_nao_se_repete_em_structured_content",
+    "qualified_name": "tests/integration/test_mcp_wire.py::test_resposta_e_compacta_e_nao_se_repete_em_structured_content",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -451,12 +616,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "76557848703f517429ba7e2e3f4db5d5",
+    "confidence": 1.0,
+    "document_id": "821e708bde7c2785b09d1229d5f73b65",
+    "id": "3f297cbc24f638e67044fc3a14bec5a3",
+    "name": "test_editar_uma_linha_nao_deixa_entidade_sem_chunk",
+    "qualified_name": "tests/integration/test_graph_incremental.py::test_editar_uma_linha_nao_deixa_entidade_sem_chunk",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "9d5bb9805b1a3da5a40b51b02c2e4d73",
     "confidence": 1.0,
     "document_id": "857268f8997abc7566c982ef824c9f83",
     "id": "40188adc33b29a67d7db203ec24e8e7d",
     "name": "release",
     "qualified_name": "src/ragx/indexing/lock.py::release",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "c1d85e7a9e1cd7bd1a164a53f2126452",
+    "confidence": 1.0,
+    "document_id": "a48696ebeaf836a5dfb1ae0b9221a1eb",
+    "id": "40d1f3fc1c5dcf6e3abebb92ac47635d",
+    "name": "test_o_bloco_de_post_checkout_traz_a_guarda_e_os_outros_nao",
+    "qualified_name": "tests/e2e/test_hooks_guarda_shell.py::test_o_bloco_de_post_checkout_traz_a_guarda_e_os_outros_nao",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -473,7 +660,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "b69c958fa986c817e1d790f793b440fe",
+    "chunk_id": "2ee547b033a3fd0f955c0925ffae922f",
     "confidence": 1.0,
     "document_id": "6748b25689773747d50f29c12233c01b",
     "id": "45b218bc2b1f1633477721364089d388",
@@ -514,6 +701,28 @@
     "qualified_name": "src/ragx/config.py",
     "source": "structural",
     "summary": "Configuração com cascata completa.\n\nPrecedência: flags CLI > RAGX_* > ragx.toml do projeto > config do usuário > defaults.\nVer docs/15-configuracao.md.\n\nNenhuma chave de API é lida do TOML — credencial vem só de variável de ambiente.",
+    "type": "file"
+  },
+  {
+    "chunk_id": "2c02ee276f88773700747b49d88b7025",
+    "confidence": 1.0,
+    "document_id": "31a72e954520324f60655c42f8111189",
+    "id": "46e3f32c5c32f18707c9b225e8fbb6dd",
+    "name": "test_conceito_e_o_que_um_documento_descreve",
+    "qualified_name": "tests/integration/test_dictionary_niveis.py::test_conceito_e_o_que_um_documento_descreve",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "2df1b40ae79c4ba9cf010c0d0b045db7",
+    "id": "4770f63c83354a0bdcf740847bb99a1e",
+    "name": "tray.test.ts",
+    "qualified_name": "src/app/electron/__tests__/tray.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it, vi } from 'vitest'",
     "type": "file"
   },
   {
@@ -616,12 +825,12 @@
     "type": "function"
   },
   {
-    "chunk_id": "c15edb8690e13768d5a1184de9d98bc3",
+    "chunk_id": "e4443c1cf04d147ee87288a42c5d39c5",
     "confidence": 1.0,
-    "document_id": "941f6b614648b28ab6a935c0edef8f71",
-    "id": "541a76cc4a5f194bf11bdc91e3b2597a",
-    "name": "test_convencoes_exigem_repeticao",
-    "qualified_name": "tests/integration/test_dictionary.py::test_convencoes_exigem_repeticao",
+    "document_id": "e4ca7efa11f2c37db87dd7c836c37450",
+    "id": "53350c8c2b35d9c54e9862a2310d9f8e",
+    "name": "_comparar",
+    "qualified_name": "scripts/medir_knowledge_estavel.py::_comparar",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -671,7 +880,29 @@
     "type": "file"
   },
   {
-    "chunk_id": "d3864d221ffbc64253eeed14de8c7334",
+    "chunk_id": "9b559b47868b02701b461512034c2b1f",
+    "confidence": 1.0,
+    "document_id": "58488338f4218b9dd9cd18bf91f0c8ab",
+    "id": "59844fac1302ef3d2dc0136d536f3d00",
+    "name": "test_editar_um_chunk_so_ele_sai_e_entra",
+    "qualified_name": "tests/integration/test_replace_for_document.py::test_editar_um_chunk_so_ele_sai_e_entra",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "37fab034db38ecb6039e998d9345d905",
+    "confidence": 1.0,
+    "document_id": "6318fcb78701e8cbf74aba910970a4e6",
+    "id": "5d34d56cc84302085000d182a54b5718",
+    "name": "main",
+    "qualified_name": "scripts/medir_mcp_frio.py::main",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "2c88ce42989736eaff4304fba1cf52eb",
     "confidence": 1.0,
     "document_id": "0ce646015253852e65eb356246450659",
     "id": "60f2294c4f7359e0798bf3db0a4a4f01",
@@ -688,6 +919,17 @@
     "id": "611c315c819f605867fafcdc5bbd4d14",
     "name": "test_pasta_adicionada_entra_na_lista_e_liga_so_ela",
     "qualified_name": "tests/unit/test_claude_profiles_hint.py::test_pasta_adicionada_entra_na_lista_e_liga_so_ela",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3dd70b9566279b8e5e1789c94d17bea4",
+    "confidence": 1.0,
+    "document_id": "af48a270ac5da445ad66c38d7c6b6af6",
+    "id": "611c34ecb0f1e60aa97668ca86fbb77e",
+    "name": "_ctx",
+    "qualified_name": "tests/unit/test_verdict_context.py::_ctx",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -781,6 +1023,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "621d2604b6e97b068a29c2c9c206e495",
+    "confidence": 1.0,
+    "document_id": "caa8f40f82cda6773c1b6ebd860d3aef",
+    "id": "6a78581cd91df11fd26539860b37d6e8",
+    "name": "_sem_volateis",
+    "qualified_name": "src/ragx/sync/stable_write.py::_sem_volateis",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": null,
@@ -803,12 +1056,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "9c59d24d680111e838e7091632b4395e",
+    "confidence": 1.0,
+    "document_id": "45a07cce13209ddf82447f792e54dcfc",
+    "id": "6cfc007c987b088a76b5542b68e17451",
+    "name": "assert_loopback",
+    "qualified_name": "src/ragx/search/bench.py::assert_loopback",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "e9f335ab81333a18418c279b9e902e34",
     "confidence": 1.0,
     "document_id": "59c2243a32959171daf49064c3f346b8",
     "id": "6d10dc9ce7e7295fbbaebc704d7752f1",
     "name": "test_segredo_novo_nao_chega_ao_banco_nem_a_knowledge_pelo_refresh",
     "qualified_name": "tests/integration/test_refresh_incremental.py::test_segredo_novo_nao_chega_ao_banco_nem_a_knowledge_pelo_refresh",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3fc42c58103bfb09a5125c6133407d06",
+    "confidence": 1.0,
+    "document_id": "3f3826fec189d2613a4a2e7e4dd26389",
+    "id": "6feccbdcc11f3b412fa21236379a0150",
+    "name": "test_o_conjunto_tem_pelo_menos_150_consultas_e_nao_repete",
+    "qualified_name": "tests/unit/test_eval_conjunto.py::test_o_conjunto_tem_pelo_menos_150_consultas_e_nao_repete",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -823,6 +1098,28 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "d297b420c7447d1138917ddb7ec7c635",
+    "confidence": 1.0,
+    "document_id": "b07309c464acfe13c2c56c24fd1ed642",
+    "id": "71472aecbde223b0a3adbc622850f5f5",
+    "name": "test_mcp_tools_json_traz_o_schema_nao_nulo",
+    "qualified_name": "tests/unit/test_mcp_perfis.py::test_mcp_tools_json_traz_o_schema_nao_nulo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "31cb310f155e33e9cf9d41556dd2b2e5",
+    "id": "7174228c50787ea97de26e4e01501b37",
+    "name": "ipcError.test.ts",
+    "qualified_name": "src/app/src/__tests__/ipcError.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
   },
   {
     "chunk_id": "d577b8c3a1607d62152f186ee288f143",
@@ -845,17 +1142,6 @@
     "source": "structural",
     "summary": "RAGX-0180 — Toasts: toda falha de ação aparece",
     "type": "file"
-  },
-  {
-    "chunk_id": "99ab1fcdfedf4a6b2dddf91942df5bbf",
-    "confidence": 1.0,
-    "document_id": "5532b7db8287cb63c11e614d9f714c34",
-    "id": "73852a1c51acb27fa43510c3884678a8",
-    "name": "_paths_for",
-    "qualified_name": "src/ragx/indexing/embed.py::_paths_for",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
   },
   {
     "chunk_id": "dca5db3672f93df3c62371efad8057b8",
@@ -902,6 +1188,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "3fa99546474eb0cd92abbf54b4931122",
+    "confidence": 1.0,
+    "document_id": "fe391cf7f74ad721cdbafe71306c3c22",
+    "id": "78de3f8c029449d87d37631a0ea75a3c",
+    "name": "_TextEmbeddingFalso",
+    "qualified_name": "tests/unit/test_embedder_cache.py::_TextEmbeddingFalso",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "90edaeca9c90640117e6eba428d98332",
     "confidence": 1.0,
     "document_id": "392c9c22f9f5b6b0d8b6fd418576fc00",
@@ -922,6 +1219,17 @@
     "source": "structural",
     "summary": "SearchService — orquestra os três modos.\n\nFiltros são aplicados ANTES do top-K em cada motor (predicado no SQL, máscara no\nNumPy). Depois seria o modo de falha clássico: filtro restritivo devolve vazio.",
     "type": "file"
+  },
+  {
+    "chunk_id": "be8cef84ee566a881d824e8ee42cecb5",
+    "confidence": 1.0,
+    "document_id": "11a014ce9d7e6c26be57225137670d66",
+    "id": "7a83e82ceb4899ac52dc3f7e3ad79c47",
+    "name": "ab#part-2",
+    "qualified_name": "src/ragx/cli/commands/ab_cmd.py::ab#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -957,6 +1265,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "bff0613ac3686a146f0ef74d3a807771",
+    "confidence": 1.0,
+    "document_id": "957280ba9f49e1f9aee96e2eeb397bdb",
+    "id": "7e4fbb3cb098c6b0227ab8a9469d4742",
+    "name": "_sem_resposta",
+    "qualified_name": "src/ragx/search/evaluation.py::_sem_resposta",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "a42ffedd5e56a1d679941c83d205d8bf",
     "confidence": 1.0,
     "document_id": "3f8e541dccbc4bac55bde8f7de7d66f1",
@@ -985,6 +1304,17 @@
     "id": "887454dceba0195f8ed24a8ff26e4f85",
     "name": "test_caminho_relativo_e_aceito",
     "qualified_name": "tests/integration/test_mcp.py::test_caminho_relativo_e_aceito",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "27a1706333d597a8ecf7d879f1c60960",
+    "confidence": 1.0,
+    "document_id": "31a72e954520324f60655c42f8111189",
+    "id": "88c40c9ce62a1f97a70514c82a832c92",
+    "name": "test_mcp_get_dictionary_nivel_0_inclui_o_mapa",
+    "qualified_name": "tests/integration/test_dictionary_niveis.py::test_mcp_get_dictionary_nivel_0_inclui_o_mapa",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1111,6 +1441,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "79634218229e56053cfb8beb2eb35ee8",
+    "confidence": 1.0,
+    "document_id": "a48696ebeaf836a5dfb1ae0b9221a1eb",
+    "id": "90fc20dcf997a0c445dd460f28d5cd8a",
+    "name": "test_instalar_sobre_bloco_antigo_o_substitui_sem_duplicar_e_status_acusa",
+    "qualified_name": "tests/e2e/test_hooks_guarda_shell.py::test_instalar_sobre_bloco_antigo_o_substitui_sem_duplicar_e_status_acusa",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "3bd7730946b2dbcc1e7412acbfb3bc5d",
     "confidence": 1.0,
     "document_id": "c59d5f2e9625c70fc1ea629e26d5481c",
@@ -1120,6 +1461,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "ab114c3a41cd6eac4ddc234a1ec5e136",
+    "confidence": 1.0,
+    "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
+    "id": "9166287c14b689c3e237021f9594e284",
+    "name": "_slim_schema",
+    "qualified_name": "src/ragx/mcp/server.py::_slim_schema",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "56ac5996ba7babbe6977e766b634b643",
@@ -1133,7 +1485,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "731100934e675c88335185e755762ccb",
+    "chunk_id": "7512603062f77a1e6f0f09b319354265",
     "confidence": 1.0,
     "document_id": "7a150d1b0f0f80b583916bd159598f81",
     "id": "92760f4ca3393d61c3bbe22792c83b7a",
@@ -1177,6 +1529,28 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "c0dcbdab409273fdc7ab0e9c5673c2c7",
+    "id": "98b20ddc5067355a99aa832bcddce184",
+    "name": "snapshot-gate.ts",
+    "qualified_name": "src/app/electron/data/snapshot-gate.ts",
+    "source": "structural",
+    "summary": "import type { Snapshot } from '../../src/types/ragx-bridge'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "71a19bcccd779c1eab7d906267107e82",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "9ce98b7c47348a0fc2c263ef42dd350d",
+    "name": "cited_paths",
+    "qualified_name": "src/ragx/search/ab.py::cited_paths",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "47f040a9c95f8bff10181f196b2d07a0",
     "confidence": 1.0,
     "document_id": "9163d6eeeadb24c6f4a959ed9cdc8063",
@@ -1199,12 +1573,23 @@
     "type": "file"
   },
   {
-    "chunk_id": "34d4ebb857853824e5c2f089a53d8dd5",
+    "chunk_id": "d81d1c07fa99c9cbcc63ba60259b52a1",
     "confidence": 1.0,
     "document_id": "20372e90447466afb2e560dec9ef2010",
     "id": "a235c8ac312a2ec7f150bc454b20c0ed",
     "name": "reset_embedder_cache",
     "qualified_name": "src/ragx/embeddings/__init__.py::reset_embedder_cache",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "2332ce1b9cb16f83ed27219e7f689ed6",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "a2d9ac6c87f71e071be93bb39f4b13b1",
+    "name": "process_batch",
+    "qualified_name": "src/ragx/indexing/parallel.py::process_batch",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1232,7 +1617,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "e50999ee4387037a64e529f3fca78d2f",
+    "chunk_id": "dc894db4abbe578d4d8a1cd792328200",
     "confidence": 1.0,
     "document_id": "f368f2fa4735e9f9a421a02a19566240",
     "id": "a5f52b2c9ec374be4cd7e291101544e5",
@@ -1276,6 +1661,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "b0ec7ef179b872ffd325818ed2131a70",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "ab3975ec6c0bb78fb7278aa117a30225",
+    "name": "parse_hook_run",
+    "qualified_name": "src/ragx/hooklight.py::parse_hook_run",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "4eed5a63f4d5afdc3cc71170a0708c58",
     "confidence": 1.0,
     "document_id": "1fa2a1b1a089e44bb42055ed57e074f6",
@@ -1309,6 +1705,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "1add3d96e1d9cdeccc142b9296916af5",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "ae753e9c78e07e2cf2e2bb4f585fd276",
+    "name": "WorkerError",
+    "qualified_name": "src/ragx/indexing/parallel.py::WorkerError",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
+    "chunk_id": "53a5104d98d05729868ec2c8e380d926",
+    "confidence": 1.0,
+    "document_id": "957280ba9f49e1f9aee96e2eeb397bdb",
+    "id": "b06b34aca3255a08fdaabb05bb188c21",
+    "name": "no_answer_fp_rate",
+    "qualified_name": "src/ragx/search/evaluation.py::ModeMetrics.no_answer_fp_rate",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "d928cae2740d0b690b5565b1e31f8daf",
@@ -1331,6 +1749,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "05221ceb3974e77378ddbdd8af3b069b",
+    "confidence": 1.0,
+    "document_id": "992e360eb49883748047effbfda22510",
+    "id": "b2f9db2c868fdcc30b03c587d05dac03",
+    "name": "test_context_query_stdin_exclusivo_com_o_argumento",
+    "qualified_name": "tests/e2e/test_cli_fase0.py::test_context_query_stdin_exclusivo_com_o_argumento",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "c5019f92267a9655ff8975cf06c83510",
     "confidence": 1.0,
     "document_id": "5a8e0dc676714163c55ccce677517219",
@@ -1348,6 +1777,17 @@
     "id": "b6a1b58cd28a74c606f4f99addc9b3cf",
     "name": "watch#part-2",
     "qualified_name": "src/ragx/cli/commands/watch_cmd.py::watch#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "80a59849c6afb4472b0af936b2aa4e49",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "b7451a1c6e14589819a6d94a43ec0925",
+    "name": "quartiles",
+    "qualified_name": "src/ragx/search/ab.py::quartiles",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1395,6 +1835,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "2cbdd68fff88cc00accd39cde439fa2d",
+    "id": "bc63440c99e364530f5a4125578ecd9d",
+    "name": "icons.ts",
+    "qualified_name": "src/app/src/components/ui/icons.ts",
+    "source": "structural",
+    "summary": "/** Formas dos ícones do painel (RAGX-0179), em grade 24x24, para traço (`stroke`) sem preenchimento. Fica em `.ts` por",
+    "type": "file"
   },
   {
     "chunk_id": "92888fa63eab24c1b93b2889f8edc52c",
@@ -1474,7 +1925,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "ce68fdfb2588694751b5614a709b9b0a",
+    "chunk_id": "5804ee5a3b5629a69a7d8d47953ca662",
     "confidence": 1.0,
     "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
     "id": "c5be66ac8905bd403f44b3e35efe3379",
@@ -1507,12 +1958,34 @@
     "type": "file"
   },
   {
+    "chunk_id": "bdbc013decfb51710581965ddae59355",
+    "confidence": 1.0,
+    "document_id": "44e1f907cd4bd2cfb26962d4a1f46935",
+    "id": "c72d199c61bb8025cf1bde7d3de83caf",
+    "name": "SessionLedger",
+    "qualified_name": "src/ragx/context/session.py::SessionLedger",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "8fcc53af6359247d659dd765eeaf513c",
     "confidence": 1.0,
     "document_id": "f3e4546b2d84bb7c5a7b5faa8acef79b",
     "id": "c995943cb9340226889f6d37924480d3",
     "name": "test_arquivo_alterado_sem_commit_conta_so_se_mais_novo",
     "qualified_name": "tests/integration/test_freshness.py::test_arquivo_alterado_sem_commit_conta_so_se_mais_novo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "0774cdccb6185d040aa22e831b637e68",
+    "confidence": 1.0,
+    "document_id": "b9eb92af108c24152082433eb89edbad",
+    "id": "c9aefb9c941c6d66fac2e1407508b231",
+    "name": "repo_map",
+    "qualified_name": "src/ragx/graph/rank.py::repo_map",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1559,6 +2032,17 @@
     "qualified_name": "src/app/src/route.ts",
     "source": "structural",
     "summary": "/** Página que o painel mostra. Estado em memória: não há URL nem histórico. */",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "d77f06bf5d58a22a401528f3c872bc7d",
+    "id": "cf2d4ecc4b6f512dbbfb48598827d7c2",
+    "name": "telemetry-tail.test.ts",
+    "qualified_name": "src/app/electron/data/__tests__/telemetry-tail.test.ts",
+    "source": "structural",
+    "summary": "import fs from 'node:fs'",
     "type": "file"
   },
   {
@@ -1639,6 +2123,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "897b8ea1dc0d3afe7883910272b8eaf5",
+    "confidence": 1.0,
+    "document_id": "7a150d1b0f0f80b583916bd159598f81",
+    "id": "d5960a5c8b221bb30370e6cb7bf6c22e",
+    "name": "_atualizar_grafo",
+    "qualified_name": "src/ragx/watch/monitor.py::_atualizar_grafo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "4ead83e09732d4f1bcf0b04607253e06",
     "confidence": 1.0,
     "document_id": "4b477ae2dcbd1086c4de6d9e68d20f73",
@@ -1669,6 +2164,17 @@
     "qualified_name": "src/app/src/__tests__/format.test.ts",
     "source": "structural",
     "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "c166a3f986262b2df6578d5d6bead121",
+    "id": "d6cadb7c3c1196de106f7a3a76e94f5f",
+    "name": "radiogroup-keyboard.test.tsx",
+    "qualified_name": "src/app/src/__tests__/radiogroup-keyboard.test.tsx",
+    "source": "structural",
+    "summary": "import { afterEach, describe, expect, it, vi } from 'vitest'",
     "type": "file"
   },
   {
@@ -1727,7 +2233,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "6753a8a1a010e77b88454831773d643f",
+    "chunk_id": "ca3b4b2f152ea79bfb5fe889cb61f583",
     "confidence": 1.0,
     "document_id": "b4cd3410b52e596a9c55e0aa62cf2f48",
     "id": "df36fbbc5338a0505f314b8cb085ed22",
@@ -1782,6 +2288,28 @@
     "type": "file"
   },
   {
+    "chunk_id": "a75886af8c98592e7c6d0165b37dd515",
+    "confidence": 1.0,
+    "document_id": "db6d3f3e5c2da1a7de936b8a1eba65a2",
+    "id": "e68db49c6d1f088b189da7490e40d27b",
+    "name": "test_caminho_longo_custa_mais_orcamento_que_caminho_curto",
+    "qualified_name": "tests/unit/test_context_units.py::test_caminho_longo_custa_mais_orcamento_que_caminho_curto",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "bc23996935805fc8d8373372c880193c",
+    "id": "e6cbebfce2efce1ae87d5c2563a7f651",
+    "name": "window-activity.ts",
+    "qualified_name": "src/app/electron/system/window-activity.ts",
+    "source": "structural",
+    "summary": "/**",
+    "type": "file"
+  },
+  {
     "chunk_id": "15a6d537db252613bae6e9721e304c58",
     "confidence": 1.0,
     "document_id": "b9df1c32a3bc92c3edf03a32a0bfcde7",
@@ -1791,6 +2319,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "c3b8dd2363e4fbc5adcbc3d94c87bb72",
+    "confidence": 1.0,
+    "document_id": "df629e7bff4c9c1a7e9ebe0f4481f64a",
+    "id": "e718428c9066b90beff56d16934ba66b",
+    "name": "__init__",
+    "qualified_name": "tests/unit/test_session_ledger.py::Relogio.__init__",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": "9536ce3c0a8ca328fce6f30b810cfa94",
@@ -1815,6 +2354,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "d5de8603ac56fa6684dc0569e18a491c",
+    "confidence": 1.0,
+    "document_id": "eb3c24c29a8ea6da59488d35ee415e4a",
+    "id": "e959bf9cbcf66d42409a55f0d93465d3",
+    "name": "Candidate",
+    "qualified_name": "src/ragx/walk.py::Candidate",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "6b54f54ec63b5e6c680880e49fcf12a9",
     "confidence": 1.0,
     "document_id": "134d2c565087ca87ad5c34f3e0193dfa",
@@ -1824,6 +2374,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "33507ee71dbdc82b0e560a662bd8b5d1",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "eab7979cfab45f73267abaa3d0d48152",
+    "name": "ParallelStats",
+    "qualified_name": "src/ragx/indexing/parallel.py::ParallelStats",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
   },
   {
     "chunk_id": "4f5ed6b81ea745553d968aaae05a488b",
@@ -1848,6 +2409,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "57566a2f0c51b9d01c5db92268ff5442",
+    "confidence": 1.0,
+    "document_id": "add9e69383ed03a7acacbe1f82b1451a",
+    "id": "efb316dc6f6dffc5e93df405c44ceddc",
+    "name": "test_models_dir_vazio_na_configuracao_volta_para_o_cache_do_projeto",
+    "qualified_name": "tests/unit/test_embeddings.py::test_models_dir_vazio_na_configuracao_volta_para_o_cache_do_projeto",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "51419938b6c40bce815d2c5408cae0f9",
     "confidence": 1.0,
     "document_id": "89ed454114d0872b1f47e4be4810fc35",
@@ -1865,6 +2437,17 @@
     "id": "f482deecea4923a7e1df13e027664fec",
     "name": "_staged_files",
     "qualified_name": "src/ragx/cli/commands/security.py::_staged_files",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3c70f0c76797e174f219d68d5421ae61",
+    "confidence": 1.0,
+    "document_id": "4ca30ce71e191d84d95b48797a97eb61",
+    "id": "f4b8008ca400e399a0ac0c51016b35ac",
+    "name": "_tiktoken",
+    "qualified_name": "scripts/medir_fio.py::_tiktoken",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1903,6 +2486,39 @@
     "type": "function"
   },
   {
+    "chunk_id": "0ac95433ba9829007ef69333c05e2e5f",
+    "confidence": 1.0,
+    "document_id": "85088123a711a4cce288972ef0f7d1b4",
+    "id": "f6dfe5cca606d1b7342a071542daed10",
+    "name": "expand#part-1",
+    "qualified_name": "src/ragx/graph/traversal.py::expand#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "0c2651da5af900563bb6b162f52c222e",
+    "confidence": 1.0,
+    "document_id": "630b85465db025ea96c2539f254fd0e1",
+    "id": "f861325c4d95bcfe66154471a2245140",
+    "name": "indexar",
+    "qualified_name": "scripts/medir_worktree.py::indexar",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "f4c1b05b8000a97e1703752982aed68e",
+    "confidence": 1.0,
+    "document_id": "31a72e954520324f60655c42f8111189",
+    "id": "f9fd3a9cd6eb9cec17cab38f7569c19b",
+    "name": "test_excecao_enum_dto_e_privado_nao_sao_servico",
+    "qualified_name": "tests/integration/test_dictionary_niveis.py::test_excecao_enum_dto_e_privado_nao_sao_servico",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "2913d52eabdda7d53cb90471c720c66f",
@@ -1931,6 +2547,17 @@
     "id": "fb6cdb1c63933a364c27c923c95d168a",
     "name": "_write_embeddings#part-2",
     "qualified_name": "src/ragx/sync/serialize.py::_write_embeddings#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "c27f6e5bf5e506460910ddd5a57f6405",
+    "confidence": 1.0,
+    "document_id": "376195e833198f61a1adcaad9be31b32",
+    "id": "fc39e5bcd1b31eff0f402cf612a037a7",
+    "name": "_sem_veredito",
+    "qualified_name": "src/ragx/indexing/pipeline.py::_sem_veredito",
     "source": "structural",
     "summary": null,
     "type": "function"

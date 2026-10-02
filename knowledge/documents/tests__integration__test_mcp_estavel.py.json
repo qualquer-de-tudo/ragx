@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "4b957d9069204c3e98d875f5671061f6c65b987ed16d6053de37e8e6412f926f",
+  "doc_kind": "code",
+  "id": "b6b3ec49cac190913b50d8adbfd395f4",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/integration/test_mcp_estavel.py",
+  "size_bytes": 5537,
+  "title": "A lista de ferramentas e as `instructions` do MCP são estáveis, curtas e legíveis (RAGX-0158).\n\nO Claude Code trunca as `instructions` em ~2 KB, descobre ferramentas por Tool Search (que lê nome e\ndescrição) e perde o cache de prompt quando a lista muda. Por isso: teto de bytes, descrição curta com\nverbo no início, e um arquivo-ouro que obriga a regravar DE PROPÓSITO quando uma descrição ou um schema\nmuda.\n\n    RAGX_REGRAVAR_OURO=1 uv run pytest tests/integration/test_mcp_estavel.py"
+}

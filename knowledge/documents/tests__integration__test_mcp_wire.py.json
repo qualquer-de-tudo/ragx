@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "5b7d1fd978158d72e5cfb0048ac1572db1a84c0601b93de5eb2884cb6c0f67e6",
+  "doc_kind": "code",
+  "id": "5e854ddcd982f2007031f6709280e069",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "tests/integration/test_mcp_wire.py",
+  "size_bytes": 7183,
+  "title": "O que o cliente MCP recebe no fio: compacto, sem repetição, uma vez só.\n\nToda resposta saía com `indent=2` (o SDK reindentava o `dict`), repetida em\n`structuredContent`, e `tools/list` carregava um `outputSchema` que não serve ao\nmodelo. O custo é do agente, em tokens, a cada chamada.\n\nVer `task/fase-20-economia-de-tokens/RAGX-0155-*.md`."
+}

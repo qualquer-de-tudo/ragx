@@ -11,23 +11,23 @@
     "type": "file"
   },
   {
-    "chunk_id": "d4d89bba493fcc0f0b225b755ee66e5c",
-    "confidence": 1.0,
-    "document_id": "941f6b614648b28ab6a935c0edef8f71",
-    "id": "0592f54d85eaf6d12454e899594ea7d7",
-    "name": "test_endpoints_e_tabelas",
-    "qualified_name": "tests/integration/test_dictionary.py::test_endpoints_e_tabelas",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "17b618afc7637e3be864213874e75565",
     "confidence": 1.0,
     "document_id": "5b53b075205767455159bbb7397f0545",
     "id": "05a2046d31deb55db13eb3ae0ccf1579",
     "name": "test_watch_sem_indice_orienta",
     "qualified_name": "tests/e2e/test_cli_fase12.py::test_watch_sem_indice_orienta",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "6c117442f5aae58dfdb8c55acc81f431",
+    "confidence": 1.0,
+    "document_id": "325c68ea44f1afdee3122fbd17480fd0",
+    "id": "05e6a66d0edab55fb4bbcc20fda9af8b",
+    "name": "test_acentos_e_emoji_nao_sao_partidos",
+    "qualified_name": "tests/unit/test_snippet.py::test_acentos_e_emoji_nao_sao_partidos",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -66,7 +66,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "ddcdd9d635e8629b96ca7324813754a1",
+    "chunk_id": "c94fea185673745763e48f9e7aacb9d5",
     "confidence": 1.0,
     "document_id": "376195e833198f61a1adcaad9be31b32",
     "id": "07a7cdad91d3ccc49113aae786082b61",
@@ -88,12 +88,12 @@
     "type": "function"
   },
   {
-    "chunk_id": "5db8639971583513ac749ea2ca14f52a",
+    "chunk_id": "3f189dfdcb24b852e4089f81df374641",
     "confidence": 1.0,
-    "document_id": "941f6b614648b28ab6a935c0edef8f71",
-    "id": "0961e68dee1ab41a917db94bf42cd237",
-    "name": "test_load_devolve_o_que_foi_escrito",
-    "qualified_name": "tests/integration/test_dictionary.py::test_load_devolve_o_que_foi_escrito",
+    "document_id": "c1e5b2ce0282a82114e97ad9b8419cb3",
+    "id": "09cafc3d9c258f4fa6c0ca9fc8c76470",
+    "name": "test_assunto_com_segredo_e_descartado_e_contado",
+    "qualified_name": "tests/security/test_gold_secrets.py::test_assunto_com_segredo_e_descartado_e_contado",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -118,6 +118,28 @@
     "qualified_name": "src/app/electron/ollama/__tests__/environment.test.ts",
     "source": "structural",
     "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "317744a1b454f5b9355ccb11ddeb0bf2",
+    "confidence": 1.0,
+    "document_id": "5e854ddcd982f2007031f6709280e069",
+    "id": "0b4a9b7d3fb81764ff82a319ddb90683",
+    "name": "cfg",
+    "qualified_name": "tests/integration/test_mcp_wire.py::cfg",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "be383f52364218a4f6dfb21fc9867af8",
+    "id": "0e3dbc3d8aeffc90128b5e61fec4ff27",
+    "name": "spawn-counter.test.ts",
+    "qualified_name": "src/app/electron/system/__tests__/spawn-counter.test.ts",
+    "source": "structural",
+    "summary": "import { beforeEach, describe, expect, it } from 'vitest'",
     "type": "file"
   },
   {
@@ -176,6 +198,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "42a889078f58a6c163b7c172c6b1a17a",
+    "confidence": 1.0,
+    "document_id": "821e708bde7c2785b09d1229d5f73b65",
+    "id": "1b70932dce2f4ad13a576a66238b6f9d",
+    "name": "test_editar_corpo_nao_cai_no_completo",
+    "qualified_name": "tests/integration/test_graph_incremental.py::test_editar_corpo_nao_cai_no_completo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "af2569150eebc557a11cfe2218fade5b",
     "confidence": 1.0,
     "document_id": "b9df1c32a3bc92c3edf03a32a0bfcde7",
@@ -209,12 +242,34 @@
     "type": "file"
   },
   {
+    "chunk_id": "aa1820dc8f6cc599de877999f73f9020",
+    "confidence": 1.0,
+    "document_id": "376195e833198f61a1adcaad9be31b32",
+    "id": "1c185d9d9dd45e537786bd7f1dfd29d9",
+    "name": "_handle#part-3",
+    "qualified_name": "src/ragx/indexing/pipeline.py::_handle#part-3",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "87e86c5cfc812b59b0687dc2d82f767d",
     "confidence": 1.0,
     "document_id": "488f6811b561ca278ade7b4a5b5b2740",
     "id": "1c5a859d3203ad9aa20b9c653c54fcd4",
     "name": "test_peso_neutro_preserva_o_comportamento_antigo",
     "qualified_name": "tests/unit/test_tiers.py::test_peso_neutro_preserva_o_comportamento_antigo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "bae6ec2288307d68b63f97ed2207b307",
+    "confidence": 1.0,
+    "document_id": "8c4a3a031a303c2a960d89b69c67fd7b",
+    "id": "1c79dd3d307905f78a5c3a7f1f343144",
+    "name": "agent_path",
+    "qualified_name": "src/ragx/clients/claude_agent.py::agent_path",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -242,6 +297,39 @@
     "type": "function"
   },
   {
+    "chunk_id": "7e62d286137d62857f00166f96ca69ea",
+    "confidence": 1.0,
+    "document_id": "5532b7db8287cb63c11e614d9f714c34",
+    "id": "20a57c3dee05dc3e7cbb1f926cbbe64d",
+    "name": "shared_cache_root",
+    "qualified_name": "src/ragx/indexing/embed.py::shared_cache_root",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "4921a21dcd3c48584ceee430c5eb79ac",
+    "confidence": 1.0,
+    "document_id": "a48696ebeaf836a5dfb1ae0b9221a1eb",
+    "id": "212888bdd3204a9270caefd8b3bec02f",
+    "name": "_stub",
+    "qualified_name": "tests/e2e/test_hooks_guarda_shell.py::_stub",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "c75aef9216cbb8a0a7d926c96df05deb",
+    "confidence": 1.0,
+    "document_id": "45a07cce13209ddf82447f792e54dcfc",
+    "id": "22bbab7d14a8c972c8fea1bab0cd00e5",
+    "name": "_hf_dir",
+    "qualified_name": "src/ragx/search/bench.py::_hf_dir",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "2a555c0dc56a1040f5cf87c61092650a",
     "confidence": 1.0,
     "document_id": "99ef45b2019b3060dbf62efdca75f31e",
@@ -259,6 +347,17 @@
     "id": "263b04bd57fbff1309bc34e054aeb9d3",
     "name": "get_api_key",
     "qualified_name": "tests/fixtures/secret_project/src/app.py::get_api_key",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "9cc108358fd0577a8628323fd0b38b30",
+    "confidence": 1.0,
+    "document_id": "31a72e954520324f60655c42f8111189",
+    "id": "2645ac8dc3c95fc9deadd8aea8348ed3",
+    "name": "proj_mapa",
+    "qualified_name": "tests/integration/test_dictionary_niveis.py::proj_mapa",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -308,6 +407,28 @@
     "type": "file"
   },
   {
+    "chunk_id": "ff10044b03dcc10c95b88eb3d1b6ad1c",
+    "confidence": 1.0,
+    "document_id": "9541c418d371c9f2449f1bac3c3ad13c",
+    "id": "2ad53f6d4317efa4e968fd4bb3156022",
+    "name": "test_pipeline_paralelo_so_le_arquivo_por_read_candidate",
+    "qualified_name": "tests/security/test_architecture.py::test_pipeline_paralelo_so_le_arquivo_por_read_candidate",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "4ca30ce71e191d84d95b48797a97eb61",
+    "id": "2b0cbdcd1a5183268d80a5ebb5464b4c",
+    "name": "medir_fio.py",
+    "qualified_name": "scripts/medir_fio.py",
+    "source": "structural",
+    "summary": "Mede o que o cliente MCP recebe de verdade: o texto da resposta de uma ferramenta.\n\nO que conta para o orçamento do agente não é o `estimated_tokens` que o servidor\ndeclara, é o texto que chega ao contexto. Este script sobe o servidor em\nprocesso, chama a ferramenta pelo mesmo caminho do cliente (`call_tool`) e conta\nos caracteres e os tokens do que sairia no fio.\n\n    uv run python scripts/medir_fio.py --tool build_context --tokens 3000\n    uv run python scripts/medir_fio.py --tool search_hybrid --query \"gate de segurança\"\n    uv run python scripts/medir_fio.py --tool tools_list          # custo fixo das ferramentas\n    uv run python scripts/medir_fio.py --tool get_dictionary --arg section=services\n\nContadores: o do RAGX (`count_tokens`, que já usa `tiktoken` quando instalado), o\n`tiktoken` direto (cl100k) e `chars/4`, que é o que a auditoria usou nas ferramentas. Nenhum dos dois é o tokenizador do Claude: servem para\ncomparar antes e depois, não como verdade absoluta.\n\nUsado pelas tarefas RAGX-0154, 0155, 0157 e 0165.",
+    "type": "file"
+  },
+  {
     "chunk_id": "21f62cf8fc4d44e380e93e902233195c",
     "confidence": 1.0,
     "document_id": "974afbee75cfc59961546eff615cdaa8",
@@ -325,6 +446,17 @@
     "id": "2d6d3e5dfbd3b62f0ef6616f608de4ff",
     "name": "search#part-2",
     "qualified_name": "src/ragx/search/service.py::search#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "ca7890640fd157b5a74c6534e1306974",
+    "confidence": 1.0,
+    "document_id": "b051f51bda5aa4a66b4f580f31c83c2b",
+    "id": "2e16c3ad221539784299cdc3bd5ad6f6",
+    "name": "test_leitura_que_nunca_funciona_devolve_o_arquivo_a_fila_em_vez_de_apagar",
+    "qualified_name": "tests/unit/test_touchq.py::test_leitura_que_nunca_funciona_devolve_o_arquivo_a_fila_em_vez_de_apagar",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -352,6 +484,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "550975f3cff6b7a9b476f07b5e2f5812",
+    "confidence": 1.0,
+    "document_id": "2eb19be6531eac9d56b90fc49a3b3b03",
+    "id": "330119ad391fd337798233b2eca884f2",
+    "name": "_linhas",
+    "qualified_name": "src/ragx/indexing/touchq.py::_linhas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "0aa6a6d6846350177cc527ab0d442051",
@@ -374,7 +517,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "678b390b5b55615553f1a45243b52136",
+    "chunk_id": "b057b332443b687e49876e87b823fde8",
+    "confidence": 1.0,
+    "document_id": "1d6acb648da66917a1b1e4f5128c7955",
+    "id": "386c593d61d33b6b20d585dd1054408e",
+    "name": "test_k_maior_que_o_conjunto_e_query_vec_ausente",
+    "qualified_name": "tests/unit/test_mmr_vetorizado.py::test_k_maior_que_o_conjunto_e_query_vec_ausente",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "9cc300b2a0c53449892ec2ee63ba3161",
     "confidence": 1.0,
     "document_id": "b17db1655f03e599bccaf44cd9320979",
     "id": "3d8a739dfee98f75a94a3e30b4e05e57",
@@ -396,12 +550,56 @@
     "type": "function"
   },
   {
+    "chunk_id": "5626c343de76b0d92d57a5d431f60d04",
+    "confidence": 1.0,
+    "document_id": "df2560aa22d616b7590f1e76ad9bfcd2",
+    "id": "3f2f537dc2312afce332e0570f4c130d",
+    "name": "test_passagem_do_cache_antigo_importa_e_conta",
+    "qualified_name": "tests/unit/test_embedding_cache.py::test_passagem_do_cache_antigo_importa_e_conta",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "8f88fe54be3721a40bcbd13930824d92",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "402d1afd3300823896421184264f8fab",
+    "name": "test_o_stdin_que_nunca_fecha_nao_trava_o_hook",
+    "qualified_name": "tests/unit/test_hooklight.py::test_o_stdin_que_nunca_fecha_nao_trava_o_hook",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "2dd64c84c41b17178e93ff7358c4921c",
     "confidence": 1.0,
     "document_id": "e5559af3184736f5ffb93194dea28c58",
     "id": "4181caddbed6caaaed2481ebb531025c",
     "name": "_resolve_module",
     "qualified_name": "src/ragx/graph/extractors/reference.py::_resolve_module",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "0a27c294564a26ee04ad649febad2e30",
+    "confidence": 1.0,
+    "document_id": "d7b9698f7ddbebcb6ca2a0412db0cbf7",
+    "id": "442425cd206111fd43ad10558e494b95",
+    "name": "_git",
+    "qualified_name": "tests/integration/test_worktree_cache.py::_git",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d697a725588ee2788ef18a78f722ca8e",
+    "confidence": 1.0,
+    "document_id": "c049968ce4f280bc4ac936d9ebd0330c",
+    "id": "44b6c3fd03fe0f2a8b240c5c026708ac",
+    "name": "test_json_existente_invalido_e_regravado",
+    "qualified_name": "tests/unit/test_stable_write.py::test_json_existente_invalido_e_regravado",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -440,7 +638,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "964304541d9021aa86bd7e85606228ed",
+    "chunk_id": "cd3d17990cb492e3c9db6397a589005d",
     "confidence": 1.0,
     "document_id": "c89a310054cdd2282225c43049c146cd",
     "id": "47bdf8dd34c9524d5b74885e49608440",
@@ -457,6 +655,28 @@
     "id": "48d117fde8335ee7c50df04f0c52f95c",
     "name": "proj",
     "qualified_name": "tests/integration/test_maintenance.py::proj",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "a84a1329b63515e31926cb3df803841d",
+    "confidence": 1.0,
+    "document_id": "ff6a06f75f3f5502b90d73cacf6b59c3",
+    "id": "4bd28dcdd9373dc2c093200ef63c88e2",
+    "name": "fracao_sem_mudanca_de_simbolos",
+    "qualified_name": "scripts/medir_grafo_incremental.py::fracao_sem_mudanca_de_simbolos",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "ba7994c7c71030788375e6fbc6832398",
+    "confidence": 1.0,
+    "document_id": "e12fe5ea5fc274a0bdcda93982c40705",
+    "id": "4de80acd5d91f2313838bb3af73899b8",
+    "name": "status",
+    "qualified_name": "src/ragx/cli/commands/worktree_cmd.py::status",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -495,6 +715,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "47d26c702b832d75d75e1743dd345cb0",
+    "confidence": 1.0,
+    "document_id": "ed24ac8c859c3bd15104e1f3e30ca52d",
+    "id": "5116dc9d07a00784904d83562aa09fbb",
+    "name": "test_o_relatorio_nao_contem_texto_de_resposta",
+    "qualified_name": "tests/e2e/test_cli_ab.py::test_o_relatorio_nao_contem_texto_de_resposta",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "91819b2f80d1d89b6d9c30e5e6fac88f",
     "confidence": 1.0,
     "document_id": "7d3ee6e4b6e3eeca859d79612ee62a9f",
@@ -515,6 +746,28 @@
     "source": "structural",
     "summary": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'",
     "type": "file"
+  },
+  {
+    "chunk_id": "38b204a90f33743f25021329ddd3702a",
+    "confidence": 1.0,
+    "document_id": "f73ccefb94dd00a034ff0047f439043e",
+    "id": "52a45b4d7c1dd8a774ed5d775f91a49d",
+    "name": "_in",
+    "qualified_name": "src/ragx/graph/extractors/structural.py::_in",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "6a966ba2d35cab53130df2907390dce8",
+    "confidence": 1.0,
+    "document_id": "7a150d1b0f0f80b583916bd159598f81",
+    "id": "567f4eed950ad67e720255e0c46c8f83",
+    "name": "watch#part-2",
+    "qualified_name": "src/ragx/watch/monitor.py::watch#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -561,6 +814,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "e3d9608d89a6228fff62432064796758",
+    "confidence": 1.0,
+    "document_id": "992e360eb49883748047effbfda22510",
+    "id": "60ee176d1d7e6fbddf1bd41196c70b97",
+    "name": "_json_out",
+    "qualified_name": "tests/e2e/test_cli_fase0.py::_json_out",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "b098b26e91cd039797cd433610786eca",
+    "id": "610b047df1779f14ef7430914e716dff",
+    "name": "pausable-poller.test.ts",
+    "qualified_name": "src/app/electron/system/__tests__/pausable-poller.test.ts",
+    "source": "structural",
+    "summary": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
+  },
+  {
     "chunk_id": "3c09d2ffccdbca49de6bf26b873c63a6",
     "confidence": 1.0,
     "document_id": "bb085c2b74ba048c1d9178a097305d38",
@@ -592,6 +867,17 @@
     "source": "structural",
     "summary": "RAGX-0175 — Só re-renderiza o que mudou",
     "type": "file"
+  },
+  {
+    "chunk_id": "a4683e0b3918e4161b082585b5a3a563",
+    "confidence": 1.0,
+    "document_id": "ed24ac8c859c3bd15104e1f3e30ca52d",
+    "id": "6518e77d24e5ae13c69ff61efa76dc05",
+    "name": "test_simulate_roda_de_ponta_a_ponta_e_nao_apresenta_economia_como_real",
+    "qualified_name": "tests/e2e/test_cli_ab.py::test_simulate_roda_de_ponta_a_ponta_e_nao_apresenta_economia_como_real",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -704,6 +990,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "a0348cb29887fbacffbbe6935e30385b",
+    "confidence": 1.0,
+    "document_id": "a9fba6a4821f14aa026d2ff908f9d864",
+    "id": "6f1e2fbdca7a39587d483484f1ce549f",
+    "name": "test_proc_token_do_proprio_processo_e_estavel_e_pid_invalido_nao_tem",
+    "qualified_name": "tests/unit/test_index_lock.py::test_proc_token_do_proprio_processo_e_estavel_e_pid_invalido_nao_tem",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "53b59eb56e4714c5e6c98dbbd2872bf7",
     "confidence": 1.0,
     "document_id": "f19bf83cddf9d0c2a2e7e23a444ba08d",
@@ -748,6 +1045,28 @@
     "type": "class"
   },
   {
+    "chunk_id": "f1b4d715a7f6dec749d21492106f8a67",
+    "confidence": 1.0,
+    "document_id": "e2b5132f8a0288ed8eb0e5935b3748f1",
+    "id": "70c2b7bd1782311f0de41ae13ee9eddb",
+    "name": "test_sementes_ficam_perto_de_seed_top_k_e_a_busca_anda",
+    "qualified_name": "tests/integration/test_graph_expansao.py::test_sementes_ficam_perto_de_seed_top_k_e_a_busca_anda",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "e3e7af6733200f54bd183a91a2c1b069",
+    "id": "712adccdb497a82595f1396f39d23936",
+    "name": "medir_indice_inicial.py",
+    "qualified_name": "scripts/medir_indice_inicial.py",
+    "source": "structural",
+    "summary": "Mede o primeiro índice de um projeto sintético, por fase do `embed_pending` (RAGX-0146).\n\n    uv run python scripts/medir_indice_inicial.py --arquivos 400 --provider hashing\n\nGera `--arquivos` arquivos Python (várias funções cada, ~9 chunks por arquivo), roda `ragx index` com o provider\n`hashing` (isola o cache do modelo) e imprime o tempo total e o de cada fase do embedding: leitura do cache (`get`\nou `get_many`), montagem do prefixo (`_prefixed`), `embed_documents`, escrita do cache (`put` ou `put_many`) e\n`store_vectors`. Funciona nas duas formas do cache (por arquivo e SQLite em lote), medindo o que existir.",
+    "type": "file"
+  },
+  {
     "chunk_id": "21ed0ef6ca958fb3d491ad7f6d95b3a3",
     "confidence": 1.0,
     "document_id": "8f0377bb2911e271039e5eb7922e27d3",
@@ -770,7 +1089,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "c026d5610613b6647f5749c461f1fd26",
+    "chunk_id": "698fc69c0bab5629aa14cb755eb77bfe",
     "confidence": 1.0,
     "document_id": "5a8e0dc676714163c55ccce677517219",
     "id": "71dd62ddb057ec123bd956bdfd0d8d4e",
@@ -781,7 +1100,29 @@
     "type": "function"
   },
   {
-    "chunk_id": "0a4bc87298caf9dc4fbf3c4ca49d6dfe",
+    "chunk_id": "e3ea91992279597b389098c485c12d6e",
+    "confidence": 1.0,
+    "document_id": "b6b3ec49cac190913b50d8adbfd395f4",
+    "id": "7211a1dd5bb5d4b940371a79a3322860",
+    "name": "test_list_tools_e_identico_em_duas_chamadas_e_ao_arquivo_ouro",
+    "qualified_name": "tests/integration/test_mcp_estavel.py::test_list_tools_e_identico_em_duas_chamadas_e_ao_arquivo_ouro",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "987bcac5abf1fcfd84cbb10cf84dcaed",
+    "confidence": 1.0,
+    "document_id": "465a11ad18a6c696acb0542daaf3c934",
+    "id": "7269190defebe66594f8cec71cf1d925",
+    "name": "test_common_dir_e_o_mesmo_no_principal_e_no_worktree",
+    "qualified_name": "tests/unit/test_gitinfo.py::test_common_dir_e_o_mesmo_no_principal_e_no_worktree",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "448434871f2261c09b30fa0cf0e95759",
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "72b111ed270f61393dd5d79415a59da2",
@@ -869,17 +1210,6 @@
     "type": "function"
   },
   {
-    "chunk_id": "ccb94e3d1458d485877291fe33332be5",
-    "confidence": 1.0,
-    "document_id": "7a150d1b0f0f80b583916bd159598f81",
-    "id": "79c812ad97dc140aef04325304c25dcb",
-    "name": "watch",
-    "qualified_name": "src/ragx/watch/monitor.py::watch",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "633208fab86e2a25445a6d753d936af4",
     "confidence": 1.0,
     "document_id": "4cb081e8a2d34d7f91e700356cb627f5",
@@ -902,7 +1232,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "f988790743a6283231665132631a32dc",
+    "chunk_id": "2f31e0f45a93d8a6a9c5d9ff71856c1b",
     "confidence": 1.0,
     "document_id": "9fbc9068d62421779d14859093f08d43",
     "id": "7e2e6c3d955a85526e04c2632dface98",
@@ -924,12 +1254,12 @@
     "type": "file"
   },
   {
-    "chunk_id": "8a48bcaca9c8690031d9bdb224b9c766",
+    "chunk_id": "85273c08086cf5eb639b262817e87308",
     "confidence": 1.0,
-    "document_id": "941f6b614648b28ab6a935c0edef8f71",
-    "id": "814ee94d9d5a2e7b4c7db189d442c7d1",
-    "name": "proj",
-    "qualified_name": "tests/integration/test_dictionary.py::proj",
+    "document_id": "4d0a10319e4b1b34794369cd1fa028cb",
+    "id": "8196fded5e5c2608bc925f173e107b54",
+    "name": "test_estimated_tokens_conta_o_que_sai",
+    "qualified_name": "tests/integration/test_context.py::test_estimated_tokens_conta_o_que_sai",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -946,6 +1276,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "34be4927b6917ac423da5479ebbbd533",
+    "id": "86aa696de2f9992fca09ad0f7ae74e0e",
+    "name": "baseline.py",
+    "qualified_name": "src/ragx/context/baseline.py",
+    "source": "structural",
+    "summary": "O \"sem RAGX\" do gráfico de economia: tamanho dos arquivos de onde o contexto saiu.\n\nSoma `chunks.token_count` dos documentos-fonte, lido do índice (nunca do disco),\nna MESMA unidade do que o `build_context` entrega (o contador de tokens). Antes\nera `size_bytes // 4`: em markdown erra por ~30% (docs/09-mcp.md: 4.265 contra\n5.993 tokens reais), e a economia aparecia em duas unidades diferentes.\n\nIsto é um LIMITE SUPERIOR (\"arquivos inteiros\"), não a economia real: um agente com\nGrep não leria os arquivos todos. Quem pode afirmar a economia real é o A/B da 0162.\nMora aqui, e não em `ragx.mcp`, porque é lógica, e o servidor é casca fina (ADR-0006).",
+    "type": "file"
+  },
+  {
     "chunk_id": "0da701e80018e6a56ee89dbfd5602bd0",
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
@@ -955,6 +1296,28 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "369dc14cfa40399c3c7efba7566592f2",
+    "confidence": 1.0,
+    "document_id": "b07309c464acfe13c2c56c24fd1ed642",
+    "id": "88b72eddb5d7eb48405fdb7f6ce0ab1a",
+    "name": "test_refresh_em_modo_leitura_responde_write_disabled",
+    "qualified_name": "tests/unit/test_mcp_perfis.py::test_refresh_em_modo_leitura_responde_write_disabled",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "bb31dd8cf3ce21418eec9d49abc42096",
+    "id": "89bb113dc86266950bbf8d0cf3e5ea34",
+    "name": "usePricing.ts",
+    "qualified_name": "src/app/src/hooks/usePricing.ts",
+    "source": "structural",
+    "summary": "import { useCallback, useEffect, useSyncExternalStore } from 'react'",
+    "type": "file"
   },
   {
     "chunk_id": "4bb70a9b1ea673f663f2ed02a0e4d412",
@@ -968,7 +1331,18 @@
     "type": "function"
   },
   {
-    "chunk_id": "524d967886ddd9bab353950e35400a37",
+    "chunk_id": "767173cee6f3d43c59f606a06d73962d",
+    "confidence": 1.0,
+    "document_id": "c0b52290cc862826d4fd55c8cd8a9fc5",
+    "id": "8b7676bdfd68caa66b57d0e5a47ee12a",
+    "name": "_tokens",
+    "qualified_name": "tests/integration/test_session_dedupe.py::_tokens",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "49f7921363c726fb6a1c11d0c1010cdf",
     "confidence": 1.0,
     "document_id": "a93822cb3ab1d35b127ecbb3f121a716",
     "id": "8b9f1bad75cb2118f4b94bddcae740a9",
@@ -1023,6 +1397,17 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "fd888066d081b04187c93988b347c161",
+    "id": "94a432bd9e6df02054e25dff848581e4",
+    "name": "medicao-runtime.md",
+    "qualified_name": "src/app/docs/medicao-runtime.md",
+    "source": "structural",
+    "summary": "Medição de consumo do painel",
+    "type": "file"
+  },
+  {
     "chunk_id": "724b9b43615f7874da55b43647280809",
     "confidence": 1.0,
     "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
@@ -1040,6 +1425,17 @@
     "id": "952412cd607b8054743450e16d16e255",
     "name": "_write",
     "qualified_name": "tests/unit/test_perf.py::_write",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "493b926a42a725be97eae4464f889254",
+    "confidence": 1.0,
+    "document_id": "add9e69383ed03a7acacbe1f82b1451a",
+    "id": "958cf4adec948c2d4ae842066b62e9f3",
+    "name": "test_models_dir_com_cache_legado_vazio_ou_ausente_usa_a_do_usuario",
+    "qualified_name": "tests/unit/test_embeddings.py::test_models_dir_com_cache_legado_vazio_ou_ausente_usa_a_do_usuario",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1078,15 +1474,15 @@
     "type": "file"
   },
   {
-    "chunk_id": "74964651506637db3b58cf42b461ac70",
+    "chunk_id": null,
     "confidence": 1.0,
-    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
-    "id": "9ae3e94db757359a8a894129e4ebe5b1",
-    "name": "_texto_projeto#part-2",
-    "qualified_name": "src/ragx/clients/claude_hint.py::_texto_projeto#part-2",
+    "document_id": "6add4672e364a154949b1904cfb6f1dc",
+    "id": "9906880dad41315cbd0b9664ca8b0f6d",
+    "name": "no-knowledge-db.test.ts",
+    "qualified_name": "src/app/electron/__tests__/no-knowledge-db.test.ts",
     "source": "structural",
-    "summary": null,
-    "type": "function"
+    "summary": "import fs from 'node:fs'",
+    "type": "file"
   },
   {
     "chunk_id": "263af3969cf9d4f7f0cf2b9f5c47574e",
@@ -1100,6 +1496,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "325c68ea44f1afdee3122fbd17480fd0",
+    "id": "9c3acd9d21fe771836be8e1a0fca1fe6",
+    "name": "test_snippet.py",
+    "qualified_name": "tests/unit/test_snippet.py",
+    "source": "structural",
+    "summary": "`make_snippet`: o trecho curto que a busca `concise` devolve no lugar do conteúdo.",
+    "type": "file"
+  },
+  {
     "chunk_id": "eb42953a00a80a6f13c672d6385d2d33",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
@@ -1111,7 +1518,7 @@
     "type": "method"
   },
   {
-    "chunk_id": "2237d47caa525dc255bf7a3075485564",
+    "chunk_id": "35e4bef173c951084ffca3405736f036",
     "confidence": 1.0,
     "document_id": "20372e90447466afb2e560dec9ef2010",
     "id": "9d9c6f6d2fe9f1e7a7373b2077fea839",
@@ -1166,6 +1573,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "55abe13e1576f5be51c09faf6d35a90e",
+    "id": "9f78383dafab52d13d3c0e23c42cabee",
+    "name": "PreferencesPage.tsx",
+    "qualified_name": "src/app/src/pages/PreferencesPage.tsx",
+    "source": "structural",
+    "summary": "import { useEffect, useState } from 'react'",
+    "type": "file"
+  },
+  {
     "chunk_id": "e62076388420c65fe522c5ad17506fa2",
     "confidence": 1.0,
     "document_id": "4c1a21097c524528e773aac932ae9d1a",
@@ -1175,6 +1593,28 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "05256b93d972c07948da7fb709c7ecdc",
+    "confidence": 1.0,
+    "document_id": "b051f51bda5aa4a66b4f580f31c83c2b",
+    "id": "a03836cdee19789fa28ab019e02190d6",
+    "name": "test_resolve_recusa_o_que_escapa_da_raiz",
+    "qualified_name": "tests/unit/test_touchq.py::test_resolve_recusa_o_que_escapa_da_raiz",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d0fc742ff55b14c9b8a788ee163fe1fe",
+    "confidence": 1.0,
+    "document_id": "376195e833198f61a1adcaad9be31b32",
+    "id": "a112682d6323b7922616f11ba47634bb",
+    "name": "_Ctx",
+    "qualified_name": "src/ragx/indexing/pipeline.py::_Ctx",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
   },
   {
     "chunk_id": "b72b8ba39aae51c6c7f5d5fe5212f345",
@@ -1194,6 +1634,17 @@
     "id": "a234328d6531c7e1612439cec1b0b750",
     "name": "classify",
     "qualified_name": "src/ragx/tiers.py::classify",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "f6ecfb1ad52e98fd603e543b27a02886",
+    "confidence": 1.0,
+    "document_id": "11a014ce9d7e6c26be57225137670d66",
+    "id": "a3d500fdd7fda5f98350109cf4c64f6d",
+    "name": "_guardas",
+    "qualified_name": "src/ragx/cli/commands/ab_cmd.py::_guardas",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1232,6 +1683,28 @@
     "type": "method"
   },
   {
+    "chunk_id": "a3ae2e1729240c272c566d419e832a53",
+    "confidence": 1.0,
+    "document_id": "d886896513435d8c82c6597ab876ef5e",
+    "id": "b259de5ddb0c6ce23ac4e48d53b094e1",
+    "name": "wire_id",
+    "qualified_name": "src/ragx/mcp/tools.py::wire_id",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "c91204266c17d3effe15ede6d723bd4c",
+    "confidence": 1.0,
+    "document_id": "559cbe6d5457644ee00f8e9ccabaf642",
+    "id": "b34048dd41ea8c5d776eb4c94b337176",
+    "name": "test_argv_de_cada_braco_usa_config_estrita_e_o_prompt_vai_pelo_stdin",
+    "qualified_name": "tests/unit/test_ab.py::test_argv_de_cada_braco_usa_config_estrita_e_o_prompt_vai_pelo_stdin",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "f7318604fbb0292ad2db493df1df4a44",
@@ -1241,6 +1714,17 @@
     "source": "structural",
     "summary": "RAGX-0105 — Recalibrar a fusão RRF",
     "type": "file"
+  },
+  {
+    "chunk_id": "d08638a00c7457fb8dd6c0175c8e2fe4",
+    "confidence": 1.0,
+    "document_id": "c4e39ae6296a4931f55bfeba545c82b0",
+    "id": "b641132d12c07b6fb8fbf14a96704f7c",
+    "name": "header",
+    "qualified_name": "src/ragx/context/format.py::header",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "fde1ea22fab1994cd03de848497954d1",
@@ -1287,6 +1771,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "4fe5ed0fdba16159ddf20822d8f7ea8e",
+    "confidence": 1.0,
+    "document_id": "4ca30ce71e191d84d95b48797a97eb61",
+    "id": "bb88802d9dc1af0479c55bffb02c1a0c",
+    "name": "_medir",
+    "qualified_name": "scripts/medir_fio.py::_medir",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "81ab5f2c9ea44f24d9aca98ebc2f9881",
     "confidence": 1.0,
     "document_id": "af8b03e4aaf15ab5d4c03d8e765a54e5",
@@ -1298,12 +1793,56 @@
     "type": "class"
   },
   {
+    "chunk_id": "d14e25abb444c17ed06e478814e58698",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "bde9bd8db4de8e266ecb4b9090c05ccc",
+    "name": "init_worker",
+    "qualified_name": "src/ragx/indexing/parallel.py::init_worker",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "4a402585adbfaafaa920b58488ae0a4e",
+    "confidence": 1.0,
+    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
+    "id": "c172b9ed92aa190058d324dd4df7c092",
+    "name": "nudge_command",
+    "qualified_name": "src/ragx/clients/claude_hint.py::nudge_command",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "4600b05cab5b70f4deee2286021b6b86",
     "confidence": 1.0,
     "document_id": "992e360eb49883748047effbfda22510",
     "id": "c2144c7d2f3ee6fd39f90b6e7846293c",
     "name": "test_chunk_mostra_conteudo",
     "qualified_name": "tests/e2e/test_cli_fase0.py::test_chunk_mostra_conteudo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "d43c9863498565ee487c0fd910697f1b",
+    "id": "c5087fbdb8d7282f3d87096b0f4c9cbb",
+    "name": "snapshot-gate.test.ts",
+    "qualified_name": "src/app/electron/data/__tests__/snapshot-gate.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": "8216bdc8703daa9cad13f0a1727b5a3f",
+    "confidence": 1.0,
+    "document_id": "df629e7bff4c9c1a7e9ebe0f4481f64a",
+    "id": "c5f1d17d0ce32fd74df8ef4a18da07d8",
+    "name": "test_o_ledger_so_guarda_metadado_nunca_conteudo",
+    "qualified_name": "tests/unit/test_session_ledger.py::test_o_ledger_so_guarda_metadado_nunca_conteudo",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1342,6 +1881,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "ea3d558f5dbdb43c924e1c21fa2b32d7",
+    "confidence": 1.0,
+    "document_id": "31a72e954520324f60655c42f8111189",
+    "id": "cb78c50db71ba91680183eddd77a6921",
+    "name": "test_nenhum_simbolo_privado_no_dicionario",
+    "qualified_name": "tests/integration/test_dictionary_niveis.py::test_nenhum_simbolo_privado_no_dicionario",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "7da5e420bcc60addf325a384c0c7ce93",
     "confidence": 1.0,
     "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
@@ -1351,6 +1901,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "add7a69e8c7db533f182eae14bee81da",
+    "confidence": 1.0,
+    "document_id": "81830318d31c08768f7936f743b10959",
+    "id": "cd10f9fdf2596e4630c2404437fc3c08",
+    "name": "g",
+    "qualified_name": "tests/unit/test_graph_rank.py::g",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -1373,6 +1934,17 @@
     "source": "structural",
     "summary": "RAGX-0060 — Reidratação de conteúdo e detecção de delta",
     "type": "file"
+  },
+  {
+    "chunk_id": "c5acef21fde337217551459953f5ee77",
+    "confidence": 1.0,
+    "document_id": "4325b94a0898d7df1918edc8cdeaef6b",
+    "id": "d0a8e19ddd8f34f40a0021c78a85f733",
+    "name": "test_trial_traz_os_dois_baselines_e_a_economia_conservadora",
+    "qualified_name": "tests/integration/test_trial.py::test_trial_traz_os_dois_baselines_e_a_economia_conservadora",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "d359b57fb013d3206c6261306214b468",
@@ -1441,17 +2013,6 @@
     "type": "file"
   },
   {
-    "chunk_id": "291bc52b402ebd5ca5d3c95029ab4ce4",
-    "confidence": 1.0,
-    "document_id": "5e4f1c20438e22c74d80f54db5751059",
-    "id": "d64c1e0dfb92eebe429b124fcf6eb0fd",
-    "name": "on",
-    "qualified_name": "src/ragx/cli/commands/claude_cmd.py::on",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "331b2031e399189a4dca8b1f1792f06a",
     "confidence": 1.0,
     "document_id": "0d29fde4effe8bb5fa48b35b24ac221b",
@@ -1463,7 +2024,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "6b0076a42de09b4bf07208193c8fe98d",
+    "chunk_id": "de379e9c4deb255961df22ca7245b5c7",
     "confidence": 1.0,
     "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
     "id": "dc3b062da74942a6ccf3a21b68b25f80",
@@ -1472,6 +2033,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "af48a270ac5da445ad66c38d7c6b6af6",
+    "id": "de01ca0d5b1d3886a86eab0608a5e048",
+    "name": "test_verdict_context.py",
+    "qualified_name": "tests/unit/test_verdict_context.py",
+    "source": "structural",
+    "summary": "`verdict_context`: tudo de que o veredito guardado depende (RAGX-0139).",
+    "type": "file"
   },
   {
     "chunk_id": "b005c9e0f1c7d99205dfcaf7138c07fe",
@@ -1483,6 +2055,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "0808bc093c61ea41d7a955160531e266",
+    "id": "df76266dbf199be500860ad64de26603",
+    "name": "project-state.ts",
+    "qualified_name": "src/app/electron/project-state.ts",
+    "source": "structural",
+    "summary": "import type { JobKind, JobView, ProjectSnapshot } from '../src/types/ragx-bridge'",
+    "type": "file"
   },
   {
     "chunk_id": "7c50fa0f1c9dd1f88a80905076e2c116",
@@ -1518,6 +2101,17 @@
     "type": "method"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "c4e39ae6296a4931f55bfeba545c82b0",
+    "id": "e428d66d66e1d3da3580775ff1f7cef1",
+    "name": "format.py",
+    "qualified_name": "src/ragx/context/format.py",
+    "source": "structural",
+    "summary": "Texto do contexto em markdown, em funções puras.\n\nFica separado de `render.py` de propósito: o `budget` (que decide quantos\nfragmentos cabem) e o `engine` (que mede o que saiu) precisam contar EXATAMENTE\no mesmo texto que o agente vai receber, e `render.py` importa o `engine`.\nNenhuma função daqui conhece `ContextPack`.\n\nAntes, o orçamento assumia 12 tokens de cabeçalho por fragmento e\n`estimated_tokens` somava só o conteúdo: o cabeçalho real (`## [i] caminho:linhas\n› nome`) custa ~33, e um pedido de 3.000 tokens chegava a 7.983 no fio (RAGX-0154).",
+    "type": "file"
+  },
+  {
     "chunk_id": "2e39ddbc46c9f96292cd8d884a9c5ae2",
     "confidence": 1.0,
     "document_id": "8f0377bb2911e271039e5eb7922e27d3",
@@ -1527,6 +2121,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "4b81f4d73ff9d3f5b458372629c603e3",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "e6ef58ad24fb8cb87e62eadaa2940be4",
+    "name": "run_hook",
+    "qualified_name": "src/ragx/hooklight.py::run_hook",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "9d61125dd3aa5393979affb3f6b24b61",
@@ -1568,6 +2173,17 @@
     "id": "ea8e1dddf4d556ecb1c1b80ebe95f544",
     "name": "test_sem_arquivo_de_configuracao_e_unchanged",
     "qualified_name": "tests/unit/test_mcp_uninstall.py::test_sem_arquivo_de_configuracao_e_unchanged",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "2e9da8b0d68574ab907c5c24c0fc14eb",
+    "confidence": 1.0,
+    "document_id": "eb3c24c29a8ea6da59488d35ee415e4a",
+    "id": "eae1ff9d6777e73b28a50048849a0579",
+    "name": "normalizar_caminho",
+    "qualified_name": "src/ragx/walk.py::normalizar_caminho",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1628,6 +2244,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "60b7b89a3a125e1fee6d897e9ee8b6fc",
+    "confidence": 1.0,
+    "document_id": "b051f51bda5aa4a66b4f580f31c83c2b",
+    "id": "f3cd3f7de74a69a1ad020c9c4361a6d0",
+    "name": "test_give_back_devolve_o_lote",
+    "qualified_name": "tests/unit/test_touchq.py::test_give_back_devolve_o_lote",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "9927bd38bcf59aaa0c4a7a3d8791b13a",
     "confidence": 1.0,
     "document_id": "c796e3cbf4d0c8ff536421c86e3dac4e",
@@ -1639,7 +2266,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "4e934e407087d7d35e909f223ccc8ab8",
+    "chunk_id": "6b0aa1242db2dea98f65bda074534fa8",
     "confidence": 1.0,
     "document_id": "b5951eb9f6d83724cb1a3bafb4e09956",
     "id": "f5dc491dd25bc38313bb0dc13900d7cf",

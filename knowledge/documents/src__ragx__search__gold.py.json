@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "a2c54ad68f61c392f3fe2ef0e115078e763b2267301978ceaa6be10a1aafd973",
+  "doc_kind": "code",
+  "id": "547e9b2c00c28582a5fbade91b173699",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/search/gold.py",
+  "size_bytes": 6614,
+  "title": "Conjunto-ouro derivado do git (RAGX-0167).\n\nO próprio git traz um gabarito grátis, que cresce sozinho: a MENSAGEM do commit é a consulta e os ARQUIVOS alterados são os\ndocumentos relevantes. Vazamento é inevitável e aceito: o índice está no HEAD, que já contém a mudança do commit; o conjunto\nmede \"dada a intenção, ache o lugar\", não previsão. Por isso `commit` e `kind` ficam em cada caso, para permitir recortes.\n\nSó hash curto, assunto e caminhos saem do git: autor, e-mail e corpo do commit NUNCA são lidos. Um assunto que dispare o\n`SecurityScanner` é descartado (e contado), sem ser escrito. A saída é determinística: ordem por data do commit e hash, e o\núnico dado de procedência é o hash do HEAD de origem."
+}

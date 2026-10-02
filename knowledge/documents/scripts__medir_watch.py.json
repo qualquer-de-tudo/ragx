@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "f444efadfa1f5be5d0c7519970a764667f7a4cacf9d4c84c59371f6d8429514e",
+  "doc_kind": "code",
+  "id": "94accd3a4c698a0c49f434f68229773e",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_watch.py",
+  "size_bytes": 3615,
+  "title": "Mede o ciclo ocioso do `ragx watch` (RAGX-0147).\n\n    uv run python scripts/medir_watch.py --arquivos 643 --ciclos 50 [--perfil]\n\nGera um projeto sintético (pastas com arquivos `.py`, mais um `.gitignore` e uma árvore ignorada), indexa uma vez e\nroda `watch(max_cycles=N)` sem dormir, cronometrando cada ciclo ocioso de fora (o laço não muda). Imprime mediana e\np95 em ms, quantas vezes o `SecurityGate` foi construído e, com `--perfil`, o `cProfile` de um ciclo."
+}

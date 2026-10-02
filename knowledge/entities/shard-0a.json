@@ -1,5 +1,16 @@
 [
   {
+    "chunk_id": "5ca9d8c6d680c625d611ccf9b2cc4c51",
+    "confidence": 1.0,
+    "document_id": "ff6a06f75f3f5502b90d73cacf6b59c3",
+    "id": "007ca5fa74b54eee7de6564499142df1",
+    "name": "_git",
+    "qualified_name": "scripts/medir_grafo_incremental.py::_git",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "4d671ac0f436dd94975604516a875f46",
@@ -20,6 +31,28 @@
     "source": "structural",
     "summary": "import { useEffect, useState } from 'react'",
     "type": "file"
+  },
+  {
+    "chunk_id": "822474e09a1b95cc710114c9bfc42301",
+    "confidence": 1.0,
+    "document_id": "857268f8997abc7566c982ef824c9f83",
+    "id": "019f659aa7699ea885eeec67f0d1846c",
+    "name": "proc_token",
+    "qualified_name": "src/ragx/indexing/lock.py::proc_token",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "17574ea7209c12f7d088f4483e3ec85b",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "05d64efa524b6270b90b0cac1035aa9c",
+    "name": "_colher",
+    "qualified_name": "src/ragx/indexing/parallel.py::_colher",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": null,
@@ -44,12 +77,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "9503aa7b2f38ed7c1b92f676b35f7a9d",
+    "confidence": 1.0,
+    "document_id": "821e708bde7c2785b09d1229d5f73b65",
+    "id": "0968642a503f8d14c1c42021b40d9b1f",
+    "name": "test_simbolo_novo_cai_no_completo_e_aparece_no_grafo",
+    "qualified_name": "tests/integration/test_graph_incremental.py::test_simbolo_novo_cai_no_completo_e_aparece_no_grafo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "9030e3436a420e84dba3bda68f2d7146",
     "confidence": 1.0,
     "document_id": "28fdf29dafca238fd96c912b638dff2e",
     "id": "09789ddae42807e664b96f9448b0952e",
     "name": "proj",
     "qualified_name": "tests/e2e/test_cli_index_progress.py::proj",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "94340b79d3b5b6c189aa2a3d115f6aa9",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "0b0c582a698df3e3f6d5b87760ac74e6",
+    "name": "_mcp_log_size",
+    "qualified_name": "src/ragx/search/ab.py::_mcp_log_size",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -72,6 +127,17 @@
     "id": "0df13eca1bc1684b9f5e2c0781b749e0",
     "name": "test_raiz_com_espaco_fica_entre_aspas",
     "qualified_name": "tests/unit/test_githooks.py::test_raiz_com_espaco_fica_entre_aspas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "6c65ccfdc17fa24b0c2759c93a00b703",
+    "confidence": 1.0,
+    "document_id": "fe391cf7f74ad721cdbafe71306c3c22",
+    "id": "0eb0e45adfe045daa86a849cfb3088c0",
+    "name": "fastembed_falso",
+    "qualified_name": "tests/unit/test_embedder_cache.py::fastembed_falso",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -141,6 +207,17 @@
     "source": "structural",
     "summary": "Roteiro da v2",
     "type": "file"
+  },
+  {
+    "chunk_id": "d5a8b053e2771b4845dd947bb96b4245",
+    "confidence": 1.0,
+    "document_id": "56b383a2a82751d848ea30dc28fe0237",
+    "id": "1d585faa4f5e49057817d044f43b8e74",
+    "name": "build_context_text",
+    "qualified_name": "src/ragx/indexing/chunkers/__init__.py::build_context_text",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "713519725f055b0c4f4b4c144a545567",
@@ -253,6 +330,28 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "da43c9987a648a4d70511ff6cb2c6ad0",
+    "id": "280904cafb47a53ccfadd0bf55195ffd",
+    "name": "touch_cmd.py",
+    "qualified_name": "src/ragx/cli/commands/touch_cmd.py",
+    "source": "structural",
+    "summary": "`ragx touch` — o hook `PostToolUse` do Claude Code avisa que um arquivo foi editado.\n\nO Claude Code roda este comando depois de cada `Edit`, `Write` ou `MultiEdit`, com um JSON no\nstdin (`tool_input.file_path`). O comando só ENFILEIRA o caminho (`.ragx/touch.queue`) e dispara,\ndestacado, a drenagem que reindexa só os arquivos tocados (`index_paths`, RAGX-0140): o agente\nnão espera, e a próxima busca já vê a edição.\n\nSai SEMPRE com código 0, como `ragx claude hint`: um erro aqui sujaria ou atrasaria toda edição\ndo agente, em qualquer pasta, e a ausência do RAGX nunca é motivo para isso.",
+    "type": "file"
+  },
+  {
+    "chunk_id": "4729cc19cb0cc17efe3f2d0816c96e49",
+    "confidence": 1.0,
+    "document_id": "547e9b2c00c28582a5fbade91b173699",
+    "id": "290879daa26cf312c4c02b57ca942733",
+    "name": "_tem_segredo",
+    "qualified_name": "src/ragx/search/gold.py::_tem_segredo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "3c4ee6f96ea335dd32e1cd11394424ff",
     "confidence": 1.0,
     "document_id": "9541c418d371c9f2449f1bac3c3ad13c",
@@ -319,6 +418,17 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "ff6a06f75f3f5502b90d73cacf6b59c3",
+    "id": "2b20881a12ac26e336432c48e8ff7f01",
+    "name": "medir_grafo_incremental.py",
+    "qualified_name": "scripts/medir_grafo_incremental.py",
+    "source": "structural",
+    "summary": "Mede o grafo incremental por documento (RAGX-0151), sem tocar no `knowledge/` do repositório.\n\n    uv run python scripts/medir_grafo_incremental.py [--commits 100] [--modulos 400]\n\n1. Fração de edições que NÃO mudam o conjunto de símbolos: nos últimos `--commits` commits do repositório, para\n   cada arquivo Python alterado (modo `M`), compara os nomes `class`/`function`/`method` antes e depois com o\n   mesmo parser e chunker do índice. Se a fração for pequena, o caminho rápido quase nunca vale.\n2. Tempos, num projeto sintético temporário com `--modulos` módulos: rebuild completo, `update_documents` de um\n   corpo editado e de um símbolo novo (que cai no completo), e quantas entidades ficam sem `chunk_id` depois de\n   editar uma linha só com o índice (antes) e depois do `update_documents`.",
+    "type": "file"
+  },
+  {
     "chunk_id": "5b1c7254ac467c2e8da9ada588d9de13",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
@@ -341,18 +451,18 @@
     "type": "file"
   },
   {
-    "chunk_id": "b7f7a1e7628f39f9548d4c6eb176632a",
+    "chunk_id": "93b768aaba3656b5747e2fe34a10b167",
     "confidence": 1.0,
-    "document_id": "941f6b614648b28ab6a935c0edef8f71",
-    "id": "2eb9a21a94842e821f5388efe27eba2c",
-    "name": "test_servicos_detectados_por_convencao",
-    "qualified_name": "tests/integration/test_dictionary.py::test_servicos_detectados_por_convencao",
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "2f07836a137c40d68d195428f8d99755",
+    "name": "hint_text",
+    "qualified_name": "src/ragx/hooklight.py::hint_text",
     "source": "structural",
     "summary": null,
     "type": "function"
   },
   {
-    "chunk_id": "2130217eeda8ef97f7e671f3deb128e5",
+    "chunk_id": "4210818cf17d8fd20106471ab0df7e09",
     "confidence": 1.0,
     "document_id": "1db928e8181bf2bd8be736df7d0c9361",
     "id": "3006597a3ef8939e2cbf562a7e04b02b",
@@ -383,6 +493,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "08baf8b2622e8b01cc2c3e7ac971eba2",
+    "id": "34cd217aa5881bc39405f1fa7ea71f5e",
+    "name": "ui-primitives.test.ts",
+    "qualified_name": "src/app/src/__tests__/ui-primitives.test.ts",
+    "source": "structural",
+    "summary": "/// <reference types=\"node\" />",
+    "type": "file"
   },
   {
     "chunk_id": "71fead1fe6742e6f8337f6ba949451f0",
@@ -429,12 +550,78 @@
     "type": "method"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "9959a342ecab4fec31f2b69e5c2cb4ae",
+    "id": "36fd7c4a0461741a1060d07017996512",
+    "name": "test_cli_sync_clone.py",
+    "qualified_name": "tests/e2e/test_cli_sync_clone.py",
+    "source": "structural",
+    "summary": "`ragx sync` num clone novo, sem `.ragx/` (RAGX-0144): falhava com \"banco não encontrado\".",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "b07309c464acfe13c2c56c24fd1ed642",
+    "id": "384d4e9ae2fa8ea53bb3132ecc35042e",
+    "name": "test_mcp_perfis.py",
+    "qualified_name": "tests/unit/test_mcp_perfis.py",
+    "source": "structural",
+    "summary": "Perfis do servidor MCP: `full` (33 ferramentas) e `slim` (6) — RAGX-0157.",
+    "type": "file"
+  },
+  {
+    "chunk_id": "668fa1071f4b35977293e65b93389d83",
+    "confidence": 1.0,
+    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
+    "id": "38c1e39a3fce20382eb585046763ee3b",
+    "name": "remove_nudge_hook",
+    "qualified_name": "src/ragx/clients/claude_hint.py::remove_nudge_hook",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "11c08483a1cb14dc426e7dba6d079c84",
+    "confidence": 1.0,
+    "document_id": "b07309c464acfe13c2c56c24fd1ed642",
+    "id": "38e4ae4ab1335285b26ba57535992bc5",
+    "name": "_chamar",
+    "qualified_name": "tests/unit/test_mcp_perfis.py::_chamar",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "d7c549f6dad6cd189dfbad885288eeff",
     "confidence": 1.0,
     "document_id": "b9df1c32a3bc92c3edf03a32a0bfcde7",
     "id": "3a67c49a2e08cc367129705a116d7258",
     "name": "test_should_run",
     "qualified_name": "tests/unit/test_githooks.py::test_should_run",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "7b672262304316029f12cfce4b3040ee",
+    "confidence": 1.0,
+    "document_id": "465a11ad18a6c696acb0542daaf3c934",
+    "id": "3a8b62daa5f06428575286006ef33dfa",
+    "name": "test_worktrees_lista_o_principal_primeiro_com_branch_e_head",
+    "qualified_name": "tests/unit/test_gitinfo.py::test_worktrees_lista_o_principal_primeiro_com_branch_e_head",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "b8996af3434ae69debe07030380bdcd4",
+    "confidence": 1.0,
+    "document_id": "6748b25689773747d50f29c12233c01b",
+    "id": "3c8e194ab89d4cb52d91db6dcc571e2c",
+    "name": "_services#part-2",
+    "qualified_name": "src/ragx/dictionary/builder.py::_services#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -449,6 +636,28 @@
     "source": "structural",
     "summary": "sample.json",
     "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "3e612b0a9c217c5416ceec2e5cb1012f",
+    "name": "parallel.py",
+    "qualified_name": "src/ragx/indexing/parallel.py",
+    "source": "structural",
+    "summary": "Leitura, Gate, parse e chunking em paralelo para o primeiro índice (RAGX-0152).\n\nO primeiro índice (e o `--full`) lia, passava pelo Gate, parseava e fatiava um arquivo de cada vez; num\nprojeto com milhares de arquivos isso era a maior parte do tempo. Aqui o estágio caro vai para um pool de\nPROCESSOS, e o processo principal continua sendo o único que escreve no banco:\n\n    varredura (principal) ──> Candidate ──> worker: read_candidate + parse + chunk ──> principal: upsert\n\n- A varredura e as decisões baratas (`walk.iter_candidates`: ignore, veredito guardado, `unchanged`, tamanho,\n  nome na deny-list) ficam no principal e não mudam.\n- Cada worker constrói UM `SecurityGate` completo (inclusive o `IgnoreEngine`): o Gate não tem atalho\n  (ADR-0008). Todo byte é lido por `walk.read_candidate`, e este módulo nunca abre arquivo por conta própria.\n- Os resultados voltam NA ORDEM da varredura, de modo que a escrita é a mesma do caminho sequencial.\n- Abaixo de `PARALLEL_MIN_FILES` candidatos a ler, ou com `jobs = 1`, nada disto roda: nenhum pool é criado.\n- Se a infraestrutura do pool cair (processo morto, `spawn` que não consegue reimportar o módulo principal), o\n  lote em andamento e o resto da rodada são refeitos no processo principal. Erro do NOSSO código num arquivo\n  (`WorkerError`) não é infraestrutura: propaga, com o caminho.\n\nEste módulo não importa `ragx.config` nem `typer`: cada worker em `spawn` pagaria o custo de importá-los.",
+    "type": "file"
+  },
+  {
+    "chunk_id": "82be63c69ac862fd37ce41a86673596f",
+    "confidence": 1.0,
+    "document_id": "2ef5a90f616c2d0b96eef01cfcbd53e4",
+    "id": "3f88deea4890409f7a7a2cbc7b09cb94",
+    "name": "summarize",
+    "qualified_name": "src/ragx/search/ab.py::summarize",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "272a790027142fa2205db81cf2b21211",
@@ -473,23 +682,23 @@
     "type": "class"
   },
   {
-    "chunk_id": "b142c63525cd9cf1901eee79594b8725",
-    "confidence": 1.0,
-    "document_id": "85088123a711a4cce288972ef0f7d1b4",
-    "id": "45385efaf0f708ddb7d8f0b58131906d",
-    "name": "expand",
-    "qualified_name": "src/ragx/graph/traversal.py::expand",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "a7ae7f767b59f125c14275f56860fe65",
     "confidence": 1.0,
     "document_id": "56b383a2a82751d848ea30dc28fe0237",
     "id": "45ee593ab85ed375ec5edd968e07b559",
     "name": "_emit_code",
     "qualified_name": "src/ragx/indexing/chunkers/__init__.py::_emit_code",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "2d643eab644bdfff0dc70a7796e9dcd1",
+    "confidence": 1.0,
+    "document_id": "45a07cce13209ddf82447f792e54dcfc",
+    "id": "47c398da0ae929e5c7212a2dbc03fe51",
+    "name": "to_jsonable",
+    "qualified_name": "src/ragx/search/bench.py::to_jsonable",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -515,6 +724,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "922d5df5a0c87e84b1b83c94638cd5af",
+    "confidence": 1.0,
+    "document_id": "957280ba9f49e1f9aee96e2eeb397bdb",
+    "id": "49e4aeca34d5d927c83c29dbfd2494ac",
+    "name": "no_answer",
+    "qualified_name": "src/ragx/search/evaluation.py::EvalCase.no_answer",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": "2d2199a684a496c8840e121ce8f29ac6",
@@ -550,12 +770,34 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "716d55c6e4d44d12bee44d6dc9533f8a",
+    "id": "4f0229fa31b42e2279b17b67c6c119a4",
+    "name": "useSnapshotCache.test.ts",
+    "qualified_name": "src/app/src/hooks/__tests__/useSnapshotCache.test.ts",
+    "source": "structural",
+    "summary": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
+  },
+  {
     "chunk_id": "5b64aa755732d34da17724a66ef419c9",
     "confidence": 1.0,
     "document_id": "9efa09d8230443f3d74eee77c9fe73ce",
     "id": "50571aea2d0eabe997effef132fd4103",
     "name": "test_relacao_carrega_as_duas_pontas_da_aresta",
     "qualified_name": "tests/unit/test_contrato_grafo.py::test_relacao_carrega_as_duas_pontas_da_aresta",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "109d227f3d819164a3db4443eb487a89",
+    "confidence": 1.0,
+    "document_id": "2fdb868383b33e2717b60a56344f4476",
+    "id": "51a8686ae69551e1249a1e04d9ea4f1a",
+    "name": "test_derive_cases_e_evaluate_rodam_sobre_o_repo",
+    "qualified_name": "tests/integration/test_gold_git.py::test_derive_cases_e_evaluate_rodam_sobre_o_repo",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -671,6 +913,50 @@
     "type": "function"
   },
   {
+    "chunk_id": "afe5de063f25f07c1ae8ea6871de632b",
+    "confidence": 1.0,
+    "document_id": "e4ca7efa11f2c37db87dd7c836c37450",
+    "id": "6061c95aba030a60285be3e725cff8a7",
+    "name": "_estado",
+    "qualified_name": "scripts/medir_knowledge_estavel.py::_estado",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "37f6181b0f9d82fc125720b8f21144a7",
+    "id": "60a1606ae4a8974d81fa4ab679d37828",
+    "name": "css-ratchet.test.ts",
+    "qualified_name": "src/app/src/__tests__/css-ratchet.test.ts",
+    "source": "structural",
+    "summary": "/// <reference types=\"node\" />",
+    "type": "file"
+  },
+  {
+    "chunk_id": "4e11dcad3ee8a5894198a9b114b48efa",
+    "confidence": 1.0,
+    "document_id": "bc5a03108a91de64dcc625e939150260",
+    "id": "621de3ea93400dd80d6b4e0d52d48999",
+    "name": "process_stream",
+    "qualified_name": "src/ragx/indexing/parallel.py::process_stream",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "5569c3ab1713d2b3b41f542177b333d9",
+    "confidence": 1.0,
+    "document_id": "b4cd3410b52e596a9c55e0aa62cf2f48",
+    "id": "62de4e2a33856fdf1a0433b9a14587e5",
+    "name": "_to_fragments#part-1",
+    "qualified_name": "src/ragx/context/engine.py::_to_fragments#part-1",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "1ca5cb5ba313376da1584dedb9165836",
     "confidence": 1.0,
     "document_id": "30658b4fbb4c03cf7f048838323ba144",
@@ -688,6 +974,28 @@
     "id": "666fc86a81cbace0d710fba256fe6c73",
     "name": "__init__",
     "qualified_name": "src/ragx/security/ignore_engine.py::IgnoreEngine.__init__",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "9e18cd00ff7e6525bc7f161741964add",
+    "confidence": 1.0,
+    "document_id": "6748b25689773747d50f29c12233c01b",
+    "id": "676e407a709c5f0f655c74fdc4466604",
+    "name": "_repo_map",
+    "qualified_name": "src/ragx/dictionary/builder.py::_repo_map",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "cc62961e1f5ee77bd4377f9e50a87465",
+    "confidence": 1.0,
+    "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
+    "id": "6829104ad0d3d3411038012a3f61c92a",
+    "name": "build_context#part-1",
+    "qualified_name": "src/ragx/mcp/server.py::KnowledgeAPI.build_context#part-1",
     "source": "structural",
     "summary": null,
     "type": "method"
@@ -726,12 +1034,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "b36df5889adb6f0178822f7ab6dec9e0",
+    "confidence": 1.0,
+    "document_id": "e2b5132f8a0288ed8eb0e5935b3748f1",
+    "id": "6b96c21a3a83cea1ee31eae1b3e9dbbb",
+    "name": "test_filter_chunk_ids_tem_a_mesma_semantica_de_filter_mask",
+    "qualified_name": "tests/integration/test_graph_expansao.py::test_filter_chunk_ids_tem_a_mesma_semantica_de_filter_mask",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "f52ba17cc183c16c1d3a08f9ed2e44a9",
     "confidence": 1.0,
     "document_id": "99ef45b2019b3060dbf62efdca75f31e",
     "id": "6c6cb83aa290a2c802969ab207646f7e",
     "name": "declared_for",
     "qualified_name": "src/ragx/base/source.py::declared_for",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "6ee0237760d45425b58e14e22edfa91f",
+    "confidence": 1.0,
+    "document_id": "74392b09ddeb64593cec001faf0cddb8",
+    "id": "6c7a364afb734699436e5425ffcc578f",
+    "name": "profile_name",
+    "qualified_name": "src/ragx/origin.py::profile_name",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -748,12 +1078,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "0d5ff030b630d7421c5bd7a17b81ff61",
+    "confidence": 1.0,
+    "document_id": "ed24ac8c859c3bd15104e1f3e30ca52d",
+    "id": "6d0db46ad8fa5b3585fbf9430b9e7f7e",
+    "name": "test_o_execute_chama_o_runner_so_com_as_guardas",
+    "qualified_name": "tests/e2e/test_cli_ab.py::test_o_execute_chama_o_runner_so_com_as_guardas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "0fb28ee030a10c5f290a3b9df5c6444f",
     "confidence": 1.0,
     "document_id": "c07b83c7d764e51e09013017bd3afbc1",
     "id": "6dcab65ac5ada39b808848ba74a1465f",
     "name": "test_arquivos_de_borda_nao_quebram",
     "qualified_name": "tests/integration/test_maintenance.py::test_arquivos_de_borda_nao_quebram",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "89ff9a27cda5e04c75540513cd83c997",
+    "confidence": 1.0,
+    "document_id": "1d6acb648da66917a1b1e4f5128c7955",
+    "id": "6ecc447a1bd60e68ea70051552238945",
+    "name": "test_mesma_selecao_e_mesma_ordem_em_200_sementes",
+    "qualified_name": "tests/unit/test_mmr_vetorizado.py::test_mesma_selecao_e_mesma_ordem_em_200_sementes",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -790,6 +1142,17 @@
     "source": "structural",
     "summary": null,
     "type": "file"
+  },
+  {
+    "chunk_id": "cd111c0cc69f073d2fbad78f97f5ffcd",
+    "confidence": 1.0,
+    "document_id": "dd70080c3e2b9f1c29c34f6342eb6f75",
+    "id": "7386997adf6bd3162e1dda3010acdbb2",
+    "name": "_replace_all",
+    "qualified_name": "src/ragx/storage/repositories.py::ChunkRepo._replace_all",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": "4c0ce9208099579183f6bc0287e2fdce",
@@ -847,6 +1210,39 @@
     "type": "method"
   },
   {
+    "chunk_id": "8b163f90361844d2aeb18de35e96a41d",
+    "confidence": 1.0,
+    "document_id": "add9e69383ed03a7acacbe1f82b1451a",
+    "id": "75d33ecaa54d8637a52c8f65b0be625a",
+    "name": "test_consulta_e_documento_levam_prefixos_diferentes",
+    "qualified_name": "tests/unit/test_embeddings.py::test_consulta_e_documento_levam_prefixos_diferentes",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "f0762b4ec475559fca3b0ab045dc67d9",
+    "confidence": 1.0,
+    "document_id": "dd70080c3e2b9f1c29c34f6342eb6f75",
+    "id": "7643015aaf830b32c5a395c402f0d0db",
+    "name": "replace_for_document#part-3",
+    "qualified_name": "src/ragx/storage/repositories.py::ChunkRepo.replace_for_document#part-3",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "32603fc5777fa6c88d3606191ebe3d35",
+    "confidence": 1.0,
+    "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
+    "id": "7866809a0f4a8e4933bb2ca7096a000e",
+    "name": "_slim_schemas",
+    "qualified_name": "src/ragx/mcp/server.py::_slim_schemas",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "982d945b77446d60e79280261ef57926",
@@ -880,7 +1276,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "b7229adbd4daf71d638384152eb94de4",
+    "chunk_id": "9f781dd62f089fab13a04a89f046cbe2",
     "confidence": 1.0,
     "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
     "id": "7d9c1bbaaf1718ebd9d6cc609183d0fb",
@@ -902,12 +1298,34 @@
     "type": "method"
   },
   {
+    "chunk_id": "8d340a0f82b86859731023d769c744cc",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "7f89920ac95d53a690ca1f2ed7773613",
+    "name": "_toml",
+    "qualified_name": "src/ragx/hooklight.py::_toml",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "1b9cd5949eff01c7d5a9901313b59671",
     "confidence": 1.0,
     "document_id": "18fca4bc0ff57cbb3c419573449809f3",
     "id": "8134932abd6f62ddb070a17dd50c3801",
     "name": "test_schema_version_bate_com_a_migracao_mais_recente",
     "qualified_name": "tests/unit/test_ids.py::test_schema_version_bate_com_a_migracao_mais_recente",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "8eb4c6aa61bb53bff2561fd44d75a279",
+    "confidence": 1.0,
+    "document_id": "d7b9698f7ddbebcb6ca2a0412db0cbf7",
+    "id": "822f3aea791e3548fc8c7cdd37c1fdc0",
+    "name": "test_worktree_status_mostra_chunks_em_comum_e_o_cache",
+    "qualified_name": "tests/integration/test_worktree_cache.py::test_worktree_status_mostra_chunks_em_comum_e_o_cache",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -930,6 +1348,17 @@
     "id": "83c32d2a66dd36ef3c3101c3ed72c4a0",
     "name": "_chave",
     "qualified_name": "src/ragx/embeddings/__init__.py::_chave",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e0d4bbec24fca2d0ba1f3e9891e4af87",
+    "confidence": 1.0,
+    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
+    "id": "857a8b4a2b62caa49bb64fbc0bb12d83",
+    "name": "remove_touch_hook",
+    "qualified_name": "src/ragx/clients/claude_hint.py::remove_touch_hook",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -979,6 +1408,39 @@
     "type": "function"
   },
   {
+    "chunk_id": "b526b9449d569c4ae5dcc71bfffb81d9",
+    "confidence": 1.0,
+    "document_id": "c049968ce4f280bc4ac936d9ebd0330c",
+    "id": "888a1d1a4bfc7c5c38d7a13d7f51a27e",
+    "name": "test_lf_sem_bom_e_sem_traducao",
+    "qualified_name": "tests/unit/test_stable_write.py::test_lf_sem_bom_e_sem_traducao",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "9adfe99ea8261ba1be9766075512fc41",
+    "confidence": 1.0,
+    "document_id": "6cfe33ee53e317f5f7ad839c3b57dc8b",
+    "id": "89d2c49a2db4b71f3b17eb317c390141",
+    "name": "_queda",
+    "qualified_name": "src/ragx/graph/service.py::_queda",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d79ab7ff35b1d4ff6a484eacd5d8e2c6",
+    "confidence": 1.0,
+    "document_id": "2098968a7eb1867f43d2cad3c86e8dd6",
+    "id": "91f607aac8f63d20fe1f20509e7d99ba",
+    "name": "test_sem_tokens_sai_com_zero_e_usa_o_padrao",
+    "qualified_name": "tests/e2e/test_cli_context.py::test_sem_tokens_sai_com_zero_e_usa_o_padrao",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": null,
@@ -1012,7 +1474,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "abd0c3a0585c5128c3526a8eb41375dc",
+    "chunk_id": "2e10052106a83860f8847f944f1b28ce",
     "confidence": 1.0,
     "document_id": "5d3f28cff19c9921504257115d70adab",
     "id": "9569ca4aa3b3d176436baf4c30d70f46",
@@ -1034,7 +1496,18 @@
     "type": "file"
   },
   {
-    "chunk_id": "c5c9ba9691920b356437e08ad327afef",
+    "chunk_id": "5eb0c07a5a698cc4a810651f377926a7",
+    "confidence": 1.0,
+    "document_id": "6748b25689773747d50f29c12233c01b",
+    "id": "9a26ebaa50f70dee5ed70e4350c0dd8c",
+    "name": "_resumo_de_classe",
+    "qualified_name": "src/ragx/dictionary/builder.py::_resumo_de_classe",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "2191c36f5b23e686e8e40ab23e6ac859",
     "confidence": 1.0,
     "document_id": "f73ccefb94dd00a034ff0047f439043e",
     "id": "9a8e1f9ae3e8222d0d2435939d1926fb",
@@ -1067,6 +1540,17 @@
     "type": "method"
   },
   {
+    "chunk_id": "5c26e381f83cfa5274be21320a59dc18",
+    "confidence": 1.0,
+    "document_id": "68e5e6f3e96353b28ec601765fcfd37f",
+    "id": "9c507a5a68b413bba131bc5c9cda0f7c",
+    "name": "test_hashing_e_sempre_disponivel_e_provider_estranho_e_incompativel",
+    "qualified_name": "tests/unit/test_bench.py::test_hashing_e_sempre_disponivel_e_provider_estranho_e_incompativel",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "4c1ad748ad3cf74f3dce776d277f3ff1",
     "confidence": 1.0,
     "document_id": "5b8a9853985bb8b35cf31658e21db033",
@@ -1087,6 +1571,39 @@
     "source": "structural",
     "summary": "RAGX-0016 — Parser de Python via ast",
     "type": "file"
+  },
+  {
+    "chunk_id": "92b6c0f68613c913336c25c7aa9cb6f5",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "9f8b28fa2581e80379eafbe2c98099f3",
+    "name": "test_ambiente_vence_o_toml_como_em_load_config",
+    "qualified_name": "tests/unit/test_hooklight.py::test_ambiente_vence_o_toml_como_em_load_config",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "b105ba6b0481ae0c17c2f49bb5e162e2",
+    "confidence": 1.0,
+    "document_id": "58488338f4218b9dd9cd18bf91f0c8ab",
+    "id": "a21347eaf496416aa7cdcd5e303254fa",
+    "name": "conn",
+    "qualified_name": "tests/integration/test_replace_for_document.py::conn",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d24c14ba963f333dd353aa4bf99455ff",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "a50253cad09e619c18c931e1fb993664",
+    "name": "test_a_dica_cabe_em_150_tokens_no_projeto_e_na_pasta_pai",
+    "qualified_name": "tests/unit/test_hooklight.py::test_a_dica_cabe_em_150_tokens_no_projeto_e_na_pasta_pai",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "8a786a4eb17b2762306879426a092f91",
@@ -1113,6 +1630,17 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "7d3154f72c21887960efccca140140ef",
+    "id": "a62607daea0c822aa497db9d5a93afe7",
+    "name": "adoption-ui.test.tsx",
+    "qualified_name": "src/app/src/__tests__/adoption-ui.test.tsx",
+    "source": "structural",
+    "summary": "import { afterEach, describe, expect, it, vi } from 'vitest'",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "0ef936ad05f2b79867ea888f8ce4e0c9",
     "id": "a6751c8a6712e20f8b5474e74080a930",
     "name": "RAGX-0025-provider-ollama-nomic-embed-text.md",
@@ -1120,6 +1648,17 @@
     "source": "structural",
     "summary": "RAGX-0025 — Provider Ollama (nomic-embed-text)",
     "type": "file"
+  },
+  {
+    "chunk_id": "f120fa547d7b1a1958aca65dc0ddf80f",
+    "confidence": 1.0,
+    "document_id": "a9fba6a4821f14aa026d2ff908f9d864",
+    "id": "a69effbad6f89ffa54c5d9db4cc8b600",
+    "name": "_stat_com_starttime",
+    "qualified_name": "tests/unit/test_index_lock.py::_stat_com_starttime",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "d36963b8be2789eecdbfa6b5c996f20d",
@@ -1177,6 +1716,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "93856a296a71b20022fef2b71beaced3",
+    "confidence": 1.0,
+    "document_id": "b051f51bda5aa4a66b4f580f31c83c2b",
+    "id": "ab2786facd2b76387873e5cd34df5ea5",
+    "name": "test_leitura_que_falha_uma_vez_nao_perde_a_fila",
+    "qualified_name": "tests/unit/test_touchq.py::test_leitura_que_falha_uma_vez_nao_perde_a_fila",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "27d865c285d993e2328be95616e98417",
@@ -1188,18 +1738,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "b85e31b069254ee758a85761dd52d3e0",
-    "confidence": 1.0,
-    "document_id": "b5951eb9f6d83724cb1a3bafb4e09956",
-    "id": "af663bcac8fa2ca6dd0e7f514cd0f58d",
-    "name": "_path",
-    "qualified_name": "src/ragx/embeddings/base.py::EmbeddingCache._path",
-    "source": "structural",
-    "summary": null,
-    "type": "method"
-  },
-  {
-    "chunk_id": "9c1574de30d0cff3e64b298917744155",
+    "chunk_id": "9870a24705d806313ada621d81cbe7b9",
     "confidence": 1.0,
     "document_id": "b2d1971669e63f68243ab273bfbcd7dd",
     "id": "b07a02da4a5573920a18df659b958c96",
@@ -1230,6 +1769,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "e6a69ca4b503bca8b03c6650cc2041b3",
+    "id": "b588a60ab57a951e7c1a7decc0863c2d",
+    "name": "snippet.py",
+    "qualified_name": "src/ragx/search/snippet.py",
+    "source": "structural",
+    "summary": "Trecho curto de um chunk, para a busca `concise` do MCP (RAGX-0155/0165).\n\nA busca serve para LOCALIZAR; o conteúdo inteiro de cada hit é o que mais pesa na\nresposta (10 hits de ~600 chars cada). O trecho dá o suficiente para o agente decidir\nse vale abrir (`get_chunk`) e custa uma fração. Lógica de serviço: o servidor MCP só a\nchama, porque ele é casca fina (ADR-0006).",
+    "type": "file"
   },
   {
     "chunk_id": "756b9584659c3adec4a652267a402a53",
@@ -1265,12 +1815,56 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "aabb9cb30b1131fef733c3c22501f767",
+    "id": "b97c2efadea052990a75b7393cb2c3ab",
+    "name": "bridge.js",
+    "qualified_name": "src/app/scripts/visual-fixtures/bridge.js",
+    "source": "structural",
+    "summary": "/*",
+    "type": "file"
+  },
+  {
+    "chunk_id": "dcdd3702dec7aee155df975b04e7d8e7",
+    "confidence": 1.0,
+    "document_id": "547e9b2c00c28582a5fbade91b173699",
+    "id": "ba92c92ab7fb0ec768a966ec462a47c6",
+    "name": "_e_ruido",
+    "qualified_name": "src/ragx/search/gold.py::_e_ruido",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "5737e002a5b134c0e2dbfbf3ad0ac863",
     "confidence": 1.0,
     "document_id": "5a8e0dc676714163c55ccce677517219",
     "id": "beed88ea74dce097ed605eed4052e551",
     "name": "_markers",
     "qualified_name": "src/ragx/githooks.py::_markers",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "5d894c921cc583c5c2982e69226c6131",
+    "confidence": 1.0,
+    "document_id": "547e9b2c00c28582a5fbade91b173699",
+    "id": "c01308eae9c7eb78b79d8ad427a8f89d",
+    "name": "derive_cases",
+    "qualified_name": "src/ragx/search/gold.py::derive_cases",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3f3ce0bb4f82b60812e3ff7f578c9b38",
+    "confidence": 1.0,
+    "document_id": "b07309c464acfe13c2c56c24fd1ed642",
+    "id": "c0a85dfa58348c842617f48582c3ab42",
+    "name": "test_schemas_do_slim_sem_title_anyof_nem_default",
+    "qualified_name": "tests/unit/test_mcp_perfis.py::test_schemas_do_slim_sem_title_anyof_nem_default",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1285,6 +1879,17 @@
     "source": "structural",
     "summary": "`ragx agent eval` — mede RECUPERAÇÃO, não geração.\n\nÉ honesto: o RAGX não avalia a qualidade da resposta do modelo, avalia se\nentregou o contexto certo. Avaliar geração exigiria LLM-as-judge, registrado\ncomo evolução pós-MVP.\n\nVer docs/10-agent-training.md.",
     "type": "file"
+  },
+  {
+    "chunk_id": "829c98bf9298c91b785663771c0b04fe",
+    "confidence": 1.0,
+    "document_id": "4d0a10319e4b1b34794369cd1fa028cb",
+    "id": "c15579ba433552ffa66387562982f8e8",
+    "name": "test_render_sem_titulo_nao_imprime_a_consulta",
+    "qualified_name": "tests/integration/test_context.py::test_render_sem_titulo_nao_imprime_a_consulta",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "173ddf749b2a5abe071c7fc6b9eafbce",
@@ -1375,6 +1980,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "5ec8cba5e7de56d932900ff710448a2b",
+    "confidence": 1.0,
+    "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
+    "id": "d06c028a4043fcc09bc537f80130a197",
+    "name": "_remover",
+    "qualified_name": "src/ragx/clients/claude_hint.py::_remover",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "4f558f1ff35b4a883245e9b083d6ba19",
     "confidence": 1.0,
     "document_id": "00e74032961225ee57b7ee37f011e873",
@@ -1403,6 +2019,17 @@
     "id": "d269b61afddbb68bfba915449b1bf38d",
     "name": "compute",
     "qualified_name": "src/ragx/indexing/freshness.py::compute",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "d34c48fcad3b3f2bc238691e99ba6cb9",
+    "confidence": 1.0,
+    "document_id": "c0c128a82645d774a323eec1798b6f95",
+    "id": "d688b87af28c886ad82d1cf0b6dd3431",
+    "name": "_enche",
+    "qualified_name": "tests/unit/test_log_rotation.py::_enche",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1485,6 +2112,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "5489d97c25e516222e7cc5345906bc8c",
+    "confidence": 1.0,
+    "document_id": "2a2faabfb4cf7c780fee723b130cb220",
+    "id": "e057facaa927ff4d694f5f8b6304a10e",
+    "name": "test_sem_indice_ou_com_warmup_desligado_nao_cria_thread",
+    "qualified_name": "tests/integration/test_mcp_warmup.py::test_sem_indice_ou_com_warmup_desligado_nao_cria_thread",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "2a2faabfb4cf7c780fee723b130cb220",
+    "id": "e50618da6cd389c7bdc85bc568a65c5c",
+    "name": "test_mcp_warmup.py",
+    "qualified_name": "tests/integration/test_mcp_warmup.py",
+    "source": "structural",
+    "summary": "Aquecimento do servidor MCP: carrega em segundo plano, nunca derruba (RAGX-0142).",
+    "type": "file"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "cca781e312f1d6d8aa168987903c2dbd",
@@ -1518,6 +2167,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "06bd31556b0e351dcb52914fb1c0cd14",
+    "confidence": 1.0,
+    "document_id": "df629e7bff4c9c1a7e9ebe0f4481f64a",
+    "id": "e7871d0ac18b7fb95963d59dee516a00",
+    "name": "test_acesso_concorrente_nao_perde_nem_corrompe",
+    "qualified_name": "tests/unit/test_session_ledger.py::test_acesso_concorrente_nao_perde_nem_corrompe",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "09521acb82ace5d6e50323874ac6454c",
+    "confidence": 1.0,
+    "document_id": "ac79c3be18d2f7289e8c1680f6fb151c",
+    "id": "e792e73abe7c09c7ab0e8313444e0497",
+    "name": "test_o_estado_do_ragx_nao_e_enfileirado",
+    "qualified_name": "tests/e2e/test_cli_touch.py::test_o_estado_do_ragx_nao_e_enfileirado",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "b8db075a1abb21048244204d494b13d7",
@@ -1529,7 +2200,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "6926a05dcda0543c3b741078456beea8",
+    "chunk_id": "b73935134fb5fe218be0e40f3cc83dbc",
     "confidence": 1.0,
     "document_id": "8b084fd7662091fba829ee70753bc5bc",
     "id": "e8b1a38ae08798bc49d131a0888e33d9",
@@ -1584,6 +2255,17 @@
     "type": "method"
   },
   {
+    "chunk_id": "b42c14b51e0bbbb1109be00d8ea1a41e",
+    "confidence": 1.0,
+    "document_id": "2a2faabfb4cf7c780fee723b130cb220",
+    "id": "f455a09aa8c810a7c96d8f575d8c733b",
+    "name": "test_falha_no_aquecimento_vai_para_o_log_e_nao_derruba",
+    "qualified_name": "tests/integration/test_mcp_warmup.py::test_falha_no_aquecimento_vai_para_o_log_e_nao_derruba",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "473aeb8b7a3a15ac7b91aeee5d4b3a83",
     "confidence": 1.0,
     "document_id": "371b2713f1004985da268f6bd6a25582",
@@ -1604,6 +2286,17 @@
     "source": "structural",
     "summary": "import { useState } from 'react'",
     "type": "file"
+  },
+  {
+    "chunk_id": "5bbef2c102a0fb98c332f0c4fa6cec7d",
+    "confidence": 1.0,
+    "document_id": "ed24ac8c859c3bd15104e1f3e30ca52d",
+    "id": "f5545f9a242909dafcd84cbe3f61ab84",
+    "name": "proj",
+    "qualified_name": "tests/e2e/test_cli_ab.py::proj",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "0426aeae3ad8dab7757694023e00cb5c",
@@ -1661,6 +2354,28 @@
     "type": "function"
   },
   {
+    "chunk_id": "d4bfe11259efcfabc0c39eb8b98fdde4",
+    "confidence": 1.0,
+    "document_id": "5e854ddcd982f2007031f6709280e069",
+    "id": "f836e61ae7e7908184fbd80ceba8f58b",
+    "name": "test_nenhuma_ferramenta_tem_output_schema",
+    "qualified_name": "tests/integration/test_mcp_wire.py::test_nenhuma_ferramenta_tem_output_schema",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "80fae7ef1339b4f636679db75ebea929",
+    "confidence": 1.0,
+    "document_id": "1db928e8181bf2bd8be736df7d0c9361",
+    "id": "f98a843a7080e3d47b13e621f6451da9",
+    "name": "test_build_context_uma_representacao",
+    "qualified_name": "tests/integration/test_mcp.py::test_build_context_uma_representacao",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "6735c273ce16f74cdb60aef54ba85d7f",
@@ -1670,6 +2385,17 @@
     "source": "structural",
     "summary": "import type { OllamaEnvironment } from '../../src/types/ragx-bridge'",
     "type": "file"
+  },
+  {
+    "chunk_id": "80c6aaa2a070f96d1fc9875ce1d2d55b",
+    "confidence": 1.0,
+    "document_id": "ac79c3be18d2f7289e8c1680f6fb151c",
+    "id": "fb8065baab7c79d10fa20b752e79cfee",
+    "name": "test_search_e_context_drenam_a_fila_antes_de_responder",
+    "qualified_name": "tests/e2e/test_cli_touch.py::test_search_e_context_drenam_a_fila_antes_de_responder",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "9bda3648fd2c0e228b5b937813929b7b",
@@ -1691,6 +2417,17 @@
     "qualified_name": "task/fase-21-recuperacao-v2/RAGX-0167-conjunto-ouro-derivado-do-git-para-avaliar-recuperacao.md",
     "source": "structural",
     "summary": "RAGX-0167 — Conjunto-ouro derivado do git para avaliar recuperação",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "d4fd84af383328d6f009d3e06e8bdb76",
+    "id": "ff5d225ad418a91687087acb25192cf3",
+    "name": "single-instance.test.ts",
+    "qualified_name": "src/app/electron/__tests__/single-instance.test.ts",
+    "source": "structural",
+    "summary": "import { describe, expect, it, vi } from 'vitest'",
     "type": "file"
   }
 ]

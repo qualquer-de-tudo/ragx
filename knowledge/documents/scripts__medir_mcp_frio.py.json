@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "980ed20b41784b7c717988954c4d78174cc42971baa34923f94d7be5e7a59c24",
+  "doc_kind": "code",
+  "id": "6318fcb78701e8cbf74aba910970a4e6",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_mcp_frio.py",
+  "size_bytes": 2307,
+  "title": "Mede o custo da primeira busca de um servidor MCP recém-iniciado (RAGX-0142, S9).\n\nSobe `ragx mcp serve` por stdio, mede o `initialize` e a primeira `search_hybrid`, com e sem\nespera entre os dois (o aquecimento roda nesse intervalo). Imprime a mediana de N execuções.\n\n    uv run python scripts/medir_mcp_frio.py --espera 5 --execucoes 5 [--projeto PASTA] [--sem-warmup]\n\nRode dentro (ou aponte `--projeto` para) um projeto já indexado. `--sem-warmup` liga\n`RAGX_MCP_WARMUP=0` no servidor, para a linha de base."
+}

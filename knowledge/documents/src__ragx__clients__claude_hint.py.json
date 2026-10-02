@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "2cd27a88223e721beef94b5b2c8f4d254cfc91b5a25176fdc5116a323a27a069",
+  "content_hash": "2672db2028b515805d6146fde32dbfa54fdccfaee5dd64a7197eccd2a897edb5",
   "doc_kind": "code",
   "id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/clients/claude_hint.py",
-  "size_bytes": 12621,
+  "size_bytes": 13643,
   "title": "Hook `SessionStart` do Claude Code que diz ao agente que o projeto tem RAGX.\n\nRegistrar o servidor MCP não bastou. As ferramentas do RAGX chegam ao agente\ncomo *deferred* (só o nome; o schema exige um ToolSearch antes), e as\ninstruções do servidor são genéricas. Em 14 dias de uso real, com o servidor\nregistrado, o agente abriu ~50 sessões e chamou o RAGX 4 vezes, todas no\npróprio repositório do RAGX, o único cujo AGENTS.md mandava usar. Grep e Read já\nestão carregados; o RAGX não. O modelo vai no que está à mão.\n\nO hook resolve isso na hora certa e só onde faz sentido: no início da sessão,\n`ragx claude hint` olha a pasta, e só fala se houver índice (ou projetos\nindexados abaixo dela). Fora de projeto RAGX, fica calado.\n\nMesmas regras de `registry`: alteração mínima no `settings.json` da pessoa,\nidempotente, backup antes de mudar, JSON inválido não é sobrescrito."
 }

@@ -16,9 +16,9 @@ com o motivo. Nenhum número vem de memória nem da estimativa de uma tarefa.
 | # | Métrica | Hoje (auditoria) | Meta | Medido | Status | Método |
 |---|---|---:|---:|---:|---|---|
 | S1 | Tokens no fio de `build_context`, `tokens=3000` | 7.684 | ≤ 3.200 | **2.958** (8.535 chars; o servidor declara 2.675) | atingida | `uv run python scripts/medir_fio.py --tool build_context --arg tokens=3000 --arg query="gate de segurança"` |
-| S2 | Custo fixo das ferramentas MCP por sessão | 2.660 | ≤ 600 | `full` (o padrão): **2.680** (compacta) / 3.507 (tiktoken); `slim`: **370** / 491 | não atingida no padrão; ≤ 600 só com `--profile slim` | `uv run ragx mcp tools --profile {full,slim} --json`, régua `ragx.perf.footprint_tokens` (chars/4, compacta) e `count_tokens` do JSON com separadores padrão |
-| S3 | `get_dictionary` nível 0 | 8.660 | ≤ 800 | — | n/a — RAGX-0111 (fase 14) não concluída | — |
-| S4 | Indexação sem mudança, repo de ~20 mil arquivos | 7,6–15 s | ≤ 1,5 s | **7,69 s** (projeto sintético de 20.000 arquivos Python, 2ª rodada, 0 mudanças); no repo real (850 documentos): **0,21 s** | não atingida | `uv run python scripts/medir_indice_inicial.py --arquivos 20000 --provider hashing --jobs 4 --segunda-rodada` (projeto sintético, 2ª rodada); no repo real, `uv run ragx index . --json` duas vezes |
+| S2 | Custo fixo das ferramentas MCP por sessão | 2.660 | ≤ 600 | padrão (`slim`, 6 ferramentas): **385** (compacta); `full` (33): **2.723** | atingida no padrão | `uv run ragx mcp tools [--profile {full,slim}] --json`, régua `ragx.perf.footprint_tokens` (chars/4, compacta) |
+| S3 | `get_dictionary` nível 0 | 8.660 | ≤ 800 | **556** no fio (tiktoken; 518 em chars/4); o nível 1 sai em 1.762 e o 2 (completo, o padrão) em 3.180 | atingida | `uv run python scripts/medir_fio.py --tool get_dictionary --arg level=0` |
+| S4 | Indexação sem mudança, repo de ~20 mil arquivos | 7,6–15 s | ≤ 1,5 s | **3,7 s** (projeto sintético de 20.000 arquivos Python, 2ª rodada, 0 mudanças; o relatório tinha 7,69 s, em outra condição de máquina); no repo real (850 documentos): **0,21 s** | não atingida | `uv run python scripts/medir_indice_inicial.py --arquivos 20000 --provider hashing --jobs 4 --segunda-rodada` (projeto sintético, 2ª rodada); no repo real, `uv run ragx index . --json` duas vezes |
 | S5 | `refresh` incremental, 1 a 4 arquivos | 26–91 s | ≤ 3 s | **1,77 s** (1 arquivo alterado, `indexed: 1`); 0,46 s sem mudança | atingida | `WriteAPI(load_config(), True).refresh()` no processo (comando da RAGX-0131), com um comentário acrescentado ao `README.md` e revertido depois |
 | S6 | Edição não commitada visível na busca | indefinida | ≤ 5 s | **1,38–1,42 s** (5 rodadas) | atingida | `ragx touch` real num projeto sintético de 40 arquivos (`hashing`), sondando a busca por keyword a cada 50 ms até o marcador aparecer |
 | S7 | `ragx claude hint` (SessionStart) | 481–659 ms | ≤ 120 ms | **75 ms** (p50 de 12; 72–94) | atingida | `uv run python scripts/medir_hooks.py --n 12` (entrada `ragx.entry`; pela `ragx.cli.main` genérica seguem 429 ms, e o hook não usa essa) |
@@ -35,9 +35,8 @@ com o motivo. Nenhum número vem de memória nem da estimativa de uma tarefa.
 - **S1.** Em 2.958 tokens, 1,4% abaixo do pedido de 3.000 (a meta aceitava até 3.200). A rodada da RAGX-0154 tinha dado 3.004:
   o número varia com o texto dos fragmentos que o índice devolve hoje. A medição é no fio do MCP, no `tiktoken` (cl100k), que
   serve para comparar antes e depois, não é o tokenizador do Claude.
-- **S2.** O perfil `slim` (6 ferramentas) cumpre a meta com folga, mas **o padrão continua `full`**: trocar o padrão é decisão
-  de uma pessoa (RAGX-0157, em `review`). Hoje o custo do `full` é 2.680 na régua compacta; a RAGX-0157 registrou 355 para o
-  `slim` e agora são 370, porque descrições cresceram desde então.
+- **S2.** O padrão agora é `slim` (6 ferramentas, RAGX-0157): 385 tokens contra 2.723 do `full`. Quem precisa das 33 ferramentas escolhe `[mcp] profile = "full"` ou `--profile full`. Não é uma redução do `full`: o custo dele só cai se ferramentas saírem dele.
+- **S3.** O nível 0 do dicionário (resumo extrativo por módulo, glossário, serviços e o repo map por PageRank) custa 556 tokens no fio; `docs/08-dictionary.md` descreve os níveis. A RAGX-0111 (fase 14) não foi pedida: a meta foi atingida pela RAGX-0166 e pelos níveis do dicionário.
 - **S4.** A meta é para ~20 mil arquivos, e nesse tamanho **não foi atingida**: 7,69 s (o primeiro índice do mesmo projeto levou 120,9 s, com `hashing` e 4 workers). Está no limite inferior do que a auditoria mediu (7,6 a 15 s), então a v2 não moveu esse número neste corpus sintético, que não tem as pastas de dependências que a poda da RAGX-0129 evita. No repositório real, de 850 documentos, a mesma rodada leva 0,21 s (203 a 212 ms, três medições), abaixo do 1,0 s que a RAGX-0130 se propôs. Investigado na RAGX-0196: a rodada sem mudança voltou a medir ~3,7 s (a diferença para 7,69 s é de condição de máquina, não de código), e o custo é por arquivo, em Python puro: `stat` (1,3 s), 84 padrões do `pathspec` por arquivo (1,5 s) e objetos `Path` (~1,2 s), ~150 µs por arquivo. Não há atalho seguro: `DirEntry.stat()` pode devolver tamanho defasado de arquivo aberto no Windows (quebra a frescura) e reduzir os padrões do ignore mexe no Security Gate. **S4 continua não atingida**; a tarefa fica em `review` para uma pessoa decidir entre reescrever o caminho quente ou definir a meta por tamanho de repositório.
 - **S5.** O primeiro `refresh` de um processo frio paga o modelo (~3 s); o número acima é com o processo já quente, como pede a
   meta da RAGX-0131.
@@ -64,9 +63,9 @@ com o motivo. Nenhum número vem de memória nem da estimativa de uma tarefa.
 |---|---|
 | `uv run ruff check .` | limpo |
 | `uv run mypy src/ragx/core src/ragx/security` | limpo (12 arquivos) |
-| `uv run pytest -m "not slow" -n auto` | 1.945 passaram, 5 ignorados (1.950 coletados) |
-| `uv run pytest tests/security` | 147 passaram |
-| `src/app`: `npm run check` (lint + `tsc` do renderer + vitest) | verde; vitest com 1.921 testes |
+| `uv run pytest -m "not slow" -n auto` | 2.107 passaram, 5 ignorados |
+| `uv run pytest tests/security` | 158 passaram |
+| `src/app`: `npm run check` (lint + `tsc` do renderer + vitest) | verde; vitest com 1.923 testes |
 | `src/app`: `npx tsc -p tsconfig.electron.json --noEmit` | limpo |
 
 Só o Windows rodou: Linux e macOS ficam para o CI, que roda os três.
@@ -77,15 +76,16 @@ Tarefas que terminam em `review` (precisam de uma pessoa) ou `blocked` (dependem
 
 | Tarefa | Status | O que falta |
 |---|---|---|
-| RAGX-0145 expansão do grafo | `review` | a queda do MRR do grafo na avaliação: decidir entre o ganho de tokens e a recuperação |
-| RAGX-0151 grafo incremental | `review` | a medição deu **47,0%** de edições que mantêm o conjunto de símbolos, abaixo do corte de 50% da própria tarefa; a implementação verificada está na branch local `wip/ragx-0151-grafo-incremental` |
 | RAGX-0152 primeiro índice em paralelo | `review` | confirmar no CI de Linux e macOS (processos órfãos, `spawn`); 2.000 arquivos: 13–14 s para 6,3–6,8 s |
-| RAGX-0157 perfil `slim` | `review` | decidir se o `slim` vira o padrão (S2 só vale com ele) |
-| RAGX-0162 harness de A/B | `review` | rodar o A/B real (36 chamadas, gasta cota): sem isso S14 fica `n/a` |
+| RAGX-0162 harness de A/B | `review` | rodar o A/B real (36 chamadas, gasta cota; decisão de não rodar antes da v1): S14 fica `n/a` |
+| RAGX-0169 benchmark de modelos | `review` | adotar (ou não) o `nomic-embed-text`; latência de reranker sem número, porque nenhum reranker está em disco |
 | RAGX-0170 índice por worktree | `review` | aceitar que a semente de banco ficou de fora (o cache compartilhado sozinho levou o worktree novo a 5% do índice a frio) |
-| RAGX-0192 auto-update | `review` | `npm run package` e `latest.yml`, atualização real entre duas versões, decidir se liga |
-| RAGX-0166 a 0169 | `blocked` | dependem das RAGX-0104, 0099 e 0111 (fase 14, `todo`) e da 0145; a 0169 só entrega o harness |
+| RAGX-0196 varredura sem mudança em 20 mil arquivos | `review` | S4 não atingida: sem otimização segura; decidir entre reescrever o caminho quente ou medir a meta por tamanho de repositório |
 | RAGX-0195 (esta) | `review` | revisão humana do relatório |
+
+Já decididas e fechadas (`done`) antes da v1: RAGX-0145 (a expansão do grafo fica ligada, com a queda de MRR registrada), RAGX-0151 (grafo
+incremental, aceito com 47% de edições que preservam os símbolos), RAGX-0157 (`slim` como padrão), RAGX-0192 (auto-update ligado por padrão), 0166 a 0168
+(prefixo de contexto, conjunto-ouro do git, repo map).
 
 Pendências de verificação manual do painel (telas e Electron real em Linux e macOS, notificação do Windows) estão nas seções
 Andamento das tarefas 0183 a 0194.
