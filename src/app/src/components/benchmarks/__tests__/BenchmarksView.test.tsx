@@ -46,7 +46,7 @@ describe('BenchmarksView', () => {
   it('a linha do tempo vai do mais novo ao mais antigo, com as versões', () => {
     render(<BenchmarksView />)
     const eventos = within(screen.getByRole('region', { name: 'Linha do tempo' })).getAllByRole('heading', { level: 4 })
-    expect(eventos[0]).toHaveTextContent('Primeira medição real contra um agente sem RAGX')
+    expect(eventos.map((e) => e.textContent)).toEqual([...benchmarks.timeline].reverse().map((e) => e.title))
     expect(eventos[eventos.length - 1]).toHaveTextContent('A auditoria mede a linha de base')
     expect(screen.getByText(/versão 1\.0\.0-beta\.5/)).toBeInTheDocument()
   })
