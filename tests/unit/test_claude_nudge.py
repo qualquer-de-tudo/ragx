@@ -60,6 +60,16 @@ def _nudge(entrada: str, cwd: Path, claude: bool = True) -> subprocess.Completed
     )
 
 
+def test_lembrete_do_pai_nao_silencia_subagentes(tmp_path: Path) -> None:
+    raiz = _indexado(tmp_path / "proj")
+    entrada = json.loads(_stdin("pai", raiz))
+    assert b"RAGX" in _nudge(json.dumps(entrada), tmp_path).stdout
+    for agente in ("a1", "a2"):
+        entrada["agent_id"] = agente
+        assert b"RAGX" in _nudge(json.dumps(entrada), tmp_path).stdout
+        assert _nudge(json.dumps(entrada), tmp_path).stdout == b""
+
+
 # ── a instalação (HOME redirecionado: nunca o `settings.json` real) ─────
 def _settings(casa: Path) -> dict:
     return json.loads((casa / ".claude" / "settings.json").read_text(encoding="utf-8"))

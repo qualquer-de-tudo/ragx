@@ -39,6 +39,8 @@ describe('preload', () => {
         'getActivity',
         'getAdoption',
         'getClaudeIntegration',
+        'getMcpIntegrations',
+        'setMcpIntegration',
         'getConnections',
         'getIndexRuns',
         'getProjectStatus',

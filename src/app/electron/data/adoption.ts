@@ -20,7 +20,7 @@ export interface AdoptionSession {
   startedAt: string | null
   firstAt: string
   lastAt: string
-  /** Chamadas MCP e comandos `ragx` (não `session_start`) com esse `session`. */
+  /** Chamadas MCP e comandos de consulta `ragx` (sem `session_start`/`nudge`) com esse `session`. */
   calls: number
   /** Todos os eventos do item (para `unidentified`). */
   events: number

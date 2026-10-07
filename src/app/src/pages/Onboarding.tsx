@@ -3,7 +3,8 @@ import { ipcErrorMessage } from '../ipcError'
 import { notify } from '../toast'
 import type { ConnectionCheck, JobView } from '../types/ragx-bridge'
 import { RagxMark } from '../components/brand/RagxMark'
-import { ConnectionGrid } from '../components/connections/ConnectionCard'
+import { ConnectionsTabs } from '../components/connections/ConnectionsTabs'
+import type { ClaudeToggle } from '../hooks/useClaudeIntegration'
 import { AddProjectFlow, type PickedProject } from '../components/project/AddProjectFlow'
 import { HOW_IT_WORKS, HOW_IT_WORKS_TITLE } from '../components/onboarding/howItWorks'
 
@@ -24,14 +25,17 @@ export function Onboarding({
   onRefresh,
   jobs,
   onFinish,
+  claude,
 }: {
   connections: ConnectionCheck[] | null
   checking: boolean
   onRefresh: () => void
   jobs: readonly JobView[]
   onFinish: () => void
+  claude?: ClaudeToggle
 }) {
   const [step, setStep] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [picked, setPicked] = useState<PickedProject[]>([])
   const [installHooks, setInstallHooks] = useState(true)
   // Tokens que já entraram na fila: tentar de novo depois de uma falha só
@@ -101,7 +105,7 @@ export function Onboarding({
     await finish()
   }
 
-  const hasError = connections?.some((c) => c.state === 'error') ?? false
+  const hasError = connections?.some((c) => c.id !== 'claude' && c.state === 'error') ?? false
 
   let primary: { label: string; onClick: () => void }
   if (step === LAST) primary = { label: 'Começar', onClick: () => void start() }
@@ -155,12 +159,12 @@ export function Onboarding({
           {step === 1 && (
             <div className="stack onboarding-body">
               <div className="onboarding-row">
-                <p className="dim">Confira se o RAGX, o Claude Code e o Ollama estão prontos.</p>
-                <button type="button" className="btn btn-sm" onClick={onRefresh} disabled={checking}>
+                <p className="dim">Confira o ambiente e escolha seus agentes: Claude Code, Codex, Gemini CLI e outros. Você pode conectar mais de um.</p>
+                <button type="button" className="btn btn-sm" onClick={() => { onRefresh(); claude?.refresh?.(); setRefreshKey((v) => v + 1) }} disabled={checking}>
                   {checking ? 'Verificando…' : 'Verificar agora'}
                 </button>
               </div>
-              <ConnectionGrid connections={connections} jobs={jobs} />
+              <ConnectionsTabs connections={connections} jobs={jobs} claude={claude} refreshKey={refreshKey} />
               {hasError && (
                 <p className="callout callout-warning">Você pode continuar e resolver depois na tela Conexões.</p>
               )}

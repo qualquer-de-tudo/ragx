@@ -302,12 +302,34 @@ def test_a_dica_sai_uma_vez_por_sessao_e_nao_repete_o_evento(tmp_path: Path) -> 
     assert _eventos(raiz) == 2
 
 
-@pytest.mark.parametrize("source", ["clear", "compact"])
-def test_depois_de_clear_ou_compact_a_dica_volta(tmp_path: Path, source: str) -> None:
+@pytest.mark.parametrize("source", ["clear", "compact", "resume"])
+def test_depois_de_clear_compact_ou_resume_a_dica_volta(tmp_path: Path, source: str) -> None:
     raiz = _falso(tmp_path / "proj")
     _hint(raiz, _hook("s1"))
-    assert _hint(raiz, _hook("s1", "resume")) == b""  # retomar não perdeu o contexto
     assert b"RAGX" in _hint(raiz, _hook("s1", source))
+
+
+def test_subagentes_recebem_contexto_sem_consumir_dica_ou_contar_sessao(tmp_path: Path) -> None:
+    raiz = _falso(tmp_path / "proj")
+    _hint(raiz, _hook("pai"))
+    for agente in ("a1", "a2", "a1"):
+        entrada = json.dumps({
+            "session_id": "pai", "agent_id": agente, "cwd": str(raiz),
+            "hook_event_name": "SubagentStart",
+        })
+        saida = json.loads(_hint(tmp_path, entrada))
+        assert saida["hookSpecificOutput"]["hookEventName"] == "SubagentStart"
+        assert "ToolSearch" in saida["hookSpecificOutput"]["additionalContext"]
+    assert _eventos(raiz) == 1
+    assert not (tmp_path / ".ragx").exists()
+
+
+def test_dica_usa_cwd_do_hook_para_orientar_e_registrar(tmp_path: Path) -> None:
+    raiz = _falso(tmp_path / "proj")
+    entrada = json.dumps({"session_id": "s1", "cwd": str(raiz), "hook_event_name": "SessionStart"})
+    assert b"RAGX" in _hint(tmp_path, entrada)
+    assert _eventos(raiz) == 1
+    assert not (tmp_path / ".ragx").exists()
 
 
 def test_sem_session_id_ou_com_stdin_invalido_a_dica_sai_sempre(tmp_path: Path) -> None:

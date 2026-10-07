@@ -67,6 +67,25 @@ def test_a_lista_cobre_os_clientes_que_o_readme_promete() -> None:
     assert {"claude-desktop", "claude-code", "cursor", "windsurf", "gemini", "codex"} <= ids
 
 
+def test_status_lista_clientes_sem_criar_configs_e_reflete_registro(casa: Path) -> None:
+    from typer.testing import CliRunner
+
+    from ragx.cli.main import app
+
+    _instalar("codex")
+    register(_cliente("codex"))
+    _instalar("gemini")
+    runner = CliRunner()
+    r = runner.invoke(app, ["mcp", "status", "--json"])
+    assert r.exit_code == 0, r.output
+    clients = {c["id"]: c for c in json.loads(r.output)}
+    assert clients["codex"]["enabled"] is True
+    assert clients["gemini"]["installed"] is True and clients["gemini"]["enabled"] is False
+    assert clients["windsurf"]["installed"] is False
+    assert not _cliente("gemini").config.exists()
+    assert not _cliente("windsurf").config.parent.exists()
+
+
 # ── instalação limpa ────────────────────────────────────────────────────
 def test_instalacao_limpa_cria_a_configuracao(casa: Path) -> None:
     alvo = _instalar("cursor")

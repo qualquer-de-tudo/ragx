@@ -78,6 +78,60 @@ function makeDeps(over: Partial<HandlerDeps> = {}): HandlerDeps {
   }
 }
 
+describe('conexões MCP por cliente', () => {
+  const states = (enabled = false) => ['codex', 'gemini', 'cursor', 'windsurf', 'claude-desktop'].map((id) => ({
+    id, label: id, installed: id !== 'windsurf', enabled: id === 'codex' && enabled, config: `C:/u/${id}/config`,
+  }))
+
+  it('lista só os campos de conexão e ignora conteúdo extra da CLI', async () => {
+    const deps = makeDeps({ runRagxCommand: vi.fn().mockResolvedValue(states().map((c) => ({ ...c, secret: 'nunca-renderizar' }))) })
+    const result = await createHandlers(deps).getMcpIntegrations()
+    expect(result).toHaveLength(5)
+    expect(result.every((c) => !('secret' in c))).toBe(true)
+    expect(deps.runRagxCommand).toHaveBeenCalledWith(expect.any(String), ['mcp', 'status', '--json'])
+  })
+
+  it('recusa cliente injetado e valores inválidos antes de executar comandos', () => {
+    const deps = makeDeps()
+    const handlers = createHandlers(deps)
+    expect(() => handlers.setMcpIntegration('--client=codex', true)).toThrow()
+    expect(() => handlers.setMcpIntegration('claude-code', true)).toThrow()
+    expect(() => handlers.setMcpIntegration('codex', 'true')).toThrow()
+    expect(deps.runRagxCommand).not.toHaveBeenCalled()
+  })
+
+  it('não cria configuração de um cliente ausente', async () => {
+    const runRagxCommand = vi.fn().mockResolvedValue(states())
+    const handlers = createHandlers(makeDeps({ runRagxCommand, getRagxExe: () => 'C:/ragx.exe' }))
+    await expect(handlers.setMcpIntegration('windsurf', true)).rejects.toThrow('cliente não detectado')
+    expect(runRagxCommand).toHaveBeenCalledTimes(1)
+  })
+
+  it('serializa ligar/desligar e confirma o estado lendo novamente', async () => {
+    let enabled = false
+    const runRagxCommand = vi.fn(async (_cwd: string, args: string[]) => {
+      if (args[1] === 'status') return states(enabled)
+      enabled = args[1] === 'install'
+      return [{ client: 'codex', outcome: enabled ? 'created' : 'removed' }]
+    })
+    const handlers = createHandlers(makeDeps({ runRagxCommand, getRagxExe: () => 'C:/RAGX/ragx.exe' }))
+    const [on, off] = await Promise.all([handlers.setMcpIntegration('codex', true), handlers.setMcpIntegration('codex', false)])
+    expect(on.find((c) => c.id === 'codex')?.enabled).toBe(true)
+    expect(off.find((c) => c.id === 'codex')?.enabled).toBe(false)
+    expect(runRagxCommand.mock.calls.filter(([, args]) => args[1] !== 'status').map(([, args]) => args)).toEqual([
+      ['mcp', 'install', '--client', 'codex', '--command', 'C:/RAGX/ragx.exe', '--json'],
+      ['mcp', 'uninstall', '--client', 'codex', '--json'],
+    ])
+  })
+
+  it('falha de registro mantém o estado e não afirma sucesso', async () => {
+    const runRagxCommand = vi.fn().mockResolvedValueOnce(states()).mockResolvedValueOnce([{ client: 'codex', outcome: 'failed' }])
+    const handlers = createHandlers(makeDeps({ runRagxCommand, getRagxExe: () => 'C:/ragx.exe' }))
+    await expect(handlers.setMcpIntegration('codex', true)).rejects.toThrow('Não foi possível confirmar')
+    expect(runRagxCommand).toHaveBeenCalledTimes(2)
+  })
+})
+
 const ENV: OllamaEnvironment = {
   platform: 'win32',
   gpu: { vendor: 'nvidia', name: 'RTX 4070' },

@@ -16,6 +16,24 @@ console = Console()
 app = typer.Typer(no_args_is_help=True)
 
 
+@app.command("status")
+def status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
+    """Lista clientes detectados e o registro do RAGX, sem alterar configurações."""
+    from ragx.clients.registry import CLIENTS, is_registered
+
+    payload = [
+        {"id": c.id, "label": c.label, "installed": c.installed,
+         "enabled": is_registered(c), "config": str(c.config)}
+        for c in CLIENTS()
+    ]
+    if as_json:
+        console.print_json(json.dumps(payload, ensure_ascii=False))
+        return
+    for c in payload:
+        state = "ligado" if c["enabled"] else "desligado" if c["installed"] else "não detectado"
+        console.print(f"  {escape(str(c['label']))}: {state}")
+
+
 def _perfil(valor: str | None) -> str | None:
     from ragx.core.errors import UsageError
 

@@ -183,12 +183,14 @@ const SCREENS = [
   { id: 'atividade', run: async (page) => { await page.getByRole('button', { name: 'Atividade' }).first().click() } },
   { id: 'atividade-sessoes', run: async (page) => { await page.getByRole('button', { name: 'Atividade' }).first().click(); await page.getByRole('radiogroup', { name: 'Visão' }).getByRole('radio', { name: 'Sessões' }).click(); await page.locator('.session-head').first().click() } },
   { id: 'conexoes', run: async (page) => { await page.getByRole('button', { name: 'Conexões' }).first().click() } },
+  ...['Claude Code', 'Codex', 'Gemini', 'Outros agentes'].map((name, i) => ({ id: `conexoes-agente-${i}`, run: async (page) => { await page.getByRole('button', { name: 'Conexões' }).first().click(); await page.getByRole('tab', { name, exact: true }).click() } })),
   { id: 'preferencias', run: async (page) => { await page.getByRole('button', { name: 'Preferências' }).first().click() } },
   { id: 'como-funciona', run: async (page) => { await page.getByRole('button', { name: 'Como funciona' }).first().click() } },
   { id: 'como-funciona-benchmarks', run: async (page) => { await page.getByRole('button', { name: 'Como funciona' }).first().click(); await page.getByRole('radio', { name: 'Benchmarks' }).click() } },
   { id: 'paleta', run: async (page) => { await page.keyboard.press('Control+k'); await page.getByRole('combobox', { name: 'Buscar comando' }).waitFor() } },
   { id: 'atalhos', run: async (page) => { await page.keyboard.press('Shift+?') ; await page.getByRole('dialog', { name: 'Atalhos de teclado' }).waitFor() } },
   { id: 'onboarding', url: '/?onboarding=1', run: async () => {} },
+  { id: 'onboarding-conexoes', url: '/?onboarding=1', run: async (page) => { await page.getByRole('button', { name: 'Continuar', exact: true }).click(); await page.getByRole('tab', { name: 'Gemini', exact: true }).click() } },
 ]
 
 const screens = only.length ? SCREENS.filter((s) => only.includes(s.id)) : SCREENS

@@ -93,6 +93,7 @@ let latestConnections: ConnectionCheck[] | null = null
 const folderTokens = new FolderTokens()
 
 function worstConnectionsState(checks: ConnectionCheck[]): 'ok' | 'warn' | 'error' {
+  checks = checks.filter((c) => c.id !== 'claude')
   if (checks.some((c) => c.state === 'error')) return 'error'
   if (checks.some((c) => c.state === 'warn')) return 'warn'
   return 'ok'
@@ -541,6 +542,8 @@ handleIpc('ragx:installUpdate', () => updater.install())
 // Sem argumentos: o que vier do renderer é descartado aqui.
 handleIpc('ragx:run-ollama-benchmark', () => handlers.runOllamaBenchmark())
 handleIpc('ragx:getClaudeIntegration', () => handlers.getClaudeIntegration())
+handleIpc('ragx:getMcpIntegrations', () => handlers.getMcpIntegrations())
+handleIpc('ragx:setMcpIntegration', (id: unknown, enabled: unknown) => handlers.setMcpIntegration(id, enabled))
 handleIpc('ragx:setClaudeIntegration', (enabled: unknown) => handlers.setClaudeIntegration(enabled))
 handleIpc('ragx:setClaudeProfile', (id: unknown, enabled: unknown) => handlers.setClaudeProfile(id, enabled))
 handleIpc('ragx:addClaudeProfile', (token: unknown) => handlers.addClaudeProfile(token))

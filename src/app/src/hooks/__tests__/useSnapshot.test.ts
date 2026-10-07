@@ -52,6 +52,8 @@ describe('useSnapshot', () => {
     previewContext: vi.fn(),
       runOllamaBenchmark: vi.fn(),
       getClaudeIntegration: vi.fn(),
+      getMcpIntegrations: vi.fn().mockResolvedValue([]),
+      setMcpIntegration: vi.fn(),
       setClaudeIntegration: vi.fn(),
       setClaudeProfile: vi.fn(),
       addClaudeProfile: vi.fn(),

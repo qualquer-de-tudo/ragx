@@ -76,6 +76,19 @@ const cli = (ts: string, session: string | null) => JSON.stringify({ ts, command
 const mcp = (ts: string, session: string | null) => JSON.stringify({ ts, tool: 'build_context', ms: 1, project: 'P1', ...(session ? { session } : {}) }) + '\n'
 
 describe('ActivityTail: índice por sessão (RAGX-0190)', () => {
+  it('o lembrete nudge não conta como consulta; uma chamada real passa a contar', () => {
+    const f = fakeFs()
+    const reminder = JSON.stringify({ ts: day(0), command: 'nudge', session: 'a', project: 'P1' }) + '\n'
+    f.set(CLI, cli(day(1), 'a') + reminder)
+    const t = new ActivityTail({ fs: f.fs, now: () => NOW })
+    t.poll([SOURCE])
+    expect(t.recent().some((e) => e.name === 'nudge')).toBe(true)
+    expect(computeAdoption(t.sessions(), NOW)).toMatchObject({ sessions: 1, withCalls: 0 })
+    f.set(MCP, mcp(day(0), 'a'))
+    t.poll([SOURCE])
+    expect(computeAdoption(t.sessions(), NOW)).toMatchObject({ sessions: 1, withCalls: 1 })
+  })
+
   it('sobrevive ao corte de 24 h do feed (14 dias de adoção contra 24 h do feed)', () => {
     const f = fakeFs()
     f.set(CLI, cli(day(5), 'velha001') + cli(day(0, 1), 'nova0001'))

@@ -279,16 +279,18 @@ export function ConnectionGrid({
   jobs,
   onAction,
   extra,
+  pendingTitles = PENDING_TITLES,
 }: {
   connections: ConnectionCheck[] | null
   jobs: readonly JobView[]
   onAction?: (action: ConnectionAction) => void
   extra?: (check: ConnectionCheck) => ReactNode
+  pendingTitles?: readonly string[]
 }) {
   return (
     <ul className="conn-grid" aria-label="Conexões">
       {connections === null
-        ? PENDING_TITLES.map((t) => (
+        ? pendingTitles.map((t) => (
             <li key={t}>
               <PendingCard title={t} />
             </li>

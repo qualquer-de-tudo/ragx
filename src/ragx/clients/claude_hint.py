@@ -33,6 +33,7 @@ from ragx.clients.registry import (
 )
 
 EVENT = "SessionStart"
+SUBAGENT_EVENT = "SubagentStart"
 #: O segundo hook (RAGX-0141): depois de cada edição de arquivo, avisa o RAGX para reindexá-lo.
 TOUCH_EVENT = "PostToolUse"
 TOUCH_MATCHER = "Edit|Write|MultiEdit"
@@ -134,7 +135,7 @@ def _gravar(
     return backup
 
 
-def install_hint(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
+def _install_session_hint(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
     """Põe (ou corrige) o hook de dica no `settings.json` do perfil."""
     path = claude_settings(client)
     try:
@@ -161,7 +162,7 @@ def install_hint(client: Client, command: str = "ragx", dry_run: bool = False) -
         return Result(client, Outcome.FAILED, f"não consegui escrever {path}: {exc}")
 
 
-def remove_hint(client: Client, dry_run: bool = False) -> Result:
+def _remove_session_hint(client: Client, dry_run: bool = False) -> Result:
     """Tira só o hook do RAGX; os hooks da pessoa ficam."""
     path = claude_settings(client)
     try:
@@ -180,7 +181,7 @@ def remove_hint(client: Client, dry_run: bool = False) -> Result:
         return Result(client, Outcome.FAILED, f"não consegui escrever {path}: {exc}")
 
 
-def has_hint(client: Client) -> bool:
+def _has_session_hint(client: Client) -> bool:
     path = claude_settings(client)
     try:
         dados = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
@@ -190,6 +191,36 @@ def has_hint(client: Client) -> bool:
     if not isinstance(grupos, list):
         return False
     return any(_eh_nosso(h) for g in grupos if isinstance(g, dict) for h in g.get("hooks") or [])
+
+
+def _combinar(a: Result, b: Result) -> Result:
+    if not a.ok:
+        return a
+    if not b.ok:
+        return b
+    changed = (Outcome.CREATED, Outcome.UPDATED, Outcome.REMOVED)
+    outcome = a.outcome if a.outcome in changed else b.outcome
+    return Result(a.client, outcome, f"{a.detail}; {b.detail}", a.backup or b.backup)
+
+
+def install_hint(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
+    """Orienta a sessão e cada subagente, preservando os hooks existentes."""
+    a = _install_session_hint(client, command, dry_run)
+    if not a.ok:
+        return a
+    nova = {"hooks": [{"type": "command", "command": hint_command(command), "timeout": 15}]}
+    return _combinar(a, _instalar(client, nova, SUBAGENT_EVENT, _eh_nosso, "dica de subagente", dry_run))
+
+
+def remove_hint(client: Client, dry_run: bool = False) -> Result:
+    a = _remove_session_hint(client, dry_run)
+    if not a.ok:
+        return a
+    return _combinar(a, _remover(client, SUBAGENT_EVENT, _eh_nosso, "dica de subagente", dry_run))
+
+
+def has_hint(client: Client) -> bool:
+    return _has_session_hint(client) and _tem(client, SUBAGENT_EVENT, _eh_nosso)
 
 
 # ── o hook de toque (PostToolUse) ───────────────────────────────────────

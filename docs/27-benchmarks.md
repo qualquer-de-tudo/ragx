@@ -5,9 +5,21 @@
 
 Números medidos pelo próprio RAGX, com a data, o método e a máquina. Onde a meta não foi atingida, está dito. Onde o resultado é inconclusivo, também.
 
-**10 de 11 metas atingidas.** Atualizado em 2 de out de 2026. Máquina: Windows 11, Intel i5-13600KF, 31,8 GB de RAM, GPU AMD RX 7700 XT (Ollama).
+**10 de 11 metas atingidas.** Atualizado em 6 de out de 2026. Máquina: Windows 11, Intel i5-13600KF, 31,8 GB de RAM, GPU AMD RX 7700 XT (Ollama).
 
 Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **melhor extremo** dela: a melhora mostrada é a menor possível.
+
+## Velocidade
+
+| Métrica | Antes | Agora | Variação | Meta |
+|---|---:|---:|---:|---|
+| Detecção das conexões dos agentes | indefinido (comando ainda não existia) | **495,3 ms** | — | — |
+| Primeira busca de uma sessão | 3.000 ms | **40 ms** | −99% | até 600 ms: atingida |
+| Busca com o processo aquecido | 104 ms | **22 ms** | −79% | até 60 ms: atingida |
+| Dica de início de sessão | 481 ms | **75 ms** | −84% | até 120 ms: atingida |
+| Tempo que o git commit espera pelo hook | 539 ms | **99 ms** | −82% | até 150 ms: atingida |
+
+- **Detecção das conexões dos agentes.** Inclui inicialização do processo CLI; sem comparação de desempenho com versões anteriores e sem chamadas aos agentes.
 
 ## Economia de tokens
 
@@ -16,16 +28,6 @@ Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **me
 | Contexto entregue por consulta | 7.684 tokens | **2.958 tokens** | −62% | até 3.200 tokens: atingida |
 | Custo fixo das ferramentas por sessão | 2.660 tokens | **385 tokens** | −86% | até 600 tokens: atingida |
 | Mapa do projeto, nível 0 | 8.660 tokens | **556 tokens** | −94% | até 800 tokens: atingida |
-
-
-## Velocidade
-
-| Métrica | Antes | Agora | Variação | Meta |
-|---|---:|---:|---:|---|
-| Primeira busca de uma sessão | 3.000 ms | **40 ms** | −99% | até 600 ms: atingida |
-| Busca com o processo aquecido | 104 ms | **22 ms** | −79% | até 60 ms: atingida |
-| Dica de início de sessão | 481 ms | **75 ms** | −84% | até 120 ms: atingida |
-| Tempo que o git commit espera pelo hook | 539 ms | **99 ms** | −82% | até 150 ms: atingida |
 
 
 ## Frescor
@@ -47,6 +49,7 @@ Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **me
 
 ### Como cada número foi medido
 
+- **Detecção das conexões dos agentes**: mcp status --json com nove perfis/clientes locais. `PowerShell System.Diagnostics.Stopwatch envolvendo ragx mcp status --json | Out-Null, cinco execuções consecutivas na instalação editável`
 - **Contexto entregue por consulta**: build_context com orçamento de 3.000 tokens, medido no fio do MCP. `scripts/medir_fio.py --tool build_context --arg tokens=3000 (tiktoken cl100k, que não é o tokenizador do Claude)`
 - **Custo fixo das ferramentas por sessão**: o que as ferramentas do MCP custam em toda sessão, no perfil padrão (slim). `ragx mcp tools --json, régua compacta (chars/4). O perfil full (33 ferramentas) segue em 2.723.`
 - **Mapa do projeto, nível 0**: get_dictionary: o primeiro olhar do agente no projeto. `scripts/medir_fio.py --tool get_dictionary --arg level=0 (tiktoken)`
@@ -91,6 +94,12 @@ Os intervalos se sobrepõem: é um indício consistente nos dois conjuntos, não
 Método: `ragx bench models (cópia do índice, 9.329 chunks; nada baixado, nada saiu da máquina)`
 
 ## Linha do tempo
+
+### 6 de out de 2026 · versão 1.0.3: Conexões por agente e onboarding multicliente
+
+Claude Code, Codex, Gemini e outros clientes ganham controles no painel. A nova detecção local das configurações levou mediana de 495,3 ms em cinco execuções, incluindo abrir o processo da CLI; não mede latência de consulta nem economia de tokens.
+
+- Detecção das conexões dos agentes: sem base → **495,3 ms**
 
 ### 2 de out de 2026 · versão 1.0.1: Primeira medição real contra um agente sem RAGX
 

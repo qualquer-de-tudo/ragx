@@ -17,7 +17,7 @@ const FOUND: DiscoverResult = {
 
 const STEP_1 = [
   'O RAGX lê seus projetos aqui mesmo, na sua máquina, e guarda o que encontra em pedaços pequenos (chunks) com um resumo numérico de cada um (embeddings).',
-  'Quando o Claude Code precisa entender o projeto, ele pergunta ao RAGX pelo MCP em vez de abrir arquivo por arquivo. Chega só o trecho que importa.',
+  'Claude Code, Codex, Gemini CLI, Cursor e Windsurf podem consultar o RAGX pelo MCP. O agente recebe trechos relevantes do projeto, com as fontes, dentro de um limite de tokens.',
   'Arquivos com segredos, como .env e chaves, são bloqueados antes de entrar no índice.',
   'Os hooks de git mantêm o índice na branch em que você está: ao trocar de branch, commitar ou fazer pull, o RAGX atualiza sozinho em segundo plano. Um hook no Claude Code avisa de cada arquivo que o agente edita.',
   'Os embeddings são gerados pelo Ollama, que roda no Docker ou direto no seu computador.',
@@ -79,7 +79,10 @@ describe('Onboarding', () => {
     next()
     expect(heading('Conexões')).toBeInTheDocument()
     expect(screen.getByText('Passo 2 de 4')).toBeInTheDocument()
-    expect(screen.getAllByRole('article')).toHaveLength(3)
+    expect(screen.getAllByRole('article')).toHaveLength(2)
+    expect(screen.getByRole('tab', { name: 'Codex' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Gemini' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Claude Code' }))
     expect(screen.getByRole('button', { name: 'Registrar para todos os projetos' })).toBeInTheDocument()
     expect(screen.getByText('Você pode continuar e resolver depois na tela Conexões.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled()

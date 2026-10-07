@@ -39,7 +39,7 @@ const RANK = { ok: 0, warn: 1, error: 2 } as const
 
 function worstOf(checks: ConnectionCheck[] | null): Health {
   if (!checks || checks.length === 0) return null
-  return checks.reduce<ConnectionCheck['state']>((w, c) => (RANK[c.state] > RANK[w] ? c.state : w), 'ok')
+  return checks.filter((c) => c.id !== 'claude').reduce<ConnectionCheck['state']>((w, c) => (RANK[c.state] > RANK[w] ? c.state : w), 'ok')
 }
 
 function App() {
@@ -180,6 +180,7 @@ function App() {
           onRefresh={() => void refresh()}
           jobs={jobs}
           onFinish={finishOnboarding}
+          claude={claude}
         />
         <Toaster />
       </>
@@ -256,7 +257,6 @@ function App() {
           onQuery={onQuery}
           jobs={jobs}
           health={health}
-          claude={claude}
           onOpenConnections={() => setRoute({ page: 'connections' })}
           onCancelJob={onCancelJob}
         />

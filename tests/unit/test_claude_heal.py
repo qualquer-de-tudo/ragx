@@ -56,6 +56,23 @@ def test_heal_e_idempotente(casa: Path) -> None:
     assert json.loads(r.output)["changed"] is False
 
 
+def test_heal_completa_subagentstart_sem_alterar_hook_alheio(casa: Path) -> None:
+    runner.invoke(app, ["claude", "on"])
+    settings = casa / ".claude" / "settings.json"
+    dados = json.loads(settings.read_text(encoding="utf-8"))
+    alheio = {"hooks": [{"type": "command", "command": "echo subagente"}]}
+    dados["hooks"]["SubagentStart"] = [alheio]
+    settings.write_text(json.dumps(dados), encoding="utf-8")
+    assert not has_hint(_padrao())
+    r = runner.invoke(app, ["claude", "heal", "--json"])
+    assert r.exit_code == 0, r.output
+    assert json.loads(r.output)["healed"][0]["installed"] == ["hint"]
+    assert has_hint(_padrao())
+    assert alheio in json.loads(settings.read_text(encoding="utf-8"))["hooks"]["SubagentStart"]
+    runner.invoke(app, ["claude", "off"])
+    assert json.loads(settings.read_text(encoding="utf-8"))["hooks"]["SubagentStart"] == [alheio]
+
+
 def test_heal_nao_liga_um_perfil_desligado(casa: Path) -> None:
     r = runner.invoke(app, ["claude", "heal", "--json"])
     assert r.exit_code == 0, r.output

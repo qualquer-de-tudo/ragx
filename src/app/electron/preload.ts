@@ -3,6 +3,8 @@ import type {
   ActivityEvent,
   AdoptionSummary,
   ClaudeIntegration,
+  McpIntegration,
+  McpClientId,
   ConnectionCheck,
   ContextPreview,
   DiscoverResult,
@@ -92,6 +94,9 @@ const ragx: RagxBridge = {
   // Sem argumentos de propósito: nada que o renderer passe chega ao processo principal.
   runOllamaBenchmark: (): Promise<OllamaBenchmark> => ipcRenderer.invoke('ragx:run-ollama-benchmark'),
   getClaudeIntegration: (): Promise<ClaudeIntegration> => ipcRenderer.invoke('ragx:getClaudeIntegration'),
+  getMcpIntegrations: (): Promise<McpIntegration[]> => ipcRenderer.invoke('ragx:getMcpIntegrations'),
+  setMcpIntegration: (id: McpClientId, enabled: boolean): Promise<McpIntegration[]> =>
+    ipcRenderer.invoke('ragx:setMcpIntegration', id, enabled),
   setClaudeIntegration: (enabled: boolean): Promise<ClaudeIntegration> =>
     ipcRenderer.invoke('ragx:setClaudeIntegration', enabled),
   setClaudeProfile: (id: string, enabled: boolean): Promise<ClaudeIntegration> =>

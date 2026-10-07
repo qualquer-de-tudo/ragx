@@ -288,6 +288,7 @@ ragx mcp tools
     --read-only             lista como ficaria sem escrita
 
 ragx mcp install
+ragx mcp status --json          # detecção e registro por cliente, sem alterar configuração
     --client NOME           só nestes (repetível): claude-desktop, claude-code,
                             cursor, windsurf, gemini, codex
     --command CAMINHO       executável gravado na configuração (padrão: `ragx`)

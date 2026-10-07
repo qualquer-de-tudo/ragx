@@ -9,6 +9,18 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.0.3] — 2026-10-06
+
+### Adicionado
+
+- **Conexões por agente no painel e no onboarding.** Abas de Ambiente, Claude Code, Codex, Gemini e outros agentes, com detecção e controles de conexão MCP para Codex, Gemini CLI, Cursor, Windsurf e Claude Desktop. O controle global do Claude Code sai do header e fica junto dos seus perfis. Agentes opcionais desconectados não prejudicam a saúde do ambiente.
+- **`ragx mcp status --json`** consulta os clientes detectados e suas conexões sem alterar configurações.
+
+### Corrigido
+
+- **Claude Code orienta também os subagentes a consultar o RAGX.** A dica passa a usar `SubagentStart` com contexto próprio para cada filho, além de `SessionStart`; `claude heal` completa instalações antigas, preservando hooks e recusas. A dica respeita o `cwd` do evento e volta ao retomar uma sessão. O lembrete de busca passa a ser independente por subagente: o primeiro Grep do pai não silencia todos os filhos.
+- **Adoção no painel não conta o lembrete `nudge` como consulta.** Uma sessão que só recebeu o aviso do índice continua sem uso, até uma chamada MCP ou comando de consulta.
+
 ## [1.0.2] — 2026-10-02
 
 ### Adicionado

@@ -1,6 +1,6 @@
 """Entrada leve dos hooks que rodam em TODA sessão e TODO commit (RAGX-0143).
 
-`ragx claude hint` (o `SessionStart` do Claude Code, que roda até em subagente) levava 481 a 659 ms,
+`ragx claude hint` (a dica do Claude Code em `SessionStart` e `SubagentStart`) levava 481 a 659 ms,
 e o hook de git bloqueava o commit por 539 a 1.041 ms, contra 41 a 56 ms de um Python vazio. A causa:
 o ponto de entrada importava typer, rich, pydantic e 25 módulos de comando antes de olhar o primeiro
 argumento. Este módulo faz o trabalho desses dois caminhos usando SÓ a stdlib (e `ragx.origin`,
@@ -22,6 +22,7 @@ O texto da dica tem UMA fonte, esta: `ragx.clients.claude_hint.hint_text` delega
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -192,8 +193,8 @@ def _ler_json(espera_s: float = 0.5) -> dict[str, Any]:
     return dados if isinstance(dados, dict) else {}
 
 
-#: Valores de `source` do SessionStart em que o contexto do agente foi perdido: a dica volta.
-REENTREGA = ("clear", "compact")
+#: Reinício de contexto ou retomada de sessão longa: renova a orientação.
+REENTREGA = ("clear", "compact", "resume")
 
 
 def _sanear_sessao(valor: Any) -> str:
@@ -205,7 +206,7 @@ def primeira_vez(pasta: Path, sessao: str, source: str | None) -> bool:
     """A dica desta sessão ainda não foi entregue? Marca a entrega, de forma atômica (`O_EXCL`).
 
     Sem `session_id` não há como saber: entrega (o uso manual segue igual). Depois de `clear` ou
-    `compact` entrega de novo e renova o marcador. Qualquer erro de disco entrega: perder a dica é pior
+    `compact` ou `resume` entrega de novo e renova o marcador. Qualquer erro de disco entrega: perder a dica é pior
     do que repeti-la.
     """
     if not sessao:
@@ -268,25 +269,41 @@ def record_session_start(start: Path | None = None) -> None:
 def run_hint() -> int:
     """`ragx claude hint`. Nunca falha e nunca escreve nada se der erro.
 
-    Uma vez por sessão: o Claude Code roda o hook de `SessionStart` também em subagentes, e repetir
-    ~100 tokens (e contar de novo a sessão no painel) a cada um não ajuda ninguém. O marcador fica em
-    `.ragx/cache/hint/<session_id>` (na pasta do hub, quando a pasta não tem índice próprio).
+    SessionStart usa um marcador por sessão, renovado em clear, compact e resume.
+    SubagentStart devolve JSON com contexto para o filho, sem consumir o marcador do pai
+    nem registrar outra sessão. O cwd do evento determina o projeto.
     """
     try:
         dados = _ler_json()
-        cfg = carregar()
+        cwd = dados.get("cwd")
+        start = Path(cwd) if isinstance(cwd, str) and cwd else None
+        cfg = carregar(start)
         indexado = cfg.db_path.exists()
         texto = texto_projeto(cfg) if indexado else texto_pasta_pai(cfg)
         if not texto:
             return 0
+        if dados.get("hook_event_name") == "SubagentStart":
+            # O Claude injeta esta saída no contexto do filho e deduplica por agente.
+            # Não cria outra sessão nem consome o marcador do pai.
+            texto = json.dumps({"hookSpecificOutput": {
+                "hookEventName": "SubagentStart", "additionalContext": texto,
+            }}, ensure_ascii=False)
+            _emitir(texto)
+            return 0
         pasta = (cfg.state_dir if indexado else cfg.hub_dir) / ("cache/hint" if indexado else "hint")
         if not primeira_vez(pasta, _sanear_sessao(dados.get("session_id")), dados.get("source")):
             return 0
-        record_session_start()
+        record_session_start(start)
     except Exception:
         return 0
     # Direto no stdout, sem Rich: o texto vai para o contexto do agente. Bytes UTF-8: no
     # Windows, stdout em pipe sai em cp1252 e os acentos chegariam ao agente como lixo.
+    _emitir(texto)
+    return 0
+
+
+def _emitir(texto: str) -> None:
+    """Saída UTF-8 para o contexto do Claude, inclusive em pipes no Windows."""
     dados_saida = (texto + "\n").encode("utf-8")
     buffer = getattr(sys.stdout, "buffer", None)
     if buffer is not None:
@@ -295,7 +312,6 @@ def run_hint() -> int:
         buffer.flush()
     else:
         sys.stdout.write(texto + "\n")
-    return 0
 
 
 # ── o lembrete no Grep/Glob (`ragx claude nudge`, PreToolUse) ─────────────
@@ -316,7 +332,8 @@ def run_nudge() -> int:
 
     Sugere sem bloquear (bloquear `Grep`/`Read` está descartado) e cala em todo o resto: projeto sem
     índice, sessão que já foi avisada, stdin vazio ou inválido, qualquer erro. O marcador
-    `.ragx/cache/nudge/<session_id>` é criado com `O_EXCL`: com vários `Grep` em paralelo só um imprime.
+    O marcador em `.ragx/cache/nudge/` é criado com `O_EXCL`: com vários `Grep` em paralelo
+    só um imprime por agente. Filhos têm marcador próprio, derivado de session_id + agent_id.
     """
     try:
         dados = _ler_json()
@@ -327,7 +344,9 @@ def run_nudge() -> int:
         cfg = carregar(Path(cwd))
         if not cfg.db_path.exists():
             return 0
-        if not primeira_vez(cfg.state_dir / "cache" / "nudge", sessao, None):
+        agente = _sanear_sessao(dados.get("agent_id"))
+        marcador = hashlib.sha256(f"{sessao}:{agente}".encode()).hexdigest() if agente else sessao
+        if not primeira_vez(cfg.state_dir / "cache" / "nudge", marcador, None):
             return 0
         from ragx.diagnostics import log_cli_call
 

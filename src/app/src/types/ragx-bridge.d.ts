@@ -47,7 +47,7 @@ export interface Snapshot {
   projects: ProjectSnapshot[]
   generatedAt: string
   /**
-   * Pior dos três estados de `ConnectionCheck` (`checkAll`), preenchido pelo
+   * Pior estado do ambiente CLI/Ollama, sem agentes opcionais, preenchido pelo
    * processo principal a partir do último resultado em cache (Task 6,
    * decisão 3). `null`/ausente até a primeira checagem terminar - antes
    * disso não há dado nenhum, não é um "ok" otimista.
@@ -249,9 +249,19 @@ export interface ClaudeProfile {
 }
 
 export interface ClaudeIntegration {
-  /** Ligado em todos os perfis (é o que o interruptor do topo mostra). */
+  /** Ligado em todos os perfis (interruptor global na aba Claude Code). */
   enabled: boolean
   profiles: ClaudeProfile[]
+}
+
+export type McpClientId = 'codex' | 'gemini' | 'cursor' | 'windsurf' | 'claude-desktop'
+
+export interface McpIntegration {
+  id: McpClientId
+  label: string
+  installed: boolean
+  enabled: boolean
+  config: string
 }
 
 export interface RagxBridge {
@@ -306,6 +316,8 @@ export interface RagxBridge {
   runOllamaBenchmark: () => Promise<OllamaBenchmark>
   /** Interruptor do RAGX no Claude Code (`ragx claude status|on|off`), para todos os projetos. */
   getClaudeIntegration: () => Promise<ClaudeIntegration>
+  getMcpIntegrations: () => Promise<McpIntegration[]>
+  setMcpIntegration: (id: McpClientId, enabled: boolean) => Promise<McpIntegration[]>
   setClaudeIntegration: (enabled: boolean) => Promise<ClaudeIntegration>
   setClaudeProfile: (id: string, enabled: boolean) => Promise<ClaudeIntegration>
   /** `token` vem de `pickFolder()`: a pasta do perfil nunca viaja como caminho. */

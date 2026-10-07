@@ -43,6 +43,8 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
     previewContext: vi.fn(),
     runOllamaBenchmark: vi.fn(),
     getClaudeIntegration: vi.fn().mockResolvedValue({ enabled: true }),
+    getMcpIntegrations: vi.fn().mockResolvedValue([]),
+    setMcpIntegration: vi.fn(),
     setClaudeIntegration: vi.fn(),
     setClaudeProfile: vi.fn(),
     addClaudeProfile: vi.fn(),

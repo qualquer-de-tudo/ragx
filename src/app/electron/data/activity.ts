@@ -174,7 +174,7 @@ export class ActivityTail {
       if (Date.parse(e.ts) > Date.parse(s.lastAt)) s.lastAt = e.ts
       if (e.kind === 'session') {
         if (s.startedAt === null || Date.parse(e.ts) < Date.parse(s.startedAt)) s.startedAt = e.ts
-      } else {
+      } else if (e.name !== 'nudge') {
         s.calls += 1
       }
     }

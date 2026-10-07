@@ -20,7 +20,10 @@ function renderPage(over: { connections?: ConnectionCheck[] | null; jobs?: JobVi
   return { ...utils, onRefresh }
 }
 
-const card = (name: string) => screen.getByRole('article', { name })
+const card = (name: string) => {
+  fireEvent.click(screen.getByRole('tab', { name: name === 'Claude Code' ? 'Claude Code' : 'Ambiente' }))
+  return screen.getByRole('article', { name })
+}
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -36,9 +39,9 @@ describe('ConnectionsPage', () => {
     installBridge()
     renderPage({ connections: connectionChecks({ ollama: { state: 'error', stateLabel: 'Não conectado' } }) })
     expect(screen.getByRole('heading', { level: 1, name: 'Conexões' })).toBeInTheDocument()
-    expect(screen.getByText('O que o RAGX precisa para funcionar. O painel confere a cada 30 segundos.')).toBeInTheDocument()
+    expect(screen.getByText('Seu ambiente e seus agentes, no mesmo lugar. Conecte o RAGX onde você trabalha.')).toBeInTheDocument()
     // resumo no topo: duas das três pedem atenção
-    expect(screen.getByText('2 de 3 pedem atenção')).toBeInTheDocument()
+    expect(screen.getByText('1 de 2 pede atenção')).toBeInTheDocument()
 
     expect(within(card('RAGX CLI')).getByText('Conectado')).toBeInTheDocument()
     expect(within(card('Claude Code')).getByText('Atenção')).toBeInTheDocument()
@@ -454,6 +457,7 @@ describe('ConnectionsPage: ajuste automático', () => {
       claude: { checked: 1, installed: ['padrão: aviso de edição'], error: null }, git: { queued: [], failed: [] },
     })
     render(<ConnectionsPage connections={connectionChecks()} checking={false} onRefresh={vi.fn()} jobs={[]} claude={claude} projects={[]} />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Claude Code' }))
     expect(screen.getByRole('heading', { name: 'Ajuste automático' })).toBeInTheDocument()
     expect(screen.getByText(/Faltam hooks em padrão/)).toBeInTheDocument()
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())

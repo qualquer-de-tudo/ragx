@@ -9,7 +9,7 @@ describe('HowItWorksPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Como funciona' })).toBeInTheDocument()
     const passos = within(screen.getByRole('region', { name: 'O caminho do dado' })).getAllByRole('listitem')
     expect(passos).toHaveLength(5)
-    expect(HOW_STEPS.map((s) => s.title)).toEqual(['Seu código', 'Security Gate', 'Índice', 'MCP', 'Claude Code'])
+    expect(HOW_STEPS.map((s) => s.title)).toEqual(['Seu código', 'Security Gate', 'Índice', 'MCP', 'Seu agente'])
     HOW_STEPS.forEach((s, i) => {
       expect(passos[i]).toHaveTextContent(s.title)
       expect(passos[i]).toHaveTextContent(s.text)

@@ -8,6 +8,8 @@ import { parseContextPreview } from './data/context-preview'
 import type { ContextPreview } from './data/types'
 import type {
   ClaudeIntegration,
+  McpIntegration,
+  McpClientId,
   ClaudeProfile,
   ConnectionCheck,
   DiscoverItem,
@@ -225,6 +227,27 @@ export function createHandlers(deps: HandlerDeps) {
   const lightConnections = createCoalescedRun(() => runConnectionChecks(true))
 
   let claudeChain: Promise<unknown> = Promise.resolve()
+  let mcpChain: Promise<unknown> = Promise.resolve()
+  const mcpIds: readonly McpClientId[] = ['codex', 'gemini', 'cursor', 'windsurf', 'claude-desktop']
+
+  function inMcpChain<T>(fn: () => Promise<T>): Promise<T> {
+    const run = mcpChain.then(fn)
+    mcpChain = run.catch(() => undefined)
+    return run
+  }
+
+  async function mcpIntegrations(): Promise<McpIntegration[]> {
+    const raw = await deps.runRagxCommand(os.homedir(), ['mcp', 'status', '--json'])
+    if (!Array.isArray(raw)) throw new Error('Não consegui ler as conexões dos agentes. Atualize a CLI do RAGX.')
+    return mcpIds.map((id) => {
+      const item = raw.find((r: unknown) => r !== null && typeof r === 'object' && 'id' in r && r.id === id)
+      if (!item || typeof item.label !== 'string' || typeof item.installed !== 'boolean' ||
+          typeof item.enabled !== 'boolean' || typeof item.config !== 'string') {
+        throw new Error('Resposta inesperada ao verificar as conexões dos agentes.')
+      }
+      return { id, label: item.label, installed: item.installed, enabled: item.enabled, config: item.config }
+    })
+  }
 
   /**
    * `ragx claude ...` é global (mexe em `~/.claude.json`), então roda na pasta
@@ -575,6 +598,35 @@ export function createHandlers(deps: HandlerDeps) {
     /** Estado atual do interruptor, lido de `~/.claude.json` pela própria CLI. */
     getClaudeIntegration(): Promise<ClaudeIntegration> {
       return claudeCommand(['claude', 'status', '--json'])
+    },
+
+    getMcpIntegrations(): Promise<McpIntegration[]> {
+      return inMcpChain(mcpIntegrations)
+    },
+
+    setMcpIntegration(id: unknown, enabled: unknown): Promise<McpIntegration[]> {
+      if (typeof id !== 'string' || !mcpIds.includes(id as McpClientId)) throw rejected('cliente MCP desconhecido')
+      if (typeof enabled !== 'boolean') throw rejected('enabled precisa ser booleano')
+      return inMcpChain(async () => {
+        const clients = await mcpIntegrations()
+        const client = clients.find((c) => c.id === id)!
+        if (enabled && !client.installed) throw rejected('cliente não detectado: abra o agente e verifique novamente')
+        const exe = enabled ? deps.getRagxExe?.() : undefined
+        if (enabled && !exe) throw rejected('RAGX CLI não encontrado')
+        const result = await deps.runRagxCommand(os.homedir(), [
+          'mcp', enabled ? 'install' : 'uninstall', '--client', id,
+          ...(enabled && exe ? ['--command', exe] : []), '--json',
+        ])
+        if (!Array.isArray(result) || result.length !== 1 || result[0]?.client !== id ||
+            !['created', 'updated', 'unchanged', 'removed'].includes(result[0]?.outcome)) {
+          throw new Error('Não foi possível confirmar a alteração desta conexão. Verifique novamente.')
+        }
+        const updated = await mcpIntegrations()
+        if (updated.find((c) => c.id === id)?.enabled !== enabled) {
+          throw new Error('A configuração ainda não confirmou a alteração. Verifique novamente.')
+        }
+        return updated
+      })
     },
 
     /**

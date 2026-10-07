@@ -14,6 +14,21 @@ Duas frentes atacam isso:
 - **`ragx watch`** — o índice se atualiza sozinho enquanto você edita
 - **escrita via MCP** — o agente garante frescor antes de raciocinar
 
+### Claude Code: conexão e uso são sinais diferentes
+
+O painel desktop não precisa ficar aberto para o MCP, a CLI ou os hooks funcionarem.
+`ragx claude on` registra o servidor e instala a orientação em `SessionStart` e
+`SubagentStart`: cada filho recebe contexto próprio com as ferramentas e a instrução
+de carregá-las por ToolSearch. A dica usa o `cwd` do evento; volta em `resume`,
+`clear` e `compact`. `ragx claude heal` completa os hooks em perfis já ligados,
+respeitando recusas e preservando os hooks da pessoa.
+
+O lembrete em `PreToolUse` (`Grep|Glob`) é independente por agente. Ele não cobre
+buscas feitas pelo Bash e não força o modelo a consultar. Registro do MCP e entrega
+da dica não comprovam uso: a prova são chamadas nos logs. O evento `nudge` é um
+lembrete e não conta como consulta na adoção do painel. Economia precisa de uma
+consulta com baseline e tokens entregues; só abrir sessões não gera medição.
+
 ---
 
 ## `ragx watch`

@@ -34,6 +34,20 @@ Consequência prática: se um agente pedir "leia o arquivo `.env`", não existe 
 de código que atenda. A única coisa que o MCP sabe fazer é consultar o store — e o
 store, por construção, não tem segredo dentro.
 
+## Conectar agentes pelo painel
+
+Em **Conexões**, as abas separam **Ambiente**, **Claude Code**, **Codex**,
+**Gemini** e **Outros agentes**. O onboarding oferece os mesmos controles.
+O controle global do Claude Code fica junto dos controles por perfil nessa tela.
+Codex, Gemini CLI, Cursor, Windsurf e Claude Desktop têm detecção e registro MCP:
+o painel usa o instalador da CLI, preservando as outras configurações e seus backups.
+Depois de ligar ou desligar, reabra o agente para carregar a configuração.
+
+`ragx mcp status --json` lista os clientes detectados, o caminho da configuração
+e se o RAGX está registrado, sem modificar arquivos. Estar conectado permite
+usar as ferramentas; cada agente decide quando consultá-las. Agentes opcionais
+desconectados não tornam o ambiente CLI/Ollama indisponível.
+
 ## Ferramentas
 
 ### Consulta

@@ -174,6 +174,8 @@
     getAdoption: async () => ({ since: new Date(now - 6 * 86_400_000).toISOString(), sessions: 38, withCalls: 3, withoutCalls: 35, unidentified: 4, callsWithoutStart: 1, byProject: projects.slice(0, 4).map((p, i) => ({ projectId: p.id, projectName: p.name, sessions: 10 - i, withCalls: i })) }),
     runOllamaBenchmark: async () => ({ ok: true, chunksPerSecond: 40, processor: 'gpu', vramMB: 4000, model: 'nomic-embed-text', measuredAt: new Date().toISOString(), error: null }),
     getClaudeIntegration: async () => claude,
+    getMcpIntegrations: async () => ['codex', 'gemini', 'cursor', 'windsurf', 'claude-desktop'].map((id) => ({ id, label: id, installed: id !== 'windsurf', enabled: id === 'codex', config: `C:/Users/pessoa/.${id}/config.json` })),
+    setMcpIntegration: async () => [],
     setClaudeIntegration: async () => claude,
     setClaudeProfile: async () => claude,
     addClaudeProfile: async () => claude,

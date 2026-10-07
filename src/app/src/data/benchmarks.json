@@ -1,13 +1,28 @@
 {
   "schema": 1,
-  "updated": "2026-10-02",
+  "updated": "2026-10-06",
   "environment": "Windows 11, Intel i5-13600KF, 31,8 GB de RAM, GPU AMD RX 7700 XT (Ollama)",
   "intro": "Números medidos pelo próprio RAGX, com a data, o método e a máquina. Onde a meta não foi atingida, está dito. Onde o resultado é inconclusivo, também.",
   "snapshots": [
     { "id": "beta5", "version": "1.0.0-beta.5", "date": "2026-09-30", "title": "Linha de base (auditoria da v2)" },
-    { "id": "v1.0.0", "version": "1.0.0", "date": "2026-10-02", "title": "Lançamento da v1" }
+    { "id": "v1.0.0", "version": "1.0.0", "date": "2026-10-02", "title": "Lançamento da v1" },
+    { "id": "v1.0.3", "version": "1.0.3", "date": "2026-10-06", "title": "Conexões multicliente" }
   ],
   "metrics": [
+    {
+      "id": "mcp-client-status",
+      "group": "Velocidade",
+      "name": "Detecção das conexões dos agentes",
+      "detail": "mcp status --json com nove perfis/clientes locais",
+      "unit": "ms",
+      "lowerIsBetter": true,
+      "points": [
+        { "snapshot": "v1.0.0", "value": null, "note": "comando ainda não existia" },
+        { "snapshot": "v1.0.3", "value": 495.3, "note": "mediana de cinco processos: 470,7 a 508,9 ms" }
+      ],
+      "method": "PowerShell System.Diagnostics.Stopwatch envolvendo ragx mcp status --json | Out-Null, cinco execuções consecutivas na instalação editável",
+      "caveat": "Inclui inicialização do processo CLI; sem comparação de desempenho com versões anteriores e sem chamadas aos agentes."
+    },
     {
       "id": "wire-context",
       "group": "Economia de tokens",
@@ -218,6 +233,13 @@
       "title": "Primeira medição real contra um agente sem RAGX",
       "text": "36 chamadas reais num projeto de terceiros: custo 18% menor e metade dos turnos; tokens faturáveis inconclusivos. O teste também achou um defeito do próprio medidor, que negava toda chamada ao RAGX, corrigido antes de valer.",
       "metrics": []
+    },
+    {
+      "date": "2026-10-06",
+      "version": "1.0.3",
+      "title": "Conexões por agente e onboarding multicliente",
+      "text": "Claude Code, Codex, Gemini e outros clientes ganham controles no painel. A nova detecção local das configurações levou mediana de 495,3 ms em cinco execuções, incluindo abrir o processo da CLI; não mede latência de consulta nem economia de tokens.",
+      "metrics": ["mcp-client-status"]
     }
   ]
 }
