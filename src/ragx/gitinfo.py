@@ -10,6 +10,7 @@ a resposta é `None`. Um índice que não sabe a branch continua funcionando.
 
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -229,6 +230,8 @@ TIMEOUT_INDICE_S = 10.0
 #: Modos de entrada que o git não trata como arquivo comum: link simbólico e submódulo.
 _MODO_LINK = "120000"
 _MODO_SUBMODULO = "160000"
+#: Hash de commit completo, SHA-1 (40) ou SHA-256 (64): o único formato aceito como `desde` em `mudancas`.
+_COMMIT_HEX = re.compile(r"[0-9a-f]{40}(?:[0-9a-f]{24})?")
 
 
 @dataclass(frozen=True)
@@ -367,7 +370,12 @@ def mudancas(root: Path, desde: str | None = None) -> Mudancas:
         recuo, completo = recuo or "submodulo", False
 
     entre: list[str] = []
-    if recuo is None and desde and desde != head:
+    if desde is not None and not _COMMIT_HEX.fullmatch(desde):
+        # `desde` vem do banco (`meta.git_snapshot`): um `.ragx/` adulterado poderia trazer `--output=...` ou outra
+        # opção no lugar do commit, e o git a leria como opção. Só hash de commit (SHA-1 ou SHA-256) passa; o resto
+        # volta para a varredura completa, sem chamar o git com esse valor.
+        recuo = recuo or "commit_do_indice_invalido"
+    elif recuo is None and desde and desde != head:
         out, motivo = _git_indice(root, "diff", "--raw", "-z", "--no-renames", desde, head, "--", ".")
         if out is None:
             recuo = "commit_do_indice_sumiu" if motivo == "git_falhou" else motivo

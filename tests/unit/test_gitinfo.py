@@ -212,3 +212,28 @@ def test_mudancas_real_com_quotepath_espaco_acento_e_crlf(tmp_path: Path) -> Non
     m = gitinfo.mudancas(root)
     assert m.motivo is None
     assert m.sujos == {"pasta com espaço/ação.py", "a.txt"}
+
+
+@pytest.mark.parametrize("desde", ["--output=/tmp/x", "-p", "HEAD~1", "main", "abc123", "A" * 40, "0" * 39])
+def test_mudancas_recusa_desde_que_nao_e_hash_de_commit_sem_chamar_o_git_com_ele(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, desde: str
+) -> None:
+    """`desde` vem do banco: um `.ragx/` adulterado não pode passar uma opção ao `git diff`."""
+    root = _repo(tmp_path)
+    chamadas: list[tuple[str, ...]] = []
+    original = gitinfo._git_indice
+
+    def espia(r, *args):  # type: ignore[no-untyped-def]
+        chamadas.append(args)
+        return original(r, *args)
+
+    monkeypatch.setattr(gitinfo, "_git_indice", espia)
+    m = gitinfo.mudancas(root, desde=desde)
+    assert m.motivo == "commit_do_indice_invalido"
+    assert all(desde not in args for args in chamadas)
+
+
+def test_mudancas_aceita_hash_sha1_completo(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True).stdout.strip()
+    assert gitinfo.mudancas(root, desde=head).motivo != "commit_do_indice_invalido"
