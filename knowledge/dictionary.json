@@ -5,8 +5,8 @@
       "IgnoreEngine",
       "Document",
       "ChunkRepo",
-      "Relation",
-      "SecurityScanner"
+      "DocumentRepo",
+      "Relation"
     ],
     "03 — Modelo de dados": [
       "Document",
@@ -96,7 +96,7 @@
         "CHANGELOG.md",
         "README.md"
       ],
-      "occurrences": 298,
+      "occurrences": 299,
       "rule": "Extensão predominante: .md"
     },
     {
@@ -107,7 +107,7 @@
         "src/app/electron/__tests__/ipc.test.ts",
         "src/app/electron/__tests__/menu.test.ts"
       ],
-      "occurrences": 119,
+      "occurrences": 120,
       "rule": "Testes ficam em src/"
     },
     {
@@ -249,7 +249,7 @@
         "AGENTS.md",
         "README.md"
       ],
-      "seen": 363,
+      "seen": 364,
       "term": "RAGX"
     },
     {
@@ -293,14 +293,14 @@
       "summary": "Painel desktop (Electron) para o RAGX. Mostra os projetos registrados no hub"
     },
     {
-      "chunks": 1789,
+      "chunks": 1794,
       "files": 184,
       "name": "src/ragx",
       "summary": null
     },
     {
-      "chunks": 1562,
-      "files": 164,
+      "chunks": 1569,
+      "files": 165,
       "name": "src/app/src",
       "summary": "Painel desktop (Electron) para o RAGX. Mostra os projetos registrados no hub"
     },
@@ -372,7 +372,7 @@
     }
   ],
   "project": {
-    "generated_at": "2026-11-16T16:38:37Z",
+    "generated_at": "2026-11-16T19:46:10Z",
     "id": "2a0786031710",
     "kind": "other",
     "name": "ragx",
@@ -381,7 +381,7 @@
   "repo_map": [
     {
       "path": "src/ragx/storage/repositories.py",
-      "rank": 0.050103,
+      "rank": 0.050397,
       "symbols": [
         "ChunkRepo",
         "DocumentRepo",
@@ -390,7 +390,7 @@
     },
     {
       "path": "src/ragx/cli/commands/graph_cmd.py",
-      "rank": 0.03595,
+      "rank": 0.03653,
       "symbols": [
         "entities",
         "rank",
@@ -398,17 +398,8 @@
       ]
     },
     {
-      "path": "src/ragx/config.py",
-      "rank": 0.034332,
-      "symbols": [
-        "load_config",
-        "Config",
-        "find_root"
-      ]
-    },
-    {
       "path": "src/ragx/core/models.py",
-      "rank": 0.033676,
+      "rank": 0.034361,
       "symbols": [
         "Chunk",
         "Document",
@@ -416,8 +407,17 @@
       ]
     },
     {
+      "path": "src/ragx/config.py",
+      "rank": 0.034067,
+      "symbols": [
+        "load_config",
+        "Config",
+        "find_root"
+      ]
+    },
+    {
       "path": "src/ragx/storage/db.py",
-      "rank": 0.033669,
+      "rank": 0.033739,
       "symbols": [
         "open_db",
         "utcnow",
@@ -426,7 +426,7 @@
     },
     {
       "path": "src/ragx/graph/store.py",
-      "rank": 0.026405,
+      "rank": 0.026509,
       "symbols": [
         "GraphStore",
         "Entity",
@@ -435,7 +435,7 @@
     },
     {
       "path": "src/ragx/search/ab.py",
-      "rank": 0.022648,
+      "rank": 0.022621,
       "symbols": [
         "Runner",
         "plan",
@@ -443,17 +443,8 @@
       ]
     },
     {
-      "path": "src/ragx/indexing/touchq.py",
-      "rank": 0.022207,
-      "symbols": [
-        "resolve",
-        "enqueue",
-        "pending"
-      ]
-    },
-    {
       "path": "src/ragx/gitinfo.py",
-      "rank": 0.022136,
+      "rank": 0.022275,
       "symbols": [
         "Commit",
         "git",
@@ -462,7 +453,7 @@
     },
     {
       "path": "src/ragx/usage.py",
-      "rank": 0.021687,
+      "rank": 0.021573,
       "symbols": [
         "Arquivo",
         "Uso",
@@ -470,8 +461,17 @@
       ]
     },
     {
+      "path": "src/ragx/indexing/touchq.py",
+      "rank": 0.021544,
+      "symbols": [
+        "resolve",
+        "enqueue",
+        "pending"
+      ]
+    },
+    {
       "path": "src/ragx/diagnostics.py",
-      "rank": 0.017746,
+      "rank": 0.017584,
       "symbols": [
         "utcnow",
         "log_mcp_call",
@@ -480,25 +480,16 @@
     },
     {
       "path": "src/ragx/clients/registry.py",
-      "rank": 0.017513,
+      "rank": 0.017276,
       "symbols": [
         "Outcome",
         "register",
-        "CLIENTS"
-      ]
-    },
-    {
-      "path": "src/ragx/sync/service.py",
-      "rank": 0.016301,
-      "symbols": [
-        "resolve",
-        "SyncReport",
-        "detect_delta"
+        "Result"
       ]
     },
     {
       "path": "src/ragx/cli/commands/index_cmd.py",
-      "rank": 0.01621,
+      "rank": 0.016166,
       "symbols": [
         "chunk",
         "chunks",
@@ -506,8 +497,17 @@
       ]
     },
     {
+      "path": "src/ragx/sync/service.py",
+      "rank": 0.015785,
+      "symbols": [
+        "resolve",
+        "SyncReport",
+        "detect_delta"
+      ]
+    },
+    {
       "path": "src/ragx/base/source.py",
-      "rank": 0.014969,
+      "rank": 0.014935,
       "symbols": [
         "add",
         "update",
@@ -626,6 +626,16 @@
     {
       "depends_on": [],
       "documented_by": [
+        "docs/01-arquitetura.md"
+      ],
+      "name": "DocumentRepo",
+      "path": "src/ragx/storage/repositories.py",
+      "referenced_by": 9,
+      "summary": "Repositórios. SQL explícito, sem ORM"
+    },
+    {
+      "depends_on": [],
+      "documented_by": [
         "docs/26-resultados-v2.md",
         "docs/27-benchmarks.md"
       ],
@@ -633,24 +643,14 @@
       "path": "src/ragx/mcp/operations.py",
       "referenced_by": 9,
       "summary": "Fachada de escrita. Espelha a CLI, comando a comando"
-    },
-    {
-      "depends_on": [],
-      "documented_by": [
-        "docs/01-arquitetura.md"
-      ],
-      "name": "DocumentRepo",
-      "path": "src/ragx/storage/repositories.py",
-      "referenced_by": 8,
-      "summary": "Repositórios. SQL explícito, sem ORM"
     }
   ],
   "stats": {
-    "chunks": 10129,
-    "documents": 927,
-    "embeddings": 10129,
-    "entities": 3922,
-    "relations": 38063
+    "chunks": 10149,
+    "documents": 929,
+    "embeddings": 10149,
+    "entities": 3929,
+    "relations": 38297
   },
   "technologies": [
     {

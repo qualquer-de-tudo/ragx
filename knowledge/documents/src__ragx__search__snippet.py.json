@@ -6,6 +6,6 @@
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/search/snippet.py",
-  "size_bytes": 1822,
+  "size_bytes": 1779,
   "title": "Trecho curto de um chunk, para a busca `concise` do MCP (RAGX-0155/0165).\n\nA busca serve para LOCALIZAR; o conteúdo inteiro de cada hit é o que mais pesa na\nresposta (10 hits de ~600 chars cada). O trecho dá o suficiente para o agente decidir\nse vale abrir (`get_chunk`) e custa uma fração. Lógica de serviço: o servidor MCP só a\nchama, porque ele é casca fina (ADR-0006)."
 }

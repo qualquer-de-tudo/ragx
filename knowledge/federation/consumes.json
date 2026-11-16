@@ -49,6 +49,15 @@
       "confidence": 0.85,
       "contract": null,
       "detected_by": "reference",
+      "handler": "scan#part-1",
+      "normalized": "--cached",
+      "raw": "--cached",
+      "source": "src/ragx/cli/commands/security.py:25"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
       "handler": "models#part-1",
       "normalized": "--candidates",
       "raw": "--candidates",
@@ -799,7 +808,7 @@
       "handler": "rules",
       "normalized": "--show-disabled",
       "raw": "--show-disabled",
-      "source": "src/ragx/cli/commands/security.py:132"
+      "source": "src/ragx/cli/commands/security.py:263"
     },
     {
       "confidence": 0.85,
