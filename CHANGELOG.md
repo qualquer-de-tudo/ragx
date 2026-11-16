@@ -9,6 +9,19 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **O scan de segurança do painel não estoura mais o tempo limite** (RAGX-0206). Em projetos grandes, "Atualizar achados de
+  segurança" falhava com `excedeu o tempo limite de 60s`: a varredura completa abre e lê todos os arquivos, e leva 4 min 5 s
+  no Juriflux (17.917 arquivos). Novo `ragx security scan --cached`: o arquivo cujo tamanho e `mtime` são os do índice, com o
+  contexto do veredito igual, não é reaberto, e o achado volta dos eventos de segurança que o índice gravou (trecho já
+  censurado, nunca o segredo); o que mudou ou é novo é lido como sempre. **4 min 5 s → 49 s.** O painel usa `--cached` com
+  limite de 3 minutos e diz quantos arquivos não foram relidos. O padrão da CLI continua lendo tudo. Limite: um arquivo sem
+  parser com achado fraco só aparece na varredura completa.
+- **`ragx security scan --staged` não lista mais a árvore inteira** para examinar os poucos arquivos do stage: 10,9 s → 1,3 s
+  no Juriflux. Se o git falhar, varre tudo, como antes.
+- **O comando de release (`release.yml`) fixa o Python 3.12** (a 1.1.0 caiu no macOS, que passou a trazer o 3.15).
+
 ## [1.1.0] — 2026-11-16
 
 ### Mudado

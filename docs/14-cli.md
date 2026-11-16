@@ -76,6 +76,7 @@ ragx security scan [PATH]
     --fail-on critical|high|medium|low
     --staged                só arquivos no stage do Git (para pre-commit)
     --rule ID               testa uma regra isolada
+    --cached                reaproveita o que o índice já examinou; lê só o que mudou (o painel usa)
 
 ragx security rules
     --show-disabled
@@ -84,6 +85,17 @@ ragx config show
 ragx config get <chave>
 ragx config set <chave> <valor>
 ```
+
+**`--cached` e `--staged` (RAGX-0206).** A varredura completa (o padrão) abre e lê todos os arquivos: ~4 min num
+projeto de 18 mil arquivos, mais do que o painel espera. Com `--cached`, o arquivo cujo tamanho e `mtime` são os
+que o índice guardou, e cujo contexto do veredito (regras do Gate, política, limites) não mudou, não é reaberto: o
+resultado volta dos eventos de segurança do índice (regra, severidade, linha e trecho já censurado, nunca o
+segredo). O que mudou, é novo, ou ficou sem evento guardado é lido como sempre; sem índice, ou com o contexto
+diferente, vale a varredura completa. O JSON traz `mode` (`cache` ou `full`) e `reused` (quantos arquivos não foram
+reabertos). Medido no Juriflux (17.917 arquivos): 4 min 5 s → 49 s. **Limite:** o índice só grava os eventos de um
+arquivo depois de saber se há parser para ele, então um arquivo sem parser com achado fraco (censurado, não
+bloqueado) só aparece na varredura completa. `--staged` agora examina só os arquivos do stage, sem listar a árvore
+inteira (10,9 s → 1,3 s no mesmo projeto); se o git falhar, varre tudo, como antes.
 
 ## Fase 1 — indexação
 

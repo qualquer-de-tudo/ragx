@@ -93,6 +93,10 @@ export interface SecurityScanResult {
   skipped: number
   ruleset: { version: string; rules: number; disabled: string[] }
   policy: string
+  /** `cache`: parte veio do índice; `full`: leu tudo. Versões antigas da CLI não trazem. */
+  mode?: string
+  /** Quantos arquivos não foram reabertos porque o índice já os tinha examinado. */
+  reused?: number
 }
 
 export type ConnectionId = 'ragx' | 'claude' | 'ollama'

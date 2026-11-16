@@ -103,6 +103,13 @@ function ScanSummary({ result, at }: { result: SecurityScanResult; at: string })
         </dl>
       )}
 
+      {result.mode === 'cache' && (result.reused ?? 0) > 0 && (
+        <p className="dim">
+          {formatNumber(result.reused ?? 0)} arquivos já examinados pelo índice não foram relidos. Para reler todos, rode{' '}
+          <code>ragx security scan .</code> no terminal.
+        </p>
+      )}
+
       {listed.length > 0 && (
         <ul className="findings">
           {listed.map((b) => {

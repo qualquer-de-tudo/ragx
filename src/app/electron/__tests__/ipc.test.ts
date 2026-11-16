@@ -175,13 +175,13 @@ describe('createHandlers - runTrial/getProjectStatus/runSecurityScan validam pro
     expect(runRagxCommand).toHaveBeenCalledWith('C:/proj/a', ['status', '--json'])
   })
 
-  it('runSecurityScan roda "ragx security scan . --json" com o cwd do projeto', async () => {
+  it('runSecurityScan roda "ragx security scan . --json --cached" com o cwd do projeto e 3 min de limite', async () => {
     const runRagxCommand = vi.fn(async () => ({ root: 'C:/proj/a', scanned: 0, blocked: [], redacted: [], skipped: 0, ruleset: { version: 'x', rules: 0, disabled: [] }, policy: 'strict' }))
     const handlers = createHandlers(makeDeps({ runRagxCommand }))
 
     await handlers.runSecurityScan('a')
 
-    expect(runRagxCommand).toHaveBeenCalledWith('C:/proj/a', ['security', 'scan', '.', '--json'])
+    expect(runRagxCommand).toHaveBeenCalledWith('C:/proj/a', ['security', 'scan', '.', '--json', '--cached'], { timeoutMs: 180_000 })
   })
 
   it('runTrial com um projectId que nao existe no snapshot (mesmo parecendo um caminho) e recusado antes de qualquer processo', async () => {

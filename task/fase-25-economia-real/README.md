@@ -19,6 +19,7 @@ quanto economizou com número medido, não estimado.
 | [RAGX-0204](RAGX-0204-embedding-escolhido-ao-criar-o-indice.md) | Embedding escolhido ao criar o índice | P2 | 0,5d | `review` |
 | [RAGX-0205](RAGX-0205-consumo-real-de-tokens.md) | Consumo real de tokens e adoção, lidos das sessões do Claude Code | P1 | 2d | `review` |
 | [RAGX-0198](../fase-23-pos-lancamento/RAGX-0198-indice-sem-mudanca-perguntando-ao-git-o-que-mudou.md) | Índice sem mudança: perguntar ao git | P2 | 1d | `review` |
+| [RAGX-0206](RAGX-0206-scan-de-seguranca-que-cabe-no-painel.md) | Scan de segurança que cabe no painel | P1 | 1d | `review` |
 
 ## Fora de escopo da fase
 

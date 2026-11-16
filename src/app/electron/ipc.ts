@@ -34,6 +34,9 @@ import type {
  */
 const MAX_QUESTION_LENGTH = 500
 const PREVIEW_TIMEOUT_MS = 60_000
+// O scan de segurança relê o que mudou desde o índice: num projeto de 18 mil arquivos leva ~50 s, e o limite padrão (60 s)
+// o derrubava (a varredura completa passa de 4 min). Com `--cached` e 3 min há folga.
+const SECURITY_SCAN_TIMEOUT_MS = 180_000
 
 const PRICING_KEYS: ReadonlySet<string> = new Set(['currency', 'perMTokInput'])
 
@@ -433,7 +436,9 @@ export function createHandlers(deps: HandlerDeps) {
 
     async runSecurityScan(projectIdUnknown: unknown): Promise<SecurityScanResult> {
       const project = requireLocalProject(projectIdUnknown)
-      return deps.runRagxCommand(project.path as string, ['security', 'scan', '.', '--json']) as Promise<SecurityScanResult>
+      return deps.runRagxCommand(project.path as string, ['security', 'scan', '.', '--json', '--cached'], {
+        timeoutMs: SECURITY_SCAN_TIMEOUT_MS,
+      }) as Promise<SecurityScanResult>
     },
 
     /**
