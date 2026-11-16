@@ -440,6 +440,17 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "576e522f7e83498d71ab020f570ab360",
+    "id": "2d219a36a5f7c9a308ed6e9bd1e07945",
+    "name": "instructions.py",
+    "qualified_name": "src/ragx/clients/instructions.py",
+    "source": "structural",
+    "summary": "Instruções do usuário para clientes sem hook (RAGX-0202).\n\nCodex e Gemini CLI não têm a dica de início de sessão nem o lembrete de busca do Claude Code: só recebem o servidor\nMCP, cujas instruções o modelo costuma ignorar. Os dois leem um arquivo de instruções do usuário em toda sessão\n(`~/.codex/AGENTS.md` e `~/.gemini/GEMINI.md`). Ao registrar o RAGX num deles, um bloco curto e delimitado entra\nnesse arquivo; ao remover, sai. Tudo o que a pessoa escreveu fora do bloco fica como estava.",
+    "type": "file"
+  },
+  {
     "chunk_id": "66d3154baf8c73bcaa12ef0ec2fa5490",
     "confidence": 1.0,
     "document_id": "59c2243a32959171daf49064c3f346b8",
@@ -561,7 +572,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "b69ba5295d05cd9eff6ef37ed52237ed",
+    "chunk_id": "a5fa55fe27e77566dcb9db859d2bd26d",
     "confidence": 1.0,
     "document_id": "9d812dd36a216d6f44ed01324007695e",
     "id": "3bf956b68eea2db4f5c0a97072a745dc",
@@ -572,7 +583,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "68c65a2bd08939af1f17bbb1b72a45de",
+    "chunk_id": "9353fb0ae2a416edc0d7ff8dd42080a7",
     "confidence": 1.0,
     "document_id": "559cbe6d5457644ee00f8e9ccabaf642",
     "id": "3c5c1546b251622a76d75fb7b273e4ff",
@@ -693,6 +704,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "377ee293e3d2610d850158ec30100d15",
+    "confidence": 1.0,
+    "document_id": "576e522f7e83498d71ab020f570ab360",
+    "id": "485100064a2f495a359b31c763d7e793",
+    "name": "apply",
+    "qualified_name": "src/ragx/clients/instructions.py::apply",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "77ac985615c99048e704efeb21ba172a",
@@ -803,6 +825,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "cfb514cd90222f1d7c0bdb1cf7212389",
+    "confidence": 1.0,
+    "document_id": "2ca98558d1bf3644865734b1d9a9a9dc",
+    "id": "5215acf67d2b9a5306b63be8d5dedbd0",
+    "name": "test_projeto_com_ragx_toml_nao_muda",
+    "qualified_name": "tests/unit/test_init_embedding.py::test_projeto_com_ragx_toml_nao_muda",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "a367b7c5d127843aa02b0c25d73d55aa",
     "confidence": 1.0,
     "document_id": "547e9b2c00c28582a5fbade91b173699",
@@ -820,6 +853,17 @@
     "id": "52a533b6e3552a2c5637cb3551582db3",
     "name": "main#part-2",
     "qualified_name": "scripts/release.py::main#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e313aceb4a8d69d6339209b19be7eb1e",
+    "confidence": 1.0,
+    "document_id": "2ca98558d1bf3644865734b1d9a9a9dc",
+    "id": "52df6106791b0c29c487e506687f9c84",
+    "name": "test_ambiente_ja_escolheu_e_nada_e_gravado",
+    "qualified_name": "tests/unit/test_init_embedding.py::test_ambiente_ja_escolheu_e_nada_e_gravado",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -847,6 +891,17 @@
     "type": "method"
   },
   {
+    "chunk_id": "66dfc1f9dfcef42b7c48386d307f3698",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "542ed1f6491664f09cc8d40444ae4aca",
+    "name": "coletar#part-2",
+    "qualified_name": "src/ragx/usage.py::coletar#part-2",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "a34bf988f9599cde5ddf19578c8ecced",
@@ -858,17 +913,6 @@
     "type": "file"
   },
   {
-    "chunk_id": "86c7ff8c38c6210bda6d1336f0e294d7",
-    "confidence": 1.0,
-    "document_id": "06009bdfdf85097b702025e3497430db",
-    "id": "54ce7f361892e4e474cc1f8b9c056d61",
-    "name": "run_nudge",
-    "qualified_name": "src/ragx/hooklight.py::run_nudge",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "b0ad373e9ec9caf4abbb492934b91288",
@@ -876,7 +920,7 @@
     "name": "ragx-bridge.d.ts",
     "qualified_name": "src/app/src/types/ragx-bridge.d.ts",
     "source": "structural",
-    "summary": "import type { ActivityEvent, AdoptionSummary, ContextPreview, TelemetrySummary } from '../../electron/data/types'",
+    "summary": "import type {",
     "type": "file"
   },
   {
@@ -1375,6 +1419,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "e82cd3c8d46205a4bf977844308900f8",
+    "confidence": 1.0,
+    "document_id": "014d19a8bba431f9d9af9e36ef6827df",
+    "id": "873d170688029a09496dc07dbdf2c34d",
+    "name": "test_status_lista_clientes_sem_criar_configs_e_reflete_registro",
+    "qualified_name": "tests/integration/test_mcp_install.py::test_status_lista_clientes_sem_criar_configs_e_reflete_registro",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "d528f20a5f205baabc96660e7e6acf08",
@@ -1395,6 +1450,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "75ac9dc70f48ca6af9dbef2ef14a4702",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "8bac2e96c44506ec48be2eaa230727db",
+    "name": "para_json",
+    "qualified_name": "src/ragx/usage.py::Arquivo.para_json",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": "1c06949a5d1f39d2e815233f499eea9e",
@@ -1502,6 +1568,17 @@
     "id": "989989866e9577b6d97d9f55a9238f56",
     "name": "migrate",
     "qualified_name": "src/ragx/tasks/store.py::migrate",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "80c890182837ea0d99475872c56246be",
+    "confidence": 1.0,
+    "document_id": "8c1f430f940686c0e8b858c6d02a1c7d",
+    "id": "9a959ee68b9f2f3fdb97770f5097d302",
+    "name": "variant_for",
+    "qualified_name": "src/app/scripts/brand.py::variant_for",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1870,6 +1947,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "62b7bd04d397e6ac0847f1fc85a83449",
+    "id": "bbe933d633b3b76a695a0f0dea8f9d15",
+    "name": "RAGX-0198-indice-sem-mudanca-perguntando-ao-git-o-que-mudou.md",
+    "qualified_name": "task/fase-23-pos-lancamento/RAGX-0198-indice-sem-mudanca-perguntando-ao-git-o-que-mudou.md",
+    "source": "structural",
+    "summary": "RAGX-0198 — Índice sem mudança: perguntar ao git o que mudou, em vez de varrer todos os arquivos",
+    "type": "file"
+  },
+  {
     "chunk_id": "cdd8654139bf1062d4dbecf18a3ef2b8",
     "confidence": 1.0,
     "document_id": "77ab7df54d42d87d5d6f9c951d53edea",
@@ -1890,6 +1978,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "02966f07fec66cb241499bd2b51182ee",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "be0e63f68f129abae50ff59b75e6b02c",
+    "name": "test_projeto_pela_pasta_raiz_worktree_interna_e_externa",
+    "qualified_name": "tests/unit/test_usage.py::test_projeto_pela_pasta_raiz_worktree_interna_e_externa",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "efc21e15c9b4ec966a146c66284e1ae4",
@@ -1989,6 +2088,28 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "e4a0eee9ca217fd20df2f9bd88a843d2",
+    "confidence": 1.0,
+    "document_id": "070cae6e4f59ae4164038a8863b106b5",
+    "id": "ca4e077667a1ac82a2f168a9bfa4e619",
+    "name": "escolher_embedding",
+    "qualified_name": "src/ragx/cli/commands/init.py::escolher_embedding",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "5d7bb6ab07e9ec870aecc2f3083ea68d",
+    "id": "cb8d3446da155b53f9d6d740a949145e",
+    "name": "correcao-adocao-claude-subagentes.md",
+    "qualified_name": "task/correcao-adocao-claude-subagentes.md",
+    "source": "structural",
+    "summary": "Correção de adoção do RAGX no Claude Code com subagentes",
+    "type": "file"
   },
   {
     "chunk_id": "2eb26f6a4805a0c663e5c33a18e79dfe",
@@ -2279,6 +2400,17 @@
   {
     "chunk_id": null,
     "confidence": 1.0,
+    "document_id": "0d837c033c88e7b2040d8d14fea7c2bf",
+    "id": "e060921665010f9925f0d3dcaeb04f0d",
+    "name": "RAGX-0204-embedding-escolhido-ao-criar-o-indice.md",
+    "qualified_name": "task/fase-25-economia-real/RAGX-0204-embedding-escolhido-ao-criar-o-indice.md",
+    "source": "structural",
+    "summary": "RAGX-0204 — Embedding escolhido ao criar o índice",
+    "type": "file"
+  },
+  {
+    "chunk_id": null,
+    "confidence": 1.0,
     "document_id": "1fa2a1b1a089e44bb42055ed57e074f6",
     "id": "e093a4b686bed1853444050041b7db3c",
     "name": "main.py",
@@ -2286,6 +2418,17 @@
     "source": "structural",
     "summary": "CLI do RAGX. Binário `ragx` (alias histórico `rag`) — ver ADR-0007.",
     "type": "file"
+  },
+  {
+    "chunk_id": "82cc96e03ce2ef1f3bdac9f2cfbb9b4e",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "e131f286d3fb4d8d0c2c4d4de6501f51",
+    "name": "test_hook_de_outra_ferramenta_nao_e_lembrete",
+    "qualified_name": "tests/unit/test_usage.py::test_hook_de_outra_ferramenta_nao_e_lembrete",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "d82d6b644e7d427855c897860ce6da73",
@@ -2321,7 +2464,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "ff7e0824b605049d465ed6ddd45dc83c",
+    "chunk_id": "55e97603f4f0bfc400422624cef72e5e",
     "confidence": 1.0,
     "document_id": "8c1f430f940686c0e8b858c6d02a1c7d",
     "id": "e64f29d6d5c0b1cf9eb924ca44dcd86b",
@@ -2539,6 +2682,17 @@
     "source": "structural",
     "summary": "import type { JobKind, JobView } from '../../src/types/ragx-bridge'",
     "type": "file"
+  },
+  {
+    "chunk_id": "752aad0ee0860402dfc44e35ebae6829",
+    "confidence": 1.0,
+    "document_id": "465a11ad18a6c696acb0542daaf3c934",
+    "id": "fc5b5e761537c858a13d21b18c4a163e",
+    "name": "test_mudancas_em_subpasta_tira_o_prefixo",
+    "qualified_name": "tests/unit/test_gitinfo.py::test_mudancas_em_subpasta_tira_o_prefixo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "85fc01f60c5b2d1af744d3fbe7c12170",

@@ -143,7 +143,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "793415dc24b1f90f39eb9d635b5f0ac1",
+    "chunk_id": "d2ac660c30f0af650d1503d046f0a367",
     "confidence": 1.0,
     "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
     "id": "0ffe098013a7207896a88e7c71d306da",
@@ -165,7 +165,7 @@
     "type": "method"
   },
   {
-    "chunk_id": "28bb912b36f238aff0167e3c1bc143ee",
+    "chunk_id": "1db232ad949ea5ead23325b6c7dd7085",
     "confidence": 1.0,
     "document_id": "ba431aa4ebc1bb7529ecc4f94a0afba6",
     "id": "10aa56f09e7dff8e72b0c130ae572f36",
@@ -330,6 +330,17 @@
     "type": "method"
   },
   {
+    "chunk_id": "08f18cb9272ced1c99884442e02c0bff",
+    "confidence": 1.0,
+    "document_id": "2ca98558d1bf3644865734b1d9a9a9dc",
+    "id": "203550a09bb511c4098c74b287001fc5",
+    "name": "projeto",
+    "qualified_name": "tests/unit/test_init_embedding.py::projeto",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "ff50beb075a66b7d77dabe72e69c5127",
     "confidence": 1.0,
     "document_id": "414750f1615a0ed9acbfad17570bb55c",
@@ -369,6 +380,17 @@
     "id": "25f8cd002dfd74e0950fcdd7c6f2fa23",
     "name": "projeto",
     "qualified_name": "tests/unit/test_mcp_perfis.py::projeto",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "823cc6bb7e71598c257b9b372d3a65fd",
+    "confidence": 1.0,
+    "document_id": "465a11ad18a6c696acb0542daaf3c934",
+    "id": "261c6ee0ac787242cc24c55650406836",
+    "name": "test_mudancas_real_com_quotepath_espaco_acento_e_crlf",
+    "qualified_name": "tests/unit/test_gitinfo.py::test_mudancas_real_com_quotepath_espaco_acento_e_crlf",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -561,12 +583,12 @@
     "type": "function"
   },
   {
-    "chunk_id": "edb8b90eedd621a4c41e85672569dbf7",
+    "chunk_id": "82b0841a14e1baf088b78f4014b9af3c",
     "confidence": 1.0,
-    "document_id": "8c1f430f940686c0e8b858c6d02a1c7d",
-    "id": "3f05a84049fa5afab8a3e485326c0555",
-    "name": "glyph",
-    "qualified_name": "src/app/scripts/brand.py::glyph",
+    "document_id": "6cfe33ee53e317f5f7ad839c3b57dc8b",
+    "id": "3dd8679020032c50ba00c8c90dcad161",
+    "name": "update_documents_locked",
+    "qualified_name": "src/ragx/graph/service.py::update_documents_locked",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -583,7 +605,7 @@
     "type": "table"
   },
   {
-    "chunk_id": "7cb44273781f5eee9bf6589414f6269f",
+    "chunk_id": "2f5ab9dd40d41b4f83952b5d0ebf5cd0",
     "confidence": 1.0,
     "document_id": "8c1f430f940686c0e8b858c6d02a1c7d",
     "id": "3fcc24403252ae75df89dda9567330b7",
@@ -682,6 +704,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "35dbb63701734ffa4428cda8c783f479",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "4cb655d01468d6e5f490be170cf186eb",
+    "name": "_hook",
+    "qualified_name": "tests/unit/test_usage.py::_hook",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "0bb1146451d9b1f82d6a4636631baaa4",
     "confidence": 1.0,
     "document_id": "f6012f2c36cd6086b037d4e6fe4152b1",
@@ -759,12 +792,34 @@
     "type": "function"
   },
   {
+    "chunk_id": "5b822a05723739e79943bac05b320ce0",
+    "confidence": 1.0,
+    "document_id": "376195e833198f61a1adcaad9be31b32",
+    "id": "54a35e10f8d9f08809e560fd4fca181f",
+    "name": "no_escopo",
+    "qualified_name": "src/ragx/indexing/pipeline.py::_Plano.no_escopo",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
     "chunk_id": "a84747245fb3e7a8306cf941cb7e8d8e",
     "confidence": 1.0,
     "document_id": "465a11ad18a6c696acb0542daaf3c934",
     "id": "54f11a40f33cc8adf6478fb468314dc9",
     "name": "test_common_dir_e_worktrees_fora_de_git",
     "qualified_name": "tests/unit/test_gitinfo.py::test_common_dir_e_worktrees_fora_de_git",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "36b9034c211252a96f3401fbae381904",
+    "confidence": 1.0,
+    "document_id": "7ecf97d3f68f2f32725ac4d0f2961f03",
+    "id": "56e7af305ede29b75039edcd92ccd90b",
+    "name": "claude_profiles",
+    "qualified_name": "src/ragx/clients/registry.py::claude_profiles",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -847,7 +902,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "27fd4988c4ab95b8f078de4000347ae2",
+    "chunk_id": "3af30cb4f512976a4810c36286a9be29",
     "confidence": 1.0,
     "document_id": "6cfe33ee53e317f5f7ad839c3b57dc8b",
     "id": "5eb66d20d08a8fd4620e3837cd774c6c",
@@ -1122,6 +1177,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "e83e226f23c0eb2033bc2cd5619cf01c",
+    "confidence": 1.0,
+    "document_id": "0f04a26e42bda143d4b7c38feef1068c",
+    "id": "78e43a60d0d81368a10ae5b2d070c9a0",
+    "name": "_projeto_unico",
+    "qualified_name": "src/ragx/cli/commands/usage_cmd.py::_projeto_unico",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "8aee5970a938c330e122189c61123210",
     "confidence": 1.0,
     "document_id": "69e1285b9325efa7f6212aa3df4b3077",
@@ -1271,6 +1337,17 @@
     "id": "843579b0499746277afde529dade67ed",
     "name": "test_caminho_sumido_vira_missing_nao_removido",
     "qualified_name": "tests/integration/test_federation.py::test_caminho_sumido_vira_missing_nao_removido",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "6db4387399231daa9dd5992631e6a5b3",
+    "confidence": 1.0,
+    "document_id": "470636e040bae66473f3cd088c9ab2c9",
+    "id": "854828007cd07dcf5a8dde026c29b64a",
+    "name": "mudancas#part-3",
+    "qualified_name": "src/ragx/gitinfo.py::mudancas#part-3",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1683,6 +1760,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "c7c430191dc4315ee4cc71a7ebeb7951",
+    "confidence": 1.0,
+    "document_id": "7ecf97d3f68f2f32725ac4d0f2961f03",
+    "id": "acb52c10ab349aadc1c67bbc08dd01d1",
+    "name": "_com_instrucoes",
+    "qualified_name": "src/ragx/clients/registry.py::_com_instrucoes",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "44aa78433aff3c37453af91c53fd0e0a",
     "confidence": 1.0,
     "document_id": "11a014ce9d7e6c26be57225137670d66",
@@ -1722,6 +1810,17 @@
     "id": "b1336150cbd161857d1e84c3677942e8",
     "name": "_ler_de_outras_raizes",
     "qualified_name": "src/ragx/embeddings/base.py::EmbeddingCache._ler_de_outras_raizes",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
+  },
+  {
+    "chunk_id": "49c375627d348d4552b0968319062a6b",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "b2f5b510e72b6d1411e4051bfc6f9c7e",
+    "name": "somar",
+    "qualified_name": "src/ragx/usage.py::Uso.somar",
     "source": "structural",
     "summary": null,
     "type": "method"
@@ -2068,7 +2167,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "33e8dd578697a1e733e6ad1054e796b5",
+    "chunk_id": "b32e563cb8c71cc73efb8b46c4373cbd",
     "confidence": 1.0,
     "document_id": "070cae6e4f59ae4164038a8863b106b5",
     "id": "d81ca74053a575585b43a12cf48b5197",
@@ -2266,17 +2365,6 @@
     "type": "class"
   },
   {
-    "chunk_id": "a071c7033613595cca5fa67cb87a7be7",
-    "confidence": 1.0,
-    "document_id": "b07309c464acfe13c2c56c24fd1ed642",
-    "id": "e5ee91205fe86a5afed7f54685533938",
-    "name": "test_slim_expoe_so_as_seis_com_os_mesmos_nomes",
-    "qualified_name": "tests/unit/test_mcp_perfis.py::test_slim_expoe_so_as_seis_com_os_mesmos_nomes",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "5c80442667a5233cf0079cefc4d8927f",
     "confidence": 1.0,
     "document_id": "8a966a9db1544d5a71df539993f1441a",
@@ -2376,7 +2464,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "f91e26798efb013346c10d9b00e90ae4",
+    "chunk_id": "da2d8e66acb0b2be742854b9d78d6134",
     "confidence": 1.0,
     "document_id": "5e4f1c20438e22c74d80f54db5751059",
     "id": "f1597a40995adf15ffde9fbd896b93ff",
@@ -2497,6 +2585,17 @@
     "type": "function"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "fb722e00cc446275b768a0e83b22c1e4",
+    "name": "usage.py",
+    "qualified_name": "src/ragx/usage.py",
+    "source": "structural",
+    "summary": "Consumo real de tokens nas sessões do Claude Code, por projeto (RAGX-0205).\n\nO painel mostrava \"tokens economizados\" como arquivos inteiros − entregue: um contrafactual que\nsuperestima, porque o agente quase nunca lê o arquivo inteiro. O Claude Code já grava, por\nresposta do modelo, os tokens de entrada (normais, lidos do cache, gravados no cache) e de saída,\ne cada chamada de ferramenta com o seu resultado. Este módulo lê isso e devolve, por sessão:\n\n- **turnos**: respostas do modelo (ids de mensagem distintos; o mesmo id aparece em vários\n  registros, um por bloco, e o uso dele conta UMA vez);\n- **tokens**: entrada, cache lido, cache gravado e saída, somados por mensagem;\n- **chamadas por tipo**: busca (Grep, Glob e `grep`/`rg`/`find`/`ls`... pelo Bash ou PowerShell),\n  leitura (Read e `cat`/`head`/`Get-Content`...), RAGX (`mcp__ragx__*`) e outras;\n- **tamanho dos resultados** de busca, leitura e RAGX, em caracteres. Leitura de imagem ou PDF\n  conta à parte (`image_reads`): o resultado é base64, enorme e não comparável a texto;\n- **adoção**: se a sessão chamou o RAGX, se recebeu a dica de início e o lembrete do primeiro\n  Grep/Glob, e se chamou o RAGX depois do lembrete. Vem do transcript, então não depende de o\n  servidor MCP saber a sessão.\n\nPrivacidade (regra sem exceção): daqui não sai, nem para o cache em disco, texto de prompt, de\nresposta, comando, caminho de arquivo ou entrada de ferramenta. O comando do Bash é classificado\nem memória e descartado; a pasta de trabalho da sessão (`cwd`) vira hashes da pasta e das pastas\nacima dela, comparados com o hash da raiz de cada projeto registrado. O único caminho que sai é o\ndo próprio projeto, que vem do registro do RAGX (ou do `--project`), não do transcript.\n\nCom e sem RAGX são grupos diferentes de tarefas: o resultado é observação, não experimento.",
+    "type": "file"
+  },
+  {
     "chunk_id": "665342465eb2cdd426a957f22486c976",
     "confidence": 1.0,
     "document_id": "c79ff1bea3ef32a9f7b776684afa307b",
@@ -2508,7 +2607,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "b68baba6eb6c11bfd8ff5fc01695e0ed",
+    "chunk_id": "f331a439bb47335be6134fbb6ec7ef25",
     "confidence": 1.0,
     "document_id": "8c1f430f940686c0e8b858c6d02a1c7d",
     "id": "fbf4d590f5ffa173480c77099e4849b0",

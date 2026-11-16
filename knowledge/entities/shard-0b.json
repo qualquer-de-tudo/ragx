@@ -209,6 +209,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "89daaeab837d2168362a237fbd98a292",
+    "confidence": 1.0,
+    "document_id": "465a11ad18a6c696acb0542daaf3c934",
+    "id": "133b5c5b2c0aca5050dbfeacb605066f",
+    "name": "test_mudancas_sem_commit_e_commit_sumido",
+    "qualified_name": "tests/unit/test_gitinfo.py::test_mudancas_sem_commit_e_commit_sumido",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "3efc8d0b00d342b5176ff3363d4f40df",
     "confidence": 1.0,
     "document_id": "014d19a8bba431f9d9af9e36ef6827df",
@@ -314,6 +325,17 @@
     "id": "1cede2cb4787edb6aa0912ce3c522544",
     "name": "_with_score",
     "qualified_name": "src/ragx/search/ranking.py::_with_score",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "b54edbbac070daf4fe140ecb9d2f7088",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "1f25e04b98f60a03558ae5d0fd748241",
+    "name": "run_nudge#part-2",
+    "qualified_name": "src/ragx/hooklight.py::run_nudge#part-2",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -627,6 +649,17 @@
     "type": "file"
   },
   {
+    "chunk_id": "725e40db4068ae0c293bccec10d42811",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "3d1ccacbc88e2b5bb0455fd0db89b945",
+    "name": "test_lembrete_dica_e_ragx_depois_do_lembrete",
+    "qualified_name": "tests/unit/test_usage.py::test_lembrete_dica_e_ragx_depois_do_lembrete",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "8911f0ed7d80d3aa023acb8949835100",
@@ -636,6 +669,17 @@
     "source": "structural",
     "summary": "Ferramentas MCP de orquestração — o contrato entre o RAGX e o agente.\n\nO RAGX é a fila e o árbitro; o agente é o executor (ADR-0015). Este módulo é a\núnica superfície por onde o agente reivindica trabalho e devolve resultado.\n\nAs invariantes do ADR-0006 valem aqui sem exceção: nada de `os`, `pathlib`,\n`subprocess`, rede ou `open`. Tudo é delegado aos serviços — os mesmos que a\nCLI chama, para que humano e agente nunca consigam coisas diferentes.",
     "type": "file"
+  },
+  {
+    "chunk_id": "ac31a3d70b6620b05f1ae0d2d382e431",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "4141399b2cbd8c3af1262d0a5a674b9d",
+    "name": "_norm",
+    "qualified_name": "src/ragx/usage.py::_norm",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "d15103c6b4411a09f2e20dde5a2db14b",
@@ -801,6 +845,17 @@
     "source": "structural",
     "summary": null,
     "type": "function"
+  },
+  {
+    "chunk_id": "d3e339452aa380f7d300c3c55f2d3b6b",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "51f4136b87402350c59239ad7426b54a",
+    "name": "total_tokens",
+    "qualified_name": "src/ragx/usage.py::Uso.total_tokens",
+    "source": "structural",
+    "summary": null,
+    "type": "method"
   },
   {
     "chunk_id": "376da7740710698a81984e53a644c1ca",
@@ -1254,6 +1309,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "654b4fcac13ba860cc345346b591d7bb",
+    "confidence": 1.0,
+    "document_id": "470636e040bae66473f3cd088c9ab2c9",
+    "id": "7866cb4b18d72c118b05995eb3d27837",
+    "name": "_git_indice",
+    "qualified_name": "src/ragx/gitinfo.py::_git_indice",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "20372e90447466afb2e560dec9ef2010",
@@ -1375,7 +1441,7 @@
     "type": "class"
   },
   {
-    "chunk_id": "dddd8d74b983ae7e1dd20d0bba4d2917",
+    "chunk_id": "712de3edeb23c95cc0eabfedbec277c5",
     "confidence": 1.0,
     "document_id": "7ecf97d3f68f2f32725ac4d0f2961f03",
     "id": "88f207db548e7c5353e9fc7ca95cf75b",
@@ -1463,6 +1529,17 @@
     "type": "class"
   },
   {
+    "chunk_id": "9a467dbb62d05791c7dc96d14f52472f",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "8ea717eb3c71dba1431b0a560265cb5e",
+    "name": "categoria",
+    "qualified_name": "src/ragx/usage.py::categoria",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "81bc72d23a6e1c86ee99a07e067eeb01",
     "confidence": 1.0,
     "document_id": "2913d52eabdda7d53cb90471c720c66f",
@@ -1485,12 +1562,12 @@
     "type": "file"
   },
   {
-    "chunk_id": "59b26adbad8762233608df0cd6cdfe44",
+    "chunk_id": "ce1774e4407821da38d9c2fa5fe5d6a3",
     "confidence": 1.0,
-    "document_id": "8c1f430f940686c0e8b858c6d02a1c7d",
-    "id": "9328119be0b85cc54385ac92a1f1513b",
-    "name": "_poly",
-    "qualified_name": "src/app/scripts/brand.py::_poly",
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "93f58b0bb4e0597fd8f94bce3f48fa01",
+    "name": "_cabeca",
+    "qualified_name": "src/ragx/usage.py::_cabeca",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1518,7 +1595,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "6da2c2b2d2cda06156355c126d42d307",
+    "chunk_id": "82db0ad7d39fc32203c7286d3b415229",
     "confidence": 1.0,
     "document_id": "376195e833198f61a1adcaad9be31b32",
     "id": "96eaa26bed819d743acad51cb21a872b",
@@ -1668,7 +1745,7 @@
     "name": "hooklight.py",
     "qualified_name": "src/ragx/hooklight.py",
     "source": "structural",
-    "summary": "Entrada leve dos hooks que rodam em TODA sessão e TODO commit (RAGX-0143).\n\n`ragx claude hint` (o `SessionStart` do Claude Code, que roda até em subagente) levava 481 a 659 ms,\ne o hook de git bloqueava o commit por 539 a 1.041 ms, contra 41 a 56 ms de um Python vazio. A causa:\no ponto de entrada importava typer, rich, pydantic e 25 módulos de comando antes de olhar o primeiro\nargumento. Este módulo faz o trabalho desses dois caminhos usando SÓ a stdlib (e `ragx.origin`,\n`ragx.diagnostics`, que também são stdlib), e `ragx.entry` despacha para ele antes de importar a CLI.\n\nRegras:\n\n- Só stdlib. Importar este módulo não carrega typer, rich, pydantic, numpy, yaml, pathspec nem\n  `ragx.config`/`ragx.core`/`ragx.storage`/`ragx.clients` (um teste confere num subprocesso).\n- Lê só artefatos próprios do RAGX: `ragx.toml`, `.ragx/status.json` e o `registry.json` do hub.\n  Nunca o conteúdo de um arquivo do projeto, e não percorre diretório (o teste arquitetural proíbe\n  `read_bytes`, `rglob`, `walk`, `scandir`, `iterdir` e `glob` aqui).\n- Nunca falha: erro em qualquer ponto vira silêncio e código 0, porque um erro aqui atrasaria ou\n  sujaria o início de toda sessão e todo commit, em qualquer pasta.\n\nO texto da dica tem UMA fonte, esta: `ragx.clients.claude_hint.hint_text` delega para cá.",
+    "summary": "Entrada leve dos hooks que rodam em TODA sessão e TODO commit (RAGX-0143).\n\n`ragx claude hint` (a dica do Claude Code em `SessionStart` e `SubagentStart`) levava 481 a 659 ms,\ne o hook de git bloqueava o commit por 539 a 1.041 ms, contra 41 a 56 ms de um Python vazio. A causa:\no ponto de entrada importava typer, rich, pydantic e 25 módulos de comando antes de olhar o primeiro\nargumento. Este módulo faz o trabalho desses dois caminhos usando SÓ a stdlib (e `ragx.origin`,\n`ragx.diagnostics`, que também são stdlib), e `ragx.entry` despacha para ele antes de importar a CLI.\n\nRegras:\n\n- Só stdlib. Importar este módulo não carrega typer, rich, pydantic, numpy, yaml, pathspec nem\n  `ragx.config`/`ragx.core`/`ragx.storage`/`ragx.clients` (um teste confere num subprocesso).\n- Lê só artefatos próprios do RAGX: `ragx.toml`, `.ragx/status.json` e o `registry.json` do hub.\n  Nunca o conteúdo de um arquivo do projeto, e não percorre diretório (o teste arquitetural proíbe\n  `read_bytes`, `rglob`, `walk`, `scandir`, `iterdir` e `glob` aqui).\n- Nunca falha: erro em qualquer ponto vira silêncio e código 0, porque um erro aqui atrasaria ou\n  sujaria o início de toda sessão e todo commit, em qualquer pasta.\n\nO texto da dica tem UMA fonte, esta: `ragx.clients.claude_hint.hint_text` delega para cá.",
     "type": "file"
   },
   {
@@ -1694,7 +1771,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "c217f25e8b7edf951a2eafb9dd1f826f",
+    "chunk_id": "d2e80322482f355eadb22a1b7accc824",
     "confidence": 1.0,
     "document_id": "b2d1971669e63f68243ab273bfbcd7dd",
     "id": "a902694b3b4ab24bd57a9d9ee90fe6f8",
@@ -2189,7 +2266,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "76a2a97c363a9215e17e0442f2314e2c",
+    "chunk_id": "57073cedef211291908c5fc4ece40314",
     "confidence": 1.0,
     "document_id": "376195e833198f61a1adcaad9be31b32",
     "id": "d2c0b92b9a0806efdcffa8118b04fc9d",
@@ -2275,6 +2352,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": "15e6dc733f61ee83c0095c751d6c0bad",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "dcb303bb071cf905fa0ffc22cdb9048d",
+    "name": "test_subagente_soma_na_sessao_e_janela_filtra_pelo_inicio",
+    "qualified_name": "tests/unit/test_usage.py::test_subagente_soma_na_sessao_e_janela_filtra_pelo_inicio",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "86e777d5a09681306dc675a12d6e1f11",
@@ -2484,6 +2572,17 @@
     "source": "structural",
     "summary": null,
     "type": "method"
+  },
+  {
+    "chunk_id": "a9dc423e5041a954dc06f89bba940e5e",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "e9becd7b16b4d278c2a248bb1a7adf9c",
+    "name": "_sessao_sensivel",
+    "qualified_name": "tests/unit/test_usage.py::_sessao_sensivel",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "fe2d1137a8b719fc292f04d70fcd8eba",

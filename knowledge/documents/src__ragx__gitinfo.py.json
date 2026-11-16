@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "9c62a383afa3ebe212137fb918b22bda39c7769bc8efd7206d385ab4041ae064",
+  "content_hash": "11dedc29a38b850eba9ee8ad262214b349fe0ce7e40962fe1063505bb7205533",
   "doc_kind": "code",
   "id": "470636e040bae66473f3cd088c9ab2c9",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/gitinfo.py",
-  "size_bytes": 8747,
+  "size_bytes": 17953,
   "title": "Metadados do git de uma raiz de projeto.\n\nSó metadados: branch, commit, estado do working tree, pasta de hooks. Nada\naqui lê conteúdo de arquivo do projeto; quem lê conteúdo é o pipeline, depois\ndo Security Gate (docs/02-seguranca.md).\n\nNenhuma função lança: sem git instalado, fora de repositório ou com timeout,\na resposta é `None`. Um índice que não sabe a branch continua funcionando."
 }

@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "bf7207fcefe6d2714af65402c0f54fd4cb71a405c82d5b4d9b5815761535598f",
+  "doc_kind": "code",
+  "id": "594f39d383a378bb630ce995720f98c4",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_busca.py",
+  "size_bytes": 2276,
+  "title": "Mede quantos tokens uma busca do MCP devolve, no fio (RAGX-0203).\n\nChama `search_hybrid` pelo servidor MCP do projeto (perfil slim, o padrão) com um conjunto fixo de consultas e conta os\ntokens do texto que o agente recebe, com o mesmo contador do restante dos benchmarks (tiktoken cl100k, que não é o\ntokenizador do Claude). Meta: uma busca do RAGX não pode custar mais do que um grep (~400 tokens no uso real do\nJuriflux); o teto do projeto é 600.\n\n    uv run python scripts/medir_busca.py [--limit N] [--format concise|detailed]\n\nSó lê o índice do diretório atual; não indexa nem escreve nada."
+}

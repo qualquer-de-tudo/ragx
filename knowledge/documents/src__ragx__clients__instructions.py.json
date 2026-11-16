@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "b3085476b080a3fc0e50987b4fb852f389373dd9ef598f86102aa0c6c06c40d5",
+  "doc_kind": "code",
+  "id": "576e522f7e83498d71ab020f570ab360",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/clients/instructions.py",
+  "size_bytes": 3654,
+  "title": "Instruções do usuário para clientes sem hook (RAGX-0202).\n\nCodex e Gemini CLI não têm a dica de início de sessão nem o lembrete de busca do Claude Code: só recebem o servidor\nMCP, cujas instruções o modelo costuma ignorar. Os dois leem um arquivo de instruções do usuário em toda sessão\n(`~/.codex/AGENTS.md` e `~/.gemini/GEMINI.md`). Ao registrar o RAGX num deles, um bloco curto e delimitado entra\nnesse arquivo; ao remover, sai. Tudo o que a pessoa escreveu fora do bloco fica como estava."
+}

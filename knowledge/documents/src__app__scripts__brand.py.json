@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "d821e63e6dcd5c79cc58d40090c9616efaf4a63a7466f659b0f36e198564ab4a",
+  "content_hash": "34751a26efbe386344d795386857d9167f14d62547e0e9dd151aa1cc6079303f",
   "doc_kind": "code",
   "id": "8c1f430f940686c0e8b858c6d02a1c7d",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/app/scripts/brand.py",
-  "size_bytes": 8891,
-  "title": "Gera os ativos de marca do RAGX a partir de uma única geometria.\n\nO símbolo é um \"X\" de duas barras a 45° cuja cruz tem uma abertura em\nlosango (o foco: só o contexto relevante passa), com um losango menor no\ncentro (o trecho recuperado). A geometria é calculada aqui, não desenhada à\nmão, para que SVG, PNG e .ico saiam idênticos e simétricos.\n\nDuas versões de desenho:\n- \"full\" (>= 48 px): X, abertura e núcleo.\n- \"small\" (<= 32 px): barras mais grossas, abertura menor e sem núcleo; a\n  versão full encolhida fecha a abertura e vira borrão nesses tamanhos.\n\nUso (só Pillow): python scripts/brand.py"
+  "size_bytes": 9571,
+  "title": "Gera os ativos de marca do RAGX a partir de uma única geometria (identidade Grafo, ADR-0017).\n\nO símbolo são quatro nós nos cantos ligados por arestas a um anel central, numa grade de 64 unidades: os nós\nsão o que o RAGX lê, o anel é o índice que os liga, e as arestas param no anel. A geometria é calculada aqui,\nnão desenhada à mão, para que SVG, PNG, .ico e o componente React saiam idênticos.\n\nTrês desenhos, por tamanho (docs/28-identidade-visual.md):\n- \"full\" (>= 48 px): nós r 6,5, arestas 3,5, anel r 8 com traço 4.\n- \"small\" (~32 px): nós, arestas e anel mais grossos.\n- \"tiny\" (<= 16 px): duas diagonais de ponta a ponta e o anel vira um ponto cheio.\n\nUso (só Pillow): python scripts/brand.py"
 }

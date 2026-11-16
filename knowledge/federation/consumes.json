@@ -16,7 +16,7 @@
       "handler": "serve",
       "normalized": "--allow-index",
       "raw": "--allow-index",
-      "source": "src/ragx/cli/commands/mcp_cmd.py:27"
+      "source": "src/ragx/cli/commands/mcp_cmd.py:48"
     },
     {
       "confidence": 0.85,
@@ -79,7 +79,7 @@
       "handler": "install#part-1",
       "normalized": "--client",
       "raw": "--client",
-      "source": "src/ragx/cli/commands/mcp_cmd.py:99"
+      "source": "src/ragx/cli/commands/mcp_cmd.py:120"
     },
     {
       "confidence": 0.85,
@@ -88,7 +88,7 @@
       "handler": "install#part-1",
       "normalized": "--command",
       "raw": "--command",
-      "source": "src/ragx/cli/commands/mcp_cmd.py:99"
+      "source": "src/ragx/cli/commands/mcp_cmd.py:120"
     },
     {
       "confidence": 0.85,
@@ -160,7 +160,7 @@
       "handler": "chunks",
       "normalized": "--document",
       "raw": "--document",
-      "source": "src/ragx/cli/commands/index_cmd.py:303"
+      "source": "src/ragx/cli/commands/index_cmd.py:312"
     },
     {
       "confidence": 0.85,
@@ -178,7 +178,7 @@
       "handler": "install#part-1",
       "normalized": "--dry-run",
       "raw": "--dry-run",
-      "source": "src/ragx/cli/commands/mcp_cmd.py:99"
+      "source": "src/ragx/cli/commands/mcp_cmd.py:120"
     },
     {
       "confidence": 0.85,
@@ -188,6 +188,15 @@
       "normalized": "--embed-only",
       "raw": "--embed-only",
       "source": "src/ragx/cli/commands/index_cmd.py:41"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": "init#part-1",
+      "normalized": "--embedding",
+      "raw": "--embedding",
+      "source": "src/ragx/cli/commands/init.py:103"
     },
     {
       "confidence": 0.85,
@@ -268,7 +277,7 @@
       "handler": "init#part-1",
       "normalized": "--force",
       "raw": "--force",
-      "source": "src/ragx/cli/commands/init.py:51"
+      "source": "src/ragx/cli/commands/init.py:103"
     },
     {
       "confidence": 0.85,
@@ -319,6 +328,15 @@
       "confidence": 0.85,
       "contract": null,
       "detected_by": "reference",
+      "handler": "index#part-1",
+      "normalized": "--full-scan",
+      "raw": "--full-scan",
+      "source": "src/ragx/cli/commands/index_cmd.py:41"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
       "handler": "export",
       "normalized": "--full-vectors",
       "raw": "--full-vectors",
@@ -331,7 +349,7 @@
       "handler": "init#part-1",
       "normalized": "--git-hooks",
       "raw": "--git-hooks",
-      "source": "src/ragx/cli/commands/init.py:51"
+      "source": "src/ragx/cli/commands/init.py:103"
     },
     {
       "confidence": 0.85,
@@ -538,7 +556,7 @@
       "handler": "runs",
       "normalized": "--offset",
       "raw": "--offset",
-      "source": "src/ragx/cli/commands/index_cmd.py:188"
+      "source": "src/ragx/cli/commands/index_cmd.py:197"
     },
     {
       "confidence": 0.85,
@@ -553,10 +571,10 @@
       "confidence": 0.85,
       "contract": null,
       "detected_by": "reference",
-      "handler": "index#part-1",
+      "handler": "models#part-1",
       "normalized": "--only",
       "raw": "--only",
-      "source": "src/ragx/cli/commands/index_cmd.py:41"
+      "source": "src/ragx/cli/commands/bench_cmd.py:19"
     },
     {
       "confidence": 0.85,
@@ -574,7 +592,7 @@
       "handler": "documents",
       "normalized": "--path",
       "raw": "--path",
-      "source": "src/ragx/cli/commands/index_cmd.py:273"
+      "source": "src/ragx/cli/commands/index_cmd.py:282"
     },
     {
       "confidence": 0.85,
@@ -853,7 +871,7 @@
       "handler": "chunks",
       "normalized": "--symbol",
       "raw": "--symbol",
-      "source": "src/ragx/cli/commands/index_cmd.py:303"
+      "source": "src/ragx/cli/commands/index_cmd.py:312"
     },
     {
       "confidence": 0.85,
@@ -898,7 +916,7 @@
       "handler": "serve",
       "normalized": "--transport",
       "raw": "--transport",
-      "source": "src/ragx/cli/commands/mcp_cmd.py:27"
+      "source": "src/ragx/cli/commands/mcp_cmd.py:48"
     },
     {
       "confidence": 0.85,
@@ -925,7 +943,7 @@
       "handler": "chunk",
       "normalized": "--with-context",
       "raw": "--with-context",
-      "source": "src/ragx/cli/commands/index_cmd.py:337"
+      "source": "src/ragx/cli/commands/index_cmd.py:346"
     },
     {
       "confidence": 0.85,
@@ -961,7 +979,7 @@
       "handler": null,
       "normalized": "activate",
       "raw": "activate",
-      "source": "src/app/electron/main.ts:865"
+      "source": "src/app/electron/main.ts:880"
     },
     {
       "confidence": 0.85,
@@ -977,9 +995,18 @@
       "contract": null,
       "detected_by": "reference",
       "handler": null,
+      "normalized": "claude-code",
+      "raw": "claude-code",
+      "source": "src/app/electron/__tests__/ipc.test.ts:95"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
       "normalized": "click",
       "raw": "click",
-      "source": "src/app/electron/main.ts:157"
+      "source": "src/app/electron/main.ts:158"
     },
     {
       "confidence": 0.85,
@@ -997,7 +1024,16 @@
       "handler": null,
       "normalized": "closed",
       "raw": "closed",
-      "source": "src/app/electron/main.ts:821"
+      "source": "src/app/electron/main.ts:836"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "codex",
+      "raw": "codex",
+      "source": "src/app/electron/__tests__/ipc.test.ts:95"
     },
     {
       "confidence": 0.85,
@@ -1060,7 +1096,7 @@
       "handler": null,
       "normalized": "manutenção",
       "raw": "Manutenção",
-      "source": "src/app/src/pages/__tests__/ProjectPage.test.tsx:396"
+      "source": "src/app/src/pages/__tests__/ProjectPage.test.tsx:417"
     },
     {
       "confidence": 0.85,
@@ -1105,7 +1141,7 @@
       "handler": null,
       "normalized": "ragx:activity",
       "raw": "ragx:activity",
-      "source": "src/app/electron/preload.ts:22"
+      "source": "src/app/electron/preload.ts:25"
     },
     {
       "confidence": 0.85,
@@ -1114,7 +1150,7 @@
       "handler": null,
       "normalized": "ragx:autosetup",
       "raw": "ragx:autoSetup",
-      "source": "src/app/electron/preload.ts:52"
+      "source": "src/app/electron/preload.ts:55"
     },
     {
       "confidence": 0.85,
@@ -1123,7 +1159,7 @@
       "handler": null,
       "normalized": "ragx:connections",
       "raw": "ragx:connections",
-      "source": "src/app/electron/preload.ts:22"
+      "source": "src/app/electron/preload.ts:25"
     },
     {
       "confidence": 0.85,
@@ -1132,7 +1168,7 @@
       "handler": null,
       "normalized": "ragx:jobs",
       "raw": "ragx:jobs",
-      "source": "src/app/electron/preload.ts:52"
+      "source": "src/app/electron/preload.ts:55"
     },
     {
       "confidence": 0.85,
@@ -1141,7 +1177,7 @@
       "handler": null,
       "normalized": "ragx:openpreferences",
       "raw": "ragx:openPreferences",
-      "source": "src/app/electron/preload.ts:77"
+      "source": "src/app/electron/preload.ts:80"
     },
     {
       "confidence": 0.85,
@@ -1150,7 +1186,7 @@
       "handler": null,
       "normalized": "ragx:openproject",
       "raw": "ragx:openProject",
-      "source": "src/app/electron/preload.ts:77"
+      "source": "src/app/electron/preload.ts:80"
     },
     {
       "confidence": 0.85,
@@ -1159,7 +1195,7 @@
       "handler": null,
       "normalized": "ragx:snapshot",
       "raw": "ragx:snapshot",
-      "source": "src/app/electron/preload.ts:22"
+      "source": "src/app/electron/preload.ts:25"
     },
     {
       "confidence": 0.85,
@@ -1168,7 +1204,7 @@
       "handler": null,
       "normalized": "ragx:update",
       "raw": "ragx:update",
-      "source": "src/app/electron/preload.ts:77"
+      "source": "src/app/electron/preload.ts:80"
     },
     {
       "confidence": 0.85,
@@ -1231,7 +1267,7 @@
       "handler": null,
       "normalized": "will-navigate",
       "raw": "will-navigate",
-      "source": "src/app/electron/main.ts:769"
+      "source": "src/app/electron/main.ts:784"
     },
     {
       "confidence": 0.85,
@@ -1240,7 +1276,16 @@
       "handler": null,
       "normalized": "window-all-closed",
       "raw": "window-all-closed",
-      "source": "src/app/electron/main.ts:870"
+      "source": "src/app/electron/main.ts:885"
+    },
+    {
+      "confidence": 0.85,
+      "contract": null,
+      "detected_by": "reference",
+      "handler": null,
+      "normalized": "windsurf",
+      "raw": "windsurf",
+      "source": "src/app/electron/__tests__/ipc.test.ts:104"
     },
     {
       "confidence": 0.85,

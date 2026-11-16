@@ -66,6 +66,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "6edc42f83c66d22434d68c5e603eaaef",
+    "confidence": 1.0,
+    "document_id": "be3cfbc14ffd5a60e68753895e6c3fcd",
+    "id": "088b35949326b63d173bc04791c91ca6",
+    "name": "iter_records",
+    "qualified_name": "src/ragx/perf.py::iter_records",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "287735d7c5f7a7827e1c21956d9cc6cb",
     "confidence": 1.0,
     "document_id": "67364f8a78d5a5fc24e8c4b3d2d60152",
@@ -165,7 +176,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "2f87777cea84ef75eed87d68bfe1eab1",
+    "chunk_id": "a4bfdf32f15ea8e12cf4aa144d3717a9",
     "confidence": 1.0,
     "document_id": "7eef4d54cad1daa50386da4485ae0ee7",
     "id": "13b7b224c5309a0de8c6ec7716f04a39",
@@ -292,6 +303,17 @@
     "id": "1e579a04482553e9a35a64eb91bbcfb2",
     "name": "server_stats",
     "qualified_name": "src/ragx/perf.py::server_stats",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "e5df36317526b07466d7526087d8379b",
+    "confidence": 1.0,
+    "document_id": "6ccd1ca48dafd6a8cdd05956085de4d1",
+    "id": "1efd9d84b3ef22c5e602ba55becbc4ba",
+    "name": "test_last_error_vem_da_ultima_passada_que_falhou",
+    "qualified_name": "tests/integration/test_status_file.py::test_last_error_vem_da_ultima_passada_que_falhou",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -858,6 +880,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "7ed1f4fb8e50f01cf308fb0c36b0e719",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "543ddca4cd5458313e111b550364a45d",
+    "name": "relatorio",
+    "qualified_name": "src/ragx/usage.py::relatorio",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": "3abe27d1e92cd69afaac1cb3bf947166",
     "confidence": 1.0,
     "document_id": "f368f2fa4735e9f9a421a02a19566240",
@@ -930,6 +963,17 @@
     "id": "5869b664b25123b70eeeaa4247f3f97b",
     "name": "to_dicts",
     "qualified_name": "src/ragx/graph/rank.py::to_dicts",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "0609ad4106704bd5f6e4291b5565e52e",
+    "confidence": 1.0,
+    "document_id": "06009bdfdf85097b702025e3497430db",
+    "id": "59b2ed44901cc4f0c203764a5099dfe5",
+    "name": "run_nudge#part-1",
+    "qualified_name": "src/ragx/hooklight.py::run_nudge#part-1",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1287,6 +1331,17 @@
     "type": "file"
   },
   {
+    "chunk_id": null,
+    "confidence": 1.0,
+    "document_id": "9a2803236671bd7ea6b88d44a7b6d9c3",
+    "id": "79b9ddd488847bb9ee0ff7e669a925d7",
+    "name": "RAGX-0202-instrucoes-para-clientes-sem-hook.md",
+    "qualified_name": "task/fase-25-economia-real/RAGX-0202-instrucoes-para-clientes-sem-hook.md",
+    "source": "structural",
+    "summary": "RAGX-0202 — Instruções para Codex e Gemini CLI",
+    "type": "file"
+  },
+  {
     "chunk_id": "c02c3c37a926e010db496f4bef4282a5",
     "confidence": 1.0,
     "document_id": "58488338f4218b9dd9cd18bf91f0c8ab",
@@ -1353,7 +1408,7 @@
     "type": "method"
   },
   {
-    "chunk_id": "b4951d0308dffdbd540e1feed683bd53",
+    "chunk_id": "5b4767c585f48d9df2c9842a624d4fb8",
     "confidence": 1.0,
     "document_id": "afc38ac4e5e44fc8bb25b84ec7e46b5d",
     "id": "85352f94641aeb6934dbff64924e06c2",
@@ -1441,6 +1496,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "7184b86426756510ba600e580ac7a664",
+    "confidence": 1.0,
+    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
+    "id": "8dafbcb4f612f65e082b9baa03cf8a25",
+    "name": "test_dica_usa_cwd_do_hook_para_orientar_e_registrar",
+    "qualified_name": "tests/unit/test_hooklight.py::test_dica_usa_cwd_do_hook_para_orientar_e_registrar",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "9f5d9c95a5ad818eff21665e79a9e708",
@@ -1450,6 +1516,17 @@
     "source": "structural",
     "summary": "RAGX-0129 — Poda de diretórios com negação em `.gitignore` aninhado",
     "type": "file"
+  },
+  {
+    "chunk_id": "6553d9fd8cd1c48809e92f832ff601cf",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "8f6e873449d7dbde73f3ac3406f6329b",
+    "name": "_result",
+    "qualified_name": "tests/unit/test_usage.py::_result",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "fad9952219eea04990f73290179983eb",
@@ -1617,23 +1694,23 @@
     "type": "function"
   },
   {
-    "chunk_id": "21dbd1bab90cf47f5079481f3b930520",
-    "confidence": 1.0,
-    "document_id": "69e1285b9325efa7f6212aa3df4b3077",
-    "id": "a0d6211440583f69cf0cd3e458ad4de8",
-    "name": "test_depois_de_clear_ou_compact_a_dica_volta",
-    "qualified_name": "tests/unit/test_hooklight.py::test_depois_de_clear_ou_compact_a_dica_volta",
-    "source": "structural",
-    "summary": null,
-    "type": "function"
-  },
-  {
     "chunk_id": "80e91ee3b2681146f9564f82c168f440",
     "confidence": 1.0,
     "document_id": "45f5214420722225a01de682881b94c0",
     "id": "a33c101442848f981c0bf04c31baf9d8",
     "name": "test_chamada_entre_arquivos_vira_calls",
     "qualified_name": "tests/integration/test_graph.py::test_chamada_entre_arquivos_vira_calls",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "3a701b5a1be90b11db509e64b0c6cb74",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "a44031f49e05cda794b91baaf70a8e48",
+    "name": "test_categoria_do_bash",
+    "qualified_name": "tests/unit/test_usage.py::test_categoria_do_bash",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -1648,6 +1725,17 @@
     "source": "structural",
     "summary": null,
     "type": "class"
+  },
+  {
+    "chunk_id": "58079694c4ac5e4599935ce000d1d7ee",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "a5f8f454cdbc3e98e7ed78905613d599",
+    "name": "_transcripts",
+    "qualified_name": "src/ragx/usage.py::_transcripts",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "4888fe8398c57e66bbc887fc1734b0ae",
@@ -1793,6 +1881,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "609bf35a182abe1d18c5c4868e66db1c",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "b0854f7482064052d47f229f433b60df",
+    "name": "_menciona_ragx",
+    "qualified_name": "src/ragx/usage.py::_menciona_ragx",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
     "chunk_id": null,
     "confidence": 1.0,
     "document_id": "df2560aa22d616b7590f1e76ad9bfcd2",
@@ -1898,6 +1997,17 @@
     "id": "b94a3ce47324f377ad41cfca9e80b34c",
     "name": "test_degrees_for_conta_auto_relacao_uma_vez",
     "qualified_name": "tests/integration/test_graph_expansao.py::test_degrees_for_conta_auto_relacao_uma_vez",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
+  },
+  {
+    "chunk_id": "1670ec12b57dad8bfddf62b2ddb7164b",
+    "confidence": 1.0,
+    "document_id": "74882b5e4376f4b268ae1eb7116046dc",
+    "id": "ba73812476dc7eb0af20ff262d7bc91f",
+    "name": "_use",
+    "qualified_name": "tests/unit/test_usage.py::_use",
     "source": "structural",
     "summary": null,
     "type": "function"
@@ -2299,6 +2409,17 @@
     "type": "function"
   },
   {
+    "chunk_id": "fa881f0e1da6ae3a7fff16ed517e966d",
+    "confidence": 1.0,
+    "document_id": "f8d9178660bf59254e88dece17699cf5",
+    "id": "d72f4f849a9444b65509b5b938a0249e",
+    "name": "Uso",
+    "qualified_name": "src/ragx/usage.py::Uso",
+    "source": "structural",
+    "summary": null,
+    "type": "class"
+  },
+  {
     "chunk_id": "4ca6e44f392a43aa0d9baefba903f040",
     "confidence": 1.0,
     "document_id": "53cfb0341bc5392d4ae5ba26445dfa6c",
@@ -2310,7 +2431,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "5a23421a4722ba1b4f4e3d667cba6650",
+    "chunk_id": "9b3a7bbd90d93df1135998807922f718",
     "confidence": 1.0,
     "document_id": "aaea6760e6e6bd78d656f96f28f2a1ce",
     "id": "dbc90b6468bd2bcd22603121486ddd35",
@@ -2409,7 +2530,7 @@
     "type": "method"
   },
   {
-    "chunk_id": "1eb01ff9c58c450b5ab56f855cc587f6",
+    "chunk_id": "72c4820ede01e6396a69711f1670fecc",
     "confidence": 1.0,
     "document_id": "9541c418d371c9f2449f1bac3c3ad13c",
     "id": "e2e784a4716640a784a813e911a8040f",
@@ -2464,7 +2585,7 @@
     "type": "file"
   },
   {
-    "chunk_id": "88113028350a2000db169eab94defe99",
+    "chunk_id": "ba263cabb76bf8293d6eb39dbc90e947",
     "confidence": 1.0,
     "document_id": "2eb19be6531eac9d56b90fc49a3b3b03",
     "id": "e5ec4b24bac8b5ba241c7ad6396e3f2b",
@@ -2526,7 +2647,7 @@
     "name": "TopBar.tsx",
     "qualified_name": "src/app/src/components/shell/TopBar.tsx",
     "source": "structural",
-    "summary": "import type { ClaudeToggle } from '../../hooks/useClaudeIntegration'",
+    "summary": "import type { JobView, Snapshot } from '../../types/ragx-bridge'",
     "type": "file"
   },
   {
@@ -2594,6 +2715,17 @@
     "source": "structural",
     "summary": "RAGX-0083 — Escrita no índice via MCP + playbook",
     "type": "file"
+  },
+  {
+    "chunk_id": "766770df74bec76b8616395ae11c5c3c",
+    "confidence": 1.0,
+    "document_id": "a9fba6a4821f14aa026d2ff908f9d864",
+    "id": "f10284f4023f1bd13b0b091b0fb5146c",
+    "name": "test_pedido_por_caminho_nao_rebaixa_pedido_completo",
+    "qualified_name": "tests/unit/test_index_lock.py::test_pedido_por_caminho_nao_rebaixa_pedido_completo",
+    "source": "structural",
+    "summary": null,
+    "type": "function"
   },
   {
     "chunk_id": "654a1999e5aad113d757afcc8a07e423",
@@ -2695,7 +2827,7 @@
     "type": "function"
   },
   {
-    "chunk_id": "2326d8dd759e369db2285dceb65b2eb0",
+    "chunk_id": "485f6e591544e6d360a0d272ec5b9ce8",
     "confidence": 1.0,
     "document_id": "b07309c464acfe13c2c56c24fd1ed642",
     "id": "f7e6c0240e2bc0b53cd9a6ec4e8f1ab4",

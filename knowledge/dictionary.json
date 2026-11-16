@@ -20,7 +20,7 @@
       "Document",
       "ChunkRepo",
       "EmbeddingCache",
-      "Link",
+      "Claim",
       "IndexBusyError"
     ],
     "05 — Busca (Fase 2)": [
@@ -58,12 +58,11 @@
     "14 — Referência da CLI": [
       "Result",
       "Plan",
-      "Link",
-      "Client"
+      "Client",
+      "Worktree"
     ],
     "19 — Watch e autonomia do agente": [
       "IgnoreEngine",
-      "Link",
       "Delta",
       "WatchState"
     ],
@@ -97,7 +96,7 @@
         "CHANGELOG.md",
         "README.md"
       ],
-      "occurrences": 284,
+      "occurrences": 298,
       "rule": "Extensão predominante: .md"
     },
     {
@@ -108,7 +107,7 @@
         "src/app/electron/__tests__/ipc.test.ts",
         "src/app/electron/__tests__/menu.test.ts"
       ],
-      "occurrences": 116,
+      "occurrences": 119,
       "rule": "Testes ficam em src/"
     },
     {
@@ -250,31 +249,31 @@
         "AGENTS.md",
         "README.md"
       ],
-      "seen": 337,
+      "seen": 363,
       "term": "RAGX"
-    },
-    {
-      "evidence": [
-        "docs/adr/ADR-0001-python-e-toolchain.md",
-        "docs/adr/ADR-0002-sqlite-como-store-unico.md"
-      ],
-      "seen": 52,
-      "term": "ADR"
     },
     {
       "evidence": [
         "docs/09-mcp.md",
         "docs/adr/ADR-0006-mcp-casca-fina.md"
       ],
-      "seen": 52,
+      "seen": 56,
       "term": "MCP"
+    },
+    {
+      "evidence": [
+        "docs/adr/ADR-0001-python-e-toolchain.md",
+        "docs/adr/ADR-0002-sqlite-como-store-unico.md"
+      ],
+      "seen": 55,
+      "term": "ADR"
     },
     {
       "evidence": [
         "docs/14-cli.md",
         "scripts/medir_hooks.py"
       ],
-      "seen": 29,
+      "seen": 31,
       "term": "CLI"
     },
     {
@@ -288,38 +287,38 @@
   ],
   "modules": [
     {
-      "chunks": 1781,
-      "files": 103,
+      "chunks": 1859,
+      "files": 106,
       "name": "src/app/electron",
       "summary": "Painel desktop (Electron) para o RAGX. Mostra os projetos registrados no hub"
     },
     {
-      "chunks": 1684,
-      "files": 181,
+      "chunks": 1789,
+      "files": 184,
       "name": "src/ragx",
       "summary": null
     },
     {
-      "chunks": 1471,
-      "files": 156,
+      "chunks": 1562,
+      "files": 164,
       "name": "src/app/src",
       "summary": "Painel desktop (Electron) para o RAGX. Mostra os projetos registrados no hub"
     },
     {
-      "chunks": 701,
-      "files": 53,
+      "chunks": 753,
+      "files": 55,
       "name": "tests/unit",
       "summary": null
     },
     {
-      "chunks": 490,
+      "chunks": 500,
       "files": 27,
       "name": "tests/integration",
       "summary": null
     },
     {
-      "chunks": 436,
-      "files": 30,
+      "chunks": 455,
+      "files": 31,
       "name": "docs",
       "summary": "Knowledge Engine local para projetos de software: indexa um repositório, protege segredos,"
     },
@@ -373,7 +372,7 @@
     }
   ],
   "project": {
-    "generated_at": "2026-10-02T17:27:23Z",
+    "generated_at": "2026-11-16T16:38:37Z",
     "id": "2a0786031710",
     "kind": "other",
     "name": "ragx",
@@ -382,7 +381,7 @@
   "repo_map": [
     {
       "path": "src/ragx/storage/repositories.py",
-      "rank": 0.052357,
+      "rank": 0.050103,
       "symbols": [
         "ChunkRepo",
         "DocumentRepo",
@@ -391,7 +390,7 @@
     },
     {
       "path": "src/ragx/cli/commands/graph_cmd.py",
-      "rank": 0.038871,
+      "rank": 0.03595,
       "symbols": [
         "entities",
         "rank",
@@ -399,8 +398,17 @@
       ]
     },
     {
+      "path": "src/ragx/config.py",
+      "rank": 0.034332,
+      "symbols": [
+        "load_config",
+        "Config",
+        "find_root"
+      ]
+    },
+    {
       "path": "src/ragx/core/models.py",
-      "rank": 0.036585,
+      "rank": 0.033676,
       "symbols": [
         "Chunk",
         "Document",
@@ -409,7 +417,7 @@
     },
     {
       "path": "src/ragx/storage/db.py",
-      "rank": 0.036239,
+      "rank": 0.033669,
       "symbols": [
         "open_db",
         "utcnow",
@@ -417,17 +425,8 @@
       ]
     },
     {
-      "path": "src/ragx/config.py",
-      "rank": 0.036036,
-      "symbols": [
-        "load_config",
-        "Config",
-        "find_root"
-      ]
-    },
-    {
       "path": "src/ragx/graph/store.py",
-      "rank": 0.028554,
+      "rank": 0.026405,
       "symbols": [
         "GraphStore",
         "Entity",
@@ -435,8 +434,17 @@
       ]
     },
     {
+      "path": "src/ragx/search/ab.py",
+      "rank": 0.022648,
+      "symbols": [
+        "Runner",
+        "plan",
+        "ArmResult"
+      ]
+    },
+    {
       "path": "src/ragx/indexing/touchq.py",
-      "rank": 0.024708,
+      "rank": 0.022207,
       "symbols": [
         "resolve",
         "enqueue",
@@ -445,7 +453,7 @@
     },
     {
       "path": "src/ragx/gitinfo.py",
-      "rank": 0.02068,
+      "rank": 0.022136,
       "symbols": [
         "Commit",
         "git",
@@ -453,8 +461,17 @@
       ]
     },
     {
+      "path": "src/ragx/usage.py",
+      "rank": 0.021687,
+      "symbols": [
+        "Arquivo",
+        "Uso",
+        "chave"
+      ]
+    },
+    {
       "path": "src/ragx/diagnostics.py",
-      "rank": 0.018809,
+      "rank": 0.017746,
       "symbols": [
         "utcnow",
         "log_mcp_call",
@@ -462,17 +479,17 @@
       ]
     },
     {
-      "path": "src/ragx/search/ab.py",
-      "rank": 0.018355,
+      "path": "src/ragx/clients/registry.py",
+      "rank": 0.017513,
       "symbols": [
-        "Runner",
-        "plan",
-        "ArmResult"
+        "Outcome",
+        "register",
+        "CLIENTS"
       ]
     },
     {
       "path": "src/ragx/sync/service.py",
-      "rank": 0.018118,
+      "rank": 0.016301,
       "symbols": [
         "resolve",
         "SyncReport",
@@ -481,7 +498,7 @@
     },
     {
       "path": "src/ragx/cli/commands/index_cmd.py",
-      "rank": 0.017356,
+      "rank": 0.01621,
       "symbols": [
         "chunk",
         "chunks",
@@ -489,21 +506,12 @@
       ]
     },
     {
-      "path": "src/ragx/clients/registry.py",
-      "rank": 0.013899,
+      "path": "src/ragx/base/source.py",
+      "rank": 0.014969,
       "symbols": [
-        "Outcome",
-        "register",
-        "Result"
-      ]
-    },
-    {
-      "path": "src/ragx/indexing/lock.py",
-      "rank": 0.012886,
-      "symbols": [
-        "release",
-        "holder",
-        "try_acquire"
+        "add",
+        "update",
+        "remove"
       ]
     }
   ],
@@ -517,7 +525,7 @@
       ],
       "name": "Grafo",
       "path": "tests/unit/test_graph_rank.py",
-      "referenced_by": 31,
+      "referenced_by": 33,
       "summary": "Banco de verdade (migrações aplicadas) com documentos, entidades e relações inseridos à mão"
     },
     {
@@ -638,11 +646,11 @@
     }
   ],
   "stats": {
-    "chunks": 9701,
-    "documents": 895,
-    "embeddings": 9701,
-    "entities": 3727,
-    "relations": 34855
+    "chunks": 10129,
+    "documents": 927,
+    "embeddings": 10129,
+    "entities": 3922,
+    "relations": 38063
   },
   "technologies": [
     {

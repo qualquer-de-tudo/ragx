@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "ef003bbf18d176ed9ec08978a54d2aef1cc6563ae6336f106cd7bebe6cebfde9",
+  "doc_kind": "code",
+  "id": "533c73abc64adf0ad0a3088ff8901373",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "scripts/medir_sem_mudanca.py",
+  "size_bytes": 4325,
+  "title": "Mede a rodada de `index_project` SEM mudança num repositório git sintético (RAGX-0198, S4).\n\n    uv run python scripts/medir_sem_mudanca.py [--arquivos 20000] [--rodadas 5]\n\nGera `--arquivos` arquivos pequenos em pastas temporárias, com pastas ignoradas de verdade (`node_modules/` e `build/`\nno `.gitignore`, um `.gitignore` aninhado, arquivos `*.log`), faz `git init` e um commit, indexa uma vez (provider\n`hashing`, sem rede) e cronometra as rodadas seguintes sem mudança, como o hook de commit as dispara. Quando o\n`index_project` aceita `full_scan`, mede também a varredura completa forçada, para comparar os dois caminhos na mesma\nárvore. Não toca em nenhum projeto real; imprime mediana, mínimo e máximo."
+}

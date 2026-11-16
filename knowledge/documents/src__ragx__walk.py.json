@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "38c12629681f2885a0e1f9006cdd963e2ea3489775b74a7e6cb1346201405d8d",
+  "content_hash": "161ddc2de9f824300912130e4eeabd8a90ffe4d95c5ed937e32a3cb9878e510a",
   "doc_kind": "code",
   "id": "eb3c24c29a8ea6da59488d35ee415e4a",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/walk.py",
-  "size_bytes": 18768,
+  "size_bytes": 22340,
   "title": "FileWalker — um dos DOIS únicos pontos autorizados a ler o filesystem do\nprojeto-alvo (o outro é sync/incremental). Todo byte lido sai daqui já tendo\npassado pelo SecurityGate.\n\nVer docs/04-indexacao.md e ADR-0008."
 }

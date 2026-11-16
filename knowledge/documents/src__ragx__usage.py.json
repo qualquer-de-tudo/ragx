@@ -1,0 +1,11 @@
+{
+  "chunker_version": "1",
+  "content_hash": "d12d99759c635c095629a6eaf187290fe082d8a0057534542b964ac86644e7b2",
+  "doc_kind": "code",
+  "id": "f8d9178660bf59254e88dece17699cf5",
+  "lang": "python",
+  "redacted": false,
+  "rel_path": "src/ragx/usage.py",
+  "size_bytes": 26000,
+  "title": "Consumo real de tokens nas sessões do Claude Code, por projeto (RAGX-0205).\n\nO painel mostrava \"tokens economizados\" como arquivos inteiros − entregue: um contrafactual que\nsuperestima, porque o agente quase nunca lê o arquivo inteiro. O Claude Code já grava, por\nresposta do modelo, os tokens de entrada (normais, lidos do cache, gravados no cache) e de saída,\ne cada chamada de ferramenta com o seu resultado. Este módulo lê isso e devolve, por sessão:\n\n- **turnos**: respostas do modelo (ids de mensagem distintos; o mesmo id aparece em vários\n  registros, um por bloco, e o uso dele conta UMA vez);\n- **tokens**: entrada, cache lido, cache gravado e saída, somados por mensagem;\n- **chamadas por tipo**: busca (Grep, Glob e `grep`/`rg`/`find`/`ls`... pelo Bash ou PowerShell),\n  leitura (Read e `cat`/`head`/`Get-Content`...), RAGX (`mcp__ragx__*`) e outras;\n- **tamanho dos resultados** de busca, leitura e RAGX, em caracteres. Leitura de imagem ou PDF\n  conta à parte (`image_reads`): o resultado é base64, enorme e não comparável a texto;\n- **adoção**: se a sessão chamou o RAGX, se recebeu a dica de início e o lembrete do primeiro\n  Grep/Glob, e se chamou o RAGX depois do lembrete. Vem do transcript, então não depende de o\n  servidor MCP saber a sessão.\n\nPrivacidade (regra sem exceção): daqui não sai, nem para o cache em disco, texto de prompt, de\nresposta, comando, caminho de arquivo ou entrada de ferramenta. O comando do Bash é classificado\nem memória e descartado; a pasta de trabalho da sessão (`cwd`) vira hashes da pasta e das pastas\nacima dela, comparados com o hash da raiz de cada projeto registrado. O único caminho que sai é o\ndo próprio projeto, que vem do registro do RAGX (ou do `--project`), não do transcript.\n\nCom e sem RAGX são grupos diferentes de tarefas: o resultado é observação, não experimento."
+}

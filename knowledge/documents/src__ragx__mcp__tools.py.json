@@ -1,11 +1,11 @@
 {
   "chunker_version": "1",
-  "content_hash": "16699ba6ccf1569d0d8d056e4dc184dfca8db8cb2804156f5deb71a52cc58897",
+  "content_hash": "586120e9c8fc1e8b0bfe1efb57d592cdbbe0f8664c22744ca477bbe62e5bde0d",
   "doc_kind": "code",
   "id": "d886896513435d8c82c6597ab876ef5e",
   "lang": "python",
   "redacted": false,
   "rel_path": "src/ragx/mcp/tools.py",
-  "size_bytes": 4379,
+  "size_bytes": 4502,
   "title": "Contratos e implementação das ferramentas MCP.\n\nCASCA FINA (ADR-0006): cada ferramenta é validar -> chamar serviço -> serializar.\nZero lógica de negócio, zero acesso a filesystem.\n\nEste módulo NÃO pode importar `os`, `subprocess`, `pathlib`, `socket` nem\ncliente HTTP — há teste arquitetural que falha se alguém tentar."
 }
