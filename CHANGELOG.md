@@ -9,6 +9,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.1.1] — 2026-11-16
+
 ### Corrigido
 
 - **O scan de segurança do painel não estoura mais o tempo limite** (RAGX-0206). Em projetos grandes, "Atualizar achados de
