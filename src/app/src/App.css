@@ -109,53 +109,11 @@
   color: var(--ink-2);
 }
 
-/* Navegação em "Trilha" vertical (ADR-0017): um nó por item, na altura do ícone, ligados por uma linha fina. O item
-   atual tem o nó cheio com halo, além do véu do acento. */
-.nav li {
-  position: relative;
-}
-
-.nav-item::before {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  top: 15px;
-  left: 0;
-  width: 8px;
-  height: 8px;
-  border: var(--edge) solid var(--line-control);
-  border-radius: 50%;
-  background: var(--bg);
-  transition:
-    background-color var(--dur) ease,
-    border-color var(--dur) ease;
-}
-
-.nav ul:not(.nav-foot) > li:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 19px;
-  bottom: calc(-19px - var(--sp-4));
-  left: calc(4px - var(--edge) / 2);
-  width: var(--edge);
-  background: var(--line);
-}
-
-.nav-item:hover::before {
-  border-color: var(--ink-2);
-}
-
+/* O item atual leva o véu do acento; a barra lateral não desenha trilha de nós (a linguagem Grafo fica nos
+   componentes de conteúdo, não na navegação). */
 .nav-item[aria-current='page'] {
   background: var(--accent-wash);
   color: var(--ink);
-}
-
-.nav-item[aria-current='page']::before {
-  border-color: var(--accent);
-  background: var(--accent);
-  box-shadow:
-    0 0 0 2px var(--bg),
-    0 0 0 3.5px var(--accent);
 }
 
 .nav-item[aria-current='page'] .nav-icon {
@@ -428,15 +386,6 @@
 
   .nav-item {
     width: 52px;
-  }
-
-  /* A barra estreita encosta o item na borda: o nó da trilha entra um pouco, para o halo não sair da janela. */
-  .nav-item::before {
-    left: var(--sp-2);
-  }
-
-  .nav ul:not(.nav-foot) > li:not(:last-child)::after {
-    left: calc(6px - var(--edge) / 2);
   }
 
   .nav-label {
@@ -4510,6 +4459,28 @@ kbd {
 
 .bench-table tbody th {
   font-weight: 500;
+}
+
+/* Consumo real (RAGX-0205): a tabela com e sem RAGX reaproveita a dos benchmarks. */
+.usage-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-caption {
+  text-align: left;
+  font-size: var(--fs-sm);
+  color: var(--ink-3);
+  padding-bottom: var(--sp-8);
+}
+
+.real-usage .card-head {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.usage-when {
+  margin-left: auto;
 }
 
 .bench-timeline {

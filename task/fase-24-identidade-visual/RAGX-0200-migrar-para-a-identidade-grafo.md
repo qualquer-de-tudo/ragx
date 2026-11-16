@@ -22,7 +22,7 @@ interface em preto e branco, cor só no símbolo e nos estados, componentes pró
 - [x] Tokens: acento branco no escuro e quase preto no claro, `--brand-*`, `--critical-ink`; Space Grotesk e
       JetBrains Mono empacotadas (sem rede)
 - [x] Componentes: botão Nó, Porta, Relação e Corte; estado pela forma do nó; tags em cadeia; interruptor
-      Conexão; abas Trilha; progresso Aresta; cartão com porta e o caminho do dado; barra lateral em trilha
+      Conexão; abas Trilha; progresso Aresta; cartão com porta e o caminho do dado (barra lateral sem trilha de nós: a pedido, 16/11)
 - [x] Extensão do VS Code com o símbolo novo
 - [x] Design system registrado (artefato) com tokens, componentes e o guia
 - [x] CHANGELOG em `[Não lançado]`
