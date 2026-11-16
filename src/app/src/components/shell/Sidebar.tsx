@@ -52,9 +52,11 @@ export function Sidebar({
   )
   return (
     <aside className="sidebar">
+      {/* Assinatura Grafo (ADR-0017): o símbolo e `ragx` em minúsculas. Decorativa, como antes (o nome do produto
+          já está no título da janela). */}
       <div className="brand" aria-hidden="true">
         <RagxMark size={26} />
-        <span className="brand-name">RAGX</span>
+        <span className="brand-name">ragx</span>
       </div>
       <nav className="nav" aria-label="Principal">
         <ul>{ITEMS.map(item)}</ul>

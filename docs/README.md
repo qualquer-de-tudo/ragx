@@ -40,6 +40,7 @@ responde busca híbrida, monta contexto para agentes e expõe tudo via MCP.
 | [25 — Spec v2](25-spec-v2.md) | Princípios, SLOs S1 a S14 e escopo da v2 | 19–22 |
 | [26 — Resultados v2](26-resultados-v2.md) | O que foi medido de novo com o código final, contra os SLOs | 19–22 |
 | [27 — Benchmarks](27-benchmarks.md) | Números públicos, com antes, depois, método e linha do tempo (gerado do JSON do painel) | 23 |
+| [28 — Identidade visual](28-identidade-visual.md) | Símbolo, cores, tipografia e componentes da identidade Grafo | 24 |
 | [Roadmap](roadmap.md) | Fases, dependências, critérios de aceite | todas |
 | [ADRs](adr/) | Decisões arquiteturais registradas | — |
 

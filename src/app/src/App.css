@@ -59,9 +59,10 @@
   user-select: none;
 }
 
+/* Assinatura `ragx`: Space Grotesk 700, tracking −0,045 em (docs/28-identidade-visual.md). */
 .brand-name {
-  font: 700 10px/1 var(--display); /* fora da escala de propósito: rótulo da logo */
-  letter-spacing: 0.14em;
+  font: 700 15px/1 var(--display); /* fora da escala de propósito: assinatura da logo */
+  letter-spacing: -0.045em;
   color: var(--ink);
 }
 
@@ -108,9 +109,53 @@
   color: var(--ink-2);
 }
 
+/* Navegação em "Trilha" vertical (ADR-0017): um nó por item, na altura do ícone, ligados por uma linha fina. O item
+   atual tem o nó cheio com halo, além do véu do acento. */
+.nav li {
+  position: relative;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 15px;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border: var(--edge) solid var(--line-control);
+  border-radius: 50%;
+  background: var(--bg);
+  transition:
+    background-color var(--dur) ease,
+    border-color var(--dur) ease;
+}
+
+.nav ul:not(.nav-foot) > li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 19px;
+  bottom: calc(-19px - var(--sp-4));
+  left: calc(4px - var(--edge) / 2);
+  width: var(--edge);
+  background: var(--line);
+}
+
+.nav-item:hover::before {
+  border-color: var(--ink-2);
+}
+
 .nav-item[aria-current='page'] {
   background: var(--accent-wash);
   color: var(--ink);
+}
+
+.nav-item[aria-current='page']::before {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px var(--accent);
 }
 
 .nav-item[aria-current='page'] .nav-icon {
@@ -155,20 +200,24 @@
 .search-icon {
   position: absolute;
   top: 50%;
-  left: 11px;
+  left: 13px;
   transform: translateY(-50%);
   color: var(--ink-3);
   pointer-events: none;
 }
 
+/* Campo Grafo: borda de 1,5 px, raio 14; no foco a borda vai ao acento com um halo de 4 px. O contorno transparente
+   segue para o modo de alto contraste do Windows, onde a sombra some. */
 .search-input {
   width: 100%;
-  height: 34px;
-  padding: 0 var(--sp-12) 0 34px;
-  border: 1px solid var(--line-control);
-  border-radius: var(--radius-sm);
+  height: 36px;
+  padding: 0 var(--sp-12) 0 calc(var(--sp-32) + var(--sp-2));
+  border: var(--edge) solid var(--line-control);
+  border-radius: var(--radius-field);
   background: var(--surface);
-  transition: border-color var(--dur) ease;
+  transition:
+    border-color var(--dur) ease,
+    box-shadow var(--dur) ease;
 }
 
 .search-input::placeholder {
@@ -176,12 +225,13 @@
 }
 
 .search-input:hover {
-  border-color: var(--line-strong);
+  border-color: var(--ink-3);
 }
 
 .search-input:focus-visible {
   border-color: var(--accent);
-  outline-offset: 1px;
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 4px var(--accent-line);
 }
 
 .topbar-end {
@@ -380,6 +430,15 @@
     width: 52px;
   }
 
+  /* A barra estreita encosta o item na borda: o nó da trilha entra um pouco, para o halo não sair da janela. */
+  .nav-item::before {
+    left: var(--sp-2);
+  }
+
+  .nav ul:not(.nav-foot) > li:not(:last-child)::after {
+    left: calc(6px - var(--edge) / 2);
+  }
+
   .nav-label {
     max-width: 52px;
   }
@@ -479,43 +538,106 @@
   margin-top: 8px;
 }
 
-.progress {
-  height: 4px;
-  margin-top: 10px;
-  border-radius: 2px;
-  background: var(--surface-3);
-  overflow: hidden;
+/* Progresso "Aresta" (ADR-0017): nó de partida cheio, aresta que enche, resto tracejado e nó de chegada que só enche
+   no fim (`.is-complete`, posto por quem desenha a barra). Serve a `.progress` (tarefa) e a `.meter` (cobertura). */
+.progress,
+.meter {
+  --edge-tone: var(--accent);
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 10px;
+  padding: 0 var(--sp-12);
+  background: repeating-linear-gradient(90deg, var(--line-control) 0 3px, transparent 3px 6px) center / calc(100% - 2 * var(--sp-12))
+    var(--edge) no-repeat;
 }
 
-.progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
+.progress {
+  margin-top: var(--sp-8);
+}
+
+.progress::before,
+.progress::after,
+.meter::before,
+.meter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border: var(--edge) solid var(--line-control);
+  border-radius: 50%;
+  background: var(--surface);
+  transform: translateY(-50%);
+}
+
+.progress::before,
+.meter::before {
+  left: var(--sp-2);
+  border-color: var(--edge-tone);
+  background: var(--edge-tone);
+}
+
+.progress::after,
+.meter::after {
+  right: var(--sp-2);
+}
+
+.progress.is-complete::after,
+.meter.is-complete::after {
+  border-color: var(--edge-tone);
+  background: var(--edge-tone);
+}
+
+.progress-fill,
+.meter-fill {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--edge-tone);
   transition: width 300ms ease;
 }
 
 /* ── selo ──────────────────────────────────────────────────────────── */
 
+/* Estado na linguagem Grafo: glifo do nó + aresta curta + rótulo mono em caixa-alta sobre um véu do tom. A forma do
+   nó (NodeGlyph) diz o estado; a cor confirma; o texto é sempre obrigatório. */
 .badge {
   --tone: var(--ink-2);
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 6px;
-  height: 22px;
-  padding: 0 9px;
-  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--tone) 10%, transparent);
   color: var(--tone);
-  font-size: var(--fs-sm);
-  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
 }
 
-.badge > [aria-hidden='true'] {
-  font-size: var(--fs-xs);
+.badge-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.badge-edge {
+  width: var(--sp-8);
+  height: var(--edge);
+  background: color-mix(in srgb, var(--tone) 50%, transparent);
+}
+
+.badge-critical .badge-edge {
+  background: repeating-linear-gradient(90deg, var(--tone) 0 2px, transparent 2px 4px);
+}
+
+.badge-muted .badge-edge {
+  background: var(--line-strong);
+}
+
+.badge-text {
+  padding: var(--sp-4) var(--sp-6);
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  font: 600 var(--fs-xs)/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .badge-good {
@@ -534,9 +656,41 @@
   --tone: var(--accent-text);
 }
 
-.badge-muted {
-  border-color: var(--line-strong);
-  background: var(--surface-2);
+.badge-muted .badge-text {
+  background: var(--surface-3);
+}
+
+/* Glifo de estado (ui/NodeGlyph): a cor vem daqui, por `currentColor`. */
+.node-glyph {
+  flex: none;
+  overflow: visible;
+}
+
+.node-glyph-good {
+  color: var(--good);
+}
+
+.node-glyph-warning {
+  color: var(--warning);
+}
+
+.node-glyph-critical {
+  color: var(--critical-text);
+}
+
+.node-glyph-accent {
+  color: var(--accent-text);
+}
+
+.node-glyph-muted {
+  color: var(--line-control);
+}
+
+/* Em andamento: o anel tracejado gira devagar (o `prefers-reduced-motion` do index.css o deixa parado). */
+.node-glyph-orbit {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin 6s linear infinite;
 }
 
 /* ── primitivas de página ──────────────────────────────────────────── */
@@ -561,11 +715,101 @@
   color: var(--ink-2);
 }
 
+/* Cartão Grafo: borda de 1px, raio 18 e uma porta (nó com anel) presa no canto superior esquerdo, meio para fora.
+   `card-warning` / `card-critical` levam a porta e a borda ao tom do estado. */
 .card {
-  padding: 16px 20px;
+  --port: var(--accent);
+  position: relative;
+  padding: var(--sp-16) var(--sp-20);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--surface);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 12px;
+  height: 12px;
+  border: 2.5px solid var(--port);
+  border-radius: 50%;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.card-warning {
+  --port: var(--warning);
+  border-color: var(--warning-line);
+}
+
+.card-critical {
+  --port: var(--critical);
+  border-color: var(--critical-line);
+}
+
+/* O caminho do dado no cartão do projeto: gate → índice → vetores → agente. A aresta que chega a uma parada toma o
+   estado dela: cheia quando em dia, tracejada quando falta algo. */
+.data-path {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.data-path-stop {
+  --edge-tone: var(--good-line);
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.data-path-stop:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 6.25px;
+  left: 18px;
+  right: var(--sp-4);
+  height: var(--edge);
+  background: var(--edge-tone);
+}
+
+.data-path-stop[data-next='warning'] {
+  --edge-tone: var(--warning);
+}
+
+.data-path-stop[data-next='critical'] {
+  --edge-tone: var(--critical);
+}
+
+.data-path-stop[data-next='accent'] {
+  --edge-tone: var(--accent-line);
+}
+
+.data-path-stop[data-next='muted'] {
+  --edge-tone: var(--line-control);
+}
+
+.data-path-stop:is([data-next='warning'], [data-next='critical'], [data-next='accent'], [data-next='muted'])::after {
+  background: repeating-linear-gradient(90deg, var(--edge-tone) 0 4px, transparent 4px 7px);
+}
+
+.data-path-label {
+  font: var(--fs-xs) var(--mono);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.data-path-warning {
+  color: var(--warning);
+}
+
+.data-path-critical {
+  color: var(--critical-text);
 }
 
 .card-head {
@@ -1066,16 +1310,24 @@ kbd {
 
 /* ── botões ────────────────────────────────────────────────────────── */
 
+/* Botões na linguagem Grafo (ADR-0017), todos desenhados por pseudo-elementos para não mexer em cada chamada:
+   - `.btn` (secundário, "Porta"): borda de 1,5 px, raio 12 e um nó preso meio para fora da borda esquerda.
+   - `.btn-primary` ("Nó"): pílula no acento; à esquerda uma porta escura com um anel, ligada ao rótulo por uma
+     aresta. Hover: a aresta cresce, o anel enche e aparece o halo; pressionado: a aresta encolhe; ocupado ou
+     desabilitado: anel tracejado.
+   - `.btn-quiet` ("Relação"): só texto, seguido de uma aresta com seta.
+   - `.btn-danger` / `.btn-danger-quiet` ("Corte"): borda vermelha e uma aresta partida antes do rótulo. */
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--sp-8);
   height: 32px;
-  padding: 0 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  padding: 0 var(--sp-12) 0 var(--sp-16);
+  border: var(--edge) solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--ink);
   font-size: var(--fs-md);
   font-weight: 500;
@@ -1083,48 +1335,183 @@ kbd {
   transition:
     background-color var(--dur) ease,
     border-color var(--dur) ease,
+    box-shadow var(--dur) ease,
     color var(--dur) ease;
 }
 
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -0.75px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink-2);
+  border-radius: 50%;
+  background: var(--bg);
+  transform: translate(-50%, -50%);
+  transition:
+    background-color var(--dur) ease,
+    border-color var(--dur) ease;
+}
+
 .btn:hover:not(:disabled) {
-  background: var(--surface-3);
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.btn:hover:not(:disabled)::before {
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .btn:disabled {
   opacity: 0.5;
 }
 
+/* Nó (primário) */
 .btn-primary {
+  --btn-port: 24px;
+  --btn-ring: 7px;
+  padding: 0 var(--sp-16) 0 calc(var(--btn-port) + var(--sp-20));
   border-color: var(--accent-solid);
+  border-radius: 999px;
   background: var(--accent-solid);
   color: var(--accent-ink);
+  font-weight: 600;
+}
+
+/* A porta: círculo no tom do texto com um anel no tom do fundo (o furo do anel mostra a porta). */
+.btn-primary::before {
+  left: var(--sp-2);
+  width: var(--btn-port);
+  height: var(--btn-port);
+  border: 0;
+  background: var(--accent-ink);
+  box-shadow:
+    inset 0 0 0 var(--btn-ring) var(--accent-ink),
+    inset 0 0 0 calc(var(--btn-ring) + 2.5px) var(--accent-solid);
+  transform: translateY(-50%);
+}
+
+/* A aresta entre a porta e o rótulo. */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(var(--sp-2) + var(--btn-port));
+  width: 6px;
+  height: 2.5px;
+  background: var(--accent-ink);
+  transform: translateY(-50%);
+  transition: width var(--dur) ease;
 }
 
 .btn-primary:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--accent-solid) 94%, white);
-  background: color-mix(in srgb, var(--accent-solid) 94%, white);
+  border-color: var(--accent-solid);
+  background: var(--accent-solid);
+  box-shadow: 0 0 0 4px var(--accent-line);
 }
 
+.btn-primary:hover:not(:disabled)::before {
+  border: 0;
+  background: var(--accent-solid);
+}
+
+.btn-primary:hover:not(:disabled)::after {
+  width: 12px;
+}
+
+.btn-primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-solid) 86%, var(--accent-ink));
+}
+
+.btn-primary:active:not(:disabled)::after {
+  width: 2px;
+}
+
+/* Ocupado ("Na fila", "Indexando…") ou desabilitado: a porta apaga e o anel fica tracejado. */
+.btn-primary:disabled {
+  border-color: var(--surface-3);
+  background: var(--surface-3);
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.btn-primary:disabled::before {
+  background:
+    radial-gradient(circle, var(--surface) 0 2.5px, transparent 3px 5px, var(--surface) 5.5px),
+    repeating-conic-gradient(var(--line-control) 0 30deg, var(--surface) 30deg 60deg);
+  box-shadow: none;
+}
+
+.btn-primary:disabled::after {
+  background: var(--line-strong);
+}
+
+/* Relação (fantasma) */
 .btn-quiet {
+  padding: 0 var(--sp-8);
   border-color: transparent;
   background: transparent;
   color: var(--ink-2);
 }
 
+.btn-quiet::before {
+  content: none;
+}
+
+.btn-quiet::after {
+  content: '';
+  flex: none;
+  width: 18px;
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(0 40%, 68% 40%, 68% 0, 100% 50%, 68% 100%, 68% 60%, 0 60%);
+  opacity: 0.75;
+  transition: width var(--dur) ease;
+}
+
 .btn-quiet:hover:not(:disabled) {
-  background: var(--surface-2);
-  color: var(--ink);
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent-text);
+}
+
+.btn-quiet:hover:not(:disabled)::after {
+  width: 24px;
 }
 
 .btn-sm {
   height: 26px;
-  padding: 0 10px;
+  padding: 0 var(--sp-8) 0 var(--sp-12);
   font-size: var(--fs-sm);
 }
 
+.btn-sm.btn-primary {
+  --btn-port: 20px;
+  --btn-ring: 6px;
+  padding: 0 var(--sp-12) 0 calc(var(--btn-port) + var(--sp-16));
+}
+
+.btn-sm.btn-quiet {
+  padding: 0 var(--sp-6);
+}
+
+/* Ícone: círculo, sem nó nem seta. */
 .btn-icon {
   width: 32px;
   padding: 0;
+  border-radius: 999px;
+}
+
+.btn-icon::before,
+.btn-icon::after {
+  content: none;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--surface-2);
 }
 
 .back {
@@ -1326,24 +1713,21 @@ kbd {
 /* Uma coluna que pode encolher: sem isto o caminho longo de um fato alargava o cartão além da janela. */
 .conn-card {
   --conn-indent: 50px;
-  --conn-tone: var(--line-strong);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-12);
   padding: var(--sp-16) var(--sp-20) var(--sp-16) var(--sp-20);
-  box-shadow: inset 3px 0 0 var(--conn-tone);
 }
 
-.conn-ok {
-  --conn-tone: var(--good);
-}
-
+/* O estado do serviço vai na porta do cartão (e na borda, quando pede atenção), não numa faixa lateral. */
 .conn-warn {
-  --conn-tone: var(--warning);
+  --port: var(--warning);
+  border-color: var(--warning-line);
 }
 
 .conn-error {
-  --conn-tone: var(--critical);
+  --port: var(--critical);
+  border-color: var(--critical-line);
 }
 
 .conn-head {
@@ -1464,7 +1848,7 @@ kbd {
   gap: 8px;
 }
 
-/* Ações à direita do título, na mesma linha: a principal (azul) primeiro, as de apoio depois. */
+/* Ações à direita do título, na mesma linha: a principal (Nó) primeiro, as de apoio depois. */
 .conn-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1477,7 +1861,7 @@ kbd {
 
 .conn-actions .btn {
   min-height: 32px;
-  padding: 6px 14px;
+  padding-block: var(--sp-6);
 }
 
 .conn-actions-more {
@@ -1571,23 +1955,27 @@ kbd {
 }
 
 /* Em janela estreita o grupo rola em vez de estourar a tela. */
+/* Segmentado em "Trilha" (ADR-0017), na linha: cada opção é uma parada (o nó faz o papel do círculo do rádio, com borda
+   `--line-control`), ligada à anterior por uma aresta curta. A marcada: nó cheio com halo e véu do acento. */
 .segmented {
   display: inline-flex;
   flex: none;
   max-width: 100%;
   overflow-x: auto;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--line-control);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
+  gap: var(--sp-12);
+  padding: var(--sp-4);
 }
 
 .segmented-item {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-6);
   height: 28px;
-  padding: 0 12px;
+  padding: 0 var(--sp-8);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-2);
   font-size: var(--fs-md);
@@ -1597,14 +1985,49 @@ kbd {
     color var(--dur) ease;
 }
 
+.segmented-item::before {
+  content: '';
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: var(--edge) solid var(--line-control);
+  border-radius: 50%;
+  background: var(--bg);
+  transition:
+    background-color var(--dur) ease,
+    border-color var(--dur) ease;
+}
+
+.segmented-item:not(:first-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: var(--sp-12);
+  height: var(--edge);
+  background: var(--line-strong);
+}
+
 .segmented-item:hover {
   color: var(--ink);
+}
+
+.segmented-item:hover::before {
+  border-color: var(--ink-2);
 }
 
 .segmented-item[aria-checked='true'] {
   background: var(--accent-wash);
   color: var(--ink);
   font-weight: 500;
+}
+
+.segmented-item[aria-checked='true']::before {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow:
+    0 0 0 1.5px var(--bg),
+    0 0 0 3px var(--accent);
 }
 
 .project-grid {
@@ -1783,21 +2206,13 @@ kbd {
   margin-top: 0;
 }
 
+/* Cobertura de embeddings: a mesma aresta do `.progress` (ver "selo"), no tom do estado. */
 .meter {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--surface-3);
-  overflow: hidden;
+  --edge-tone: var(--good);
 }
 
-.meter-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--good);
-}
-
-.meter.is-warning .meter-fill {
-  background: var(--warning);
+.meter.is-warning {
+  --edge-tone: var(--warning);
 }
 
 /* ── diálogo modal ─────────────────────────────────────────────────── */
@@ -1966,10 +2381,39 @@ kbd {
   color: var(--critical-text);
 }
 
+/* Corte: a aresta aparece partida antes do rótulo (dois trechos e o talho entre eles), no tom do texto. */
+.btn-danger,
+.btn-danger-quiet {
+  padding-left: var(--sp-12);
+}
+
+.btn-danger::before,
+.btn-danger-quiet::before,
+.btn-danger:hover:not(:disabled)::before,
+.btn-danger-quiet:hover:not(:disabled)::before {
+  position: static;
+  flex: none;
+  width: 18px;
+  height: 10px;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(currentColor 0 0) 0 50% / 6px 1.5px no-repeat,
+    linear-gradient(currentColor 0 0) 100% 50% / 6px 1.5px no-repeat,
+    linear-gradient(
+        -60deg,
+        transparent calc(50% - 0.9px),
+        currentColor calc(50% - 0.9px) calc(50% + 0.9px),
+        transparent calc(50% + 0.9px)
+      )
+      50% 50% / 6px 10px no-repeat;
+  transform: none;
+}
+
 .btn-danger {
   border-color: var(--critical-solid);
   background: var(--critical-solid);
-  color: var(--accent-ink);
+  color: var(--critical-ink);
 }
 
 .btn-danger:hover:not(:disabled) {
@@ -1978,13 +2422,14 @@ kbd {
 }
 
 .btn-danger-quiet {
-  border-color: color-mix(in srgb, var(--critical) 40%, transparent);
+  border-color: var(--critical-line);
   background: transparent;
   color: var(--critical-text);
 }
 
 .btn-danger-quiet:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--critical) 10%, transparent);
+  border-color: var(--critical);
+  background: var(--critical-wash);
 }
 
 .detail {
@@ -2226,48 +2671,86 @@ kbd {
   gap: 8px;
 }
 
+/* Interruptor "Conexão" (ADR-0017): dois nós (o agente e o RAGX) e a aresta entre eles, numa pílula de borda 1,5 px.
+   Desligado: aresta tracejada e o nó da direita vazio, em `--line-control` (>= 3:1, WCAG 1.4.11). Ligado: aresta
+   cheia e nó cheio no acento. O estado vai em `aria-checked`; o desenho é decorativo. */
 .switch {
   position: relative;
   flex: none;
-  width: 38px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--line-control);
+  width: 48px;
+  height: 24px;
+  padding: 0 var(--sp-6);
+  border: var(--edge) solid var(--line-control);
   border-radius: 999px;
-  background: var(--surface-3);
+  background: var(--surface);
   transition:
     background-color var(--dur) ease,
     border-color var(--dur) ease;
 }
 
-/* O visual segue 38x22; a área de clique sobe para 26 px de altura (alvo mínimo de 24 px, WCAG 2.5.8). */
+/* A área de clique sobe para 28 px de altura (alvo mínimo de 24 px, WCAG 2.5.8). */
 .switch::after {
   content: '';
   position: absolute;
   inset: -2px 0;
 }
 
-.switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
+.switch-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.switch-node {
+  flex: none;
   border-radius: 50%;
-  background: var(--ink-2);
   transition:
-    transform var(--dur) ease,
-    background-color var(--dur) ease;
+    background-color var(--dur) ease,
+    border-color var(--dur) ease;
+}
+
+.switch-node-from {
+  width: 7px;
+  height: 7px;
+  background: var(--ink-3);
+}
+
+.switch-edge {
+  flex: 1;
+  height: var(--edge);
+  margin: 0 var(--sp-2);
+  background: repeating-linear-gradient(90deg, var(--line-control) 0 3px, transparent 3px 5px);
+}
+
+.switch-node-to {
+  width: 10px;
+  height: 10px;
+  border: var(--edge) solid var(--line-control);
+  background: transparent;
+}
+
+.switch:hover:not(:disabled) {
+  border-color: var(--ink-2);
 }
 
 .switch[aria-checked='true'] {
-  border-color: var(--accent-solid);
-  background: var(--accent-solid);
+  border-color: var(--accent);
+  background: var(--surface-2);
 }
 
-.switch[aria-checked='true'] .switch-knob {
-  transform: translateX(16px);
-  background: var(--accent-ink);
+.switch[aria-checked='true'] .switch-node-from {
+  background: var(--accent);
+}
+
+.switch[aria-checked='true'] .switch-edge {
+  height: 2px;
+  background: var(--accent);
+}
+
+.switch[aria-checked='true'] .switch-node-to {
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .switch:disabled {
@@ -2472,17 +2955,21 @@ kbd {
 
 /* ── abas ───────────────────────────────────────────────────────────── */
 
+/* Abas "Trilha" (ADR-0017): cada aba é uma parada num caminho, um nó sobre uma linha fina. Ativa: nó cheio com halo e
+   rótulo em `--ink`; as outras: nó vazio e `--ink-2`. A linha de cada aba vai do meio dela ao meio da vizinha. */
 .tabs {
   display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--line);
   overflow-x: auto;
   scrollbar-width: none;
 }
 
 .tab {
   position: relative;
-  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-8) var(--sp-16);
   border: 0;
   background: none;
   color: var(--ink-2);
@@ -2491,12 +2978,52 @@ kbd {
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-radius: var(--radius-sm);
+}
+
+.tab::before {
+  content: '';
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  border: var(--edge) solid var(--line-control);
+  border-radius: 50%;
+  background: var(--bg);
+  transition:
+    background-color var(--dur) ease,
+    border-color var(--dur) ease,
+    box-shadow var(--dur) ease;
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--sp-8) + 7px - var(--edge) / 2);
+  left: 0;
+  right: 0;
+  height: var(--edge);
+  background: var(--line-strong);
+}
+
+.tab:first-child::after {
+  left: 50%;
+}
+
+.tab:last-child::after {
+  right: 50%;
+}
+
+.tab:only-child::after {
+  content: none;
 }
 
 .tab:hover {
   color: var(--ink);
-  background: var(--surface-2);
+}
+
+.tab:hover::before {
+  border-color: var(--ink-2);
 }
 
 .tab:focus-visible {
@@ -2506,18 +3033,16 @@ kbd {
 
 .tab-active {
   color: var(--ink);
+  font-weight: 600;
 }
 
-/* Sublinhado da aba ativa, por cima da linha do tablist. */
-.tab-active::after {
-  content: '';
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
+.tab-active::before,
+.tab-active:hover::before {
+  border-color: var(--accent);
   background: var(--accent);
+  box-shadow:
+    0 0 0 2.5px var(--bg),
+    0 0 0 4px var(--accent);
 }
 
 .tab-panel {
@@ -2825,9 +3350,9 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: var(--sp-6) var(--sp-12);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs-md);
   color: var(--ink-2);
   white-space: nowrap;
@@ -2928,9 +3453,9 @@ kbd {
 .activity-project-filter select {
   min-width: 0;
   max-width: 100%;
-  padding: 6px 10px;
-  border: 1px solid var(--line-control);
-  border-radius: var(--radius-sm);
+  padding: var(--sp-6) var(--sp-12);
+  border: var(--edge) solid var(--line-control);
+  border-radius: var(--radius-field);
   background: var(--surface-2);
   color: var(--ink);
   font: inherit;
@@ -2985,24 +3510,44 @@ kbd {
   color: var(--ink-2);
 }
 
+/* Tag de origem (Grafo): caixa mono de raio 8 com marcador por tipo: ◆ serviço (MCP), ■ terminal (CLI), ● sessão. */
 .activity-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-6);
   justify-self: start;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  background: var(--surface-3);
+  padding: var(--sp-2) var(--sp-6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font: 500 var(--fs-xs) var(--mono);
   color: var(--ink-2);
 }
 
+.activity-kind::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
 .activity-kind-mcp {
-  background: var(--accent-wash);
   color: var(--accent-text);
 }
 
+.activity-kind-mcp::before {
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
 .activity-kind-session {
-  background: var(--good-wash);
+  border-color: var(--good-line);
   color: var(--good);
+}
+
+.activity-kind-session::before {
+  border-radius: 50%;
 }
 
 .activity-main,
@@ -3131,12 +3676,11 @@ kbd {
 }
 
 .profile-origin {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--surface-3);
+  padding: 1px var(--sp-6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   color: var(--ink-2);
-  font-size: var(--fs-xs);
-  font-weight: 500;
+  font: 500 var(--fs-xs) var(--mono);
 }
 
 .profile-dir {
@@ -3167,18 +3711,22 @@ kbd {
   align-items: center;
   gap: 8px;
   margin: 0;
-  padding: 6px 12px;
+  padding: var(--sp-6) var(--sp-12);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs-md);
   color: var(--ink-2);
 }
 
+/* O ponto vira nó com anel (o texto ao lado diz o estado). */
 .conn-overall-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--ink-3);
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px color-mix(in srgb, currentColor 45%, transparent);
 }
 
 .conn-overall-ok {
@@ -3231,9 +3779,9 @@ kbd {
 }
 
 .projects-sort select {
-  padding: 6px 10px;
-  border: 1px solid var(--line-control);
-  border-radius: var(--radius-sm);
+  padding: var(--sp-6) var(--sp-12);
+  border: var(--edge) solid var(--line-control);
+  border-radius: var(--radius-field);
   background: var(--surface-2);
   color: var(--ink);
   font: inherit;
@@ -3375,6 +3923,15 @@ kbd {
   white-space: nowrap;
 }
 
+/* O botão corta o que passa da borda (reticências): o nó da Porta, meio para fora, entra na borda. */
+.projects-table-action .btn:not(.btn-primary, .btn-quiet, .btn-danger, .btn-danger-quiet)::before {
+  left: var(--sp-6);
+}
+
+.projects-table-action .btn:not(.btn-primary, .btn-quiet, .btn-danger, .btn-danger-quiet) {
+  padding-left: var(--sp-20);
+}
+
 .projects-table tbody tr:hover {
   background: var(--surface-2);
 }
@@ -3484,24 +4041,41 @@ kbd {
   color: var(--ink-3);
 }
 
-.hook-chips {
+/* Tags Grafo (ADR-0017): caixa mono de raio 8 com marcador por tipo; na mesma linha elas se ligam por arestas (o
+   trecho que cairia antes da primeira tag de cada linha some com o `overflow: clip` da lista). */
+.hook-chips,
+.bench-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-6);
+  gap: var(--sp-6) var(--sp-16);
   margin: var(--sp-8) 0 0;
   padding: 0;
   list-style: none;
+  overflow: clip;
 }
 
-.hook-chip {
+.hook-chip,
+.bench-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--sp-6);
-  padding: var(--sp-2) var(--sp-8) var(--sp-2) var(--sp-8);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: var(--fs-sm);
+  padding: var(--sp-2) var(--sp-8);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font: var(--fs-sm) var(--mono);
   color: var(--ink-2);
+}
+
+.hook-chip + .hook-chip::before,
+.bench-chip + .bench-chip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 1px);
+  width: var(--sp-16);
+  height: var(--edge);
+  background: var(--line-control);
 }
 
 .hook-chip-mark {
@@ -3993,21 +4567,19 @@ kbd {
   color: var(--ink-2);
 }
 
+/* Números de uma etapa: tags de dado (marcador ■), ligadas por arestas como as de hooks (ver Conexões). */
 .bench-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-6);
-  margin: var(--sp-6) 0 0;
-  padding: 0;
-  list-style: none;
+  margin-top: var(--sp-6);
 }
 
-.bench-chip {
-  padding: var(--sp-2) var(--sp-8);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: var(--fs-sm);
-  color: var(--ink-2);
+.bench-chip::after {
+  content: '';
+  order: -1;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--ink-3);
 }
 
 .bench-chip strong {

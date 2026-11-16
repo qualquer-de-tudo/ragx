@@ -12,8 +12,9 @@ export function SwitchTrack() {
 type Name = { label: string; labelledBy?: never } | { labelledBy: string; label?: never }
 
 /**
- * Interruptor (`role="switch"`) isolado, o `.switch` de 38x22. Exige nome acessível, por `label` ou `labelledBy`.
- * Clique, Espaço e Enter chamam `onChange` com o valor novo (é um `<button>`).
+ * Interruptor (`role="switch"`) isolado, o `.switch` "Conexão" de 48x24: dois nós ligados por uma aresta, tracejada
+ * quando desligado e cheia quando ligado (o desenho é `aria-hidden`; o estado vai em `aria-checked`). Exige nome
+ * acessível, por `label` ou `labelledBy`. Clique, Espaço e Enter chamam `onChange` com o valor novo (é um `<button>`).
  */
 export function Switch({
   checked,
@@ -37,7 +38,11 @@ export function Switch({
       disabled={disabled}
       onClick={() => onChange(!checked)}
     >
-      <span className="switch-knob" aria-hidden="true" />
+      <span className="switch-link" aria-hidden="true">
+        <span className="switch-node switch-node-from" />
+        <span className="switch-edge" />
+        <span className="switch-node switch-node-to" />
+      </span>
     </button>
   )
 }

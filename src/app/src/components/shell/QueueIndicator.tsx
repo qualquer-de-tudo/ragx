@@ -66,7 +66,7 @@ function JobItem({ job, onCancel }: { job: JobView; onCancel: (id: string) => vo
 
       {total !== null && (
         <div
-          className="progress"
+          className={`progress${total > 0 && done >= total ? ' is-complete' : ''}`}
           role="progressbar"
           aria-labelledby={labelId}
           aria-valuemin={0}

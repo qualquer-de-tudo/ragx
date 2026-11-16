@@ -161,9 +161,43 @@ describe('Badge', () => {
     const { container } = render(<Badge tone={tone}>Atualizado</Badge>)
     const badge = container.querySelector('.badge')!
     expect(badge).toHaveClass(`badge-${tone}`)
-    // O "●" é decorativo; o que sobra, tirando o ponto, é texto de verdade.
-    expect(badge.textContent!.replace('●', '').trim()).toBe('Atualizado')
-    expect(badge.querySelector('[aria-hidden="true"]')!.textContent).toBe('●')
+    // O glifo (nó + aresta) é decorativo e não tem texto; o texto do selo é só o estado, de verdade.
+    expect(badge.textContent).toBe('Atualizado')
+    const mark = badge.querySelector('.badge-mark')!
+    expect(mark).toHaveAttribute('aria-hidden', 'true')
+    expect(mark.textContent).toBe('')
+    expect(badge.querySelector('.badge-text')).toHaveTextContent('Atualizado')
+  })
+
+  // A forma do nó diz o estado (ADR-0017): cada tom tem um desenho próprio, não só uma cor.
+  const shapes = {
+    good: { circle: 2, line: 0, path: 0, dashed: 0 }, // cheio com anel
+    warning: { circle: 1, line: 0, path: 1, dashed: 0 }, // meio cheio
+    critical: { circle: 1, line: 1, path: 0, dashed: 0 }, // cortado
+    accent: { circle: 2, line: 0, path: 0, dashed: 1 }, // anel tracejado com ponto (em órbita)
+    muted: { circle: 1, line: 0, path: 0, dashed: 0 }, // vazio
+  } as const
+
+  it.each(Object.keys(shapes) as Array<keyof typeof shapes>)('tom %s tem o glifo do seu estado', (tone) => {
+    const { container } = render(<Badge tone={tone}>Estado</Badge>)
+    const svg = container.querySelector('.badge-mark svg')!
+    expect(svg).toHaveAttribute('aria-hidden', 'true')
+    expect(svg).toHaveAttribute('data-state', tone)
+    expect(svg).toHaveClass(`node-glyph-${tone}`)
+    expect({
+      circle: svg.querySelectorAll('circle').length,
+      line: svg.querySelectorAll('line').length,
+      path: svg.querySelectorAll('path').length,
+      dashed: svg.querySelectorAll('[stroke-dasharray]').length,
+    }).toEqual(shapes[tone])
+    // Só o anel em órbita gira (e o CSS o para com prefers-reduced-motion).
+    expect(svg.querySelectorAll('.node-glyph-orbit')).toHaveLength(tone === 'accent' ? 1 : 0)
+  })
+
+  it('o vazio (sem uso) e o cheio (em dia) não são o mesmo desenho', () => {
+    const muted = render(<Badge tone="muted">a</Badge>).container.querySelector('svg')!.innerHTML
+    const good = render(<Badge tone="good">b</Badge>).container.querySelector('svg')!.innerHTML
+    expect(muted).not.toBe(good)
   })
 })
 

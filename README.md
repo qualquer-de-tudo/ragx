@@ -140,7 +140,7 @@ no banco: fala com o RAGX por MCP (processo quente) ou pela CLI. Ver
 
 | | |
 |---|---|
-| [docs/](docs/) | 22 documentos + 15 ADRs |
+| [docs/](docs/) | 29 documentos + 17 ADRs |
 | [docs/00-visao-geral.md](docs/00-visao-geral.md) | comece aqui |
 | [docs/02-seguranca.md](docs/02-seguranca.md) | leia antes de escrever código |
 | [docs/14-cli.md](docs/14-cli.md) | referência de comandos |

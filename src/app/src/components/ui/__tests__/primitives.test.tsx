@@ -88,6 +88,36 @@ describe('Switch', () => {
     render(<Switch checked label="x" onChange={() => {}} />)
     expect(screen.getByRole('switch').tagName).toBe('BUTTON')
   })
+
+  // "Conexão" (ADR-0017): dois nós e a aresta entre eles. O desenho é decorativo; o estado mora em aria-checked,
+  // que o CSS lê para trocar a aresta tracejada (desligado) pela cheia (ligado).
+  it.each([false, true])('desenho Conexão com aria-checked=%s: dois nós e uma aresta, escondidos do leitor', (checked) => {
+    render(<Switch checked={checked} label="RAGX no Claude Code" onChange={() => {}} />)
+    const sw = screen.getByRole('switch', { name: 'RAGX no Claude Code' })
+    expect(sw).toHaveAttribute('aria-checked', String(checked))
+    const link = sw.querySelector('.switch-link')!
+    expect(link).toHaveAttribute('aria-hidden', 'true')
+    expect(link.querySelectorAll('.switch-node')).toHaveLength(2)
+    expect(link.querySelector('.switch-node-from')).not.toBeNull()
+    expect(link.querySelector('.switch-node-to')).not.toBeNull()
+    expect(link.querySelectorAll('.switch-edge')).toHaveLength(1)
+    // O desenho não acrescenta texto ao nome nem ao conteúdo.
+    expect(sw.textContent).toBe('')
+  })
+
+  it('trocar o estado só muda aria-checked; o nome acessível fica', () => {
+    function Host() {
+      const [on, setOn] = useState(false)
+      return <Switch checked={on} label="Hooks" onChange={setOn} />
+    }
+    render(<Host />)
+    const sw = screen.getByRole('switch', { name: 'Hooks' })
+    expect(sw).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(sw)
+    expect(screen.getByRole('switch', { name: 'Hooks' })).toHaveAttribute('aria-checked', 'true')
+    fireEvent.click(sw)
+    expect(sw).toHaveAttribute('aria-checked', 'false')
+  })
 })
 
 describe('Modal', () => {

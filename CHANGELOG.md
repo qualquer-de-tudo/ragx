@@ -9,6 +9,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Mudado
+
+- **Identidade visual Grafo** ([ADR-0017](docs/adr/ADR-0017-identidade-visual-grafo.md), guia em
+  [docs/28-identidade-visual.md](docs/28-identidade-visual.md)). O símbolo passa a ser quatro nós ligados por arestas a
+  um anel (o índice), com nós ciano e anel violeta; a assinatura é `ragx` em Space Grotesk. A interface continua em
+  preto e branco: o acento de ação e seleção, que era azul, agora é o branco (quase preto no tema claro), e a cor fica
+  só no símbolo e nos estados. Space Grotesk e JetBrains Mono vão no pacote do painel (nenhuma fonte vem da rede).
+  `scripts/brand.py` gera o símbolo novo em SVG, PNG, `.ico` (ícone do `.exe` e do instalador), favicon e o
+  componente do painel, com desenhos próprios para 32 e 16 px. A extensão do VS Code usa o mesmo símbolo.
+
 ### Corrigido
 
 - **Uma edição do agente não dispara mais a varredura do projeto inteiro.** Quando o `touch` (hook de edição do Claude Code)

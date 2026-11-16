@@ -63,7 +63,8 @@ describe('ProjectsPage', () => {
     ]
     for (const [name, badge, button] of expected) {
       const c = within(card(name))
-      expect(c.getByText(badge).closest('.badge')).toHaveTextContent(`● ${badge}`)
+      // O glifo do nó é decorativo: o texto do selo é só o estado.
+      expect(c.getByText(badge).closest('.badge')!.textContent).toBe(badge)
       expect(c.getByRole('button', { name: button })).toBeEnabled()
     }
     const busy = within(card('Ocupado'))
@@ -218,6 +219,43 @@ describe('ProjectsPage', () => {
       'aria-valuenow',
       '4',
     )
+  })
+
+  it('caminho do dado: gate → índice → vetores → agente, cada parada com o estado em texto', () => {
+    installBridge()
+    renderPage({
+      projects: [
+        ALL[0],
+        ALL[2],
+        snap({ id: 'used', name: 'Usado', telemetry: { callsByTool: [], totalCalls: 3, tokensDelivered: 0, lastCallAt: null } }),
+        snap({ id: 'new', name: 'Novo', index: null }),
+        snap({ id: 'nocounts', name: 'Semnumeros', counts: null }),
+      ],
+      jobs: [],
+    })
+    const stops = (name: string) =>
+      within(within(card(name)).getByRole('list', { name: 'Caminho do dado' }))
+        .getAllByRole('listitem')
+        .map((li) => [li.textContent, li.querySelector('svg')!.getAttribute('data-state')])
+    expect(stops('Juriflux')).toEqual([
+      ['gate: passou', 'good'],
+      ['índice: em dia', 'good'],
+      ['vetores: completos', 'good'],
+      ['agente: sem uso', 'muted'],
+    ])
+    expect(stops('Embedder')[2]).toEqual(['vetores: embeddings faltando', 'warning'])
+    expect(stops('Usado')[3]).toEqual(['agente: 3 chamadas', 'good'])
+    // Sem índice ou sem números não há o que mostrar: a linha some, em vez de inventar o estado.
+    expect(within(card('Novo')).queryByRole('list', { name: 'Caminho do dado' })).not.toBeInTheDocument()
+    expect(within(card('Semnumeros')).queryByRole('list', { name: 'Caminho do dado' })).not.toBeInTheDocument()
+  })
+
+  it('a porta do cartão toma o tom do estado que pede atenção', () => {
+    installBridge()
+    renderPage()
+    expect(card('Juriflux')).not.toHaveClass('card-warning')
+    expect(card('Embedder')).toHaveClass('card-warning')
+    expect(card('Quebrado')).toHaveClass('card-critical')
   })
 
   it('projeto indexando com tarefa rodando mostra progresso e previsão', () => {

@@ -53,15 +53,21 @@ describe.each(Object.entries(THEMES))('contraste AA, tema %s', (_name, selector)
     }
   })
 
-  it('texto branco sobre o preenchimento do botão primário e do perigo >= 4,5:1', () => {
+  it('texto sobre o preenchimento do botão primário e do perigo >= 4,5:1', () => {
     expect(ratio(c('--accent-ink'), c('--accent-solid')), 'accent-ink em accent-solid').toBeGreaterThanOrEqual(AA)
-    expect(ratio(c('--accent-ink'), c('--critical-solid')), 'accent-ink em critical-solid').toBeGreaterThanOrEqual(AA)
+    expect(ratio(c('--critical-ink'), c('--critical-solid')), 'critical-ink em critical-solid').toBeGreaterThanOrEqual(AA)
   })
 
-  it('o hover dos botões (94% do preenchimento + 6% de branco) segue >= 4,5:1 com texto branco', () => {
+  it('o hover dos botões (94% do preenchimento + 6% de branco) segue >= 4,5:1 com o texto de cada um', () => {
     const white = parseColor('#ffffff')
-    for (const solid of ['--accent-solid', '--critical-solid']) {
-      expect(ratio(c('--accent-ink'), mix(c(solid), white, 94)), `${solid} no hover`).toBeGreaterThanOrEqual(AA)
+    for (const [solid, ink] of [['--accent-solid', '--accent-ink'], ['--critical-solid', '--critical-ink']]) {
+      expect(ratio(c(ink), mix(c(solid), white, 94)), `${solid} no hover`).toBeGreaterThanOrEqual(AA)
+    }
+  })
+
+  it('as cores do símbolo se destacam do fundo (>= 3:1, WCAG 1.4.11)', () => {
+    for (const tok of ['--brand-node', '--brand-ring']) {
+      expect(ratio(c(tok), c('--bg')), `${tok} em bg`).toBeGreaterThanOrEqual(3)
     }
   })
 

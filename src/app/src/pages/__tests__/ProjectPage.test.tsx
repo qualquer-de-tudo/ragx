@@ -82,7 +82,7 @@ describe('ProjectPage: topo', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Juriflux' })).toBeInTheDocument()
     expect(screen.getByText('C:/projects/aivon/juriflux')).toBeInTheDocument()
     expect(screen.getByText('feat/x')).toBeInTheDocument()
-    expect(screen.getByText('Defasado').closest('.badge')).toHaveTextContent('● Defasado')
+    expect(screen.getByText('Defasado').closest('.badge')).toHaveTextContent(/^Defasado$/)
     fireEvent.click(screen.getByRole('button', { name: 'Voltar para Projetos' }))
     expect(onBack).toHaveBeenCalledTimes(1)
     await screen.findByText('Em dia com o que está no disco')
@@ -90,10 +90,10 @@ describe('ProjectPage: topo', () => {
 
   it('tarefa que não indexa (dicionário) não deixa o selo "Indexando…"; embed deixa', async () => {
     const { rerender, onBack } = renderPage({ jobs: [job({ kind: 'dictionary', state: 'running' })] })
-    expect(screen.getByText('Atualizado').closest('.badge')).toHaveTextContent('● Atualizado')
+    expect(screen.getByText('Atualizado').closest('.badge')).toHaveTextContent(/^Atualizado$/)
     expect(screen.queryByText('Indexando…')).not.toBeInTheDocument()
     rerender(<ProjectPage project={snap()} jobs={[job({ kind: 'embed', state: 'running' })]} onBack={onBack} />)
-    expect(screen.getByText('Indexando…').closest('.badge')).toHaveTextContent('● Indexando…')
+    expect(screen.getByText('Indexando…').closest('.badge')).toHaveTextContent(/^Indexando…$/)
     await screen.findByText('Em dia com o que está no disco')
   })
 

@@ -1,4 +1,4 @@
-/* Tema escuro por padrão (fundo preto, superfícies quase pretas separadas por borda de 1px, azul para seleção e
+/* Tema escuro por padrão (fundo preto, superfícies quase pretas separadas por borda de 1px, branco para seleção e
    ações) e tema claro como preferência (`:root[data-theme='light']`, abaixo). Cor de estado sempre acompanha texto. */
 :root {
   color-scheme: dark;
@@ -11,13 +11,17 @@
   --ink: #f2f2f3;
   --ink-2: #a3a3ab;
   --ink-3: #8a8a93;
-  --accent: #3b82f6;
-  --accent-ink: #ffffff;
-  /* Preenchimento que leva texto branco (>= 4,5:1) e cor de texto sobre superfície escura (selo incluído). */
-  --accent-solid: #2563eb;
-  --accent-text: #5b9bf8;
-  --accent-wash: rgba(59, 130, 246, 0.14);
-  --accent-line: rgba(59, 130, 246, 0.35);
+  /* Identidade Grafo (ADR-0017): a interface é preto e branco, o acento de ação e seleção é o branco. Cor só no
+     símbolo (`--brand-*`, usados apenas pelo RagxMark) e nos estados. */
+  --accent: #f2f2f3;
+  --accent-ink: #000000;
+  /* Preenchimento do botão primário (texto `--accent-ink`) e cor de texto de destaque sobre superfície escura. */
+  --accent-solid: #f2f2f3;
+  --accent-text: #f2f2f3;
+  --accent-wash: rgba(242, 242, 243, 0.08);
+  --accent-line: rgba(242, 242, 243, 0.3);
+  --brand-node: #22d3ee;
+  --brand-ring: #a78bfa;
   --good: #22c55e;
   --good-wash: rgba(34, 197, 94, 0.12);
   --good-line: rgba(34, 197, 94, 0.35);
@@ -26,6 +30,8 @@
   --warning-line: rgba(245, 165, 36, 0.35);
   --critical: #f04848;
   --critical-solid: #dc2626;
+  /* Texto sobre `--critical-solid`: o acento virou branco, então o texto do primário é preto e o do perigo, não. */
+  --critical-ink: #ffffff;
   --critical-text: #f56565;
   --critical-wash: rgba(240, 72, 72, 0.12);
   --critical-line: rgba(240, 72, 72, 0.35);
@@ -33,11 +39,16 @@
   /* Borda de controle (campo, seletor, interruptor): >= 3:1 (WCAG 1.4.11). --line e --line-strong só separam. */
   --line-control: #6a6a73;
   /* Séries do gráfico de economia, validadas no tema escuro (superfície #0c0c0e). */
-  --series-delivered: #3987e5;
+  --series-delivered: #22d3ee;
   --series-baseline: #d95926;
   --radius: 12px;
   --radius-sm: 8px;
   --radius-xs: 4px;
+  /* Identidade Grafo (ADR-0017): cartão com raio 18 e campo com raio 14; `--edge` é a espessura de aresta (borda de
+     controle, linha de trilha, interruptor). */
+  --radius-lg: 18px;
+  --radius-field: 14px;
+  --edge: 1.5px;
   /* Espaço, tipografia, camadas e movimento. Sem sombra: a elevação é borda e camada (ver o cabeçalho do App.css). */
   --sp-2: 2px;
   --sp-4: 4px;
@@ -65,9 +76,10 @@
   --scrollbar-w: 12px;
   /* Largura máxima do conteúdo e da barra superior (as bordas coincidem). Sobe em tela larga: ver o fim do :root. */
   --content-max: 1200px;
-  --sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
-  --display: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+  /* Space Grotesk e JetBrains Mono vão no pacote (`@fontsource`, importadas em main.tsx): nada vem da rede. */
+  --sans: 'Space Grotesk', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --display: 'Space Grotesk', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
 }
 
 /* Tema claro (RAGX-0193): preferência, nunca o padrão. Redefine TODOS os tokens de cor do `:root` escuro; espaço,
@@ -83,12 +95,14 @@
   --ink: #16161a;
   --ink-2: #4a4a54;
   --ink-3: #5f5f6a;
-  --accent: #2563eb;
+  --accent: #16161a;
   --accent-ink: #ffffff;
-  --accent-solid: #2563eb;
-  --accent-text: #1d4ed8;
-  --accent-wash: rgba(37, 99, 235, 0.1);
-  --accent-line: rgba(37, 99, 235, 0.35);
+  --accent-solid: #16161a;
+  --accent-text: #16161a;
+  --accent-wash: rgba(22, 22, 26, 0.07);
+  --accent-line: rgba(22, 22, 26, 0.3);
+  --brand-node: #0e7490;
+  --brand-ring: #6d4fd8;
   --good: #166534;
   --good-wash: rgba(22, 101, 52, 0.1);
   --good-line: rgba(22, 101, 52, 0.4);
@@ -97,12 +111,13 @@
   --warning-line: rgba(146, 64, 14, 0.4);
   --critical: #b91c1c;
   --critical-solid: #b91c1c;
+  --critical-ink: #ffffff;
   --critical-text: #a51919;
   --critical-wash: rgba(185, 28, 28, 0.08);
   --critical-line: rgba(185, 28, 28, 0.4);
   --scrim: rgba(22, 22, 26, 0.5);
   --line-control: #8a8a95;
-  --series-delivered: #2563eb;
+  --series-delivered: #0e7490;
   --series-baseline: #c2410c;
 }
 
