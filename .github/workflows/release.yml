@@ -29,6 +29,12 @@ on:
 permissions:
   contents: write
 
+# O Python de todo `uv sync`, `uv run` e `uv build` deste workflow. Sem isto o uv usa o Python mais novo do runner:
+# o macOS passou a trazer o 3.15 do Homebrew e a release 1.1.0 caiu no `uv sync`, porque o `onnxruntime` (do
+# fastembed) ainda não tem pacote para o 3.15. O CI comum já fixa a versão pela matriz (3.11 e 3.12).
+env:
+  UV_PYTHON: '3.12'
+
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
