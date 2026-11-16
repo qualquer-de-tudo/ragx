@@ -48,6 +48,58 @@ def _project_id(root: Path) -> str:
     return hashlib.sha256(seed.encode("utf-8")).hexdigest()[:12]
 
 
+_PROVIDERS = ("ollama", "fastembed")
+
+
+def _ollama_tem(base_url: str, model: str, timeout: float = 1.5) -> bool | None:
+    """`True`/`False`: o daemon respondeu e tem (ou não) o modelo. `None`: não respondeu."""
+    import json
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(f"{base_url.rstrip('/')}/api/tags", timeout=timeout) as r:
+            dados = json.loads(r.read().decode("utf-8", "replace"))
+    except (urllib.error.URLError, OSError, TimeoutError, ValueError):
+        return None
+    nomes = {str(m.get("name", "")).split(":")[0] for m in dados.get("models", []) if isinstance(m, dict)}
+    return model.split(":")[0] in nomes
+
+
+def _tem_fastembed() -> bool:
+    import importlib.util
+
+    return importlib.util.find_spec("fastembed") is not None
+
+
+def escolher_embedding(root: Path, forcado: str | None) -> tuple[str | None, str]:
+    """O provider que o `ragx.toml` novo grava, e por quê (RAGX-0204).
+
+    O padrão do código é o Ollama. Quem não o tem, ou o fecha, ficava com a busca só por palavra-chave sem perceber.
+    Escolhe uma vez, ao criar o projeto: Ollama quando o daemon responde e tem o modelo; senão, fastembed (que vem
+    no `[all]`). A escolha fica gravada e não muda sozinha (vetores de modelos diferentes não se misturam). Quando a
+    configuração do usuário ou `RAGX_*` já escolheram, `None`: não grava nada e vale o que já valia.
+    """
+    from ragx.core.errors import UsageError
+
+    if forcado is not None:
+        if forcado not in _PROVIDERS:
+            raise UsageError(f"--embedding aceita {' ou '.join(_PROVIDERS)}, não {forcado!r}")
+        return forcado, f"{forcado} (escolhido com --embedding)"
+    atual = load_config(root).embedding
+    if atual.provider != "ollama":
+        return None, ""  # escolhido pela configuração do usuário ou pelo ambiente
+    tem = _ollama_tem(atual.base_url, atual.model)
+    if tem:
+        return "ollama", f"ollama com {atual.model} (respondeu em {atual.base_url})"
+    if _tem_fastembed():
+        porque = "o Ollama não respondeu" if tem is None else f"o Ollama não tem o {atual.model}"
+        return "fastembed", (
+            f"fastembed ({porque}; roda local, sem daemon). Para usar o Ollama: ragx init --force --embedding ollama"
+        )
+    return "ollama", "ollama (o fastembed não está instalado): suba o Ollama com o modelo antes de indexar"
+
+
 def init(
     path: Annotated[Path, typer.Argument()] = Path("."),
     force: Annotated[bool, typer.Option("--force", help="Sobrescreve ragx.toml.")] = False,
@@ -55,6 +107,13 @@ def init(
     git_hooks: Annotated[
         bool, typer.Option("--git-hooks", help="Instala hooks que reindexam ao trocar de branch.")
     ] = False,
+    embedding: Annotated[
+        str | None,
+        typer.Option(
+            "--embedding",
+            help="ollama | fastembed. Sem a opção: Ollama se ele responder com o modelo; senão, fastembed.",
+        ),
+    ] = None,
 ) -> None:
     """Prepara o projeto para o RAGX."""
     from ragx.core.ids import CHUNKER_VERSION, SCHEMA_VERSION
@@ -69,14 +128,18 @@ def init(
         console.print(f"[yellow]{CONFIG_NAME} já existe.[/] Use --force para sobrescrever.")
     else:
         pid = _project_id(root)
+        provider, motivo = escolher_embedding(root, embedding)
+        bloco_embedding = f'\n[embedding]\nprovider = "{provider}"\n' if provider else ""
         cfg_path.write_text(
             f'[project]\nname = "{name or root.name}"\nid = "{pid}"\n'
             'kind = "other"\nvisibility = "workspace"\n\n'
             "[security]\npolicy = \"strict\"\n\n"
-            "[index]\nmax_file_bytes = 1048576\n",
+            "[index]\nmax_file_bytes = 1048576\n" + bloco_embedding,
             encoding="utf-8",
         )
         created.append(CONFIG_NAME)
+        if motivo:
+            console.print(f"[dim]embedding:[/] {motivo}")
 
     ragignore = root / ".ragignore"
     if not ragignore.exists():

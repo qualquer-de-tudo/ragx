@@ -61,7 +61,7 @@ const section = (name: string) => screen.getByRole('region', { name })
 /** A página separa as seções em abas; a aba lembrada é a que abre. */
 const naAba = (aba: ProjectTab) => beforeEach(() => rememberProjectTab(aba))
 const abrirAba = (nome: string) => fireEvent.click(screen.getByRole('tab', { name: nome }))
-const botaoTrial = () => (abrirAba('Economia de tokens'), screen.getByRole('button', { name: /simular economia/i }))
+const botaoTrial = () => (abrirAba('Consumo de tokens'), screen.getByRole('button', { name: /simular economia/i }))
 const botaoScan = () => (abrirAba('Manutenção'), screen.getByRole('button', { name: /atualizar achados de segurança/i }))
 
 beforeEach(() => {
@@ -731,7 +731,7 @@ describe('ProjectPage: economia de tokens (uso real)', () => {
 
   it('sem medições, explica e oferece a simulação', async () => {
     renderPage()
-    const s = within(section('Economia de tokens'))
+    const s = within(section('Economia estimada (contra arquivos inteiros)'))
     expect(s.getByText(/Ainda sem medições de uso real/)).toBeInTheDocument()
     expect(s.getByRole('button', { name: /simular economia/i })).toBeInTheDocument()
     await screen.findByText('Em dia com o que está no disco')
@@ -753,7 +753,7 @@ describe('ProjectPage: economia de tokens (uso real)', () => {
       },
     })
     renderPage({ project })
-    const s = within(section('Economia de tokens'))
+    const s = within(section('Economia estimada (contra arquivos inteiros)'))
     expect(s.getByText('menos tokens').closest('.trial-figure')).toHaveTextContent('80%menos tokens')
     expect(s.getByText('32.000')).toBeInTheDocument()
     // RAGX-0163: o baseline é um limite superior, e a economia é estimativa, nunca "real"
@@ -796,8 +796,8 @@ describe('ProjectPage: abas', () => {
     const geral = screen.getByRole('tab', { name: 'Visão geral' })
     geral.focus()
     fireEvent.keyDown(geral, { key: 'ArrowRight' })
-    expect(screen.getByRole('tab', { name: 'Economia de tokens' })).toHaveFocus()
-    expect(screen.getByRole('tab', { name: 'Economia de tokens' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Consumo de tokens' })).toHaveFocus()
+    expect(screen.getByRole('tab', { name: 'Consumo de tokens' })).toHaveAttribute('aria-selected', 'true')
     fireEvent.keyDown(document.activeElement!, { key: 'End' })
     expect(screen.getByRole('tab', { name: 'Manutenção' })).toHaveAttribute('aria-selected', 'true')
     fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' })
@@ -842,7 +842,7 @@ describe('ProjectPage: de relance (RAGX-0184)', () => {
     abrirAba('Manutenção')
     expect(screen.getByRole('region', { name: 'De relance' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Ver gráfico' }))
-    expect(screen.getByRole('tab', { name: 'Economia de tokens' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Consumo de tokens' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('"Ver detalhes" de um projeto com erro: o last_error aparece na faixa, em todas as abas', async () => {

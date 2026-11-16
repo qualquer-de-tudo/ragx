@@ -33,8 +33,14 @@ Exit codes padronizados:
 ragx init [PATH]
     --force                 sobrescreve ragx.toml existente
     --git-hooks             instala post-checkout/post-commit/post-merge (ragx hooks install)
+    --embedding ollama|fastembed   força o provider; sem a opção, o init escolhe (RAGX-0204)
     --profile minimal|full  conjunto inicial de configuração
 ```
+
+Sem `--embedding`, o `ragx init` grava no `ragx.toml` novo o provider que a máquina tem: Ollama quando o
+daemon responde com o modelo; senão, fastembed (local, sem daemon). A escolha não muda sozinha depois
+(vetores de modelos diferentes não se misturam); configuração do usuário ou `RAGX_EMBEDDING_PROVIDER` já
+escolhidos valem e nada é gravado.
 
 `ragx init` agora registra automaticamente o projeto no hub local, best-effort —
 falhas de registro (projeto privado, colisão de nome) nunca fazem `init` falhar.
@@ -301,6 +307,13 @@ ragx mcp uninstall
     --json
 ```
 
+**Codex e Gemini CLI (RAGX-0202).** Esses clientes não têm hook, então não recebem a dica de início de sessão
+nem o lembrete de busca. Ao registrar o RAGX neles, o `install` também põe um bloco curto e delimitado
+(`<!-- ragx:inicio -->` … `<!-- ragx:fim -->`) no arquivo de instruções do usuário (`~/.codex/AGENTS.md`,
+`~/.gemini/GEMINI.md`), dizendo para consultar o índice antes de grep e leitura; o `uninstall` tira só o bloco
+(e o arquivo, se ele só tinha o bloco). Tudo o que a pessoa escreveu fora dele fica como estava. O `status --json`
+diz se o bloco está lá (`instructions`; `null` para clientes sem esse arquivo, como Cursor e Windsurf).
+
 `ragx mcp uninstall` faz o caminho inverso: retira só a entrada `ragx` (ou a
 tabela `[mcp_servers.ragx]` no Codex), com as mesmas garantias abaixo —
 backup datado, idempotente (já ausente = sem mudança) e recusa de
@@ -415,6 +428,7 @@ ragx doctor --json               as mesmas checagens em JSON, saindo com 0
 
 ```bash
 ragx perf [--days 7] [--project NOME] [--top 5] [--json]
+ragx usage [--days 14] [--project PASTA] [--json] [--no-cache]   consumo real de tokens e adoção, por projeto
 ragx claude status [--json]      o RAGX está ligado no Claude Code agora? (por perfil)
 ragx claude off [--dry-run]      tira o RAGX do Claude Code, em todos os projetos e perfis
 ragx claude on [--dry-run] [--no-hint] [--no-touch] [--no-nudge]   põe de volta, com a dica, o aviso de edição e o lembrete
@@ -440,6 +454,73 @@ do schema das ferramentas. É estimativa e erra para menos: chamadas em paralelo
 com ferramenta de fora não são atribuídas ao RAGX, e pausas de mais de 15 minutos
 contam como ociosidade. Lê só números de tempo; o conteúdo das mensagens não é
 guardado nem impresso.
+
+`ragx usage` mede o **consumo real** de tokens, lido das mesmas sessões (RAGX-0205). Lê os
+transcripts de todos os perfis do Claude Code que `ragx claude status` enxerga
+(`<perfil>/projects/*/*.jsonl` e os subagentes de cada sessão, somados a ela) e, por sessão
+iniciada na janela, conta:
+
+- **turnos**: respostas do modelo. O mesmo `message.id` aparece em vários registros (um por
+  bloco); o uso dele conta uma vez;
+- **tokens**: entrada, lidos do cache, gravados no cache e saída, como o Claude Code os grava;
+- **chamadas por tipo**: busca (Grep, Glob, e `grep`/`rg`/`find`/`ls`/`tree`/`git grep`/
+  `Select-String`/`Get-ChildItem` pelo Bash ou PowerShell), leitura (Read e `cat`/`head`/`tail`/
+  `sed -n`/`Get-Content`), RAGX (`mcp__ragx__*`) e outras;
+- **tamanho dos resultados** de busca, leitura e RAGX, em caracteres (o texto humano mostra
+  ≈ tokens, a 4 caracteres por token). Leitura de imagem ou PDF conta à parte (`image_reads`):
+  o resultado é base64 e não se compara a texto;
+- **adoção**: se a sessão chamou o RAGX, se recebeu a dica de início, se recebeu o lembrete do
+  primeiro Grep/Glob e se chamou o RAGX depois dele. Vem do transcript, então não depende de o
+  servidor MCP saber a sessão.
+
+A sessão pertence ao projeto cuja raiz contém a pasta de trabalho dela (`cwd`): a raiz, uma
+subpasta, uma worktree dentro dela (`.claude/worktrees/...`) ou uma worktree do git em outro
+lugar (pelo arquivo `.git` que aponta para `<raiz>/.git/worktrees/`). Projeto aninhado ganha do
+de fora. Sem `--project`, os projetos são os do hub (`~/.ragx/hub/registry.json`, os mesmos do
+painel); sessões fora deles só entram na contagem `sessions_outside_projects`.
+
+Saída `--json` (só contagens, datas e os projetos do registro):
+
+```json
+{
+  "source": "claude-code", "kind": "observation", "note": "...",
+  "days": 14, "since": "...", "generated_at": "...", "chars_per_token": 4,
+  "profiles": [{"name": "padrão", "sessions": 169}],
+  "sessions_scanned": 942, "sessions_outside_projects": 877,
+  "overall": { "...": "o mesmo bloco de um projeto, para todos juntos" },
+  "projects": [{
+    "id": "cbb35795960b", "name": "Juriflux", "path": "C:\\projects\\Juriflux",
+    "sessions": 64, "first_at": "...", "last_at": "...",
+    "all": {"sessions": 64, "median": {"turns": 6, "total_tokens": 199782, "...": 0}, "total": {"...": 0}},
+    "with_ragx": {"sessions": 4, "median": {}, "total": {}},
+    "without_ragx": {"sessions": 60, "median": {}, "total": {}},
+    "adoption": {"sessions": 64, "with_ragx": 4, "hinted": 25, "reminded": 20, "ragx_after_reminder": 3},
+    "profiles": {"padrão": 49, "empresa": 15}
+  }]
+}
+```
+
+As métricas de `median` e `total` são `turns`, `prompts`, `input_tokens`, `cache_read_tokens`,
+`cache_creation_tokens`, `output_tokens`, `total_tokens`, `search_calls`, `read_calls`,
+`ragx_calls`, `other_calls`, `image_reads`, `search_result_chars`, `read_result_chars` e
+`ragx_result_chars`; a mediana de um grupo sem sessão é `null`.
+
+**É observação, não experimento.** Sessões com e sem RAGX são tarefas diferentes (a que chamou o
+RAGX costuma ser a longa), então a diferença entre as medianas não prova causa. O A/B controlado
+continua sendo `ragx ab`.
+
+**Privacidade.** Nada de texto sai do comando nem vai para o cache: nem prompt, nem resposta, nem
+comando, nem caminho de arquivo, nem entrada de ferramenta. O comando do Bash é classificado em
+memória e descartado; a pasta da sessão vira hashes (dela e das pastas acima), comparados com o
+hash da raiz de cada projeto. O único caminho na saída é o do projeto, que vem do registro do
+RAGX ou do `--project`.
+
+**Cache.** Uma sessão longa passa de 100 MB; a primeira leitura de 14 dias numa máquina com
+muitas sessões leva dezenas de segundos. Os números de cada transcript ficam em
+`~/.ragx/cache/usage-claude.json`, válidos enquanto o arquivo não muda de tamanho nem de data,
+e a leitura seguinte leva ~2 s. `--no-cache` relê tudo e não grava. Linhas que não são JSON
+são ignoradas, e registros `api-request*`, `file-history*` e `queue-operation` são pulados sem
+análise.
 
 `ragx claude off|on` é o interruptor global: usa o mesmo registro do
 `ragx mcp install/uninstall --client claude-code` (só a entrada `ragx` muda,
@@ -500,9 +581,11 @@ arquivo (com backup `.ragx-backup-*`), então a edição precisa ser refeita.
 perfil, nunca no repositório do usuário. Subagentes usam o mesmo servidor MCP do agente principal, então
 o que o explorador recebeu não está no contexto do principal (relevante para o dedupe de sessão, 0159).
 
-**Lembrete no `Grep`/`Glob` (RAGX-0160).** O hint de `SessionStart` é lido uma vez e esquecido, e
+**Lembrete na primeira busca (RAGX-0160, RAGX-0201).** O hint de `SessionStart` é lido uma vez e esquecido, e
 `Grep`/`Glob` já estão carregados: o modelo vai no que está à mão. `on` instala também um hook `PreToolUse`
-com matcher `Grep|Glob` que roda `ragx claude nudge`: no **primeiro** `Grep`/`Glob` da sessão, num projeto
+com matcher `Grep|Glob|Bash|PowerShell` que roda `ragx claude nudge`: na **primeira** busca da sessão (`Grep`,
+`Glob`, ou `Bash`/`PowerShell` cujo comando começa por `grep`, `rg`, `find`, `ls`, `tree`, `Select-String`,
+`Get-ChildItem` e afins; outros comandos saem em silêncio sem gastar o aviso), num projeto
 indexado, ele devolve `hookSpecificOutput.additionalContext` (~50 tokens: o projeto está indexado e
 `mcp__ragx__build_context(query)` devolve trechos com arquivo e linhas). **Sugere, nunca bloqueia** (nem
 nega nem reescreve o `Grep`), e cala em todo o resto: projeto sem índice, sessão já avisada, stdin vazio ou

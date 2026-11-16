@@ -1,6 +1,16 @@
-import type { ActivityEvent, AdoptionSummary, ContextPreview, TelemetrySummary } from '../../electron/data/types'
+import type {
+  ActivityEvent,
+  AdoptionSummary,
+  ContextPreview,
+  TelemetrySummary,
+  UsageBlock,
+  UsageGroup,
+  UsageMetrics,
+  UsageProject,
+  UsageReport,
+} from '../../electron/data/types'
 
-export type { ActivityEvent, AdoptionSummary, ContextPreview }
+export type { ActivityEvent, AdoptionSummary, ContextPreview, UsageBlock, UsageGroup, UsageMetrics, UsageProject, UsageReport }
 import type { Pricing, RendererSettings } from '../../electron/settings'
 import type { UpdateState } from '../../electron/updater'
 import type { AutoSetupState } from '../../electron/auto-setup'
@@ -274,6 +284,11 @@ export interface RagxBridge {
   getActivity: () => Promise<ActivityEvent[]>
   /** Sessões que chamaram o RAGX e as que não, em 14 dias (RAGX-0190): só contagens. */
   getAdoption: () => Promise<AdoptionSummary>
+  /**
+   * Consumo real lido das sessões do Claude Code (RAGX-0205, `ragx usage --json`): guardado 10 min no processo
+   * principal; `force` ignora o prazo (no máximo uma vez por minuto).
+   */
+  getUsage: (force?: boolean) => Promise<UsageReport>
   /** Só os eventos novos, a cada ~1,5 s em que algum log cresceu. */
   onActivity: (cb: (events: ActivityEvent[]) => void) => () => void
   getProjectStatus: (projectId: string) => Promise<unknown>

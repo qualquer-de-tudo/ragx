@@ -57,7 +57,7 @@ describe('axe: sem violações serious ou critical', () => {
 
   it.each([
     ['geral', 'Visão geral'],
-    ['economia', 'Economia de tokens'],
+    ['economia', 'Consumo de tokens'],
     ['historico', 'Histórico'],
     ['manutencao', 'Manutenção'],
   ] as Array<[ProjectTab, string]>)('Detalhe, aba %s', async (aba) => {

@@ -40,7 +40,7 @@ from ragx.mcp.tools import (
     validate_path,
     wire_id,
 )
-from ragx.search.snippet import make_snippet
+from ragx.search.snippet import make_line_snippet
 
 
 def _explain(exc: ValidationError) -> str:
@@ -180,13 +180,16 @@ def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
 
 #: O perfil `slim` (RAGX-0157): as ferramentas que as sessões reais usam. `get_playbook` vira as
 #: `instructions` (0158) e `sync` fica na CLI. Os nomes não mudam em relação ao `full`.
-SLIM_TOOLS = ("get_dictionary", "search_hybrid", "build_context", "get_chunk", "get_entity", "refresh")
+SLIM_TOOLS = (
+    "get_dictionary", "search_hybrid", "build_context", "get_document", "get_chunk", "get_entity", "refresh",
+)
 
 #: Descrições do `slim`: curtas e com a função primeiro (a descrição é custo fixo em todo turno).
 _SLIM_DESCRIPTIONS = {
     "get_dictionary": "Mostra o mapa do projeto por níveis: level=0 (~700 tokens, comece aqui), 1 (~2.100), 2 (completo, ~3.800).",
     "search_hybrid": "Localiza código e docs por busca híbrida (semântica + palavra-chave): onde algo está.",
     "build_context": "Monta o contexto de uma tarefa (trechos com arquivo e linhas) dentro de um orçamento de tokens.",
+    "get_document": "Mostra o mapa de um arquivo indexado: símbolos e linhas de cada trecho, sem conteúdo. Leia só o intervalo útil.",
     "get_chunk": "Abre o texto completo de um chunk pelo chunk_id de um resultado.",
     "get_entity": "Mostra as relações diretas de um símbolo: quem o chama e de que depende.",
     "refresh": "Reindexa o que mudou no disco (incremental). Chame no início de uma tarefa.",
@@ -298,14 +301,13 @@ class KnowledgeAPI:
             "kind": r.kind.value,
             "lines": [r.start_line, r.end_line],
             "score": round(r.score, 4),
-            # `concise` (o padrão da busca): um trecho curto, não o conteúdo inteiro. O
-            # agente abre o trecho completo com `get_chunk`.
+            # `concise` (o padrão da busca): uma linha do trecho, não o conteúdo inteiro, e sem `matched_by`. Uma
+            # busca do RAGX não pode custar mais do que um grep (RAGX-0203): o agente abre o trecho com `get_chunk`.
             **(
-                {"content": r.content}
+                {"content": r.content, "matched_by": list(r.matched_by)}
                 if detailed
-                else {"snippet": make_snippet(r.content, self.cfg.mcp.snippet_chars)}
+                else {"snippet": make_line_snippet(r.content, self.cfg.mcp.snippet_chars)}
             ),
-            "matched_by": list(r.matched_by),
         }
 
     # ── ferramentas ─────────────────────────────────────────────────────
@@ -864,7 +866,7 @@ def build_server(
 
     @_tool(description="Busca por significado (semântica) no conhecimento indexado. Para localizar também por palavra-chave, prefira search_hybrid.")
     def search_knowledge(
-        query: str, limit: int = 10, lang: str | None = None,
+        query: str, limit: int = 5, lang: str | None = None,
         kind: str | None = None, path_glob: str | None = None, scope: str = "current",
         response_format: Literal["concise", "detailed"] | None = None,
     ) -> dict[str, Any]:
@@ -880,7 +882,7 @@ def build_server(
 
     @_tool(description="Localiza código e documentação por busca híbrida (semântica + palavra-chave): onde algo está, o que trata de X. O modo padrão para localizar.")
     def search_hybrid(
-        query: str, limit: int = 10, lang: str | None = None,
+        query: str, limit: int = 5, lang: str | None = None,
         kind: str | None = None, path_glob: str | None = None, scope: str = "current",
         response_format: Literal["concise", "detailed"] | None = None,
     ) -> dict[str, Any]:

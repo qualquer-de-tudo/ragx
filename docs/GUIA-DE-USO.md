@@ -58,8 +58,8 @@ A explicação do passo 1 fica sempre disponível na tela **Como funciona**.
 | Tela | Para que serve |
 |---|---|
 | **Projetos** | Um card por projeto: estado do índice, pasta, branch, quando foi indexado, economia de tokens. Um botão no card faz o que o estado pede. |
-| **Detalhe do projeto** | Quatro abas: *Visão geral*, *Economia de tokens*, *Histórico* e *Manutenção*. |
-| **Atividade** | O que os agentes e a CLI estão fazendo, ao vivo: chamadas MCP, sessões do Claude, comandos no terminal. Nunca mostra o texto da consulta. A lista é paginada (50 eventos ou 20 sessões por página). |
+| **Detalhe do projeto** | Quatro abas: *Visão geral*, *Consumo de tokens*, *Histórico* e *Manutenção*. *Consumo de tokens* abre com o **Consumo real** (lido das sessões do Claude Code, com e sem RAGX lado a lado, como observação) e mostra embaixo a **Economia estimada (contra arquivos inteiros)**. |
+| **Atividade** | O que os agentes e a CLI estão fazendo, ao vivo: chamadas MCP, sessões do Claude, comandos no terminal, e o consumo real e a adoção lidos das sessões do Claude Code. Nunca mostra o texto da consulta. A lista é paginada (50 eventos ou 20 sessões por página). |
 | **Conexões** | CLI, Claude Code e Ollama, com correção de um clique. |
 | **Como funciona** | Fica no fim da barra lateral. Aba **Como funciona**: o caminho do dado em cinco passos, o que mantém o índice em dia e onde ficam os dados. Aba **Benchmarks**: o que o RAGX mediu de si mesmo (antes, depois, meta, método), a medição contra um agente sem RAGX, a qualidade da busca e a linha do tempo das etapas. Os mesmos números estão em [27-benchmarks.md](27-benchmarks.md). |
 

@@ -1,5 +1,13 @@
 import { vi } from 'vitest'
-import type { ConnectionCheck, JobView, ProjectSnapshot, RagxBridge } from '../types/ragx-bridge'
+import type {
+  ConnectionCheck,
+  JobView,
+  ProjectSnapshot,
+  RagxBridge,
+  UsageBlock,
+  UsageMetrics,
+  UsageReport,
+} from '../types/ragx-bridge'
 
 /** Projeto "Atualizado" por padrão; cada teste troca só o que importa. */
 export function snap(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
@@ -12,6 +20,35 @@ export function snap(over: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
     git: { branch: 'main', commit: 'c1' },
     hooksInstalled: true, running: null, pending: false, lastError: null, hasStatusFile: true,
     telemetry: { callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null },
+    ...over,
+  }
+}
+
+/** Métricas de sessão zeradas; `over` troca só o que importa. */
+export function usageMetrics(over: Partial<UsageMetrics> = {}): UsageMetrics {
+  return {
+    turns: 0, prompts: 0, inputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0, outputTokens: 0, totalTokens: 0,
+    searchCalls: 0, readCalls: 0, ragxCalls: 0, otherCalls: 0, imageReads: 0,
+    searchResultChars: 0, readResultChars: 0, ragxResultChars: 0,
+    ...over,
+  }
+}
+
+/** Bloco de consumo real sem sessão nenhuma. */
+export function usageBlock(over: Partial<UsageBlock> = {}): UsageBlock {
+  const empty = { sessions: 0, median: null, total: usageMetrics() }
+  return {
+    sessions: 0, firstAt: null, lastAt: null, all: empty, withRagx: empty, withoutRagx: empty,
+    adoption: { sessions: 0, withRagx: 0, hinted: 0, reminded: 0, ragxAfterReminder: 0 },
+    ...over,
+  }
+}
+
+/** `ragx usage --json` já conferido, sem sessão nenhuma por padrão. */
+export function usageReport(over: Partial<UsageReport> = {}): UsageReport {
+  return {
+    days: 14, since: '2026-09-10T10:00:00Z', generatedAt: '2026-09-24T10:00:00Z', charsPerToken: 4,
+    sessionsScanned: 0, sessionsOutsideProjects: 0, overall: usageBlock(), projects: [],
     ...over,
   }
 }
@@ -34,6 +71,7 @@ export function installBridge(over: Partial<RagxBridge> = {}): RagxBridge {
     onSnapshot: vi.fn(() => () => {}),
     getActivity: vi.fn().mockResolvedValue([]),
     getAdoption: vi.fn().mockResolvedValue({ since: null, sessions: 0, withCalls: 0, withoutCalls: 0, unidentified: 0, callsWithoutStart: 0, byProject: [] }),
+    getUsage: vi.fn().mockResolvedValue(usageReport()),
     onActivity: vi.fn(() => () => {}),
     getProjectStatus: vi.fn(),
     runTrial: vi.fn(),

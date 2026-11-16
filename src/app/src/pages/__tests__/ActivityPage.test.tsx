@@ -113,7 +113,7 @@ describe('ActivityPage', () => {
     expect(screen.getByText('Chamadas MCP').nextSibling).toHaveTextContent('42')
     expect(screen.getByText('Sessões do Claude').nextSibling).toHaveTextContent('1')
     expect(screen.getByText('1 comando(s) no terminal')).toBeInTheDocument()
-    expect(screen.getByText('91% menos que ler os arquivos')).toBeInTheDocument()
+    expect(screen.getByText('91% menos que os arquivos inteiros')).toBeInTheDocument()
     expect(screen.getByText('Projetos em uso').nextSibling).toHaveTextContent('2')
   })
 

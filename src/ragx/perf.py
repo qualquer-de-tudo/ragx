@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import statistics
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -85,17 +86,31 @@ def _blocks(record: dict[str, Any]) -> list[dict[str, Any]]:
     return [b for b in content if isinstance(b, dict)]
 
 
-def _read(path: Path) -> list[dict[str, Any]]:
-    records: list[dict[str, Any]] = []
-    with path.open(encoding="utf-8", errors="replace") as fh:
+#: Registros que nenhum leitor daqui usa e que pesam (~25% dos bytes de uma sessão real): o
+#: corpo das requisições à API e os instantâneos de arquivo. Pular pelo começo da linha evita
+#: o `json.loads` de centenas de MB. Linha que não começa assim é analisada normalmente.
+_PULAR = (b'{"type":"api-request', b'{"type":"file-history', b'{"type":"queue-operation')
+
+
+def iter_records(path: Path, types: tuple[str, ...] = ("user", "assistant")) -> Iterator[dict[str, Any]]:
+    """Os registros de um transcript do Claude Code com `type` em `types`, na ordem do arquivo.
+
+    Linha inválida (JSON quebrado, gravação interrompida, não objeto) é ignorada, sem erro.
+    """
+    with path.open("rb") as fh:
         for line in fh:
+            if line.startswith(_PULAR):
+                continue
             try:
-                rec = json.loads(line)
+                rec = json.loads(line.decode("utf-8", errors="replace"))
             except ValueError:
                 continue
-            if isinstance(rec, dict) and rec.get("type") in ("user", "assistant"):
-                records.append(rec)
-    return records
+            if isinstance(rec, dict) and rec.get("type") in types:
+                yield rec
+
+
+def _read(path: Path) -> list[dict[str, Any]]:
+    return list(iter_records(path))
 
 
 def _ms(a: datetime, b: datetime) -> int:

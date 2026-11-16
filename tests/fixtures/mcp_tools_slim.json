@@ -52,6 +52,21 @@
   "name": "search_hybrid"
  },
  {
+  "description": "Mostra o mapa de um arquivo indexado: símbolos e linhas de cada trecho, sem conteúdo. Leia só o intervalo útil.",
+  "input_schema": {
+   "properties": {
+    "path": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "path"
+   ],
+   "type": "object"
+  },
+  "name": "get_document"
+ },
+ {
   "description": "Abre o texto completo de um chunk pelo chunk_id de um resultado.",
   "input_schema": {
    "properties": {

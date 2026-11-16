@@ -314,29 +314,66 @@ def _emitir(texto: str) -> None:
         sys.stdout.write(texto + "\n")
 
 
-# ── o lembrete no Grep/Glob (`ragx claude nudge`, PreToolUse) ─────────────
+# ── o lembrete na primeira busca (`ragx claude nudge`, PreToolUse) ─────────
 def texto_lembrete() -> str:
-    """O que o agente lê ao fazer o primeiro `Grep`/`Glob` da sessão: sugere, não manda, e é curto.
+    """O que o agente lê na primeira busca da sessão: sugere, não manda, e é curto.
 
     Nunca ecoa o `tool_input`: o padrão buscado pode ser um segredo.
     """
     return (
-        "RAGX: este projeto está indexado. Para entender ou localizar código, "
-        "mcp__ragx__build_context(query) devolve os trechos relevantes, com arquivo e linhas, "
-        "em geral mais barato do que Grep + Read."
+        "RAGX: projeto indexado. Localizar: mcp__ragx__search_hybrid(query); entender: "
+        "mcp__ragx__build_context(query). Mais barato do que grep + ler arquivos."
     )
 
 
-def run_nudge() -> int:
-    """`ragx claude nudge`: no primeiro `Grep`/`Glob` da sessão, num projeto indexado, adiciona contexto.
+#: Programas que, no começo de um trecho de comando do Bash/PowerShell, fazem uma busca no projeto (RAGX-0201).
+#: No Juriflux o agente buscou 12.962 vezes pelo Bash e 1.599 pelo Grep: o lembrete só no Grep não via quase nada.
+_PROGRAMAS_DE_BUSCA = frozenset({
+    "grep", "egrep", "fgrep", "rg", "ag", "ack", "find", "fd", "ls", "tree", "findstr",
+    "select-string", "sls", "get-childitem", "gci",
+})
+_SEPARADORES = re.compile(r"\|\|?|&&|;|\n|\(|\)")
 
-    Sugere sem bloquear (bloquear `Grep`/`Read` está descartado) e cala em todo o resto: projeto sem
-    índice, sessão que já foi avisada, stdin vazio ou inválido, qualquer erro. O marcador
-    O marcador em `.ragx/cache/nudge/` é criado com `O_EXCL`: com vários `Grep` em paralelo
-    só um imprime por agente. Filhos têm marcador próprio, derivado de session_id + agent_id.
+
+def eh_busca(comando: str) -> bool:
+    """O comando faz uma busca? Olha o primeiro programa de cada trecho (`cd x && rg y` conta; `npm test`, não)."""
+    for trecho in _SEPARADORES.split(comando or ""):
+        palavras = trecho.strip().split()
+        while palavras and ("=" in palavras[0] and not palavras[0].startswith("-")):
+            palavras = palavras[1:]  # `LC_ALL=C grep ...`
+        if not palavras:
+            continue
+        programa = palavras[0].strip("'\"").replace("\\", "/").rsplit("/", 1)[-1].lower().removesuffix(".exe")
+        if programa in _PROGRAMAS_DE_BUSCA:
+            return True
+        if programa == "git" and len(palavras) > 1 and palavras[1] in ("grep", "ls-files"):
+            return True
+    return False
+
+
+def _ferramenta_de_busca(dados: dict[str, Any]) -> bool:
+    """Grep e Glob sempre; Bash e PowerShell só quando o comando é de busca."""
+    nome = dados.get("tool_name")
+    if nome in ("Bash", "PowerShell"):
+        entrada = dados.get("tool_input")
+        comando = entrada.get("command") if isinstance(entrada, dict) else None
+        return isinstance(comando, str) and eh_busca(comando)
+    return True
+
+
+def run_nudge() -> int:
+    """`ragx claude nudge`: na primeira busca da sessão, num projeto indexado, adiciona contexto.
+
+    Busca é `Grep`/`Glob`, ou `Bash`/`PowerShell` cujo comando é de busca (`eh_busca`, RAGX-0201); qualquer
+    outro comando sai em silêncio sem gastar o aviso da sessão. Sugere sem bloquear (bloquear `Grep`/`Read`
+    está descartado) e cala em todo o resto: projeto sem índice, sessão que já foi avisada, stdin vazio ou
+    inválido, qualquer erro. O marcador em `.ragx/cache/nudge/` é criado com `O_EXCL`: com várias buscas em
+    paralelo só uma imprime por agente. Filhos têm marcador próprio, derivado de session_id + agent_id.
     """
     try:
         dados = _ler_json()
+        if not _ferramenta_de_busca(dados):
+            return 0
         sessao = _sanear_sessao(dados.get("session_id"))
         cwd = dados.get("cwd")
         if not sessao or not isinstance(cwd, str) or not cwd:

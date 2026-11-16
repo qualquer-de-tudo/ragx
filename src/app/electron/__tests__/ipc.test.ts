@@ -1,3 +1,4 @@
+import os from 'node:os'
 import { describe, expect, it, vi } from 'vitest'
 import { createHandlers, type HandlerDeps, type QueueLike } from '../ipc'
 import { FolderTokens } from '../projects/tokens'
@@ -932,6 +933,29 @@ describe('createHandlers - perfis do Claude Code', () => {
     const comandos = runRagxCommand.mock.calls.map(([, args]) => args.slice(0, 4).join(' '))
     expect(comandos.slice(-2)).toEqual(['claude off --profile claude-code:cliente', 'claude profiles remove D:/contas/cliente'])
     await expect(handlers.removeClaudeProfile('claude-code')).rejects.toThrow(/adicionado à mão/)
+  })
+})
+
+describe('createHandlers - getUsage (RAGX-0205)', () => {
+  const RELATORIO = { source: 'claude-code', projects: [], overall: { sessions: 0 }, days: 14 }
+
+  it('roda "ragx usage --days 14 --json" na pasta do usuário, uma vez só para pedidos seguidos', async () => {
+    const runRagxCommand = vi.fn<HandlerDeps['runRagxCommand']>(async () => RELATORIO)
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    await handlers.getUsage()
+    await handlers.getUsage(false)
+    expect(runRagxCommand).toHaveBeenCalledTimes(1)
+    const [cwd, args, opts] = runRagxCommand.mock.calls[0]
+    expect(cwd).toBe(os.homedir())
+    expect(args).toEqual(['usage', '--days', '14', '--json'])
+    expect(opts?.timeoutMs).toBeGreaterThanOrEqual(120_000)
+  })
+
+  it('recusa force que não é booleano, sem abrir processo', () => {
+    const runRagxCommand = vi.fn(async () => RELATORIO)
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    expect(() => handlers.getUsage('--project C:/x')).toThrow(/pedido recusado/)
+    expect(runRagxCommand).not.toHaveBeenCalled()
   })
 })
 

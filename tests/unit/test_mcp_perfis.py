@@ -1,4 +1,4 @@
-"""Perfis do servidor MCP: `full` (33 ferramentas) e `slim` (6) — RAGX-0157."""
+"""Perfis do servidor MCP: `full` (33 ferramentas) e `slim` (7, com o mapa de arquivo da RAGX-0203) — RAGX-0157."""
 
 from __future__ import annotations
 
@@ -36,14 +36,14 @@ def _listar(cfg, **kw):  # type: ignore[no-untyped-def]
 def test_o_padrao_e_slim_e_o_full_continua_disponivel(projeto: Path) -> None:
     """Desde a v1.0.0 o padrão é `slim` (decisão da pessoa, RAGX-0157); o `full` é pedido por nome."""
     assert McpCfg().profile == "slim"
-    assert len(_listar(load_config(projeto))) == 6
+    assert len(_listar(load_config(projeto))) == 7
     assert len(_listar(load_config(projeto), profile="full")) == 33
 
 
-def test_slim_expoe_so_as_seis_com_os_mesmos_nomes(projeto: Path) -> None:
+def test_slim_expoe_so_as_sete_com_os_mesmos_nomes(projeto: Path) -> None:
     nomes = {t.name for t in _listar(load_config(projeto), profile="slim")}
     assert nomes == set(SLIM_TOOLS) == {
-        "get_dictionary", "search_hybrid", "build_context", "get_chunk", "get_entity", "refresh",
+        "get_dictionary", "search_hybrid", "build_context", "get_document", "get_chunk", "get_entity", "refresh",
     }
     # todos existem no full, com o mesmo nome
     assert nomes <= {t.name for t in _listar(load_config(projeto))}
@@ -52,7 +52,7 @@ def test_slim_expoe_so_as_seis_com_os_mesmos_nomes(projeto: Path) -> None:
 def test_o_perfil_chega_pelo_ambiente_e_pelo_toml(projeto: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RAGX_MCP_PROFILE", "slim")
     assert load_config(projeto).mcp.profile == "slim"
-    assert len(_listar(load_config(projeto))) == 6
+    assert len(_listar(load_config(projeto))) == 7
     monkeypatch.delenv("RAGX_MCP_PROFILE")
     (projeto / "ragx.toml").write_text(TOML + '\n[mcp]\nprofile = "slim"\n', encoding="utf-8")
     assert load_config(projeto).mcp.profile == "slim"
@@ -72,7 +72,7 @@ def test_schemas_do_slim_sem_title_anyof_nem_default(projeto: Path) -> None:
 
 def test_o_custo_fixo_do_slim_cabe_em_600_tokens(projeto: Path) -> None:
     n, tokens = footprint_tokens(_listar(load_config(projeto), profile="slim"))
-    assert n == 6 and tokens <= 600, tokens
+    assert n == 7 and tokens <= 600, tokens
     n_full, tokens_full = footprint_tokens(_listar(load_config(projeto), profile="full"))
     assert n_full == 33 and tokens_full > 4 * tokens  # o slim é MUITO menor
 
@@ -91,7 +91,7 @@ def test_mcp_tools_json_traz_o_schema_nao_nulo(projeto: Path) -> None:
     r = runner.invoke(app, ["mcp", "tools", "--json", "--profile", "slim"])
     assert r.exit_code == 0, r.output
     dados = json.loads(r.output)
-    assert len(dados) == 6 and all(d["input_schema"] for d in dados)
+    assert len(dados) == 7 and all(d["input_schema"] for d in dados)
 
 
 def test_perfil_desconhecido_e_recusado(projeto: Path) -> None:
@@ -107,7 +107,7 @@ def test_as_instrucoes_do_slim_so_citam_ferramentas_que_ele_expoe(projeto: Path)
         assert ausente not in re.findall(r"[a-z_]+", instrucoes), ausente  # a palavra, não "reindexar"
 
 
-# ── as seis respondem no slim ───────────────────────────────────────────
+# ── as sete respondem no slim ───────────────────────────────────────────
 def _chamar(cfg, nome: str, write: bool = False, **args):  # type: ignore[no-untyped-def]
     server = build_server(cfg, allow_write=write, profile="slim")
     r = asyncio.run(server.call_tool(nome, args))
@@ -115,7 +115,7 @@ def _chamar(cfg, nome: str, write: bool = False, **args):  # type: ignore[no-unt
     return dados.get("data", dados), dados
 
 
-def test_as_seis_respondem_corretamente_no_slim(projeto: Path) -> None:
+def test_as_sete_respondem_corretamente_no_slim(projeto: Path) -> None:
     from ragx.dictionary import builder
     from ragx.graph.service import rebuild
     from ragx.indexing.pipeline import index_project
@@ -136,6 +136,8 @@ def test_as_seis_respondem_corretamente_no_slim(projeto: Path) -> None:
     contexto = _chamar(cfg, "build_context", query="login", tokens=500)[0]
     assert "markdown" in contexto
     assert _chamar(cfg, "get_chunk", chunk_id=achados[0]["chunk_id"])[0]
+    mapa = _chamar(cfg, "get_document", path="auth.py")[0]
+    assert mapa["chunks"] and all("lines" in c and "content" not in c for c in mapa["chunks"])
     assert _chamar(cfg, "get_entity", name="AuthService")[0]["entity"]["name"] == "AuthService"
     assert _chamar(cfg, "refresh", write=True)[1]["ok"] is True
 

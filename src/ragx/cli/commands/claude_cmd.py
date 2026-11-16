@@ -29,10 +29,9 @@ ProfileOpt = Annotated[
 
 
 def _perfis(profile: str | None = None):
-    from ragx.clients import CLIENTS
-    from ragx.clients.registry import CLAUDE_CODE
+    from ragx.clients.registry import claude_profiles
 
-    perfis = [c for c in CLIENTS() if c.id.split(":", 1)[0] == CLAUDE_CODE and c.installed]
+    perfis = claude_profiles()
     if profile is None:
         return perfis
     alvo = profile.strip().lower()
@@ -45,13 +44,16 @@ def _perfis(profile: str | None = None):
 
 
 def _nome(c) -> str:
-    return c.id.split(":", 1)[1] if ":" in c.id else "padrão"
+    from ragx.clients.registry import claude_profile_name
+
+    return claude_profile_name(c)
 
 
 def _estado() -> list[dict[str, object]]:
     from ragx.clients import is_registered
     from ragx.clients.claude_agent import has_agent
     from ragx.clients.claude_hint import has_hint, has_nudge_hook, has_touch_hook
+    from ragx.clients.registry import claude_profile_dir
 
     return [
         {
@@ -59,8 +61,7 @@ def _estado() -> list[dict[str, object]]:
             "name": _nome(c),
             "label": c.label,
             "config": str(c.config),
-            # A pasta do perfil: `~/.claude` no padrão, a do CLAUDE_CONFIG_DIR nos outros.
-            "dir": str(c.config.parent / ".claude") if ":" not in c.id else str(c.config.parent),
+            "dir": str(claude_profile_dir(c)),
             "enabled": is_registered(c),
             "hint": has_hint(c),
             "touch": has_touch_hook(c),
@@ -336,7 +337,7 @@ def agent_status(as_json: Annotated[bool, typer.Option("--json")] = False) -> No
 
 @app.command("nudge")
 def nudge() -> None:
-    """Lembrete do `PreToolUse` em `Grep|Glob`: uma vez por sessão, sugere o RAGX. Nunca bloqueia nem falha."""
+    """Lembrete do `PreToolUse` na primeira busca (Grep, Glob ou busca via Bash): sugere o RAGX. Nunca bloqueia nem falha."""
     from ragx.hooklight import run_nudge
 
     run_nudge()

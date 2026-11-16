@@ -35,6 +35,7 @@ from ragx.cli.commands import (
     task_cmd,
     touch_cmd,
     trial_cmd,
+    usage_cmd,
     watch_cmd,
     worker_cmd,
     worktree_cmd,
@@ -58,6 +59,7 @@ app.command("context")(context_cmd.context)
 app.command("trial")(trial_cmd.trial_cmd)
 app.command("ab")(ab_cmd.ab)
 app.command("perf")(perf_cmd.perf)
+app.command("usage")(usage_cmd.usage)
 app.command("eval")(eval_cmd.eval_cmd)
 app.command("trial")(trial_cmd.trial_cmd)
 app.command("entities")(graph_cmd.entities)

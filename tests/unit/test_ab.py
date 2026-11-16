@@ -44,7 +44,7 @@ def test_with_hooks_so_o_braco_com_ragx_recebe_o_settings(tmp_path) -> None:
     assert not (tmp_path / "without.settings.json").exists()
     hooks = __import__("json").loads((tmp_path / "slim.settings.json").read_text(encoding="utf-8"))["hooks"]
     assert "claude hint" in hooks["SessionStart"][0]["hooks"][0]["command"]
-    assert hooks["PreToolUse"][0]["matcher"] == "Grep|Glob"
+    assert hooks["PreToolUse"][0]["matcher"] == "Grep|Glob|Bash|PowerShell"
 
 
 def test_setting_sources_vai_igual_para_todos_os_bracos_e_some_quando_nao_pedido(tmp_path) -> None:

@@ -31,3 +31,13 @@ def make_snippet(content: str, max_chars: int) -> str:
     if corte <= 0:
         corte = max_chars
     return janela[:corte].rstrip() + _ELLIPSIS
+
+
+def make_line_snippet(content: str, max_chars: int) -> str:
+    """Uma linha só: a primeira linha com texto do trecho (em código, quase sempre a assinatura), no máximo
+    `max_chars`. É o resultado `concise` da busca no MCP (RAGX-0203): arquivo, linhas e uma linha bastam para o
+    agente decidir se abre o trecho, e cada resultado fica do tamanho de uma linha de grep."""
+    for linha in content.splitlines():
+        if linha.strip():
+            return make_snippet(linha.strip(), max_chars)
+    return ""

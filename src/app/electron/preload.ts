@@ -19,6 +19,7 @@ import type {
   TrialResult,
   UpdateState,
   AutoSetupState,
+  UsageReport,
 } from '../src/types/ragx-bridge'
 
 const ragx: RagxBridge = {
@@ -30,6 +31,7 @@ const ragx: RagxBridge = {
   },
   getActivity: (): Promise<ActivityEvent[]> => ipcRenderer.invoke('ragx:getActivity'),
   getAdoption: (): Promise<AdoptionSummary> => ipcRenderer.invoke('ragx:getAdoption'),
+  getUsage: (force?: boolean): Promise<UsageReport> => ipcRenderer.invoke('ragx:getUsage', force === true),
   onActivity: (cb: (events: ActivityEvent[]) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, events: ActivityEvent[]) => cb(events)
     ipcRenderer.on('ragx:activity', listener)

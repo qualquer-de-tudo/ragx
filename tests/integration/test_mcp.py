@@ -627,8 +627,10 @@ def test_busca_concise_devolve_snippet_sem_content_e_detailed_devolve_content(ap
         assert "content" not in h and h["snippet"]
     for h in det["data"]["results"]:
         assert "snippet" not in h and h["content"]
-    # o resto do hit é igual
-    chaves = lambda h: {k: v for k, v in h.items() if k not in ("content", "snippet")}  # noqa: E731
+    # o resto do hit é igual; `matched_by` só no detailed (RAGX-0203: o concise custa o mesmo que um grep)
+    for h in det["data"]["results"]:
+        assert h["matched_by"]
+    chaves = lambda h: {k: v for k, v in h.items() if k not in ("content", "snippet", "matched_by")}  # noqa: E731
     assert [chaves(h) for h in conc["data"]["results"]] == [chaves(h) for h in det["data"]["results"]]
 
 
@@ -660,3 +662,14 @@ def test_build_context_detailed_acrescenta_metadados_sem_conteudo(api: Knowledge
     assert meta and all({"chunk_id", "lines", "tokens", "strategy", "reason", "score"} <= m.keys() for m in meta)
     assert not any("content" in m for m in meta)
     assert det["markdown"] == conc["markdown"]  # a representação não muda
+
+
+
+def test_resultado_concise_tem_uma_linha_so(api: KnowledgeAPI) -> None:
+    """RAGX-0203: o snippet do concise é uma linha do trecho, nunca várias."""
+    for h in api.search(SearchRequest(query="sessao"), mode="hybrid")["data"]["results"]:
+        assert "\n" not in h["snippet"] and "matched_by" not in h
+
+
+def test_busca_traz_cinco_resultados_por_padrao(api: KnowledgeAPI) -> None:
+    assert SearchRequest(query="x").limit == 5

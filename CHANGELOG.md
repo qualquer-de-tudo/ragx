@@ -18,6 +18,35 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   só no símbolo e nos estados. Space Grotesk e JetBrains Mono vão no pacote do painel (nenhuma fonte vem da rede).
   `scripts/brand.py` gera o símbolo novo em SVG, PNG, `.ico` (ícone do `.exe` e do instalador), favicon e o
   componente do painel, com desenhos próprios para 32 e 16 px. A extensão do VS Code usa o mesmo símbolo.
+- **Barra lateral do painel sem a trilha de nós**: o item atual fica só com o realce de fundo.
+- **Busca do MCP do tamanho de um grep** (RAGX-0203). No Juriflux uma busca do RAGX devolvia ~2.200 tokens e um grep
+  ~400: para "onde está X", o agente fazia bem em preferir o grep. Agora `search_hybrid` e `search_knowledge` trazem 5
+  resultados por padrão, cada um com caminho, linhas e **uma linha** do trecho, sem `matched_by` (que fica no
+  `detailed`). Medido no fio, 10 consultas neste repositório: mediana **1.027 → 367 tokens (−64%)**, máximo 475.
+- **Mapa de arquivo no perfil slim** (RAGX-0203): `get_document` (símbolos e linhas de cada trecho, sem conteúdo) entra
+  no padrão, para o agente ler só o intervalo de que precisa. O slim passa a ter 7 ferramentas e ~435 tokens fixos.
+- **Lembrete de busca também no Bash e no PowerShell** (RAGX-0201). O lembrete só disparava no `Grep`/`Glob`, e no
+  Juriflux o agente buscou 12.962 vezes pelo Bash contra 1.599 pelo Grep. Agora o hook também olha `Bash` e
+  `PowerShell` e dispara quando o comando é de busca (`grep`, `rg`, `find`, `ls`, `Select-String`, `Get-ChildItem`...);
+  outros comandos saem em silêncio sem gastar o aviso da sessão. Texto mais curto (45 tokens). `ragx claude heal` (e o
+  ajuste automático do painel) atualiza os perfis que tinham o matcher antigo.
+- **`ragx init` escolhe o embedding** (RAGX-0204): Ollama quando ele responde com o modelo; senão, fastembed (local, sem
+  daemon). Antes o padrão era sempre o Ollama, e quem não o tinha ficava com a busca só por palavra-chave sem perceber.
+  A escolha fica no `ragx.toml` e não muda sozinha; `--embedding ollama|fastembed` força.
+
+### Adicionado
+
+- **Consumo real de tokens, lido das sessões do Claude Code** (RAGX-0205). `ragx usage [--days N] [--project] [--json]`
+  lê as sessões gravadas pelo Claude Code (todos os perfis) e mostra, por projeto: turnos, tokens (entrada, cache lido,
+  cache gravado, saída), buscas, leituras e chamadas ao RAGX, com as sessões com e sem RAGX lado a lado, como
+  **observação** (são tarefas diferentes). Só números saem das sessões: nunca texto de prompt, resposta, comando ou
+  caminho. O painel ganha o card "Consumo real" no projeto (aba "Consumo de tokens") e na Atividade, com a adoção e
+  quantas sessões chamaram o RAGX depois do lembrete; o número antigo passa a se chamar **"Economia estimada (contra
+  arquivos inteiros)"**, porque compara com ler o arquivo inteiro, o que o agente quase nunca faz. Resultado em cache:
+  o painel roda o comando no máximo a cada 10 minutos.
+- **Instruções para Codex e Gemini CLI** (RAGX-0202). Esses clientes não têm hook. Ao registrar o RAGX neles, um bloco
+  curto e delimitado entra no arquivo de instruções do usuário (`~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`) dizendo
+  para consultar o índice antes de grep e leitura; ao remover, só o bloco sai. `ragx mcp status --json` diz se ele está lá.
 
 ### Corrigido
 

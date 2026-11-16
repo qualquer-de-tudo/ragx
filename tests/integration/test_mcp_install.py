@@ -460,3 +460,43 @@ def test_escrita_copia_o_modo_do_destino_para_o_temporario(
     register(_cliente("cursor"))
 
     assert chamadas == [(alvo, alvo.with_name(f"{alvo.name}.ragx-tmp"))]
+
+
+# ── instruções do usuário para quem não tem hook (RAGX-0202) ─────────────
+@pytest.mark.parametrize(("cid", "arquivo"), [("codex", ".codex/AGENTS.md"), ("gemini", ".gemini/GEMINI.md")])
+def test_registrar_poe_o_bloco_de_instrucoes_e_remover_tira_so_ele(casa: Path, cid: str, arquivo: str) -> None:
+    from ragx.clients import instructions
+    from ragx.clients.registry import unregister
+
+    _instalar(cid)
+    alvo = casa / arquivo
+    alvo.write_text("# Minhas regras\n\nUse tabs.\n", encoding="utf-8")
+    register(_cliente(cid))
+    register(_cliente(cid))  # idempotente: um bloco só
+    texto = alvo.read_text(encoding="utf-8")
+    assert texto.startswith("# Minhas regras\n\nUse tabs.\n")
+    assert texto.count("<!-- ragx:inicio") == 1 and "search_hybrid" in texto
+    assert instructions.present(cid, casa) is True
+
+    unregister(_cliente(cid))
+    assert alvo.read_text(encoding="utf-8") == "# Minhas regras\n\nUse tabs.\n"
+    assert instructions.present(cid, casa) is False
+
+
+def test_arquivo_criado_so_pelo_bloco_some_ao_remover(casa: Path) -> None:
+    from ragx.clients.registry import unregister
+
+    _instalar("codex")
+    register(_cliente("codex"))
+    assert (casa / ".codex" / "AGENTS.md").is_file()
+    unregister(_cliente("codex"))
+    assert not (casa / ".codex" / "AGENTS.md").exists()
+
+
+def test_clientes_sem_arquivo_de_instrucoes_nao_ganham_um(casa: Path) -> None:
+    from ragx.clients import instructions
+
+    _instalar("cursor")
+    register(_cliente("cursor"))
+    assert instructions.present("cursor", casa) is None
+    assert not list((casa / ".cursor").glob("*.md"))

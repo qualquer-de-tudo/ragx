@@ -100,14 +100,14 @@ describe('ProjectGlance: economia (14 dias)', () => {
       }),
       onSeeSavings,
     })
-    expect(block('Economia (14 dias)').getByText(/90% menos tokens, 9\.000 economizados\./)).toBeInTheDocument()
-    fireEvent.click(block('Economia (14 dias)').getByRole('button', { name: 'Ver gráfico' }))
+    expect(block('Economia estimada (14 dias)').getByText(/90% menos tokens, 9\.000 economizados\./)).toBeInTheDocument()
+    fireEvent.click(block('Economia estimada (14 dias)').getByRole('button', { name: 'Ver gráfico' }))
     expect(onSeeSavings).toHaveBeenCalledTimes(1)
   })
 
   it('sem medição: "Sem medição ainda", nunca 0%', () => {
     glance()
-    const b = block('Economia (14 dias)')
+    const b = block('Economia estimada (14 dias)')
     expect(b.getByText('Sem medição ainda.')).toBeInTheDocument()
     expect(b.queryByText(/0%/)).not.toBeInTheDocument()
   })

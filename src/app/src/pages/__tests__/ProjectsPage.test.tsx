@@ -452,7 +452,7 @@ describe('ProjectsPage: resumo, números, ordenar e grade/lista (RAGX-0127)', ()
     const resumo = within(screen.getByLabelText('Resumo dos projetos'))
     expect(resumo.getByText('Projetos').nextSibling).toHaveTextContent('3')
     expect(resumo.getByText('Chamadas MCP').nextSibling).toHaveTextContent('7')
-    expect(resumo.getByText('Tokens economizados').nextSibling).toHaveTextContent('9.200')
+    expect(resumo.getByText('Economia estimada').nextSibling).toHaveTextContent('9.200')
     expect(resumo.getByText('Pedem atenção').nextSibling).toHaveTextContent('1')
   })
 

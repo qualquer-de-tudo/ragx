@@ -83,7 +83,7 @@ def test_on_instala_o_grupo_pretooluse_com_matcher_ao_lado_do_sessionstart(casa:
     runner.invoke(app, ["claude", "on"])
     runner.invoke(app, ["claude", "on"])  # idempotente
     grupos = _pretool(casa)
-    assert len(grupos) == 1 and grupos[0]["matcher"] == "Grep|Glob"
+    assert len(grupos) == 1 and grupos[0]["matcher"] == "Grep|Glob|Bash|PowerShell"
     (hook,) = grupos[0]["hooks"]
     assert hook["command"].endswith("claude nudge") and hook["timeout"] == 5
     assert "async" not in hook  # síncrono: o lembrete chega antes do resultado
@@ -230,6 +230,7 @@ def test_o_comando_da_cli_completa_tambem_funciona(tmp_path: Path, monkeypatch: 
     assert r.exit_code == 0 and "additionalContext" in r.output
 
 
+@pytest.mark.slow  # medição de tempo: sob `-n auto` os outros processos disputam a CPU e o número não diz nada
 def test_latencia_do_lembrete_dentro_do_teto(tmp_path: Path) -> None:
     raiz = _indexado(tmp_path / "proj")
     tempos = []
@@ -243,3 +244,55 @@ def test_latencia_do_lembrete_dentro_do_teto(tmp_path: Path) -> None:
     # import pesado no caminho do hook) aparece em TODAS as rodadas, então aparece no mínimo também.
     # A medição real está na task (alvo: 120 ms p50).
     assert tempos[0] < 400
+
+
+# ── buscas via Bash e PowerShell (RAGX-0201) ────────────────────────────
+@pytest.mark.parametrize("comando", [
+    "grep -rn AuthService src", "rg -n 'token' --type py", "cd backend && rg login", "find . -name '*.py'",
+    "ls -la src/", "git grep -n refresh", "LC_ALL=C grep foo bar", "cat a.txt | grep x", "/usr/bin/rg x",
+    "Get-ChildItem -Recurse *.ts", "Select-String -Path *.py -Pattern token", r"C:\tools\rg.exe foo",
+])
+def test_comando_de_busca_e_reconhecido(comando: str) -> None:
+    assert hooklight.eh_busca(comando) is True
+
+
+@pytest.mark.parametrize("comando", [
+    "npm test", "git status", "uv run pytest -q", "python -m build", "echo grep", "git commit -m 'find bug'", "",
+])
+def test_comando_que_nao_e_busca_nao_e_reconhecido(comando: str) -> None:
+    assert hooklight.eh_busca(comando) is False
+
+
+def _stdin_bash(sessao: str, cwd: Path, comando: str, ferramenta: str = "Bash") -> str:
+    return json.dumps({
+        "session_id": sessao, "cwd": str(cwd), "hook_event_name": "PreToolUse",
+        "tool_name": ferramenta, "tool_input": {"command": comando},
+    })
+
+
+def test_busca_via_bash_recebe_o_lembrete_e_outro_comando_nao_gasta_o_aviso(tmp_path: Path) -> None:
+    raiz = _indexado(tmp_path / "proj")
+    assert _nudge(_stdin_bash("b1", raiz, "npm test"), tmp_path).stdout == b""  # não é busca: cala
+    saida = _nudge(_stdin_bash("b1", raiz, "rg -n AuthService"), tmp_path).stdout
+    assert b"RAGX" in saida  # o aviso da sessão continuava disponível
+    assert _nudge(_stdin_bash("b1", raiz, "grep -rn token ."), tmp_path).stdout == b""  # uma vez por sessão
+
+
+def test_busca_via_powershell_recebe_o_lembrete(tmp_path: Path) -> None:
+    raiz = _indexado(tmp_path / "proj")
+    saida = _nudge(_stdin_bash("p1", raiz, "Get-ChildItem -Recurse -Filter *.cs", "PowerShell"), tmp_path).stdout
+    assert b"RAGX" in saida
+
+
+def test_lembrete_antigo_so_em_grep_glob_conta_como_faltando_e_o_on_atualiza(casa: Path) -> None:
+    from ragx.clients.claude_hint import has_nudge_hook
+    from ragx.clients.registry import CLIENTS
+
+    antigo = {"matcher": "Grep|Glob", "hooks": [{"type": "command", "command": "ragx claude nudge", "timeout": 5}]}
+    (casa / ".claude" / "settings.json").write_text(json.dumps({"hooks": {"PreToolUse": [antigo]}}), encoding="utf-8")
+    padrao = next(c for c in CLIENTS() if c.id == "claude-code")
+    assert has_nudge_hook(padrao) is False
+    runner.invoke(app, ["claude", "on"])
+    grupos = _pretool(casa)
+    assert len(grupos) == 1 and grupos[0]["matcher"] == "Grep|Glob|Bash|PowerShell"
+    assert has_nudge_hook(padrao) is True

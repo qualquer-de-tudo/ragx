@@ -5,7 +5,8 @@ import { createCoalescedRun } from './system/coalesced-run'
 import type { DiscoverResult as DiscoverProjectsResult } from './projects/discovery'
 import { DEFAULT_ON_KEYS, PREFERENCE_KEYS, THEMES, parsePricing, type PanelSettings, type PreferenceKey, type RendererSettings } from './settings'
 import { parseContextPreview } from './data/context-preview'
-import type { ContextPreview } from './data/types'
+import type { ContextPreview, UsageReport } from './data/types'
+import { USAGE_ARGS, USAGE_TIMEOUT_MS, createUsageCache } from './data/usage'
 import type {
   ClaudeIntegration,
   McpIntegration,
@@ -226,6 +227,12 @@ export function createHandlers(deps: HandlerDeps) {
   })
   const lightConnections = createCoalescedRun(() => runConnectionChecks(true))
 
+  // `ragx usage` é global (lê as sessões de todos os projetos): roda na pasta do usuário, no máximo uma vez a cada
+  // 10 minutos (ver `createUsageCache`).
+  const usage = createUsageCache(() =>
+    deps.runRagxCommand(os.homedir(), [...USAGE_ARGS], { timeoutMs: USAGE_TIMEOUT_MS }),
+  )
+
   let claudeChain: Promise<unknown> = Promise.resolve()
   let mcpChain: Promise<unknown> = Promise.resolve()
   const mcpIds: readonly McpClientId[] = ['codex', 'gemini', 'cursor', 'windsurf', 'claude-desktop']
@@ -382,6 +389,17 @@ export function createHandlers(deps: HandlerDeps) {
       } finally {
         inFlightPreview = false
       }
+    },
+
+    /**
+     * Consumo real lido das sessões do Claude Code (RAGX-0205), guardado por 10 minutos. `force` (o botão "Atualizar")
+     * ignora o prazo, mas não roda mais de uma vez por minuto. Só números saem daqui: a CLI nunca lê texto para fora.
+     */
+    getUsage(forceUnknown?: unknown): Promise<UsageReport> {
+      if (forceUnknown !== undefined && typeof forceUnknown !== 'boolean') {
+        throw rejected('force precisa ser booleano')
+      }
+      return usage.get(forceUnknown === true)
     },
 
     async runTrial(projectIdUnknown: unknown): Promise<TrialResult> {

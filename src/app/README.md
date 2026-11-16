@@ -26,14 +26,18 @@ instalado no sistema. Tema escuro por padrão, com claro e "seguir o sistema" co
 - **Detalhe do projeto**: no topo, antes das abas e em todas elas, a faixa
   "de relance" com as três perguntas de quem abre o projeto (RAGX-0184):
   "Está em dia?" (a resposta de `ragx status --json` em uma linha, com o
-  primeiro motivo e o botão da ação), "Economia (14 dias)" (com "Ver gráfico",
-  que abre a aba Economia; sem medição diz "Sem medição ainda", nunca 0%) e
+  primeiro motivo e o botão da ação), "Economia estimada (14 dias)" (com "Ver gráfico",
+  que abre a aba Consumo de tokens; sem medição diz "Sem medição ainda", nunca 0%) e
   "Agente usando?" (em uso agora, a última chamada ou "nenhuma chamada
   registrada"). Quatro abas. **Visão geral**: "o índice está em dia?" com os
   motivos exatos de `ragx status --json` (agora o primeiro bloco), os números
   do índice com a cobertura de embeddings e o uso pelos agentes nas últimas
-  24 horas. **Economia de tokens**: o uso real dos últimos 14 dias e a
-  simulação sob demanda (`ragx trial`). **Histórico**: a linha do tempo das
+  24 horas. **Consumo de tokens**: o **Consumo real** (RAGX-0205, de
+  `ragx usage --json`: turnos, tokens, buscas e leituras por sessão do Claude
+  Code, com e sem RAGX lado a lado, a adoção e a conversão do lembrete, com o
+  selo "observação"; guardado 10 min no processo principal, "Atualizar" no
+  máximo uma vez por minuto), depois a **Economia estimada (contra arquivos
+  inteiros)** dos últimos 14 dias e a simulação sob demanda (`ragx trial`). **Histórico**: a linha do tempo das
   indexações (quando, quem disparou, o modo, a branch e o commit), com
   "Carregar mais". **Manutenção**: "Atualizar agora", "Gerar embeddings
   faltantes" e "Reindexar do zero" (com segundo clique), o interruptor dos
@@ -380,7 +384,7 @@ ENTRADA. O RAGX não embute tabela de preços, não busca câmbio e não usa red
 painel (`pricing`, validado na leitura: moeda do conjunto, preço finito e `0 < preço <= 10000`; o resto vira ausente)
 e chega ao renderer por `getSettings`; a gravação é o canal `ragx:setPricing` (só `currency` e `perMTokInput`, `null`
 limpa). Fórmula: `max(0, baseline - delivered) / 1.000.000 x preço` (`src/money.ts`). Valor entre 0 e 0,005 aparece
-como "menos de R$ 0,01". Aparece no card de Economia, na nota de "Tokens economizados" em Projetos e em Atividade,
+como "menos de R$ 0,01". Aparece no card de Economia estimada, na nota de "Economia estimada" em Projetos e em Atividade,
 sempre com "estimativa": é só o preço de entrada, sobre o baseline estimado, sem considerar leitura de cache de
 prompt (que custa menos). Sem preço, nenhuma tela mostra dinheiro, só o convite.
 

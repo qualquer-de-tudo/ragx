@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from '../App'
 import type { RagxBridge, Snapshot, UpdateState } from '../types/ragx-bridge'
-import { snap } from '../test/snap'
+import { snap, usageReport } from '../test/snap'
 
 const project = snap({ id: 'juriflux', name: 'Juriflux' })
 
@@ -12,6 +12,7 @@ function install(settings: { onboardingDone: boolean }, snapshot: Snapshot): Rag
     onSnapshot: vi.fn(() => () => {}),
     getActivity: vi.fn().mockResolvedValue([]),
     getAdoption: vi.fn().mockResolvedValue({ since: null, sessions: 0, withCalls: 0, withoutCalls: 0, unidentified: 0, callsWithoutStart: 0, byProject: [] }),
+    getUsage: vi.fn().mockResolvedValue(usageReport()),
     onActivity: vi.fn(() => () => {}),
     getProjectStatus: vi.fn(),
     runTrial: vi.fn(),

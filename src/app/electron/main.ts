@@ -518,6 +518,7 @@ handleIpc('ragx:getAdoption', () => {
   pollActivity()
   return computeAdoption(activity.sessions(), Date.now())
 })
+handleIpc('ragx:getUsage', (force: unknown) => handlers.getUsage(force))
 handleIpc('ragx:getProjectStatus', (projectId: unknown) => handlers.getProjectStatus(projectId))
 handleIpc('ragx:runTrial', (projectId: unknown) => handlers.runTrial(projectId))
 handleIpc('ragx:previewContext', (projectId: unknown, question: unknown) => handlers.previewContext(projectId, question))

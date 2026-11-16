@@ -187,6 +187,8 @@ function Chart({ days }: { days: SavingsDay[] }) {
 }
 
 /**
+ * ESTIMATIVA, não medição (RAGX-0205): o consumo real das sessões fica no card "Consumo real", acima deste.
+ *
  * Tokens que os agentes gastariam lendo os arquivos inteiros ("sem RAGX")
  * contra o que o `build_context` de fato entregou ("com RAGX"), por dia. Os
  * dois números vêm do log do servidor MCP, do uso real, a partir da versão
@@ -212,7 +214,7 @@ export function TokenSavings({
     <section className="card detail-card savings" aria-labelledby={titleId}>
       <div className="card-head">
         <h2 className="card-title" id={titleId}>
-          Economia de tokens
+          Economia estimada (contra arquivos inteiros)
         </h2>
         <span className="hint">últimos {savings?.days.length ?? 14} dias</span>
       </div>

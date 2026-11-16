@@ -23,6 +23,8 @@ import { SessionList } from '../components/activity/SessionList'
 import { groupSessions } from '../sessions'
 import { AdoptionSection } from '../components/activity/AdoptionSection'
 import { useAdoption } from '../hooks/useAdoption'
+import { useUsage } from '../hooks/useUsage'
+import { ActivityRealUsage } from '../components/usage/RealUsage'
 
 type ActivityView = 'eventos' | 'sessoes'
 
@@ -98,6 +100,9 @@ export function ActivityPage({
   const shown = useMemo(() => filterEvents(events, kind, projectId), [events, kind, projectId])
   const t = useMemo(() => totals(events), [events])
   const adoption = useAdoption(events)
+  const usage = useUsage()
+  // Com o consumo real lido das sessões, a adoção vem dele; sem ele (CLI antiga, nenhuma sessão), do log do servidor.
+  const realUsage = usage.report !== null && usage.report.overall.sessions > 0
   const sessions = useMemo(() => (view === 'sessoes' ? groupSessions(shown) : []), [view, shown])
   const pageSize = view === 'sessoes' ? SESSIONS_PER_PAGE : EVENTS_PER_PAGE
   const total = view === 'sessoes' ? sessions.length : shown.length
@@ -134,18 +139,19 @@ export function ActivityPage({
         <Stat label="Chamadas MCP" value={formatNumber(mcpCalls)} note="últimas 24 h" />
         <Stat label="Sessões do Claude" value={formatNumber(t.sessions)} note={`${formatNumber(t.cliCommands)} comando(s) no terminal`} />
         <Stat
-          label="Tokens economizados"
+          label="Economia estimada"
           value={formatCompact(Math.max(0, t.baseline - t.delivered))}
           note={
             economia === null
               ? 'sem medição ainda'
-              : `${formatPercent(economia)} menos que ler os arquivos${money ? ` · ${money} (estimativa)` : ''}`
+              : `${formatPercent(economia)} menos que os arquivos inteiros${money ? ` · ${money} (estimativa)` : ''}`
           }
         />
         <Stat label="Projetos em uso" value={formatNumber(t.projects)} note={`de ${formatNumber(projects.length)}`} />
       </div>
 
-      {adoption && <AdoptionSection adoption={adoption} />}
+      <ActivityRealUsage state={usage} />
+      {!realUsage && adoption && <AdoptionSection adoption={adoption} />}
 
       {running.length > 0 && (
         <Section title="Em andamento">

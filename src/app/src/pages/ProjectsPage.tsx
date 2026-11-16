@@ -202,7 +202,7 @@ export function ProjectsPage({
           <Stat label="Projetos" value={formatNumber(projects.length)} />
           <Stat label="Chamadas MCP" value={formatNumber(resumo.chamadas)} note="últimas 24 h" />
           <Stat
-            label="Tokens economizados"
+            label="Economia estimada"
             value={formatCompact(resumo.economizados)}
             note={
               pricing && resumo.economizados > 0

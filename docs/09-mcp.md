@@ -310,8 +310,10 @@ defasados, e o agente chama `refresh`. Sem fila pendente a resposta não ganha n
   p95 2.601, nenhuma acima de 5.000.
 - **`response_format`** (`concise` | `detailed`; padrão `[mcp] response_format`, hoje `concise`) em
   `search_hybrid`, `search_knowledge` e `build_context`. Na **busca**, `concise` devolve um `snippet`
-  (os primeiros `snippet_chars` = 140 do conteúdo, cortados em fim de linha ou de palavra, com `…`) no
-  lugar de `content`; `detailed` devolve `content`, como antes. O agente abre o trecho inteiro com
+  de **uma linha** (a primeira linha com texto do trecho, até `snippet_chars` = 140, com `…`) no lugar de
+  `content`, e sem `matched_by`; `detailed` devolve `content` e `matched_by`, como antes. A busca traz
+  **5 resultados por padrão** (`limit` vai até o teto). Uma busca do RAGX não pode custar mais do que um
+  grep (RAGX-0203): no Juriflux, o grep devolvia ~400 tokens e a busca ~2.200. O agente abre o trecho inteiro com
   `get_chunk`. No **`build_context`**, `concise` entrega só o contexto; `detailed` acrescenta `intent`,
   `fragments_meta` (id, linhas, tokens, estratégia, motivo, score, **sem** conteúdo), `dropped`
   agrupado por motivo e `stats`.
@@ -324,7 +326,8 @@ defasados, e o agente chama `refresh`. Sem fila pendente a resposta não ganha n
 | `json` | `detailed` | `fragments` + `intent`, `fragments_meta`, `dropped`, `stats` |
 
 Medido (tiktoken, este repositório): `search_hybrid` com 10 hits, **2.915 → 1.108 tokens (−62%)** com
-`snippet_chars = 140` (com 200, −56,8%); `build_context(tokens=20000)` entrega 5.083 tokens no fio
+`snippet_chars = 140` (com 200, −56,8%); com 5 hits de uma linha (RAGX-0203, 10 consultas no fio do `slim`),
+mediana **1.027 → 367 tokens (−64%)**, máximo 475; `build_context(tokens=20000)` entrega 5.083 tokens no fio
 (`estimated_tokens` 4.503, `budget` 5.000). O VS Code pede `detailed`, porque mostra o conteúdo.
 
 Medido com `scripts/medir_fio.py` (tiktoken, este repositório; antes → depois, texto da resposta,
@@ -334,19 +337,20 @@ chars (−18,4%); `get_dictionary` 36.713 → 21.530 (−41,4%); `get_document` 
 
 ## Perfis (RAGX-0157)
 
-O servidor expõe 33 ferramentas no perfil `full` (e 6 no `slim`, **o padrão desde a v1.0.0**), mas só `build_context`, `search_hybrid`,
+O servidor expõe 33 ferramentas no perfil `full` (e 7 no `slim`, **o padrão desde a v1.0.0**), mas só `build_context`, `search_hybrid`,
 `get_dictionary`, `get_playbook` e `sync` aparecem nos logs e nos transcripts de uso real: as outras 28
 custam tokens em todo turno e quase nunca são chamadas. O custo fixo (nome + descrição + schema de
 entrada de cada ferramenta, no prompt de TODA requisição ao modelo) é **~2.600 tokens** no `full`.
 
-O perfil **`slim`**, o padrão, expõe 6, com os mesmos nomes e argumentos do `full`, e custa **~370 tokens**
-(−86%):
+O perfil **`slim`**, o padrão, expõe 7, com os mesmos nomes e argumentos do `full`, e custa **~435 tokens**
+(−84%; eram 6 e ~385 tokens até o mapa de arquivo entrar, RAGX-0203):
 
 | Ferramenta | Para quê |
 |---|---|
 | `get_dictionary` | o mapa barato do projeto; por onde começar |
 | `search_hybrid` | localizar |
 | `build_context` | montar o contexto de uma tarefa dentro de um orçamento de tokens |
+| `get_document` | o mapa de um arquivo: símbolos e linhas de cada trecho, sem conteúdo, para ler só o intervalo útil |
 | `get_chunk` | abrir o texto completo de um resultado |
 | `get_entity` | quem chama / de quem depende um símbolo |
 | `refresh` | reindexar o que mudou (em modo leitura responde `write_disabled`) |

@@ -107,6 +107,60 @@ export interface ContextPreview {
   dropped: Array<{ why: string; count: number }>
 }
 
+/** Números de sessão do Claude Code (RAGX-0205): medianas ou totais. Resultados em caracteres. */
+export interface UsageMetrics {
+  turns: number
+  prompts: number
+  inputTokens: number
+  cacheReadTokens: number
+  cacheCreationTokens: number
+  outputTokens: number
+  totalTokens: number
+  searchCalls: number
+  readCalls: number
+  ragxCalls: number
+  otherCalls: number
+  imageReads: number
+  searchResultChars: number
+  readResultChars: number
+  ragxResultChars: number
+}
+
+export interface UsageGroup {
+  sessions: number
+  /** `null` quando o grupo não tem sessão: não há mediana. */
+  median: UsageMetrics | null
+  total: UsageMetrics
+}
+
+export interface UsageBlock {
+  sessions: number
+  firstAt: string | null
+  lastAt: string | null
+  all: UsageGroup
+  withRagx: UsageGroup
+  withoutRagx: UsageGroup
+  adoption: { sessions: number; withRagx: number; hinted: number; reminded: number; ragxAfterReminder: number }
+}
+
+export interface UsageProject extends UsageBlock {
+  /** Id do projeto no hub; `null` para um projeto fora do registro. */
+  id: string | null
+  name: string
+}
+
+/** `ragx usage --json` (RAGX-0205): consumo real lido das sessões do Claude Code. Observação, não experimento. */
+export interface UsageReport {
+  days: number
+  since: string | null
+  generatedAt: string | null
+  charsPerToken: number
+  sessionsScanned: number
+  sessionsOutsideProjects: number
+  overall: UsageBlock
+  projects: UsageProject[]
+}
+
 /** Adoção (RAGX-0190): só contagens, datas e ids de projeto. `since` é o evento mais antigo realmente lido. */
 export interface AdoptionSummary {
   since: string | null

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { useSnapshot } from '../useSnapshot'
 import type { Snapshot } from '../../types/ragx-bridge'
+import { usageReport } from '../../test/snap'
 
 const emptySnapshot: Snapshot = { projects: [], generatedAt: '2026-09-21T10:00:00Z' }
 
@@ -21,6 +22,7 @@ describe('useSnapshot', () => {
       }),
       getActivity: vi.fn().mockResolvedValue([]),
       getAdoption: vi.fn().mockResolvedValue({ since: null, sessions: 0, withCalls: 0, withoutCalls: 0, unidentified: 0, callsWithoutStart: 0, byProject: [] }),
+      getUsage: vi.fn().mockResolvedValue(usageReport()),
       onActivity: vi.fn(() => () => {}),
       getProjectStatus: vi.fn(),
       runTrial: vi.fn(),

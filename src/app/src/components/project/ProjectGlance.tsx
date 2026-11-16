@@ -73,7 +73,7 @@ function glanceBlocks(args: GlanceProps): GlanceBlock[] {
     },
     {
       id: 'savings',
-      title: 'Economia (14 dias)',
+      title: 'Economia estimada (14 dias)',
       body: (
         <>
           <div className="glance-main">

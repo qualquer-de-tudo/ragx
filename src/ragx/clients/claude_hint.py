@@ -37,9 +37,10 @@ SUBAGENT_EVENT = "SubagentStart"
 #: O segundo hook (RAGX-0141): depois de cada edição de arquivo, avisa o RAGX para reindexá-lo.
 TOUCH_EVENT = "PostToolUse"
 TOUCH_MATCHER = "Edit|Write|MultiEdit"
-#: O terceiro (RAGX-0160): no momento do `Grep`/`Glob`, uma vez por sessão, lembra que há índice.
+#: O terceiro (RAGX-0160): na primeira busca da sessão, lembra que há índice. Bash e PowerShell entram porque o
+#: agente busca muito mais por eles do que pelo Grep (RAGX-0201); o próprio hook cala quando o comando não é busca.
 NUDGE_EVENT = "PreToolUse"
-NUDGE_MATCHER = "Grep|Glob"
+NUDGE_MATCHER = "Grep|Glob|Bash|PowerShell"
 
 #: Reconhece a entrada do RAGX mesmo que o executável gravado mude de lugar.
 _NOSSO = re.compile(r"ragx(\.exe)?\"?\s+claude\s+hint\s*$", re.IGNORECASE)
@@ -287,7 +288,7 @@ def _remover(client: Client, event: str, eh_nosso: Any, rotulo: str, dry_run: bo
         return Result(client, Outcome.FAILED, f"não consegui escrever {path}: {exc}")
 
 
-def _tem(client: Client, event: str, eh_nosso: Any) -> bool:
+def _tem(client: Client, event: str, eh_nosso: Any, matcher: str | None = None) -> bool:
     path = claude_settings(client)
     try:
         dados = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
@@ -296,7 +297,12 @@ def _tem(client: Client, event: str, eh_nosso: Any) -> bool:
     grupos = ((dados or {}).get("hooks") or {}).get(event) if isinstance(dados, dict) else None
     if not isinstance(grupos, list):
         return False
-    return any(eh_nosso(h) for g in grupos if isinstance(g, dict) for h in g.get("hooks") or [])
+    return any(
+        eh_nosso(h)
+        for g in grupos
+        if isinstance(g, dict) and (matcher is None or g.get("matcher") == matcher)
+        for h in g.get("hooks") or []
+    )
 
 
 def install_touch_hook(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
@@ -328,7 +334,7 @@ def _entrada_de_lembrete(command: str) -> dict[str, Any]:
 
 
 def install_nudge_hook(client: Client, command: str = "ragx", dry_run: bool = False) -> Result:
-    """Põe (ou corrige) o hook `PreToolUse` em `Grep|Glob` que lembra do índice, uma vez por sessão."""
+    """Põe (ou corrige, inclusive o matcher antigo `Grep|Glob`) o hook `PreToolUse` que lembra do índice."""
     return _instalar(client, _entrada_de_lembrete(command), NUDGE_EVENT, _eh_nosso_nudge, "lembrete de busca", dry_run)
 
 
@@ -337,7 +343,9 @@ def remove_nudge_hook(client: Client, dry_run: bool = False) -> Result:
 
 
 def has_nudge_hook(client: Client) -> bool:
-    return _tem(client, NUDGE_EVENT, _eh_nosso_nudge)
+    """Instalado E com o matcher atual: um lembrete só em `Grep|Glob` (versões antigas) conta como faltando, e o
+    `ragx claude heal` o atualiza."""
+    return _tem(client, NUDGE_EVENT, _eh_nosso_nudge, NUDGE_MATCHER)
 
 
 # ── o texto (uma só fonte: `ragx.hooklight`, que roda sem importar a CLI) ──

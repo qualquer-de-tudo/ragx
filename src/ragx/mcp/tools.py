@@ -27,7 +27,7 @@ _SCOPE_PATTERN = r"^(current|all|project:[\w.\-]{1,64})$"
 # ── contratos ───────────────────────────────────────────────────────────
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=1000)
-    limit: int = Field(default=10, ge=1, le=MAX_LIMIT)
+    limit: int = Field(default=5, ge=1, le=MAX_LIMIT)
     lang: str | None = Field(default=None, max_length=32)
     kind: Literal["file", "class", "function", "method", "section", "statement", "block"] | None = None
     path_glob: str | None = Field(default=None, max_length=200)

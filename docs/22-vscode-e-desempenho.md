@@ -254,3 +254,29 @@ responde em milissegundos, então o custo que importa é o das voltas extras do
 modelo e o schema das ferramentas em cada requisição — nenhum dos dois aparece
 no log do servidor. `ragx claude off` desliga o RAGX para todos os projetos, e
 `ragx claude on` o devolve.
+
+### Consumo real de tokens (`ragx usage`)
+
+`ragx perf` mede tempo; `ragx usage` mede **tokens**, das mesmas sessões
+([14 — CLI](14-cli.md#medir-e-desligar-o-ragx-no-claude-code)). O número de economia que o
+painel mostrava (arquivos inteiros − entregue pelo `build_context`) é um contrafactual que
+superestima: o agente quase nunca lê o arquivo inteiro. O Claude Code já grava, por resposta do
+modelo, a entrada, o cache lido, o cache gravado e a saída, e cada chamada de ferramenta com o
+seu resultado. `ragx usage` soma isso por sessão e projeto (todos os perfis, subagentes
+incluídos) e põe lado a lado as medianas das sessões com e sem RAGX: turnos, tokens, buscas,
+leituras e o tamanho do que elas devolveram. É onde o custo de verdade aparece: cada resultado
+fica no contexto e é relido do cache a cada turno, então o que pesa é o número de turnos e o
+tamanho dos resultados, não o tempo do servidor.
+
+No painel, a aba **Consumo de tokens** do projeto abre com o card **Consumo real** (com e sem
+RAGX, adoção e quantas sessões chamaram o RAGX depois do lembrete), e a **Atividade** mostra o
+mesmo para todos os projetos. Os dois levam o selo "observação": com e sem RAGX são tarefas
+diferentes, e a diferença não prova causa. O número antigo continua embaixo, como **Economia
+estimada (contra arquivos inteiros)**.
+
+O painel não abre mais processos por isso: o resultado de `ragx usage --json` fica guardado no
+processo principal por 10 minutos (o "Atualizar" pede de novo, no máximo uma vez por minuto), e
+uma falha também espera 10 minutos antes de tentar de novo. Na CLI, os números de cada
+transcript ficam em cache até o arquivo mudar: a primeira leitura de 14 dias, com centenas de MB
+de sessões, leva dezenas de segundos; as seguintes, ~2 s. Só números saem dos transcripts, nunca
+texto, comando ou caminho de arquivo.

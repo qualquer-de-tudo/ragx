@@ -46,6 +46,7 @@ describe('preload', () => {
         'getProjectStatus',
         'getSettings',
         'getSnapshot',
+        'getUsage',
         'listJobs',
         'onActivity',
         'onConnections',
@@ -96,6 +97,18 @@ describe('preload', () => {
     electron.invoke.mockClear()
     await ragx.runOllamaBenchmark('x; rm -rf /')
     expect(electron.invoke).toHaveBeenCalledWith('ragx:run-ollama-benchmark')
+  })
+
+  it('getUsage manda só um booleano: qualquer outro valor vira false', async () => {
+    electron.invoke.mockClear()
+    await ragx.getUsage()
+    await ragx.getUsage(true)
+    await ragx.getUsage('--project C:/x')
+    expect(electron.invoke.mock.calls).toEqual([
+      ['ragx:getUsage', false],
+      ['ragx:getUsage', true],
+      ['ragx:getUsage', false],
+    ])
   })
 
   it('o interruptor do Claude Code usa os canais certos', async () => {

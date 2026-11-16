@@ -172,6 +172,22 @@ def _chave(pasta: Path) -> str:
     return os.path.normcase(os.path.abspath(pasta))
 
 
+def claude_profiles() -> list[Client]:
+    """Os perfis do Claude Code presentes nesta máquina (o padrão primeiro)."""
+    return [c for c in CLIENTS() if c.id.split(":", 1)[0] == CLAUDE_CODE and c.installed]
+
+
+def claude_profile_name(client: Client) -> str:
+    """`padrão` para `~/.claude`; o nome do perfil (`empresa`) nos outros."""
+    return client.id.split(":", 1)[1] if ":" in client.id else "padrão"
+
+
+def claude_profile_dir(client: Client) -> Path:
+    """A pasta do perfil, onde ficam `settings.json` e `projects/`: `~/.claude` no padrão, a do
+    `CLAUDE_CONFIG_DIR` nos outros."""
+    return client.config.parent / ".claude" if ":" not in client.id else client.config.parent
+
+
 def added_profiles_file(home: Path | None = None) -> Path:
     """Onde ficam as pastas de perfil do Claude Code adicionadas à mão."""
     return (home or _home()) / ".ragx" / "claude-profiles.json"
@@ -458,12 +474,38 @@ def register(
         return Result(client, Outcome.ABSENT, "não encontrado nesta máquina")
     try:
         if client.fmt == "toml":
-            return _aplicar_toml(client, command, args, dry_run)
-        return _aplicar_json(client, command, args, dry_run)
+            resultado = _aplicar_toml(client, command, args, dry_run)
+        else:
+            resultado = _aplicar_json(client, command, args, dry_run)
     except PermissionError as exc:
         return Result(client, Outcome.FAILED, f"sem permissão: {exc}")
     except OSError as exc:
         return Result(client, Outcome.FAILED, str(exc))
+    return _com_instrucoes(resultado, dry_run, ligar=True)
+
+
+def _com_instrucoes(resultado: Result, dry_run: bool, ligar: bool) -> Result:
+    """Codex e Gemini não têm hook: o bloco de instruções do usuário acompanha o registro (RAGX-0202).
+
+    Falha ao escrever o bloco nunca desfaz o registro do MCP: vira só uma nota no detalhe.
+    """
+    from ragx.clients import instructions
+
+    client = resultado.client
+    if dry_run or not resultado.ok or instructions.instruction_file(client.id) is None:
+        return resultado
+    home = client.config.parent.parent
+    try:
+        mudou = instructions.apply(client.id, home) if ligar else instructions.remove(client.id, home)
+    except OSError as exc:
+        return Result(client, resultado.outcome, f"{resultado.detail}; instruções não gravadas: {exc}", resultado.backup)
+    if mudou is None:
+        return resultado
+    nota = f"instruções em {Path(mudou).name}" if ligar else f"instruções retiradas de {Path(mudou).name}"
+    outcome = resultado.outcome
+    if outcome is Outcome.UNCHANGED:
+        outcome = Outcome.UPDATED if ligar else Outcome.REMOVED
+    return Result(client, outcome, f"{resultado.detail}; {nota}" if resultado.detail else nota, resultado.backup)
 
 
 def _filtrar(alvos: tuple[Client, ...], only: list[str]) -> tuple[Client, ...]:
@@ -609,8 +651,8 @@ def unregister(client: Client, dry_run: bool = False) -> Result:
         return Result(client, Outcome.ABSENT, "não encontrado nesta máquina")
     try:
         if client.fmt == "toml":
-            return _remover_toml(client, dry_run)
-        return _remover_json(client, dry_run)
+            return _com_instrucoes(_remover_toml(client, dry_run), dry_run, ligar=False)
+        return _com_instrucoes(_remover_json(client, dry_run), dry_run, ligar=False)
     except PermissionError as exc:
         return Result(client, Outcome.FAILED, f"sem permissão: {exc}")
     except OSError as exc:

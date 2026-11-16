@@ -19,11 +19,14 @@ app = typer.Typer(no_args_is_help=True)
 @app.command("status")
 def status(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Lista clientes detectados e o registro do RAGX, sem alterar configurações."""
+    from ragx.clients import instructions
     from ragx.clients.registry import CLIENTS, is_registered
 
     payload = [
         {"id": c.id, "label": c.label, "installed": c.installed,
-         "enabled": is_registered(c), "config": str(c.config)}
+         "enabled": is_registered(c), "config": str(c.config),
+         # Codex e Gemini: o bloco de instruções do usuário (RAGX-0202); `null` para quem não tem esse arquivo.
+         "instructions": instructions.present(c.id, c.config.parent.parent)}
         for c in CLIENTS()
     ]
     if as_json:

@@ -23,8 +23,9 @@ de carregá-las por ToolSearch. A dica usa o `cwd` do evento; volta em `resume`,
 `clear` e `compact`. `ragx claude heal` completa os hooks em perfis já ligados,
 respeitando recusas e preservando os hooks da pessoa.
 
-O lembrete em `PreToolUse` (`Grep|Glob`) é independente por agente. Ele não cobre
-buscas feitas pelo Bash e não força o modelo a consultar. Registro do MCP e entrega
+O lembrete em `PreToolUse` (`Grep|Glob|Bash|PowerShell`) é independente por agente. No Bash e no PowerShell
+ele só dispara quando o comando é de busca (RAGX-0201: no Juriflux, 12.962 buscas via Bash contra 1.599 pelo
+Grep). Ele não força o modelo a consultar. Registro do MCP e entrega
 da dica não comprovam uso: a prova são chamadas nos logs. O evento `nudge` é um
 lembrete e não conta como consulta na adoção do painel. Economia precisa de uma
 consulta com baseline e tokens entregues; só abrir sessões não gera medição.

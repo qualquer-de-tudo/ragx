@@ -17,6 +17,8 @@ import { parseProjectStatus, reasonText, statusChangeKey, UNKNOWN_FRESHNESS_TEXT
 import { enqueue } from '../jobs'
 import { embeddingAttention } from '../projectMetrics'
 import { useAdoption } from '../hooks/useAdoption'
+import { useUsage } from '../hooks/useUsage'
+import { ProjectRealUsage } from '../components/usage/RealUsage'
 import { Badge } from '../components/shell/Badge'
 import { Section, Stat } from '../components/shell/Card'
 import { LivePill } from '../components/shell/LivePill'
@@ -391,7 +393,13 @@ export function ProjectPage({
 }) {
   const status = useProjectStatus(project)
   const adoption = useAdoption(NO_EVENTS)
-  const projectAdoption = adoption?.byProject.find((p) => p.projectId === project?.id) ?? null
+  const usage = useUsage()
+  // A adoção vem das sessões do Claude Code quando há (RAGX-0205); senão, do log do servidor MCP.
+  const fromSessions = usage.report?.projects.find((p) => p.id === project?.id) ?? null
+  const projectAdoption =
+    fromSessions !== null && fromSessions.sessions > 0
+      ? { withCalls: fromSessions.adoption.withRagx, sessions: fromSessions.adoption.sessions }
+      : (adoption?.byProject.find((p) => p.projectId === project?.id) ?? null)
   const freshness = status.phase === 'ok' ? status.status.freshness : null
   // O selo e "Está em dia?" usam a mesma regra (`withFreshness`): arquivo alterado sem commit também deixa "Defasado".
   const state = useMemo(
@@ -451,6 +459,7 @@ export function ProjectPage({
       </TabPanel>
 
       <TabPanel id="economia" idPrefix={tabsId} active={tab === 'economia'}>
+        <ProjectRealUsage projectId={project.id} state={usage} />
         <TokenSavings projectId={project.id} projectPath={project.path} savings={project.telemetry.savings} />
         {project.exists && project.path !== null && <ContextPreview key={project.id} projectId={project.id} />}
       </TabPanel>
@@ -485,7 +494,7 @@ export function ProjectPage({
  */
 const PROJECT_TABS: readonly TabItem<ProjectTab>[] = [
   { id: 'geral', label: 'Visão geral' },
-  { id: 'economia', label: 'Economia de tokens' },
+  { id: 'economia', label: 'Consumo de tokens' },
   { id: 'historico', label: 'Histórico' },
   { id: 'manutencao', label: 'Manutenção' },
 ]
