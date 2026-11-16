@@ -165,6 +165,86 @@ def iter_paths(
         yield from _examinar(path, root, gate, max_bytes, fingerprints, "", verdicts)
 
 
+def iter_selecao(
+    root: Path,
+    gate: SecurityGate,
+    arquivos: Iterable[str],
+    pastas: Iterable[str] = (),
+    max_bytes: int = 1_048_576,
+    fingerprints: dict[str, tuple[int, int]] | None = None,
+    unreadable_dirs: set[str] | None = None,
+    verdicts: Verdicts | None = None,
+) -> Iterator[WalkedFile | Candidate]:
+    """Como `iter_candidates`, mas só para os caminhos que o git apontou (RAGX-0198).
+
+    É o caminho rápido do índice sem mudança: em vez de percorrer a árvore, olha os arquivos que o
+    git diz que mudaram e varre só as `pastas` que ele entrega inteiras (repositório aninhado, pasta
+    que o git ignora e o RAGX não poda). Cada arquivo passa pelas MESMAS decisões da varredura
+    (`_decidir`: ignore, veredito guardado, `unchanged`, tamanho, nome; depois `read_candidate`, que
+    lê e passa pelo Gate) e pelas mesmas recusas de alcance de `iter_paths` (ancestral link ou podado,
+    caminho que sai da raiz). Só muda QUAIS arquivos entram na fila. Link simbólico nunca é seguido:
+    com `follow_symlinks`, o chamador nem usa este caminho.
+
+    Arquivo que não existe não é emitido (o chamador trata como removido). Cada caminho sai uma vez,
+    na ordem das pastas e depois dos arquivos.
+    """
+    root = Path(root).resolve()
+    emitidos: set[str] = set()
+
+    def _pasta_ilegivel(pasta: Path) -> None:
+        if unreadable_dirs is not None:
+            rel_dir = pasta.relative_to(root).as_posix()
+            unreadable_dirs.add("" if rel_dir == "." else rel_dir)
+
+    for bruta in sorted(set(pastas)):
+        pasta = normalizar_caminho(bruta.rstrip("/"))
+        if pasta is None or not _pasta_alcancavel(root, pasta, gate):
+            continue
+        visited: set[tuple[int, int]] = set()
+        for path in _walk(root, False, visited, gate.ignore.can_prune, _pasta_ilegivel, start=root / pasta):
+            rel = path.relative_to(root).as_posix()
+            if rel in emitidos:
+                continue
+            emitidos.add(rel)
+            decidido = _decidir(path, root, gate, max_bytes, fingerprints, "", verdicts)
+            if decidido is not None:
+                yield decidido
+
+    for bruto in sorted(set(arquivos)):
+        inner = normalizar_caminho(bruto)
+        if inner is None or inner in emitidos:
+            continue
+        emitidos.add(inner)
+        path = root / inner
+        if not _alcancavel(root, inner, gate, False):
+            continue
+        try:
+            if not path.is_file():
+                continue
+        except OSError:
+            continue
+        decidido = _decidir(path, root, gate, max_bytes, fingerprints, "", verdicts)
+        if decidido is not None:
+            yield decidido
+
+
+def _pasta_alcancavel(root: Path, pasta: str, gate: SecurityGate) -> bool:
+    """A varredura (sem seguir link) entraria nesta pasta? Ancestrais e a própria pasta: nenhum link,
+    nenhuma poda, e ela existe como pasta."""
+    ancestral = root
+    partes = pasta.split("/")
+    for i, parte in enumerate(partes):
+        ancestral = ancestral / parte
+        try:
+            if is_link(ancestral) or not ancestral.is_dir():
+                return False
+        except OSError:
+            return False
+        if gate.ignore.can_prune("/".join(partes[: i + 1])):
+            return False
+    return True
+
+
 def normalizar_caminho(bruto: str) -> str | None:
     """Caminho relativo POSIX, ou `None` se não for um caminho que este módulo aceite."""
     texto = bruto.replace("\\", "/").strip()
@@ -412,11 +492,15 @@ def _walk(
     visited: set[tuple[int, int]],
     can_prune: Callable[[str], bool] | None = None,
     on_unreadable_dir: Callable[[Path], None] | None = None,
+    start: Path | None = None,
 ) -> Iterator[Path]:
     """`can_prune` pula a pasta ignorada inteira (ver `IgnoreEngine.can_prune`):
     descer num `node_modules` ou num worktree ignorado só para pular arquivo por
-    arquivo custava dezenas de minutos por commit num monorepo pnpm."""
-    stack = [root]
+    arquivo custava dezenas de minutos por commit num monorepo pnpm.
+
+    `start` (RAGX-0198) começa numa subpasta já validada por quem chama; os caminhos continuam
+    relativos a `root`, e as regras (link, poda, ciclo) são as mesmas da varredura da raiz."""
+    stack = [start if start is not None else root]
     while stack:
         current = stack.pop()
         try:

@@ -160,6 +160,9 @@ def import_package(
     # Escrita em transação única.
     now = utcnow()
     with open_db(cfg.db_path) as conn:
+        # Documento que vem do pacote não é o que o git diz da árvore local: a próxima indexação
+        # varre tudo em vez de confiar no commit registrado (RAGX-0198).
+        conn.execute("DELETE FROM meta WHERE key = 'git_snapshot'")
         if mode == "replace":
             conn.execute("DELETE FROM documents")
             conn.execute("DELETE FROM entities")

@@ -8,6 +8,9 @@ lotes já confirmados. Ver docs/04-indexacao.md.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import sys
 import time
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
@@ -25,10 +28,11 @@ from ragx.indexing.chunkers import ChunkOptions, chunk_document
 from ragx.indexing.context import ensure_context
 from ragx.indexing.embed import embed_pending
 from ragx.indexing.parallel import ParallelStats, Prepared, WorkerSpec, process_stream, resolve_jobs
-from ragx.indexing.verdicts import BLOCKED, CACHED_SKIPS
+from ragx.indexing.verdicts import BLOCKED, CACHED_SKIPS, verdict_context
 from ragx.indexing.verdicts import prepare as vprepare
 from ragx.security.gate import SecurityGate
-from ragx.storage.db import open_db, set_meta
+from ragx.security.links import is_link
+from ragx.storage.db import get_meta, open_db, set_meta
 from ragx.storage.repositories import (
     ChunkRepo,
     DocumentRepo,
@@ -36,7 +40,14 @@ from ragx.storage.repositories import (
     SecurityEventRepo,
     VerdictRepo,
 )
-from ragx.walk import WalkedFile, iter_candidates, iter_files, iter_paths, normalizar_caminho
+from ragx.walk import (
+    WalkedFile,
+    iter_candidates,
+    iter_files,
+    iter_paths,
+    iter_selecao,
+    normalizar_caminho,
+)
 
 VALID_SOURCES = frozenset({
     "cli", "panel", "watch", "sync", "mcp:refresh", "mcp:index",
@@ -74,6 +85,10 @@ class IndexReport:
     #: caminhos de documentos indexados, alterados, bloqueados ou removidos na rodada (RAGX-0151):
     #: é o que o grafo incremental precisa para atualizar só o que mudou
     touched_documents: list[str] = field(default_factory=list)
+    #: como a rodada achou os arquivos (RAGX-0198): "git" (só o que o git diz que mudou) ou "full"
+    #: (a árvore inteira); `scan_fallback` diz por que não foi pelo git, quando podia ter sido
+    scan_mode: str = "full"
+    scan_fallback: str | None = None
 
 
 MAX_PENDING_RERUNS = 3
@@ -90,12 +105,16 @@ def index_project(
     wait_s: float = 0.0,
     on_event: Callable[[dict[str, Any]], None] | None = None,
     upgrade_coarse: bool | None = None,
+    full_scan: bool = False,
 ) -> IndexReport:
     """`upgrade_coarse`: completar o float32 de vetores só grosseiros (os importados de `knowledge/`).
 
     `None` (padrão): só quando a pessoa pede (`--embed-only`) ou roda `ragx index` / o painel. Hooks,
     `watch`, `touch` e o `refresh` do agente NÃO o fazem: reembutir milhares de chunks em segundo
     plano, depois de um `ragx sync` que os deixou de propósito grosseiros, seria uma surpresa.
+
+    `full_scan` (RAGX-0198): varre a árvore inteira mesmo quando o git poderia dizer o que mudou
+    (`ragx index --full-scan`). Diferente de `full`, continua incremental: arquivo sem mudança não é relido.
     """
     if source not in VALID_SOURCES:
         raise UsageError(f"origem desconhecida: {source}")
@@ -123,7 +142,8 @@ def index_project(
     budget = MAX_PENDING_RERUNS
     try:
         report = _index_once(
-            cfg, full, dry_run, progress, embed, embed_only, source, on_event, upgrade_coarse
+            cfg, full, dry_run, progress, embed, embed_only, source, on_event, upgrade_coarse,
+            full_scan=full_scan,
         )
         budget = _drain_pending(cfg, state_dir, budget, report)
     finally:
@@ -256,6 +276,10 @@ def _index_paths_once(
             if ultima is not None and ultima[1] else None
         )
         run_id = runs.start("paths", source, git)
+        # O que entra por caminho pode ser conteúdo que o git nunca vai apontar (editado e depois
+        # desfeito com `git checkout`): a próxima rodada pelo git olha esses arquivos de novo (RAGX-0198).
+        _reolhar_depois(conn, rels)
+        conn.commit()
         run_error: str | None = None
         verdicts = vprepare(conn, cfg, full=False, dry_run=False, only=pedidos)
         ctx = _Ctx(
@@ -389,6 +413,7 @@ def _index_once(
     source: str = "cli",
     on_event: Callable[[dict[str, Any]], None] | None = None,
     upgrade_coarse: bool = True,
+    full_scan: bool = False,
 ) -> IndexReport:
     gate = SecurityGate(
         cfg.root,
@@ -415,9 +440,38 @@ def _index_once(
         seen_paths: set[str] = set()
         unreadable_dirs: set[str] = set()
         mode = "embed-only" if embed_only else ("full" if full else "incremental")
-        run_id = None if dry_run else runs.start(mode, source, gitinfo.read_state(cfg.root))
+        # RAGX-0198: perguntar ao git o que mudou desde o commit do índice, em vez de varrer a árvore.
+        # O registro do commit sai do banco AGORA e só volta no fim de uma rodada que terminou: uma
+        # rodada interrompida no meio deixa a próxima na varredura completa, sem adivinhar.
+        git_mud: gitinfo.Mudancas | None = None
+        plano: _Plano | None = None
+        contexto = ""
+        inicio_ns = time.time_ns()
+        if dry_run:
+            git_state = None
+        elif embed_only:
+            git_state = gitinfo.read_state(cfg.root)
+        else:
+            contexto = _contexto_git(cfg, gate)
+            guardado = _ler_registro_git(conn, cfg)
+            motivo = _motivo_sem_atalho(cfg, full, full_scan)
+            registro = _motivo_registro(guardado, contexto)
+            git_mud = gitinfo.mudancas(
+                cfg.root, desde=guardado["commit"] if motivo is None and registro is None and guardado else None
+            )
+            motivo = motivo or git_mud.motivo or registro
+            if motivo is None and guardado is not None:
+                plano, motivo = _planejar(cfg, gate, git_mud, guardado, known)
+            report.scan_mode = "git" if plano is not None else "full"
+            report.scan_fallback = None if plano is not None else motivo
+            _apagar_registro_git(conn)
+            git_state = git_mud.estado
+        run_id = None if dry_run else runs.start(mode, source, git_state)
         run_error: str | None = None
         fonte: Iterator[tuple[WalkedFile, Prepared | None]] | None = None
+        #: arquivos que esta rodada precisa deixar para a próxima olhar de novo (ver `_registrar_git`)
+        reolhar: set[str] = set()
+        limite_recente = inicio_ns - _FOLGA_MTIME_NS
 
         try:
             if embed_only:
@@ -444,8 +498,15 @@ def _index_once(
             )
             jobs = 1 if dry_run else resolve_jobs(cfg.index.jobs)
             stats_paralelo = ParallelStats()
+            if plano is not None:
+                # Documento fora do que o git apontou está como o índice o guardou: conta como visto e
+                # sem mudança, sem `stat` nem regra de ignore (é aí que a varredura gastava o tempo).
+                fora = [p for p in known if not plano.no_escopo(p)]
+                seen_paths.update(fora)
+                report.stats = _bump(report.stats, unchanged=len(fora))
             fonte = _all_sources(
-                cfg, gate, fingerprints, unreadable_dirs, verdicts, jobs=jobs, stats=stats_paralelo
+                cfg, gate, fingerprints, unreadable_dirs, verdicts, jobs=jobs, stats=stats_paralelo,
+                plano=plano,
             )
             for walked, pre in fonte:
                 report.stats = _bump(report.stats, files_seen=1)
@@ -453,12 +514,14 @@ def _index_once(
                     on_event({"phase": "scan", "done": report.stats.files_seen, "total": None})
                 if progress:
                     progress(report.stats.files_seen, walked.rel_path)
+                if git_mud is not None and (walked.unreadable or walked.mtime_ns >= limite_recente):
+                    reolhar.add(walked.rel_path)
 
                 _handle(ctx, walked, pre)
             report.parallel_jobs = stats_paralelo.jobs
             report.parallel_fallback = stats_paralelo.fell_back
 
-            # Documentos que sumiram do disco.
+            # Documentos que sumiram do disco (no caminho pelo git, os de fora dele já estão em `seen_paths`).
             gone = [
                 p for p in known
                 if p not in seen_paths
@@ -473,8 +536,11 @@ def _index_once(
             _flush_verdicts(ctx, gone=[
                 p for p in ctx.verdicts
                 if p not in ctx.walked and not _sob_pasta_ilegivel(p, unreadable_dirs)
+                and (plano is None or plano.no_escopo(p))
             ])
 
+            if git_mud is not None and not report.interrupted:
+                _registrar_git(conn, cfg, gate, git_mud, contexto, reolhar, unreadable_dirs)
             if not dry_run:
                 conn.commit()
 
@@ -727,6 +793,197 @@ def _sob_pasta_ilegivel(rel_path: str, pastas: set[str]) -> bool:
     return any(p == "" or rel_path == p or rel_path.startswith(p + "/") for p in pastas)
 
 
+# ── RAGX-0198: perguntar ao git o que mudou ──────────────────────────────────────────────────────
+#
+# O índice guarda, no fim de cada rodada completa que terminou, o commit em que está e uma lista curta
+# de caminhos para olhar de novo. A rodada seguinte olha só: o que difere entre aquele commit e o HEAD,
+# o que o `git status` dá como sujo agora, essa lista, e o que o git ignora mas o RAGX não (achado em
+# `git ls-files -o -i --directory`). Todo o resto do índice está como estava. Quem decide se um arquivo
+# entra continua sendo `_decidir` + Gate, arquivo por arquivo; o git só diz QUAIS arquivos olhar.
+#
+# A lista para olhar de novo cobre o que o git não vê: arquivo sujo na rodada anterior (desfeito depois
+# com `git checkout`, volta a ficar limpo para o git, mas o índice tem o conteúdo sujo), arquivo indexado
+# por caminho (`touch`, `watch`), arquivo lido com mtime recente (pode ter mudado depois do `status`),
+# arquivo ilegível ou pasta que não abriu, e o que o git ignora e o RAGX indexa (o git nunca o lista).
+
+#: Chave em `meta` com o commit do índice e o que a próxima rodada olha de novo.
+META_GIT = "git_snapshot"
+_VERSAO_REGISTRO = 1
+#: Arquivo lido com mtime a menos disto do início da rodada pode ter mudado depois do `git status` dela.
+_FOLGA_MTIME_NS = 2_000_000_000
+
+
+@dataclass(frozen=True)
+class _Plano:
+    """Os caminhos do projeto que a rodada pelo git olha; o resto do índice fica como está."""
+
+    arquivos: frozenset[str]
+    pastas: frozenset[str]
+
+    def no_escopo(self, rel: str) -> bool:
+        if rel.startswith(base_source.PREFIX + "/") or rel in self.arquivos:
+            return True
+        if not self.pastas:
+            return False
+        partes = rel.split("/")
+        return any("/".join(partes[:i]) in self.pastas for i in range(1, len(partes)))
+
+
+def _contexto_git(cfg: Config, gate: SecurityGate) -> str:
+    """Resumo de tudo que decide SE e COMO um arquivo entra: regras do Gate, config de índice, versão do
+    chunker (em `verdict_context`) e as regras de ignore carregadas agora, de todos os `.gitignore`,
+    `.dockerignore` e `.ragignore`. Se mudar, a lista do git não basta (um arquivo que não mudou pode
+    passar a entrar ou a sair), e a rodada varre tudo."""
+    fontes = [
+        [s.name, s.scope, [[str(getattr(p, "pattern", "")), p.include] for p in s.spec.patterns]]
+        for s in gate.ignore.sources
+    ]
+    dados = {
+        "v": _VERSAO_REGISTRO,
+        "veredito": verdict_context(cfg),
+        "follow_symlinks": cfg.index.follow_symlinks,
+        "chunk": [cfg.chunk.max_tokens, cfg.chunk.min_tokens],
+        "ignore": fontes,
+    }
+    return hashlib.sha256(json.dumps(dados, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+
+
+def _ler_registro_git(conn: Any, cfg: Config) -> dict[str, Any] | None:
+    bruto = get_meta(conn, META_GIT)
+    if not bruto:
+        return None
+    try:
+        dados = json.loads(bruto)
+        if (
+            dados.get("v") == _VERSAO_REGISTRO
+            and dados.get("root") == cfg.root.as_posix()
+            and isinstance(dados.get("commit"), str) and dados["commit"]
+            and isinstance(dados.get("contexto"), str)
+            and isinstance(dados.get("reolhar"), list)
+            and all(isinstance(r, str) for r in dados["reolhar"])
+        ):
+            return dict(dados)
+    except (ValueError, AttributeError):
+        pass
+    return None
+
+
+def _apagar_registro_git(conn: Any) -> None:
+    conn.execute("DELETE FROM meta WHERE key = ?", (META_GIT,))
+
+
+def _reolhar_depois(conn: Any, rels: Iterable[str]) -> None:
+    """Acrescenta caminhos à lista que a próxima rodada pelo git olha de novo (sem registro, nada a fazer)."""
+    bruto = get_meta(conn, META_GIT)
+    if not bruto:
+        return
+    try:
+        dados = json.loads(bruto)
+        dados["reolhar"] = sorted(set(dados["reolhar"]) | set(rels))
+        set_meta(conn, META_GIT, json.dumps(dados, ensure_ascii=False))
+    except (ValueError, KeyError, TypeError, AttributeError):
+        _apagar_registro_git(conn)
+
+
+def _motivo_sem_atalho(cfg: Config, full: bool, full_scan: bool) -> str | None:
+    """Por que esta rodada varre tudo por pedido ou por config (`None`: pode ir pelo git)."""
+    if full:
+        return "full"
+    if full_scan:
+        return "full_scan"
+    if cfg.index.follow_symlinks:
+        return "follow_symlinks"  # o git não segue link: o que muda do outro lado ele não vê
+    return None
+
+
+def _motivo_registro(guardado: dict[str, Any] | None, contexto: str) -> str | None:
+    """Por que o registro da rodada anterior não serve (`None`: serve)."""
+    if guardado is None:
+        return "sem_commit_guardado"
+    if guardado["contexto"] != contexto:
+        return "regras_mudaram"
+    return None
+
+
+def _ignorados_relevantes(gate: SecurityGate, mud: gitinfo.Mudancas) -> tuple[set[str], set[str]]:
+    """Do que o git ignora, o que a varredura do RAGX ainda alcançaria: arquivo que o RAGX não ignora
+    (negação no `.ragignore`, `include` da config, exclusão global do git) e pasta que ele não poda."""
+    arquivos: set[str] = set()
+    pastas: set[str] = set()
+    for entrada in mud.ignorados:
+        if entrada.endswith("/"):
+            pasta = entrada.rstrip("/")
+            if pasta and not gate.ignore.can_prune(pasta):
+                pastas.add(pasta)
+        elif not gate.ignore.should_ignore(entrada)[0]:
+            arquivos.add(entrada)
+    return arquivos, pastas
+
+
+def _planejar(
+    cfg: Config,
+    gate: SecurityGate,
+    mud: gitinfo.Mudancas,
+    guardado: dict[str, Any],
+    known: dict[str, Any],
+) -> tuple[_Plano | None, str | None]:
+    """Os caminhos que esta rodada olha, ou o motivo de varrer tudo."""
+    arquivos = set(mud.sujos) | set(mud.entre_commits)
+    pastas = set(mud.pastas_sujas)
+    for item in guardado["reolhar"]:
+        (pastas if item.endswith("/") else arquivos).add(item.rstrip("/"))
+    ign_arquivos, ign_pastas = _ignorados_relevantes(gate, mud)
+    arquivos |= ign_arquivos
+    pastas |= ign_pastas
+    for rel in mud.sujos:
+        try:
+            if is_link(cfg.root / rel):
+                return None, "link_simbolico"  # novo e não rastreado: o git não diz o modo
+        except OSError:
+            continue
+    if arquivos and sys.platform in ("win32", "darwin"):
+        # Sistema de arquivos sem diferença de caixa: o git pode dar `Src/A.py` para o que o índice
+        # guardou como `src/a.py`. Tratar como arquivo novo duplicaria o documento.
+        por_caixa = {p.casefold(): p for p in known if not p.startswith(base_source.PREFIX + "/")}
+        for rel in arquivos:
+            achado = por_caixa.get(rel.casefold())
+            if achado is not None and achado != rel:
+                return None, "caixa_divergente"
+    return _Plano(frozenset(arquivos), frozenset(pastas)), None
+
+
+def _registrar_git(
+    conn: Any,
+    cfg: Config,
+    gate: SecurityGate,
+    mud: gitinfo.Mudancas,
+    contexto: str,
+    reolhar: set[str],
+    unreadable_dirs: set[str],
+) -> None:
+    """Grava o commit em que o índice ficou e o que a próxima rodada precisa olhar de novo.
+
+    Só quando o git respondeu tudo (status e ignorados) e a raiz abriu; senão o registro continua
+    apagado e a próxima rodada varre a árvore.
+    """
+    if not mud.completo or "" in unreadable_dirs:
+        return
+    prefixo_base = base_source.PREFIX + "/"
+    ign_arquivos, ign_pastas = _ignorados_relevantes(gate, mud)
+    itens = set(mud.sujos) | ign_arquivos | {r for r in reolhar if not r.startswith(prefixo_base)}
+    pastas = set(mud.pastas_sujas) | ign_pastas | {
+        d for d in unreadable_dirs if d != base_source.PREFIX and not d.startswith(prefixo_base)
+    }
+    itens |= {p + "/" for p in pastas}
+    set_meta(conn, META_GIT, json.dumps({
+        "v": _VERSAO_REGISTRO,
+        "root": cfg.root.as_posix(),
+        "commit": mud.head,
+        "contexto": contexto,
+        "reolhar": sorted(itens),
+    }, ensure_ascii=False))
+
+
 def _worker_spec(cfg: Config) -> WorkerSpec:
     return WorkerSpec(
         root=str(cfg.root),
@@ -749,8 +1006,12 @@ def _all_sources(
     verdicts: dict[str, tuple[int, int, str, str | None]] | None = None,
     jobs: int = 1,
     stats: ParallelStats | None = None,
+    plano: _Plano | None = None,
 ) -> Iterator[tuple[WalkedFile, Prepared | None]]:
     """O projeto e, depois, o conhecimento base.
+
+    Com `plano` (RAGX-0198), o projeto entra só pelos caminhos que o git apontou (`iter_selecao`), pelas
+    mesmas decisões e pelo mesmo Gate; o conhecimento base continua varrido inteiro (não é do git do projeto).
 
     Uma única cadeia de geradores: o corpo do laço de indexação não sabe (nem
     precisa saber) de onde o arquivo veio. Cada fonte base tem o SEU gate,
@@ -761,17 +1022,25 @@ def _all_sources(
     parse e chunking rodam num pool de processos e voltam na ordem da varredura (o segundo item da tupla é o
     resultado do parse; `None` no caminho sequencial). O conhecimento base continua sequencial.
     """
-    yield from process_stream(
-        iter_candidates(
+    projeto = (
+        iter_selecao(
+            cfg.root, gate, plano.arquivos, plano.pastas,
+            max_bytes=cfg.index.max_file_bytes,
+            fingerprints=fingerprints,
+            unreadable_dirs=unreadable_dirs,
+            verdicts=verdicts,
+        )
+        if plano is not None
+        else iter_candidates(
             cfg.root, gate,
             max_bytes=cfg.index.max_file_bytes,
             follow_symlinks=cfg.index.follow_symlinks,
             fingerprints=fingerprints,
             unreadable_dirs=unreadable_dirs,
             verdicts=verdicts,
-        ),
-        gate, _worker_spec(cfg), jobs, stats,
+        )
     )
+    yield from process_stream(projeto, gate, _worker_spec(cfg), jobs, stats)
     if not cfg.base.enabled:
         return
     for name, path in base_source.active_roots(cfg):

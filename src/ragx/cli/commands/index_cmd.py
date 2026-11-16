@@ -41,6 +41,13 @@ class _Throttle:
 def index(
     path: Annotated[Path, typer.Argument()] = Path("."),
     full: Annotated[bool, typer.Option("--full", help="Ignora cache; reindexa tudo.")] = False,
+    full_scan: Annotated[
+        bool,
+        typer.Option(
+            "--full-scan",
+            help="Varre a árvore toda em vez de perguntar ao git o que mudou (continua incremental).",
+        ),
+    ] = False,
     dry_run: Annotated[bool, typer.Option("--dry-run", help="Relatório sem escrever.")] = False,
     exclude: Annotated[list[str] | None, typer.Option("--exclude")] = None,
     include: Annotated[list[str] | None, typer.Option("--include")] = None,
@@ -78,7 +85,7 @@ def index(
                 source="paths" if kw["source"] == "cli" else kw["source"],
                 wait_s=kw.get("wait_s", 0.0), on_event=kw.get("on_event"),
             )
-        return index_project(cfg, **kw)
+        return index_project(cfg, full_scan=full_scan, **kw)
 
     mode = "completa" if full else "incremental"
     if not quiet and not as_json and not progress_json:
@@ -147,6 +154,7 @@ def index(
                     "duration_ms": s.duration_ms,
                     "embedded": s.embedded, "embed_error": report.embed_error,
                     "parallel_jobs": report.parallel_jobs, "parallel_fallback": report.parallel_fallback,
+                    "scan_mode": report.scan_mode, "scan_fallback": report.scan_fallback,
                 },
                 ensure_ascii=False,
             )
@@ -181,7 +189,8 @@ def index(
         )
     if report.degraded:
         console.print(f"  [yellow]Degraded   {report.degraded:>8,}[/]   [dim]parsing caiu no fallback[/]")
-    console.print(f"\n  Tempo {s.duration_ms / 1000:.1f} s" + ("  [dim](dry-run)[/]" if dry_run else ""))
+    via = "  [dim](só o que o git diz que mudou)[/]" if report.scan_mode == "git" else ""
+    console.print(f"\n  Tempo {s.duration_ms / 1000:.1f} s" + ("  [dim](dry-run)[/]" if dry_run else via))
     console.print()
 
 

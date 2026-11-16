@@ -5,7 +5,7 @@
 
 Números medidos pelo próprio RAGX, com a data, o método e a máquina. Onde a meta não foi atingida, está dito. Onde o resultado é inconclusivo, também.
 
-**10 de 11 metas atingidas.** Atualizado em 6 de out de 2026. Máquina: Windows 11, Intel i5-13600KF, 31,8 GB de RAM, GPU AMD RX 7700 XT (Ollama).
+**12 de 12 metas atingidas.** Atualizado em 16 de nov de 2026. Máquina: Windows 11, Intel i5-13600KF, 31,8 GB de RAM, GPU AMD RX 7700 XT (Ollama).
 
 Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **melhor extremo** dela: a melhora mostrada é a menor possível.
 
@@ -26,9 +26,11 @@ Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **me
 | Métrica | Antes | Agora | Variação | Meta |
 |---|---:|---:|---:|---|
 | Contexto entregue por consulta | 7.684 tokens | **2.958 tokens** | −62% | até 3.200 tokens: atingida |
+| Tokens por busca | 1.027 tokens | **367 tokens** | −64% | até 600 tokens: atingida |
 | Custo fixo das ferramentas por sessão | 2.660 tokens | **385 tokens** | −86% | até 600 tokens: atingida |
 | Mapa do projeto, nível 0 | 8.660 tokens | **556 tokens** | −94% | até 800 tokens: atingida |
 
+- **Tokens por busca.** No Juriflux, um grep devolvia ~400 tokens e a busca do RAGX ~2.200 (sessões reais do Claude Code, nov 2026): a meta é a busca custar no máximo o que um grep custa. O valor de antes foi medido no mesmo conjunto de consultas, no commit anterior à mudança.
 
 ## Frescor
 
@@ -36,9 +38,9 @@ Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **me
 |---|---:|---:|---:|---|
 | Reindexar depois de editar 1 a 4 arquivos | 26 s | **1,77 s** | −93% | até 3 s: atingida |
 | Edição não commitada visível na busca | indefinido (indefinida: só aparecia no próximo commit ou refresh) | **1,4 s** | — | até 5 s: atingida |
-| Índice sem mudança, 20 mil arquivos | 7,6 s | **3,7 s** | −51% | até 1,5 s: **não atingida** |
+| Índice sem mudança, 20 mil arquivos | 7,6 s | **0,46 s** | −94% | até 1,5 s: atingida |
 
-- **Índice sem mudança, 20 mil arquivos.** Meta não atingida: o custo que sobra é por arquivo, em Python (stat, regras de ignore, pathlib), sem atalho seguro. Próximo passo planejado (RAGX-0198): perguntar ao git o que mudou, em vez de varrer; o git leva 0,14 s nos mesmos 20 mil arquivos.
+- **Índice sem mudança, 20 mil arquivos.** Só em repositório git: fora dele, ou quando as regras mudam, a rodada volta à varredura completa (~4–5 s em 20 mil arquivos).
 
 ## Painel
 
@@ -51,6 +53,7 @@ Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **me
 
 - **Detecção das conexões dos agentes**: mcp status --json com nove perfis/clientes locais. `PowerShell System.Diagnostics.Stopwatch envolvendo ragx mcp status --json | Out-Null, cinco execuções consecutivas na instalação editável`
 - **Contexto entregue por consulta**: build_context com orçamento de 3.000 tokens, medido no fio do MCP. `scripts/medir_fio.py --tool build_context --arg tokens=3000 (tiktoken cl100k, que não é o tokenizador do Claude)`
+- **Tokens por busca**: search_hybrid no perfil padrão (slim), 10 consultas neste repositório, medido no fio do MCP. `scripts/medir_busca.py (mediana das 10 consultas; tiktoken cl100k, que não é o tokenizador do Claude)`
 - **Custo fixo das ferramentas por sessão**: o que as ferramentas do MCP custam em toda sessão, no perfil padrão (slim). `ragx mcp tools --json, régua compacta (chars/4). O perfil full (33 ferramentas) segue em 2.723.`
 - **Mapa do projeto, nível 0**: get_dictionary: o primeiro olhar do agente no projeto. `scripts/medir_fio.py --tool get_dictionary --arg level=0 (tiktoken)`
 - **Primeira busca de uma sessão**: search_hybrid com o processo recém-aberto. `scripts/medir_mcp_frio.py --espera 5 (5 amostras)`
@@ -59,7 +62,7 @@ Quando a linha de base era uma faixa (por exemplo, 3 a 5 s), a tabela usa o **me
 - **Tempo que o git commit espera pelo hook**: parte síncrona do post-commit. `scripts/medir_hooks.py --n 12 (mediana)`
 - **Reindexar depois de editar 1 a 4 arquivos**: refresh incremental, processo já aquecido. `WriteAPI(load_config(), True).refresh() com um arquivo alterado`
 - **Edição não commitada visível na busca**: do salvar o arquivo até a busca por palavra-chave achá-lo. `ragx touch real num projeto de 40 arquivos, sondando a busca a cada 50 ms (5 rodadas)`
-- **Índice sem mudança, 20 mil arquivos**: projeto sintético de 20.000 arquivos, nenhum alterado. `scripts/medir_indice_inicial.py --arquivos 20000 --provider hashing --jobs 4 --segunda-rodada`
+- **Índice sem mudança, 20 mil arquivos**: repositório git sintético de 20.000 arquivos (com node_modules/ e build/ ignorados), nenhum alterado. `scripts/medir_sem_mudanca.py --arquivos 20000 --rodadas 5 (mediana; antes da RAGX-0198, scripts/medir_indice_inicial.py --segunda-rodada)`
 - **Processos que o painel abre por minuto**: 12 projetos, janela visível. `scripts/measure-runtime.mjs (contador de processos filhos, 12 projetos)`
 
 ## Contra um agente sem RAGX, no seu projeto
@@ -95,6 +98,18 @@ Método: `ragx bench models (cópia do índice, 9.329 chunks; nada baixado, nada
 
 ## Linha do tempo
 
+### 16 de nov de 2026 · versão a lançar: O índice sem mudança pergunta ao git o que mudou
+
+Em vez de olhar cada arquivo, a rodada incremental olha só o que o git diz que mudou desde o commit do índice (mais o que o git ignora e o RAGX indexa). 20 mil arquivos sem mudança: 4,87 s → 0,46 s, e a meta de 1,5 s, que tinha ficado de fora da v1, é atingida. No repositório do RAGX, 0,51 s → 0,33 s. O conjunto indexado é idêntico ao da varredura, que continua sendo o recuo.
+
+- Índice sem mudança, 20 mil arquivos: 7,6 s → **0,46 s**
+
+### 16 de nov de 2026 · versão a lançar: A busca passa a custar o que um grep custa
+
+Em 57 sessões reais do Claude Code num projeto grande, o agente buscou 12.962 vezes pelo terminal e quase nunca chamou o RAGX; uma busca do RAGX devolvia cerca de cinco vezes mais tokens que um grep. Agora ela traz 5 resultados de uma linha (1.027 → 367 tokens na mediana) e o lembrete de busca também dispara quando a busca é feita pelo Bash.
+
+- Tokens por busca: 1.027 tokens → **367 tokens**
+
 ### 6 de out de 2026 · versão 1.0.3: Conexões por agente e onboarding multicliente
 
 Claude Code, Codex, Gemini e outros clientes ganham controles no painel. A nova detecção local das configurações levou mediana de 495,3 ms em cinco execuções, incluindo abrir o processo da CLI; não mede latência de consulta nem economia de tokens.
@@ -119,7 +134,7 @@ Contexto 62% menor, perfil slim como padrão (385 tokens fixos), busca em 22 ms,
 - Busca com o processo aquecido: 104 ms → **22 ms**
 - Tempo que o git commit espera pelo hook: 539 ms → **99 ms**
 - Processos que o painel abre por minuto: 290 proc/min → **4,1 proc/min**
-- Índice sem mudança, 20 mil arquivos: 7,6 s → **3,7 s**
+- Índice sem mudança, 20 mil arquivos: 7,6 s → **0,46 s**
 
 ### 30 de set de 2026 · versão 1.0.0-beta.5: A auditoria mede a linha de base
 

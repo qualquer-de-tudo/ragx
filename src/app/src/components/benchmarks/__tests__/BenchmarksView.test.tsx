@@ -15,7 +15,12 @@ describe('BenchmarksView', () => {
   })
 
   it('a meta não atingida aparece como tal, com o motivo', () => {
-    render(<BenchmarksView />)
+    // Os dados reais já atingem todas as metas (RAGX-0198 fechou a última): o caso vem de uma cópia com uma meta aberta.
+    const dados = structuredClone(benchmarks)
+    const metrica = dados.metrics.find((m) => m.id === 'no-change-20k')!
+    metrica.goal = { value: 1.5, met: false }
+    metrica.caveat = 'Meta não atingida: o custo que sobra é por arquivo, sem atalho seguro.'
+    render(<BenchmarksView data={dados} />)
     const card = screen.getByRole('article', { name: 'Índice sem mudança, 20 mil arquivos' })
     expect(within(card).getByText(/Meta até 1,5 s/)).toHaveTextContent('não atingida')
     expect(within(card).getByText(/sem atalho seguro/)).toBeInTheDocument()
@@ -53,6 +58,6 @@ describe('BenchmarksView', () => {
 
   it('o resumo conta as metas atingidas', () => {
     render(<BenchmarksView />)
-    expect(screen.getByText('10 de 11 metas atingidas')).toBeInTheDocument()
+    expect(screen.getByText('12 de 12 metas atingidas')).toBeInTheDocument()
   })
 })

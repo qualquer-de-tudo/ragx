@@ -131,3 +131,84 @@ def test_worktrees_lista_o_principal_primeiro_com_branch_e_head(tmp_path: Path) 
     assert [w.branch for w in lista] == ["main", "outra", None]
     assert [w.detached for w in lista] == [False, False, True]
     assert all(w.head and len(w.head) == 40 for w in lista)
+
+
+# ── RAGX-0198: o que o git diz que mudou ────────────────────────────────────────────────────────
+
+_OID = "a" * 40
+
+
+def _falso(respostas: dict[str, str]):  # type: ignore[no-untyped-def]
+    def git_indice(root: Path, *args: str) -> tuple[str | None, str | None]:
+        saida = respostas.get(args[0])
+        return (saida, None) if saida is not None else (None, "git_falhou")
+
+    return git_indice
+
+
+def test_mudancas_le_status_v2_com_espaco_acento_renomeado_e_conflito(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".git").mkdir()
+    status = "\0".join([
+        f"# branch.oid {_OID}", "# branch.head main",
+        f"1 .M N... 100644 100644 100644 {_OID} {_OID} pasta com espaço/ação.py",
+        f"2 R. N... 100644 100644 100644 {_OID} {_OID} R100 novo nome.py", "velho nome.py",
+        f"u UU N... 100644 100644 100644 100644 {_OID} {_OID} {_OID} conflito.py",
+        "? não rastreado.md", "? aninhado/", "",
+    ])
+    monkeypatch.setattr(gitinfo, "_git_indice", _falso({"status": status, "ls-files": "build/\0x.log\0"}))
+    m = gitinfo.mudancas(tmp_path)
+    assert m.motivo is None and m.completo
+    assert m.head == _OID and m.branch == "main"
+    assert m.sujos == {"pasta com espaço/ação.py", "novo nome.py", "velho nome.py", "conflito.py",
+                       "não rastreado.md"}
+    assert m.pastas_sujas == {"aninhado"}
+    assert m.ignorados == ("build/", "x.log")
+    assert m.estado is not None and m.estado.dirty
+
+
+def test_mudancas_em_subpasta_tira_o_prefixo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    status = "\0".join([f"# branch.oid {_OID}", "# branch.head main", "? app/novo.py", "? fora.py", ""])
+    diff = f":100644 100644 {_OID} {_OID} M\0app/m.py\0:100644 100644 {_OID} {_OID} M\0outro/z.py\0"
+    monkeypatch.setattr(gitinfo, "_git_indice", _falso(
+        {"status": status, "rev-parse": "app/\n", "diff": diff, "ls-files": ""}))
+    m = gitinfo.mudancas(tmp_path / "app", desde="b" * 40)
+    assert m.sujos == {"novo.py"} and m.entre_commits == {"m.py"}
+
+
+@pytest.mark.parametrize(("linha", "motivo", "completo"), [
+    (f"1 .M SC.. 160000 160000 160000 {_OID} {_OID} sub", "submodulo", False),
+    (f"1 A. N... 000000 120000 120000 {_OID} {_OID} atalho", "link_simbolico", True),
+])
+def test_mudancas_submodulo_e_link_recuam(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, linha: str, motivo: str, completo: bool
+) -> None:
+    (tmp_path / ".git").mkdir()
+    status = "\0".join([f"# branch.oid {_OID}", "# branch.head main", linha, ""])
+    monkeypatch.setattr(gitinfo, "_git_indice", _falso({"status": status, "ls-files": ""}))
+    m = gitinfo.mudancas(tmp_path)
+    assert m.motivo == motivo and m.completo is completo
+
+
+def test_mudancas_sem_commit_e_commit_sumido(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / ".git").mkdir()
+    inicial = "\0".join(["# branch.oid (initial)", "# branch.head main", ""])
+    monkeypatch.setattr(gitinfo, "_git_indice", _falso({"status": inicial}))
+    assert gitinfo.mudancas(tmp_path).motivo == "sem_commit"
+    status = "\0".join([f"# branch.oid {_OID}", "# branch.head main", ""])
+    monkeypatch.setattr(gitinfo, "_git_indice", _falso({"status": status, "ls-files": ""}))
+    m = gitinfo.mudancas(tmp_path, desde="b" * 40)
+    assert m.motivo == "commit_do_indice_sumiu" and m.completo  # o commit atual ainda pode ser registrado
+
+
+def test_mudancas_real_com_quotepath_espaco_acento_e_crlf(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    subprocess.run(["git", "config", "core.quotepath", "true"], cwd=root, check=True)
+    subprocess.run(["git", "config", "core.autocrlf", "true"], cwd=root, check=True)
+    (root / "pasta com espaço").mkdir()
+    (root / "pasta com espaço" / "ação.py").write_bytes(b"x = 1\r\n")
+    (root / "a.txt").write_bytes(b"a\r\nb\r\n")
+    m = gitinfo.mudancas(root)
+    assert m.motivo is None
+    assert m.sujos == {"pasta com espaço/ação.py", "a.txt"}

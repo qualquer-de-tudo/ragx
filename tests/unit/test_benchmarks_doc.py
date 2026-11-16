@@ -44,9 +44,16 @@ def test_formatacao_em_portugues() -> None:
 
 def test_meta_nao_atingida_e_resultado_inconclusivo_aparecem_na_pagina() -> None:
     texto = (RAIZ / "docs" / "27-benchmarks.md").read_text(encoding="utf-8")
-    assert "**não atingida**" in texto
     assert "Inconclusivo em tokens faturáveis" in texto
     assert "melhor extremo" in texto
+    # Toda meta não atingida aparece como tal. Hoje (RAGX-0198) todas estão atingidas, então a garantia é
+    # conferida no gerador, com uma meta virada para não atingida.
+    g = _gerador()
+    dados = json.loads(g.JSON.read_text(encoding="utf-8"))
+    nao_atingidas = [m for m in dados["metrics"] if m.get("goal") and not m["goal"]["met"]]
+    assert ("**não atingida**" in texto) == bool(nao_atingidas)
+    dados["metrics"][0]["goal"] = {"value": 0, "met": False}
+    assert "**não atingida**" in g.gerar(dados)
 
 
 def test_metas_do_json_sao_coerentes_com_o_ultimo_valor() -> None:

@@ -19,6 +19,17 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
   `scripts/brand.py` gera o símbolo novo em SVG, PNG, `.ico` (ícone do `.exe` e do instalador), favicon e o
   componente do painel, com desenhos próprios para 32 e 16 px. A extensão do VS Code usa o mesmo símbolo.
 - **Barra lateral do painel sem a trilha de nós**: o item atual fica só com o realce de fundo.
+- **O índice sem mudança pergunta ao git o que mudou** (RAGX-0198). A rodada incremental (hook de commit e de checkout,
+  `ragx index`, `refresh`, `sync`) olhava cada arquivo do projeto, em Python, mesmo com nada alterado: ~4,9 s em 20 mil
+  arquivos e 10 a 20 s no Juriflux a cada commit. Agora ela olha só o que o git diz que mudou desde o commit do índice
+  (`git diff`, `git status` e o que o git ignora mas o RAGX indexa). Num repositório git sintético de 20 mil arquivos,
+  **4,87 s → 0,46 s**: a meta de 1,5 s, que tinha ficado de fora da v1, é atingida. Cada arquivo escolhido passa pelas
+  mesmas decisões da varredura e pelo Security Gate; o git só decide **quais** entram na fila. Volta para a varredura
+  completa, sem adivinhar, quando não é repositório git, o git falha ou demora, o commit sumiu, as regras de ignore
+  mudaram, há submódulo ou link simbólico, ou a pessoa pede `ragx index --full-scan`. O relatório diz qual caminho
+  usou (`scan_mode`, `scan_fallback` em `--json`). Limite conhecido: arquivo marcado com `assume-unchanged` ou
+  `skip-worktree` e editado no disco não aparece no `git status`; `--full-scan` cobre. Não verificado ainda em Linux e
+  macOS.
 - **Busca do MCP do tamanho de um grep** (RAGX-0203). No Juriflux uma busca do RAGX devolvia ~2.200 tokens e um grep
   ~400: para "onde está X", o agente fazia bem em preferir o grep. Agora `search_hybrid` e `search_knowledge` trazem 5
   resultados por padrão, cada um com caminho, linhas e **uma linha** do trecho, sem `matched_by` (que fica no

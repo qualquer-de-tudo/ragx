@@ -124,6 +124,14 @@ veredictos, ficou idêntico com e sem poda. Regras:
 - `--include` genérico (`[index].include`, flag da CLI) é pedido explícito e vale
   em qualquer lugar: com ele, nenhuma pasta é podada.
 
+**O índice pelo git não é atalho em volta do Gate** (RAGX-0198). Quando a rodada incremental pergunta
+ao git o que mudou em vez de varrer a árvore, o git só escolhe **quais** arquivos entram na fila. Cada
+um deles passa pelo IgnoreEngine, pela deny-list de nome e, para ser lido, por `gate.admit`, exatamente
+como na varredura (`walk.iter_selecao` usa o mesmo `_decidir` + `read_candidate`); as recusas de alcance
+também são as mesmas (ancestral podado, link, caminho fora da raiz). Arquivo que o git ignora não fica
+de fora por isso: o que o RAGX alcançaria entre os ignorados do git é olhado em toda rodada. Teste:
+`tests/security/test_indice_git_gate.py`.
+
 A busca pelos próprios arquivos de ignore vai de cima para baixo, como o git: em
 cada pasta, carrega os arquivos de ignore dela e só então decide se desce nas
 subpastas. Por isso **arquivo de ignore dentro de pasta excluída não é lido**. Um

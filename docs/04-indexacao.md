@@ -198,6 +198,42 @@ absoluto, com `..` ou do conhecimento base, a trava de indexação (ocupada: ped
 `ragx.toml`), que muda o que é visitado. Uma run `paths` não conta como "a última indexação" para
 o veredito de frescor: ela só olhou o que lhe pediram.
 
+**Perguntar ao git o que mudou** (RAGX-0198). A rodada incremental (hook de commit e de checkout,
+`ragx index`, `refresh`, `sync`) não percorre mais a árvore quando o git pode dizer o que mudou. No fim
+de cada rodada que termina, o banco guarda em `meta` (`git_snapshot`) o commit em que o índice ficou, um
+resumo das regras (Gate, `[index]`, versão do chunker e todas as regras de ignore carregadas) e uma
+lista curta de caminhos para olhar de novo. A rodada seguinte olha só: `git diff --raw -z --no-renames
+<commit do índice> HEAD`, o que `git status --porcelain=v2 -z --no-renames --untracked-files=all` dá
+como sujo, essa lista, e o que o git ignora mas o RAGX ainda alcançaria (`git ls-files -o -i
+--exclude-standard --directory`: arquivo que o RAGX não ignora, pasta que ele não poda). Cada um desses
+arquivos passa pelas MESMAS decisões da varredura (`_decidir` e, para ler, `read_candidate` com o Gate);
+o resto do índice fica como estava, sem `stat`. O git só decide **quais** arquivos entram na fila.
+
+A lista para olhar de novo cobre o que o git não vê: arquivo sujo na rodada anterior (desfeito depois com
+`git checkout`, volta a ficar limpo para o git, mas o índice tinha o conteúdo sujo), arquivo indexado por
+caminho (`touch`, `watch`), arquivo lido com `mtime` dos 2 s antes do início da rodada (pode ter mudado
+depois do `status`), arquivo ilegível ou pasta que não abriu, e o que o git ignora e o RAGX indexa (sumir
+do disco não aparece em lista nenhuma do git). O registro sai do banco no começo de cada rodada e só
+volta no fim de uma que terminou: rodada interrompida deixa a seguinte na varredura completa.
+
+Volta para a varredura completa, sem tentar adivinhar, quando: não é repositório git, o `git` não existe,
+falha ou passa de 10 s; não há registro (primeira rodada, rodada anterior interrompida, `.ragx/` de outra
+raiz, pacote importado com `ragx import`); o resumo das regras mudou (`.gitignore` em qualquer pasta,
+`.ragignore`, `.dockerignore`, `ragx.toml`, `--include`/`--exclude`, regras do Gate, versão do chunker); o
+commit guardado não existe mais (rebase seguido de `gc`); há link simbólico na lista ou
+`follow_symlinks = true`; há submódulo (ou `.gitmodules`, cujo `ignore = all` esconderia mudanças); o git
+devolve o caminho com caixa diferente da que o índice guardou (Windows, macOS); ou a pessoa pede
+(`ragx index --full-scan`, que continua incremental, e `--full`). O relatório diz qual caminho a rodada
+usou (`scan_mode`, `scan_fallback` em `ragx index --json`). Limite conhecido: arquivo marcado com
+`git update-index --assume-unchanged` ou `--skip-worktree` e alterado no disco não aparece no `status`;
+nesse caso, `--full-scan`.
+
+Medido (2026-11-16, Windows, sem `fsmonitor`): projeto sintético de 20.000 arquivos com `node_modules/` e
+`build/` ignorados, nenhuma mudança, **4,87 s → 0,44 s** (a mesma árvore com `--full-scan`: 4,9 s). Do que
+sobra, ~0,29 s são os dois processos do git e ~0,2 s a busca dos arquivos de ignore pela árvore (o
+`IgnoreEngine` lê todos os `.gitignore` antes de decidir). Os números por repositório estão em
+[26-resultados-v2.md](26-resultados-v2.md) (S4).
+
 **Pedido pendente por caminho** (RAGX-0199). Quem encontra a trava ocupada deixa `index.pending` com
 a sua origem, e o dono da trava o atende ao terminar. Um pedido de `touch`, `mcp:touch` ou `paths`
 é atendido **drenando a fila de toque** (só os arquivos tocados, run `paths`), não com a passada
@@ -244,9 +280,9 @@ Indexação **sem mudança não carrega o modelo de embedding**: o nome e a dime
 modelo saem da configuração (`embedder_id`), os chunks sem vetor são contados primeiro
 e o embedder só é construído (e o Ollama só é sondado) se houver pendência. Com
 `fastembed` isso evita ~2,85 s; com Ollama fora do ar e nada pendente, não há erro.
-O estado do git (`commit`, `branch`, `dirty`) vem de um único
-`git status --porcelain=v2 --branch`, e a pasta de hooks é consultada uma vez por
-processo.
+O estado do git (`commit`, `branch`, `dirty`) vem do mesmo
+`git status --porcelain=v2 --branch` que diz o que mudou (RAGX-0198), e a pasta de hooks é consultada
+uma vez por processo.
 
 ## Transacionalidade
 
