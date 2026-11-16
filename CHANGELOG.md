@@ -9,6 +9,8 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.1.0] — 2026-11-16
+
 ### Mudado
 
 - **Identidade visual Grafo** ([ADR-0017](docs/adr/ADR-0017-identidade-visual-grafo.md), guia em
