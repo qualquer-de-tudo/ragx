@@ -1,4 +1,5 @@
 import type { ConnectionAction, JobKind, JobView, ProjectSnapshot } from './types/ragx-bridge'
+import type { Freshness } from './projectStatus'
 
 export type ProjectState = 'missing' | 'indexing' | 'error' | 'embeddings' | 'stale' | 'no-hooks' | 'ok'
 
@@ -24,6 +25,17 @@ export function deriveProjectState(p: ProjectSnapshot, busyIds: ReadonlySet<stri
   }
   if (p.hooksInstalled === false) return 'no-hooks'
   return 'ok'
+}
+
+/**
+ * A regra única entre o selo e "Está em dia?" (RAGX-0199): o snapshot só compara commit e branch, e não vê arquivo
+ * alterado sem commit; `ragx status --json` vê. Quando ele diz "defasado" (arquivos alterados, commits, branch), o
+ * selo também diz, em vez de "Atualizado" ao lado de "Índice defasado". Sem resposta (`null`, carregando, erro), fica o
+ * estado do snapshot. Estados mais graves (pasta ausente, indexando, erro, embeddings) não mudam.
+ */
+export function withFreshness(state: ProjectState, freshness: Pick<Freshness, 'state'> | null): ProjectState {
+  if (freshness?.state === 'stale' && (state === 'ok' || state === 'no-hooks')) return 'stale'
+  return state
 }
 
 export const STATE_LABEL: Record<ProjectState, string> = {

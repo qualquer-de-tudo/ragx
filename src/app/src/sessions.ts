@@ -1,4 +1,5 @@
 import type { ActivityEvent } from './types/ragx-bridge'
+import { isRagxUse } from '../electron/data/ragx-use'
 
 /** Uma sessão (ou o grupo "sem sessão identificada" de um projeto) vista pelos eventos de 24 h (RAGX-0188). */
 export interface SessionGroup {
@@ -12,17 +13,17 @@ export interface SessionGroup {
   profile: string | null
   startedAt: string
   lastAt: string
-  /** Quantos `session_start` houve: inícios repetidos são subagentes, não várias sessões. */
+  /** Quantos `session_start` houve: o hint grava um a cada início, retomada, `/clear` ou compactação do contexto. */
   starts: number
   mcpCalls: number
-  /** Comandos `ragx` (CLI) que não são `session_start`. */
+  /** Comandos de consulta `ragx` (CLI): sem `session_start` nem o lembrete `nudge` (`isRagxUse`). */
   cliCalls: number
   byTool: Array<{ name: string; count: number }>
   delivered: number
   baseline: number
   /** `null` quando nenhum evento do grupo diz se deu certo (log sem `ok`): "sem dado", nunca "0 falhas". */
   failures: number | null
-  /** Houve chamada MCP ou comando `ragx` (fora `session_start`) na sessão. */
+  /** Houve chamada MCP ou comando de consulta `ragx` na sessão (`isRagxUse`). */
   usedRagx: boolean
   /** Em ordem cronológica. */
   events: ActivityEvent[]
@@ -59,7 +60,7 @@ export function groupSessions(events: readonly ActivityEvent[], _now?: number): 
     g.profile ??= e.profile
     if (e.kind === 'session') {
       g.starts += 1
-    } else {
+    } else if (isRagxUse(e)) {
       if (e.kind === 'mcp') g.mcpCalls += 1
       else g.cliCalls += 1
       g.usedRagx = true

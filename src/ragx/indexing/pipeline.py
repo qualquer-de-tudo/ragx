@@ -335,12 +335,48 @@ def _drain_pending(
         pending = lock.take_pending(state_dir)
         if pending is None:
             break
-        extra = _index_once(cfg, False, False, None, True, False,
-                            pending if pending in VALID_SOURCES else "cli", None)
+        source = pending if pending in VALID_SOURCES else "cli"
+        extra = (
+            _drain_touch_queue(cfg, source)
+            if source in lock.PATH_SOURCES
+            else _index_once(cfg, False, False, None, True, False, source, None)
+        )
         if report is not None:
             report.touched_documents.extend(p for p in extra.touched_documents if p not in report.touched_documents)
         budget -= 1
     return budget
+
+
+def _drain_touch_queue(cfg: Config, source: str) -> IndexReport:
+    """Pedido pendente de quem só queria reindexar arquivos tocados (RAGX-0199).
+
+    Antes, o dono da trava atendia esse pedido com a passada incremental completa: no Juriflux
+    (~17.900 arquivos) cada edição do agente que chegava com a trava ocupada custava de 10 a 90 s
+    de varredura, 534 vezes em 13 dias. O lote que encontrou a trava ocupada voltou para a fila
+    (`touchq.drain`), então basta drená-la aqui, com a trava já tomada. Lote grande demais ou com
+    arquivo de regra continua indo para a passada incremental, como em `index_paths`.
+    """
+    from ragx.indexing import touchq
+
+    total = IndexReport()
+    for _ in range(MAX_PENDING_RERUNS):
+        lote = touchq.claim(cfg.state_dir, cfg.watch.max_batch)
+        if lote is None:
+            break
+        rels = list(dict.fromkeys(r for r in map(normalizar_caminho, lote.paths) if r is not None))
+        try:
+            if any(r.rsplit("/", 1)[-1] in _ARQUIVOS_DE_REGRA for r in rels):
+                extra = _index_once(cfg, False, False, None, True, False, source, None)
+            elif rels:
+                extra = _index_paths_once(cfg, rels, True, source, None)
+            else:
+                extra = IndexReport()
+        except BaseException:
+            lote.give_back()
+            raise
+        lote.done()
+        total.touched_documents.extend(p for p in extra.touched_documents if p not in total.touched_documents)
+    return total
 
 
 def _index_once(

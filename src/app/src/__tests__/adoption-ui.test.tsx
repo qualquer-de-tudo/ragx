@@ -61,10 +61,10 @@ describe('Detalhe do projeto: sessões que chamaram o RAGX', () => {
     telemetry: { callsByTool: [{ tool: 'build_context', count: 3 }], totalCalls: 3, tokensDelivered: 10, lastCallAt: null },
   })
 
-  it('mostra "x de y" do projeto quando há sessão', async () => {
+  it('mostra "x de y" do projeto quando há sessão, com a janela própria (14 dias), não a das 24 h do título', async () => {
     installBridge({ getAdoption: vi.fn().mockResolvedValue(adoption), getProjectStatus: vi.fn(() => new Promise(() => {})) })
     render(<ProjectPage project={comUso} jobs={[]} onBack={vi.fn()} />)
-    expect(await screen.findByText('Sessões que chamaram o RAGX: 2 de 30')).toBeInTheDocument()
+    expect(await screen.findByText('Sessões que chamaram o RAGX nos últimos 14 dias: 2 de 30')).toBeInTheDocument()
   })
 
   it('sem sessão do projeto, a linha não aparece', async () => {

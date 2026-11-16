@@ -66,6 +66,10 @@ def mcp_entry(tool: str, ms: float, project: str, result: Any, text: str) -> dic
         codigo = erro.get("code") if isinstance(erro, dict) else None
         entry["err_code"] = str(codigo) if codigo else "unknown"
     dados = result.get("data") if isinstance(result, dict) else None
+    # A busca caiu para palavra-chave (embedder fora, como o Ollama fechado): a resposta é válida e
+    # `ok`, mas sem a parte semântica. Só o código, nunca a mensagem (RAGX-0199).
+    if isinstance(dados, dict) and dados.get("degraded"):
+        entry["degraded"] = True
     if isinstance(dados, dict) and dados.get("dedupe_refs"):
         entry["dedupe_refs"] = int(dados["dedupe_refs"])
         entry["dedupe_saved_tokens"] = int(dados.get("dedupe_saved_tokens") or 0)

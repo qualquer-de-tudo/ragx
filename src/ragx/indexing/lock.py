@@ -33,6 +33,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -263,11 +264,56 @@ def release(state_dir: Path) -> None:
         (state_dir / LOCK_NAME).unlink()
 
 
+#: Origens cujo pedido pendente se resolve drenando a fila de arquivos tocados, sem varrer o
+#: projeto (RAGX-0199). As demais (hooks de git, CLI, painel, watch) pedem a passada incremental.
+PATH_SOURCES = frozenset({"touch", "mcp:touch", "paths"})
+
+_TENTATIVAS_REPLACE = 5
+
+
+def _replace_com_retry(origem: Path, destino: Path) -> bool:
+    """`os.replace` que tenta de novo: no Windows ele falha com `PermissionError` enquanto outro
+    processo está com o arquivo aberto (lendo o pedido, por exemplo). Mesmo remédio do `status.json`.
+    Origem inexistente devolve `False` na hora: não havia o que mover."""
+    for tentativa in range(_TENTATIVAS_REPLACE):
+        try:
+            os.replace(origem, destino)
+            return True
+        except FileNotFoundError:
+            return False
+        except PermissionError:
+            time.sleep(0.05 * (tentativa + 1))
+    return False
+
+
+def _ler_pendente(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8").strip() or "cli"
+    except OSError:
+        return None
+
+
 def mark_pending(state_dir: Path, source: str) -> None:
+    """Deixa um pedido para o dono da trava. Nunca levanta por concorrência e nunca deixa `.tmp`.
+
+    Um pedido por caminho (`PATH_SOURCES`) não rebaixa um pedido completo já registrado: a
+    passada incremental cobre os arquivos tocados, o contrário não.
+    """
     state_dir.mkdir(parents=True, exist_ok=True)
+    final = state_dir / PENDING_NAME
+    if source in PATH_SOURCES:
+        atual = _ler_pendente(final)
+        if atual is not None and atual not in PATH_SOURCES:
+            return
     tmp = state_dir / f"{PENDING_NAME}.{os.getpid()}.{uuid4().hex}.tmp"
-    tmp.write_text(source, encoding="utf-8")
-    os.replace(tmp, state_dir / PENDING_NAME)
+    try:
+        tmp.write_text(source, encoding="utf-8")
+        if not _replace_com_retry(tmp, final) and not final.exists():
+            # sem conseguir trocar e sem pedido nenhum no lugar: aí sim o pedido se perderia
+            raise PermissionError(f"não foi possível registrar o pedido pendente em {final}")
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
 
 
 def is_pending(state_dir: Path) -> bool:
@@ -275,10 +321,14 @@ def is_pending(state_dir: Path) -> bool:
 
 
 def take_pending(state_dir: Path) -> str | None:
+    """Toma o pedido de forma atômica: move antes de ler, para um `mark_pending` que chega no
+    meio não ser apagado junto com o pedido antigo."""
     path = state_dir / PENDING_NAME
-    try:
-        source = path.read_text(encoding="utf-8").strip()
-        path.unlink()
-    except OSError:
+    tomado = state_dir / f"{PENDING_NAME}.{os.getpid()}.{uuid4().hex}.taken"
+    if not _replace_com_retry(path, tomado):
         return None
-    return source or "cli"
+    try:
+        return _ler_pendente(tomado) or "cli"
+    finally:
+        with contextlib.suppress(OSError):
+            tomado.unlink()

@@ -5,6 +5,24 @@
  * pela validação chega à tela.
  */
 import { formatNumber } from './format'
+import type { ProjectSnapshot } from './types/ragx-bridge'
+
+/**
+ * Quando pedir `ragx status --json` de novo: indexação nova, troca de branch ou commit, embeddings gerados e QUALQUER
+ * gravação do `status.json` (`written_at`, e o `last_error`): um run de caminhos ou que falhou não muda
+ * `index.finishedAt`, e sem isso não aparecia no Histórico nem na Saúde do índice.
+ */
+export function statusChangeKey(project: ProjectSnapshot | null): string {
+  if (project === null) return ''
+  return [
+    project.index?.finishedAt,
+    project.git?.branch,
+    project.git?.commit,
+    project.counts?.pendingEmbeddings,
+    project.statusWrittenAt,
+    project.lastError,
+  ].join('|')
+}
 
 export type StaleReason =
   | { kind: 'branch_changed'; indexed: string; current: string }

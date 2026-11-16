@@ -9,6 +9,49 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **Uma edição do agente não dispara mais a varredura do projeto inteiro.** Quando o `touch` (hook de edição do Claude Code)
+  encontrava a trava ocupada, o dono da trava atendia o pedido com a passada incremental completa, e o lote ainda voltava à fila
+  para ser indexado de novo. No Juriflux (~17.900 arquivos) isso foram 534 varreduras de 10 a 90 s em 13 dias, ~113 min. Agora o
+  pedido do `touch` é atendido drenando só a fila de arquivos tocados; hooks de git e CLI continuam pedindo a passada completa, e
+  um pedido por caminho nunca rebaixa um pedido completo (RAGX-0199).
+- **Pedido pendente resistente no Windows.** `index.pending` era trocado com `os.replace` sem nova tentativa: com outro processo
+  lendo o arquivo, o hook morria com `PermissionError`, o pedido se perdia e um `.tmp` ficava órfão. Agora tenta de novo, nunca
+  deixa `.tmp`, e tomar o pedido é atômico. Lotes da fila de toque (`touch.queue.*.claimed`) deixados por um processo que morreu
+  voltam para a fila em vez de ficarem no disco para sempre.
+- **`status.json` traz o erro da indexação.** `last_error` saía sempre nulo (a consulta pulava as rodadas com erro), então o
+  painel nunca mostrava "Com problema". Agora vale o erro da última passada completa ou da última rodada por caminho depois dela.
+- **Grafo atualizado sob a trava.** Depois de um lote do `touch` ou do `watch`, a atualização do grafo rodava fora da trava e, ao
+  cair no rebuild completo, segurava o banco além do `busy_timeout`: o hook de git que chegava nessa hora morria com
+  `database is locked`.
+- **Teste de latência do lembrete estável sob `pytest -n auto`** (mede o mínimo das rodadas, não a mediana).
+- **Painel: o lembrete de busca não conta mais como uso do RAGX.** Em Atividade › Sessões, uma sessão que só recebeu o lembrete
+  (`nudge`) aparecia como "usou o RAGX" enquanto Adoção dizia "não chamou"; o lembrete também acendia "Em uso agora" e contava como
+  comando no terminal. Agora há uma regra só para o que é uso (chamada MCP ou consulta `ragx`), o lembrete aparece no feed como
+  "Lembrete de busca mostrado", e "Projetos em uso" conta só projetos com uso real.
+- **Painel: "Sessões do Claude" conta sessões, não inícios.** No Juriflux eram 100 inícios para 27 sessões; os inícios repetidos
+  (retomada, `/clear`, compactação) deixam de ser chamados de "subagentes".
+- **Painel: o card do Claude Code olha os perfis.** Com o RAGX ligado só num perfil extra, o card dizia "Não conectado" ao lado do
+  interruptor "Ligado em alguns perfis". Agora mostra quantos perfis têm o RAGX, é reconferido logo depois de ligar, desligar,
+  adicionar ou remover um perfil, e a "última chamada MCP" conta só as chamadas do Claude Code (Codex e Gemini não entram).
+- **Painel: Ollama só pesa na saúde quando algum projeto o usa** (senão o card mostra "Não usado" e o cabeçalho não fica
+  vermelho), e os modelos exigidos vêm do `status.json` do projeto. Busca que caiu para palavra-chave nas últimas 24 h, ou
+  embeddings pendentes com o Ollama fora, entram em "Pedem atenção" com o motivo escrito.
+- **Painel: o erro da indexação aparece no detalhe do projeto,** o selo e o "Está em dia?" da página do projeto usam a mesma regra
+  de frescor (alteração não commitada deixa "Defasado"), o histórico se atualiza depois de rodadas por caminho e de falhas, a
+  adoção diz que a janela é de 14 dias, e "Chamadas MCP" é o mesmo número em Projetos e em Atividade. A lista de projetos e a
+  bandeja ainda não veem alteração não commitada (exigiria um `git status` por projeto a cada 5 s).
+
+### Adicionado
+
+- **O log do MCP diz quando a busca rodou sem a parte semântica e quem chamou fora do Claude Code.** `mcp.jsonl` ganha
+  `degraded: true` quando o embedder estava fora (o Ollama fechado) e a busca ou o `build_context` caiu para palavra-chave; a
+  resposta do `build_context` também passa a trazer `degraded`. `client` agora vem do `clientInfo` do protocolo para Codex, Gemini
+  e outros clientes, que antes ficavam sem origem.
+- **Erros dos hooks com data e hora.** Quando um comando do `ragx` falha com a saída fora de um terminal (hooks de git, `touch`
+  destacado), a linha antes do traceback em `.ragx/logs/hooks.log` diz quando e qual comando.
+
 ## [1.0.3] — 2026-10-06
 
 ### Adicionado

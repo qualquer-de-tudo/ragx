@@ -198,6 +198,16 @@ absoluto, com `..` ou do conhecimento base, a trava de indexação (ocupada: ped
 `ragx.toml`), que muda o que é visitado. Uma run `paths` não conta como "a última indexação" para
 o veredito de frescor: ela só olhou o que lhe pediram.
 
+**Pedido pendente por caminho** (RAGX-0199). Quem encontra a trava ocupada deixa `index.pending` com
+a sua origem, e o dono da trava o atende ao terminar. Um pedido de `touch`, `mcp:touch` ou `paths`
+é atendido **drenando a fila de toque** (só os arquivos tocados, run `paths`), não com a passada
+incremental: no Juriflux (~17.900 arquivos) cada colisão custava de 10 a 90 s de varredura, 534
+vezes em 13 dias. Pedido de hook, CLI, painel ou `watch` continua pedindo a passada completa, e um
+pedido por caminho nunca rebaixa um pedido completo já registrado. `mark_pending` e `take_pending`
+trocam o arquivo com nova tentativa (no Windows, `os.replace` falha enquanto outro processo o lê) e
+não deixam `.tmp` para trás; `claim` devolve à fila os lotes `.claimed` de consumidores mortos. A
+atualização do grafo depois de um lote do `touch` ou do `watch` roda sob a mesma trava.
+
 **Fila de toque** (`ragx touch`, `indexing/touchq.py`, RAGX-0141). Quem alimenta `index_paths` com o
 que o agente editou é o hook `PostToolUse`: `ragx touch` anexa o caminho (relativo, POSIX) a
 `.ragx/touch.queue` num único `write` em `O_APPEND` e dispara uma drenagem destacada. `drain` espera o

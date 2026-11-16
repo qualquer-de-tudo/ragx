@@ -46,6 +46,29 @@ def _last_finished(conn: Any) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
+def _last_run_error(conn: Any) -> str | None:
+    """O erro da indexação que está valendo agora, ou `None` (RAGX-0199).
+
+    `_last_finished` pula, de propósito, as rodadas com erro; por isso o `last_error` saía sempre
+    nulo e o painel nunca chegava a "Com problema". Vale o erro da última passada completa e, se
+    ela deu certo, o da última rodada por caminho depois dela. Interromper (Ctrl+C) não é falha.
+    """
+    completa = conn.execute(
+        "SELECT id, error FROM index_runs WHERE finished_at IS NOT NULL "
+        "AND mode NOT IN ('embed-only', 'paths') ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    if completa is not None and completa[1] and completa[1] != "interrupted":
+        return str(completa[1])
+    por_caminho = conn.execute(
+        "SELECT error FROM index_runs WHERE finished_at IS NOT NULL AND mode = 'paths' "
+        "AND id > ? ORDER BY id DESC LIMIT 1",
+        (completa[0] if completa is not None else 0,),
+    ).fetchone()
+    if por_caminho is not None and por_caminho[0] and por_caminho[0] != "interrupted":
+        return str(por_caminho[0])
+    return None
+
+
 def _build(
     cfg: Config, conn: Any, last_error: str | None, hooks: bool | str | None = "probe"
 ) -> dict[str, Any]:
@@ -84,7 +107,7 @@ def _build(
         "hooks": {"installed": hooks_installed_probe(cfg.root) if hooks == "probe" else hooks},
         "running": running,
         "pending": lock.is_pending(cfg.state_dir),
-        "last_error": last_error if last_error is not None else (run or {}).get("error"),
+        "last_error": last_error if last_error is not None else _last_run_error(conn),
     }
 
 

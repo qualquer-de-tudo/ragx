@@ -153,6 +153,44 @@ def test_trava_ocupada_devolve_busy_e_deixa_pedido_pendente(proj: Path) -> None:
         lock.take_pending(cfg.state_dir)
 
 
+def test_lote_do_touch_com_trava_ocupada_nao_vira_varredura_completa(proj: Path) -> None:
+    """RAGX-0199: o dono da trava atende o pedido do `touch` drenando a fila, sem `incremental`."""
+    from ragx.indexing import touchq
+
+    cfg = load_config(proj)
+    (proj / "src" / "a.py").write_text("def a():\n    return 4242\n", encoding="utf-8")
+    touchq.enqueue(cfg.state_dir, ["src/a.py"])
+    assert lock.try_acquire(cfg.state_dir, "index", "hook:post-commit")
+    try:
+        r = touchq.drain(cfg, source="touch", wait_ms=0)
+        assert r.busy  # o lote voltou para a fila e o pedido ficou pendente
+    finally:
+        lock.release(cfg.state_dir)
+    assert touchq.is_pending(cfg.state_dir)
+
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        antes = conn.execute("SELECT max(id) FROM index_runs").fetchone()[0]
+    finally:
+        conn.close()
+    # o dono da trava (um hook) termina a passada dele e atende o pedido pendente
+    index_project(cfg, source="hook:post-commit")
+
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        runs = conn.execute(
+            "SELECT mode, source FROM index_runs WHERE id > ? ORDER BY id", (antes,)).fetchall()
+        texto = "".join(r[0] for r in conn.execute(
+            "SELECT c.content FROM chunks c JOIN documents d ON d.id = c.document_id "
+            "WHERE d.rel_path = 'src/a.py'"))
+    finally:
+        conn.close()
+    assert runs == [("incremental", "hook:post-commit"), ("paths", "touch")]
+    assert "4242" in texto
+    assert not touchq.is_pending(cfg.state_dir)
+    assert not lock.is_pending(cfg.state_dir)
+
+
 def test_nao_percorre_a_arvore_nem_chama_o_git(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import ragx.gitinfo as gi
     import ragx.walk as walk

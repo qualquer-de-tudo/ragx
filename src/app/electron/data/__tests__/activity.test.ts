@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ActivityTail, INITIAL_TAIL_BYTES, type TailFs } from '../activity'
+import { isRagxUse } from '../ragx-use'
 
 const NOW = Date.parse('2026-09-29T20:00:00Z')
 const SOURCE = { id: 'p1', name: 'Juriflux', path: 'C:/proj/juriflux' }
@@ -91,6 +92,14 @@ describe('ActivityTail', () => {
     const eventos = tail(f).poll([SOURCE])
     expect(eventos.map((e) => [e.kind, e.name])).toEqual([['session', 'session_start'], ['mcp', 'build_context'], ['cli', 'search']])
     expect(eventos[2].ok).toBe(false)
+  })
+
+  it('o lembrete nudge vira tipo próprio, nunca "cli": não é comando de consulta no terminal', () => {
+    const f = fakeFs()
+    f.set(CLI, JSON.stringify({ ts: '2026-09-29T19:20:00Z', command: 'nudge', project: 'Juriflux', client: 'claude-code' }) + '\n')
+    const eventos = tail(f).poll([SOURCE])
+    expect(eventos.map((e) => [e.kind, e.name])).toEqual([['nudge', 'nudge']])
+    expect(isRagxUse(eventos[0])).toBe(false)
   })
 
   it('log grande: a primeira leitura pega só o fim, sem a linha cortada', () => {

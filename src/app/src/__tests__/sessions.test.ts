@@ -15,7 +15,7 @@ const at = (min: number) => `2026-10-01T10:${String(min).padStart(2, '0')}:00Z`
 
 describe('groupSessions', () => {
   const fixture = [
-    // sessão "aaaa1111" com session_start repetido (subagentes)
+    // sessão "aaaa1111" com session_start repetido (retomada, /clear, compactação)
     ev({ ts: at(0), kind: 'session', name: 'session_start', session: 'aaaa1111' }),
     ev({ ts: at(1), kind: 'session', name: 'session_start', session: 'aaaa1111' }),
     ev({ ts: at(2), kind: 'session', name: 'session_start', session: 'aaaa1111' }),
@@ -45,6 +45,17 @@ describe('groupSessions', () => {
     expect(a.mcpCalls).toBe(2)
     expect(a.cliCalls).toBe(1)
     expect(a.usedRagx).toBe(true)
+  })
+
+  it('o lembrete nudge fica na sessão, mas não é uso do RAGX nem comando ragx', () => {
+    const g = groupSessions([
+      ev({ ts: at(0), kind: 'session', name: 'session_start', session: 'dddd4444' }),
+      ev({ ts: at(1), kind: 'nudge', name: 'nudge', session: 'dddd4444' }),
+    ])[0]
+    expect(g.usedRagx).toBe(false)
+    expect(g.cliCalls).toBe(0)
+    expect(g.byTool).toEqual([])
+    expect(g.events).toHaveLength(2)
   })
 
   it('sessão que só abriu (session_start) não usou o RAGX', () => {

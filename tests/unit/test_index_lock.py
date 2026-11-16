@@ -55,6 +55,47 @@ def test_pendencia_guarda_a_ultima_origem_e_e_consumida(tmp_path: Path) -> None:
     assert lock.is_pending(tmp_path) is False
 
 
+def test_pedido_por_caminho_nao_rebaixa_pedido_completo(tmp_path: Path) -> None:
+    lock.mark_pending(tmp_path, "hook:post-commit")
+    lock.mark_pending(tmp_path, "touch")
+    assert lock.take_pending(tmp_path) == "hook:post-commit"
+    lock.mark_pending(tmp_path, "touch")
+    lock.mark_pending(tmp_path, "hook:post-merge")  # o completo sempre ganha do por caminho
+    assert lock.take_pending(tmp_path) == "hook:post-merge"
+
+
+def test_pedido_pendente_tenta_de_novo_e_nao_deixa_tmp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No Windows, `os.replace` falha com PermissionError enquanto outro processo lê o pedido."""
+    original = os.replace
+    falhas = {"n": 2}
+
+    def replace_ocupado(a, b):  # type: ignore[no-untyped-def]
+        if falhas["n"] > 0:
+            falhas["n"] -= 1
+            raise PermissionError(errno.EACCES, "Acesso negado")
+        return original(a, b)
+
+    monkeypatch.setattr(lock.os, "replace", replace_ocupado)
+    lock.mark_pending(tmp_path, "hook:post-commit")
+    assert lock.take_pending(tmp_path) == "hook:post-commit"
+    assert [p.name for p in tmp_path.iterdir()] == []
+
+
+def test_pedido_pendente_que_nunca_troca_limpa_o_tmp_e_avisa(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def sempre_ocupado(a, b):  # type: ignore[no-untyped-def]
+        raise PermissionError(errno.EACCES, "Acesso negado")
+
+    monkeypatch.setattr(lock.os, "replace", sempre_ocupado)
+    monkeypatch.setattr(lock.time, "sleep", lambda s: None)
+    with pytest.raises(PermissionError):
+        lock.mark_pending(tmp_path, "hook:post-commit")
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_trava_publicada_nunca_fica_vazia(tmp_path: Path) -> None:
     assert lock.try_acquire(tmp_path, "index", "cli") is True
     raw = (tmp_path / lock.LOCK_NAME).read_text(encoding="utf-8")

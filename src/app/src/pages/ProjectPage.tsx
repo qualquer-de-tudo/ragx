@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import type { ActivityEvent, JobView, ProjectSnapshot } from '../types/ragx-bridge'
 import type { TelemetrySummary } from '../../electron/data/types'
+import { ADOPTION_DAYS } from '../../electron/data/adoption'
 import {
   activeJobFor,
   busyProjectIds,
@@ -9,10 +10,12 @@ import {
   missingEmbeddings,
   STATE_LABEL,
   STATE_TONE,
+  withFreshness,
 } from '../state'
 import { formatNumber, formatPercent } from '../format'
-import { parseProjectStatus, reasonText, UNKNOWN_FRESHNESS_TEXT, type StatusView } from '../projectStatus'
+import { parseProjectStatus, reasonText, statusChangeKey, UNKNOWN_FRESHNESS_TEXT, type StatusView } from '../projectStatus'
 import { enqueue } from '../jobs'
+import { embeddingAttention } from '../projectMetrics'
 import { useAdoption } from '../hooks/useAdoption'
 import { Badge } from '../components/shell/Badge'
 import { Section, Stat } from '../components/shell/Card'
@@ -41,16 +44,14 @@ function errorMessage(err: unknown): string {
 
 /**
  * Resposta de `ragx status --json` para o projeto. Pede de novo quando o
- * snapshot mostra que algo mudou (indexação nova, troca de branch ou commit,
- * embeddings gerados); enquanto a resposta nova não chega, fica a anterior.
+ * snapshot mostra que algo mudou (`statusChangeKey`); enquanto a resposta
+ * nova não chega, fica a anterior.
  */
 function useProjectStatus(project: ProjectSnapshot | null): StatusView {
   const [result, setResult] = useState<{ id: string; view: StatusView } | null>(null)
   const id = project?.id ?? null
   const canCheck = project !== null && project.exists && project.path !== null
-  const changeKey = project
-    ? [project.index?.finishedAt, project.git?.branch, project.git?.commit, project.counts?.pendingEmbeddings].join('|')
-    : ''
+  const changeKey = statusChangeKey(project)
 
   useEffect(() => {
     if (id === null || !canCheck) return
@@ -272,10 +273,11 @@ function KnowledgeSection({ project, jobs }: { project: ProjectSnapshot; jobs: r
 }
 
 function UsageSection({ telemetry, adoption }: { telemetry: TelemetrySummary; adoption: { withCalls: number; sessions: number } | null }) {
+  // A adoção olha uma janela própria (ADOPTION_DAYS), não as 24 h do título da seção: o texto diz qual.
   const adoptionText =
     adoption && adoption.sessions > 0 ? (
       <p className="hint">
-        Sessões que chamaram o RAGX: {formatNumber(adoption.withCalls)} de {formatNumber(adoption.sessions)}
+        {`Sessões que chamaram o RAGX nos últimos ${ADOPTION_DAYS} dias: ${formatNumber(adoption.withCalls)} de ${formatNumber(adoption.sessions)}`}
       </p>
     ) : null
   if (telemetry.totalCalls === 0) {
@@ -376,20 +378,25 @@ export function ProjectPage({
   project,
   jobs,
   live = false,
+  ollamaDown = false,
   onBack,
 }: {
   project: ProjectSnapshot | null
   jobs: readonly JobView[]
-  /** Houve atividade no último minuto (tela de atividade). */
+  /** Houve uso do RAGX no último minuto (tela de atividade). */
   live?: boolean
+  /** O card do Ollama está em erro (só acontece quando algum projeto depende dele). */
+  ollamaDown?: boolean
   onBack: () => void
 }) {
   const status = useProjectStatus(project)
   const adoption = useAdoption(NO_EVENTS)
   const projectAdoption = adoption?.byProject.find((p) => p.projectId === project?.id) ?? null
+  const freshness = status.phase === 'ok' ? status.status.freshness : null
+  // O selo e "Está em dia?" usam a mesma regra (`withFreshness`): arquivo alterado sem commit também deixa "Defasado".
   const state = useMemo(
-    () => (project ? deriveProjectState(project, busyProjectIds(jobs)) : null),
-    [project, jobs],
+    () => (project ? withFreshness(deriveProjectState(project, busyProjectIds(jobs)), freshness) : null),
+    [project, jobs, freshness],
   )
   const [tab, chooseTab] = useRememberedTab()
   const tabsId = useId()
@@ -428,6 +435,7 @@ export function ProjectPage({
         status={status}
         live={live}
         jobs={jobs}
+        attention={embeddingAttention(project, ollamaDown)}
         onSeeSavings={() => chooseTab('economia')}
       />
 

@@ -169,11 +169,49 @@ def _devolver_arquivo(tomada: Path, fila: Path) -> None:
         tomada.unlink()
 
 
+#: Lote tomado há mais tempo que isto é de um consumidor que não volta mais, mesmo com o pid reusado.
+_TOMADA_ABANDONADA_S = 3600
+
+
+def _recuperar_abandonadas(state_dir: Path) -> int:
+    """Devolve à fila os lotes `.claimed` de consumidores mortos (RAGX-0199).
+
+    Um consumidor que morre entre `claim` e `done`/`give_back` (processo encerrado com a sessão,
+    timeout do hook) deixava o lote no disco para sempre, e aquelas edições nunca entravam no
+    índice: no crm-project ficaram dois lotes assim por um mês.
+    """
+    from ragx.indexing.lock import pid_alive
+
+    recuperados = 0
+    try:
+        candidatos = list(Path(state_dir).glob(f"{QUEUE_NAME}.*{_CLAIMED_SUFFIX}"))
+    except OSError:
+        return 0
+    for tomada in candidatos:
+        partes = tomada.name.split(".")
+        try:
+            pid = int(partes[2])
+            idade = time.time() - tomada.stat().st_mtime
+        except (IndexError, ValueError, OSError):
+            continue
+        if pid == os.getpid() or (pid_alive(pid) and idade < _TOMADA_ABANDONADA_S):
+            continue
+        texto = _ler_tomada(tomada)
+        if texto is None:
+            continue
+        recuperados += enqueue(state_dir, _linhas(texto))
+        with contextlib.suppress(OSError):
+            tomada.unlink()
+    return recuperados
+
+
 def claim(state_dir: Path, max_batch: int = DEFAULT_MAX_BATCH) -> Claim | None:
     """Toma a fila inteira, de forma atômica. `None` se estava vazia.
 
-    O que passar do teto de `max_batch` volta para a fila: o lote seguinte o pega.
+    O que passar do teto de `max_batch` volta para a fila: o lote seguinte o pega. Antes de
+    tomar, devolve à fila o que um consumidor morto deixou tomado.
     """
+    _recuperar_abandonadas(state_dir)
     fila = queue_path(state_dir)
     tomada = Path(state_dir) / f"{QUEUE_NAME}.{os.getpid()}.{uuid4().hex}{_CLAIMED_SUFFIX}"
     try:
@@ -239,9 +277,9 @@ def drain(cfg: Any, source: str = "touch", wait_ms: int | None = None) -> DrainR
     resultado.indexed = True
     if relatorio.touched_documents:
         try:
-            from ragx.graph.service import update_documents
+            from ragx.graph.service import update_documents_locked
 
-            update_documents(cfg, relatorio.touched_documents)
+            update_documents_locked(cfg, relatorio.touched_documents, source)
         except Exception as exc:  # o grafo nunca derruba a indexação que já deu certo
             resultado.graph_warning = f"{type(exc).__name__}: {exc}"
     return resultado

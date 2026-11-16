@@ -1,5 +1,6 @@
 import type { ProjectSnapshot } from './types/ragx-bridge'
 import { hasProblem, isOutdated, type ProjectState } from './state'
+import { formatNumber } from './format'
 
 /**
  * Economia dos últimos 14 dias: quanto menos que ler os arquivos inteiros.
@@ -17,8 +18,24 @@ export function tokensSaved(p: ProjectSnapshot): number {
   return s ? Math.max(0, s.baseline - s.delivered) : 0
 }
 
-export function needsAttention(state: ProjectState): boolean {
-  return isOutdated(state) || hasProblem(state)
+export function needsAttention(state: ProjectState, attention: string | null = null): boolean {
+  return isOutdated(state) || hasProblem(state) || attention !== null
+}
+
+/**
+ * Problema de embedding que o selo não mostra (RAGX-0199), em texto: buscas das últimas 24 h que caíram para
+ * palavra-chave (`degraded` no `mcp.jsonl`), ou embeddings pendentes num projeto do Ollama com o Ollama fora do ar
+ * (gerar embeddings não vai andar). `null` quando não há nada a dizer.
+ */
+export function embeddingAttention(p: ProjectSnapshot, ollamaDown: boolean): string | null {
+  const degraded = p.telemetry.degradedCalls ?? 0
+  if (degraded > 0) {
+    return `${formatNumber(degraded)} busca(s) nas últimas 24 h caíram para palavra-chave: o modelo de embedding não respondeu.`
+  }
+  if (ollamaDown && p.embeddingProvider === 'ollama' && (p.counts?.pendingEmbeddings ?? 0) > 0) {
+    return 'Embeddings pendentes e o Ollama não está respondendo: inicie-o em Conexões.'
+  }
+  return null
 }
 
 export type SortKey = 'nome' | 'uso' | 'estado'

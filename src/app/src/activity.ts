@@ -1,4 +1,5 @@
 import type { ActivityEvent } from './types/ragx-bridge'
+import { isRagxUse } from '../electron/data/ragx-use'
 
 /** "Em uso agora": houve evento no último minuto. */
 export const LIVE_MS = 60_000
@@ -21,14 +22,22 @@ export function mergeEvents(prev: readonly ActivityEvent[], incoming: readonly A
     .slice(0, MAX)
 }
 
-/** Projetos com evento no último minuto. `events` vem do mais novo para o mais antigo. */
+/**
+ * Projetos que USARAM o RAGX no último minuto (`isRagxUse`): sessão aberta e lembrete de busca não acendem "Em uso
+ * agora", que diz "o agente chamou o RAGX". `events` vem do mais novo para o mais antigo.
+ */
 export function liveProjectIds(events: readonly ActivityEvent[], now: number): Set<string> {
   const out = new Set<string>()
   for (const e of events) {
     if (now - ms(e.ts) > LIVE_MS) break
-    out.add(e.projectId)
+    if (isRagxUse(e)) out.add(e.projectId)
   }
   return out
+}
+
+/** Algum projeto usou o RAGX no último minuto (o indicador da tela de atividade). */
+export function isLiveNow(events: readonly ActivityEvent[], now: number): boolean {
+  return liveProjectIds(events, now).size > 0
 }
 
 /** Quem fez: o perfil do Claude quando se sabe, o terminal, ou um agente MCP sem nome. */
@@ -38,13 +47,14 @@ export function whoLabel(e: ActivityEvent): string {
     return e.kind === 'cli' ? `Terminal do Claude${perfil}` : `Claude Code${perfil}`
   }
   if (e.kind === 'cli') return 'Terminal'
-  if (e.kind === 'session') return `Claude Code${perfil}`
+  if (e.kind === 'session' || e.kind === 'nudge') return `Claude Code${perfil}`
   return 'Agente MCP'
 }
 
-/** O que foi: a ferramenta MCP, o comando da CLI ou a sessão aberta. */
+/** O que foi: a ferramenta MCP, o comando da CLI, a sessão aberta ou o lembrete de busca mostrado. */
 export function whatLabel(e: ActivityEvent): string {
   if (e.kind === 'session') return 'Sessão iniciada'
+  if (e.kind === 'nudge') return 'Lembrete de busca mostrado'
   if (e.kind === 'cli') return `ragx ${e.name}`
   return e.name
 }
@@ -64,21 +74,28 @@ export function filterEvents(events: readonly ActivityEvent[], kind: ActivityFil
 
 export interface ActivityTotals {
   calls: number
+  /** Sessões distintas com `session_start` (pelo `session`; linha sem `session` conta sozinha). */
   sessions: number
+  /** Comandos de consulta no terminal: o lembrete `nudge` e o `session_start` não entram. */
   cliCommands: number
   delivered: number
   baseline: number
+  /** Projetos que usaram o RAGX (`isRagxUse`) na janela. */
   projects: number
 }
 
 export function totals(events: readonly ActivityEvent[]): ActivityTotals {
   const projetos = new Set<string>()
+  const sessoes = new Set<string>()
   const t: ActivityTotals = { calls: 0, sessions: 0, cliCommands: 0, delivered: 0, baseline: 0, projects: 0 }
   for (const e of events) {
-    projetos.add(e.projectId)
+    if (isRagxUse(e)) projetos.add(e.projectId)
     if (e.kind === 'mcp') t.calls += 1
-    else if (e.kind === 'session') t.sessions += 1
-    else t.cliCommands += 1
+    else if (e.kind === 'cli') t.cliCommands += 1
+    else if (e.kind === 'session') {
+      // retomada, `/clear` e compactação gravam outro `session_start` com o MESMO id: é a mesma sessão
+      sessoes.add(e.session ? `${e.projectId}\u0000${e.session}` : e.id)
+    }
     // Só a chamada com as duas medidas entra na economia (como no detalhe do projeto).
     if (e.tokensDelivered !== null && e.baselineTokens !== null) {
       t.delivered += e.tokensDelivered
@@ -86,5 +103,6 @@ export function totals(events: readonly ActivityEvent[]): ActivityTotals {
     }
   }
   t.projects = projetos.size
+  t.sessions = sessoes.size
   return t
 }

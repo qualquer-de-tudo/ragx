@@ -418,6 +418,23 @@ describe('ProjectsPage: resumo, números, ordenar e grade/lista (RAGX-0127)', ()
     expect(resumo.getByText('Pedem atenção').nextSibling).toHaveTextContent('1')
   })
 
+  it('busca degradada (embedding fora) pede atenção, em texto no card e no resumo', () => {
+    const degradado = snap({ id: 'd', name: 'Delta', path: 'C:/p/delta', telemetry: { ...tele(3, '2026-09-23T11:00:00Z'), degradedCalls: 2 } })
+    render(<ProjectsPage projects={[...USO, degradado]} jobs={[]} query="" onOpen={vi.fn()} />)
+    const resumo = within(screen.getByLabelText('Resumo dos projetos'))
+    expect(resumo.getByText('Pedem atenção').nextSibling).toHaveTextContent('2')
+    expect(resumo.getByText('defasados ou com problema · 1 com busca sem embedding')).toBeInTheDocument()
+    expect(within(card('Delta')).getByText(/2 busca\(s\) nas últimas 24 h caíram para palavra-chave/)).toBeInTheDocument()
+  })
+
+  it('embeddings pendentes com o Ollama fora do ar: o card diz por que não anda', () => {
+    const pendente = snap({ id: 'e', name: 'Épsilon', path: 'C:/p/eps', counts: { documents: 1, chunks: 10, embeddings: 4, pendingEmbeddings: 6 } })
+    const { rerender } = render(<ProjectsPage projects={[pendente]} jobs={[]} query="" onOpen={vi.fn()} />)
+    expect(within(card('Épsilon')).queryByText(/Ollama não está respondendo/)).not.toBeInTheDocument()
+    rerender(<ProjectsPage projects={[pendente]} jobs={[]} query="" ollamaDown onOpen={vi.fn()} />)
+    expect(within(card('Épsilon')).getByText('Embeddings pendentes e o Ollama não está respondendo: inicie-o em Conexões.')).toBeInTheDocument()
+  })
+
   it('o card mostra economia, chamadas e documentos; sem medição, "sem uso"', () => {
     render(<ProjectsPage projects={USO} jobs={[]} query="" onOpen={vi.fn()} />)
     const beta = within(card('Beta'))

@@ -100,6 +100,30 @@ def _queda(cfg: Config, motivo: str, n_docs: int) -> RebuildReport:
     return report
 
 
+def update_documents_locked(
+    cfg: Config, rel_paths: Iterable[str], source: str, wait_s: float = 10.0
+) -> RebuildReport:
+    """`update_documents` sob a trava de indexação (RAGX-0199).
+
+    O `touch` e o `watch` atualizavam o grafo DEPOIS de soltar a trava; quando a atualização caía
+    no rebuild completo (símbolo novo, manifesto), segurava a escrita do banco por mais que o
+    `busy_timeout`, e o hook de git que chegava nessa hora morria com `database is locked` (3 vezes
+    no Juriflux). Com a trava, quem chega espera ou deixa o pedido pendente, como na indexação.
+    """
+    from ragx.core.errors import IndexBusyError
+    from ragx.indexing import lock
+
+    prazo = time.monotonic() + max(wait_s, 0.0)
+    while not lock.try_acquire(cfg.state_dir, "graph", source):
+        if time.monotonic() >= prazo:
+            raise IndexBusyError(lock.holder(cfg.state_dir))
+        time.sleep(0.25)
+    try:
+        return update_documents(cfg, rel_paths)
+    finally:
+        lock.release(cfg.state_dir)
+
+
 def update_documents(cfg: Config, rel_paths: Iterable[str]) -> RebuildReport:
     """Atualiza o grafo só dos documentos tocados (RAGX-0151); cai no `rebuild` completo quando a mudança não é local.
 
@@ -197,6 +221,8 @@ class GraphSearchOutcome:
     graph_only: int = 0
     timings_ms: dict[str, float] = field(default_factory=dict)
     partial: str | None = None  # vetores parciais da busca base (RAGX-0136)
+    #: a busca base caiu para palavra-chave (embedder fora): o motivo, como em `SearchOutcome`
+    degraded: str | None = None
     #: o vetor da consulta da busca base, repassado ao `build_context` (RAGX-0150)
     query_vec: np.ndarray | None = field(default=None, repr=False, compare=False)
 
@@ -216,6 +242,7 @@ def graph_search(
     base = search(cfg, query, mode="hybrid", limit=max(limit * 2, 20), filters=filters)
     out.timings_ms["search"] = (time.perf_counter() - t0) * 1000
     out.partial = base.partial
+    out.degraded = base.degraded
     out.query_vec = base.query_vec
     if not base.results:
         return out

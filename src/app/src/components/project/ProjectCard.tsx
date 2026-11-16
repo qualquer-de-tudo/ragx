@@ -31,6 +31,7 @@ export const ProjectCard = memo(function ProjectCard({
   job = null,
   active = null,
   failure = null,
+  attention = null,
   live = false,
   onOpen,
   onAction,
@@ -45,7 +46,9 @@ export const ProjectCard = memo(function ProjectCard({
   active?: JobView | null
   /** Erro da última tarefa do projeto, quando ela falhou. */
   failure?: string | null
-  /** Houve atividade (MCP, CLI, sessão) no último minuto. */
+  /** Problema de embedding que o selo não mostra (`embeddingAttention`), em texto. */
+  attention?: string | null
+  /** Houve uso do RAGX (MCP ou comando de consulta) no último minuto. */
   live?: boolean
   onOpen: (id: string) => void
   /** Estável entre renders (o card é `memo`): recebe o projeto, em vez de uma closure por linha. */
@@ -129,6 +132,7 @@ export const ProjectCard = memo(function ProjectCard({
           <div className="meter-fill" style={{ width: `${coverage * 100}%` }} />
         </div>
         <p className={`project-card-legend${missingEmbeddings ? ' is-warning' : ''}`}>{embLegend}</p>
+        {attention !== null && <p className="project-card-legend is-warning">{attention}</p>}
       </div>
 
       <div className="project-card-foot">

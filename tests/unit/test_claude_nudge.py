@@ -238,4 +238,8 @@ def test_latencia_do_lembrete_dentro_do_teto(tmp_path: Path) -> None:
         _nudge(_stdin(f"lat{i}", raiz), tmp_path, claude=False)
         tempos.append((time.perf_counter() - t0) * 1000)
     tempos.sort()
-    assert tempos[len(tempos) // 2] < 400  # folga de CI; a medição real está na task (alvo: 120 ms p50)
+    # O MÍNIMO, não a mediana: com `-n auto` os outros processos do pytest disputam a CPU e a
+    # mediana passava de 400 ms sem nada ter mudado (RAGX-0199). Uma regressão de verdade (um
+    # import pesado no caminho do hook) aparece em TODAS as rodadas, então aparece no mínimo também.
+    # A medição real está na task (alvo: 120 ms p50).
+    assert tempos[0] < 400

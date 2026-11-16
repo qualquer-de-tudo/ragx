@@ -25,7 +25,17 @@ import { LivePill } from '../components/shell/LivePill'
 import { RelativeTime } from '../components/shell/RelativeTime'
 import { Stat } from '../components/shell/Card'
 import { STATE_LABEL, STATE_TONE } from '../state'
-import { SORT_LABEL, listPrefs, needsAttention, savingsRatio, sortRows, tokensSaved, type ListView, type SortKey } from '../projectMetrics'
+import {
+  SORT_LABEL,
+  embeddingAttention,
+  listPrefs,
+  needsAttention,
+  savingsRatio,
+  sortRows,
+  tokensSaved,
+  type ListView,
+  type SortKey,
+} from '../projectMetrics'
 
 type Filter = 'all' | 'outdated' | 'problem'
 
@@ -47,6 +57,7 @@ const ProjectRow = memo(function ProjectRow({
   project,
   state,
   hint,
+  attention,
   active,
   live,
   onOpen,
@@ -55,6 +66,8 @@ const ProjectRow = memo(function ProjectRow({
   project: ProjectSnapshot
   state: ProjectState
   hint: string | null
+  /** Problema de embedding em texto (`embeddingAttention`). */
+  attention: string | null
   active: JobView | null
   live: boolean
   onOpen: (id: string) => void
@@ -72,6 +85,7 @@ const ProjectRow = memo(function ProjectRow({
       </th>
       <td>
         <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>
+        {attention !== null && <span className="projects-table-hint is-warning">{attention}</span>}
       </td>
       <td className="num">{ratio === null ? 'sem uso' : formatPercent(ratio)}</td>
       <td className="num">{formatNumber(project.telemetry.totalCalls)}</td>
@@ -95,6 +109,7 @@ export function ProjectsPage({
   jobs,
   query,
   liveIds,
+  ollamaDown = false,
   onOpen,
 }: {
   projects: ProjectSnapshot[]
@@ -102,6 +117,8 @@ export function ProjectsPage({
   query: string
   /** Projetos com atividade no último minuto (tela de atividade). */
   liveIds?: ReadonlySet<string>
+  /** O card do Ollama está em erro (só acontece quando algum projeto depende dele). */
+  ollamaDown?: boolean
   onOpen: (id: string) => void
 }) {
   const [filter, setFilter] = useState<Filter>('all')
@@ -147,8 +164,9 @@ export function ProjectsPage({
       hint: parentHint(project.path, base),
       job: jobs.find((j) => j.projectId === project.id && j.state === 'running') ?? null,
       failure: lastFailureFor(jobs, project.id),
+      attention: embeddingAttention(project, ollamaDown),
     }))
-  }, [projects, jobs])
+  }, [projects, jobs, ollamaDown])
 
   const q = foldForSearch(query.trim())
   const searched = q ? rows.filter((r) => foldForSearch(`${r.project.name}\n${r.project.path ?? ''}`).includes(q)) : rows
@@ -163,7 +181,8 @@ export function ProjectsPage({
   const resumo = {
     chamadas: projects.reduce((n, p) => n + p.telemetry.totalCalls, 0),
     economizados: projects.reduce((n, p) => n + tokensSaved(p), 0),
-    atencao: rows.filter((r) => needsAttention(r.state)).length,
+    atencao: rows.filter((r) => needsAttention(r.state, r.attention)).length,
+    degradados: rows.filter((r) => r.attention !== null).length,
   }
 
   return (
@@ -194,7 +213,13 @@ export function ProjectsPage({
           <Stat
             label="Pedem atenção"
             value={formatNumber(resumo.atencao)}
-            note={resumo.atencao === 0 ? 'tudo em dia' : 'defasados ou com problema'}
+            note={
+              resumo.atencao === 0
+                ? 'tudo em dia'
+                : resumo.degradados > 0
+                  ? `defasados ou com problema · ${formatNumber(resumo.degradados)} com busca sem embedding`
+                  : 'defasados ou com problema'
+            }
           />
         </div>
       )}
@@ -251,6 +276,7 @@ export function ProjectsPage({
                       project={r.project}
                       state={r.state}
                       hint={r.hint}
+                      attention={r.attention}
                       active={activeAction(jobs, r.project.id, r.state)}
                       live={liveIds?.has(r.project.id) ?? false}
                       onOpen={onOpen}
@@ -282,6 +308,7 @@ export function ProjectsPage({
               job={r.job}
               active={activeAction(jobs, r.project.id, r.state)}
               failure={r.failure}
+              attention={r.attention}
               live={liveIds?.has(r.project.id) ?? false}
               onOpen={onOpen}
               onAction={queueAction}

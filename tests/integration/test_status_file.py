@@ -140,3 +140,27 @@ def test_running_e_nulo_quando_o_pid_foi_reutilizado(proj: Path) -> None:
     )
     write_status(cfg)
     assert _read(proj)["running"]["source"] == "watch"
+
+
+def test_last_error_vem_da_ultima_passada_que_falhou(proj: Path) -> None:
+    """RAGX-0199: a rodada com erro era pulada e `last_error` saía sempre nulo."""
+    import sqlite3
+
+    cfg = load_config(proj)
+    index_project(cfg, source="panel")
+    assert _read(proj)["last_error"] is None
+
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        conn.execute(
+            "INSERT INTO index_runs (started_at, finished_at, mode, error, source) "
+            "VALUES ('2026-11-16T00:00:00Z', '2026-11-16T00:00:01Z', 'incremental', 'disco cheio', 'hook:post-commit')"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    write_status(cfg)
+    assert _read(proj)["last_error"] == "disco cheio"
+
+    index_project(cfg, source="panel")  # a passada seguinte deu certo: o erro deixa de valer
+    assert _read(proj)["last_error"] is None

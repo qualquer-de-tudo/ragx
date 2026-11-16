@@ -40,6 +40,8 @@ export interface ProjectSnapshot {
   pending: boolean
   lastError: string | null
   hasStatusFile: boolean
+  /** `written_at` de `status.json`: muda a cada run (inclusive de caminhos ou com falha). Opcional em fixtures antigas. */
+  statusWrittenAt?: string | null
   telemetry: TelemetrySummary
 }
 
@@ -112,8 +114,9 @@ export interface ConnectionCheck {
   actions: ConnectionAction[]
   help: string | null
   /**
-   * Maior `telemetry.lastCallAt` entre os projetos do snapshot, ou `null`
-   * quando não há snapshot ou nenhum projeto tem chamada registrada.
+   * Última chamada do Claude Code (`telemetry.lastCallByClient['claude-code']`)
+   * entre os projetos do snapshot, ou `null` quando não há snapshot ou nenhuma
+   * chamada do Claude registrada (outro cliente ou linha sem `client` não conta).
    * Só é preenchido na checagem `claude`; nas outras é sempre `null`. O
    * processo principal do Electron não formata data relativa (tsconfig
    * de build usa `rootDir: "electron"`, então `formatRelative` de

@@ -3,8 +3,8 @@ import type { ActivityEvent, JobView, ProjectSnapshot } from '../types/ragx-brid
 import {
   FILTER_LABEL,
   ACTIVITY_MAX,
-  LIVE_MS,
   filterEvents,
+  isLiveNow,
   totals,
   type ActivityFilter,
 } from '../activity'
@@ -105,7 +105,9 @@ export function ActivityPage({
   const pageEvents = useMemo(() => shown.slice(current * pageSize, (current + 1) * pageSize), [shown, current, pageSize])
   const pageSessions = useMemo(() => sessions.slice(current * pageSize, (current + 1) * pageSize), [sessions, current, pageSize])
   const running = runningNow(projects, jobs)
-  const live = events.length > 0 && now - Date.parse(events[0].ts) <= LIVE_MS
+  const live = isLiveNow(events, now)
+  // O MESMO agregado da tela Projetos (telemetria de `mcp.jsonl`, 24 h): o feed tem teto de eventos e não serve de soma.
+  const mcpCalls = projects.reduce((n, p) => n + p.telemetry.totalCalls, 0)
   const withActivity = useMemo(() => {
     const ids = new Set(events.map((e) => e.projectId))
     return projects.filter((p) => ids.has(p.id)).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
@@ -129,7 +131,7 @@ export function ActivityPage({
       </header>
 
       <div className="stats stats-4">
-        <Stat label="Chamadas MCP" value={formatNumber(t.calls)} note="últimas 24 h" />
+        <Stat label="Chamadas MCP" value={formatNumber(mcpCalls)} note="últimas 24 h" />
         <Stat label="Sessões do Claude" value={formatNumber(t.sessions)} note={`${formatNumber(t.cliCommands)} comando(s) no terminal`} />
         <Stat
           label="Tokens economizados"

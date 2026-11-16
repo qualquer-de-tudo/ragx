@@ -269,7 +269,22 @@ export function createHandlers(deps: HandlerDeps) {
     const profiles = parseClaudeProfiles(out.profiles)
     // `profiles add/remove` não dizem `enabled`: ligado é todos os perfis ligados, como no `status`.
     const enabled = typeof out.enabled === 'boolean' ? out.enabled : profiles.length > 0 && profiles.every((p) => p.enabled)
+    lastClaude = { enabled, profiles }
     return { enabled, profiles }
+  }
+
+  /** Última resposta de `ragx claude ...` que deu certo: o card do Claude Code a usa no tick leve, sem processo. */
+  let lastClaude: ClaudeIntegration | null = null
+
+  /**
+   * Mudou o Claude Code pelo interruptor (global ou por perfil): confere as conexões de novo, como no fim de uma tarefa
+   * de conexão, para o card e o cabeçalho não esperarem o próximo tick. Não segura a resposta do interruptor.
+   */
+  function recheckAfterClaude(run: Promise<ClaudeIntegration>): Promise<ClaudeIntegration> {
+    return run.then((result) => {
+      connections.fresh().catch((err: unknown) => console.error('checagem de conexoes falhou apos mudar o Claude Code:', err))
+      return result
+    })
   }
 
   /** Um pedido por vez no Claude Code: dois cliques rápidos não gravam a mesma configuração juntos. */
@@ -643,7 +658,7 @@ export function createHandlers(deps: HandlerDeps) {
       const args = enabledUnknown
         ? ['claude', 'on', ...(exe ? ['--command', exe] : []), '--json']
         : ['claude', 'off', '--json']
-      return inClaudeChain(() => claudeCommand(args))
+      return recheckAfterClaude(inClaudeChain(() => claudeCommand(args)))
     },
 
     /** Liga ou desliga o RAGX num perfil só (`ragx claude on|off --profile`). */
@@ -651,7 +666,7 @@ export function createHandlers(deps: HandlerDeps) {
       if (typeof enabledUnknown !== 'boolean') {
         throw rejected('enabled precisa ser booleano')
       }
-      return inClaudeChain(async () => {
+      return recheckAfterClaude(inClaudeChain(async () => {
         const perfil = await knownProfile(idUnknown)
         const exe = enabledUnknown ? deps.getRagxExe?.() : undefined
         return claudeCommand(
@@ -659,7 +674,7 @@ export function createHandlers(deps: HandlerDeps) {
             ? ['claude', 'on', '--profile', perfil.id, ...(exe ? ['--command', exe] : []), '--json']
             : ['claude', 'off', '--profile', perfil.id, '--json'],
         )
-      })
+      }))
     },
 
     /**
@@ -671,9 +686,9 @@ export function createHandlers(deps: HandlerDeps) {
       const dir = deps.folderTokens.get(tokenUnknown)
       if (dir === undefined) throw rejected('pasta desconhecida: escolha de novo')
       const exe = deps.getRagxExe?.()
-      return inClaudeChain(() =>
+      return recheckAfterClaude(inClaudeChain(() =>
         claudeCommand(['claude', 'profiles', 'add', dir, '--on', ...(exe ? ['--command', exe] : []), '--json']),
-      )
+      ))
     },
 
     /**
@@ -681,12 +696,28 @@ export function createHandlers(deps: HandlerDeps) {
      * clica "Remover", o esperado é o RAGX sair daquela conta, não só da lista.
      */
     removeClaudeProfile(idUnknown: unknown): Promise<ClaudeIntegration> {
-      return inClaudeChain(async () => {
+      return recheckAfterClaude(inClaudeChain(async () => {
         const perfil = await knownProfile(idUnknown)
         if (!perfil.added) throw rejected('só dá para remover um perfil adicionado à mão')
         if (perfil.enabled) await claudeCommand(['claude', 'off', '--profile', perfil.id, '--json'])
         return claudeCommand(['claude', 'profiles', 'remove', perfil.dir, '--json'])
-      })
+      }))
+    },
+
+    /**
+     * Perfis do Claude Code para o card de conexão (processo principal, não é canal de IPC): a MESMA fonte do
+     * interruptor por perfil. Checagem completa pergunta à CLI (na fila do Claude Code, para não ler no meio de uma
+     * gravação); a leve, do tick de 30 s, usa a última resposta, sem processo. `null` sem dado.
+     */
+    async claudeProfilesForChecks(light: boolean): Promise<ClaudeProfile[] | null> {
+      if (!light) {
+        try {
+          await inClaudeChain(() => claudeCommand(['claude', 'status', '--json']))
+        } catch {
+          // CLI antiga ou fora do ar: fica a última resposta conhecida
+        }
+      }
+      return lastClaude?.profiles ?? null
     },
 
     /** Esquece o benchmark: uma troca, parada ou início do Ollama terminou (processo principal, não é canal de IPC). */

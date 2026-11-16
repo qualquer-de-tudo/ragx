@@ -18,6 +18,16 @@ const BADGE: Record<ConnectionCheck['state'], { tone: Tone; label: string }> = {
 }
 
 /**
+ * Selo do card. Um `ok` com rótulo próprio (o Ollama "Não usado": nenhum projeto depende dele) é neutro, nunca
+ * "Conectado" em verde: o serviço pode estar parado.
+ */
+function badgeFor(check: Pick<ConnectionCheck, 'state' | 'stateLabel'>): { tone: Tone; label: string } {
+  const base = BADGE[check.state]
+  if (check.state === 'ok' && check.stateLabel && check.stateLabel !== base.label) return { tone: 'muted', label: check.stateLabel }
+  return base
+}
+
+/**
  * Títulos dos três cards antes da primeira checagem (mesma ordem de
  * `checkAll`). O do Ollama não diz o modo: só a checagem sabe se é Docker ou
  * local.
@@ -149,7 +159,7 @@ export const ConnectionCard = memo(function ConnectionCard({
   const titleId = useId()
   // "Última chamada MCP" avança sozinho: o card assina o relógio de 60 s, o resto da tela não.
   const clock = useClock(60_000)
-  const badge = BADGE[check.state]
+  const badge = badgeFor(check)
   const [measuring, setMeasuring] = useState(false)
   const [benchError, setBenchError] = useState<string | null>(null)
   const alive = useRef(true)

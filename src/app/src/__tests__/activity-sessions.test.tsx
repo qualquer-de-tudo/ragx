@@ -49,7 +49,9 @@ describe('Atividade: visão Sessões', () => {
     const list = screen.getByRole('list', { name: /Sessões, da mais recente/ })
     expect(within(list).getAllByRole('button')).toHaveLength(2) // abcd1234 e zzzz9999
     expect(screen.getByText(/Claude Code · empresa · Juriflux · sessão abcd1234 · /)).toBeInTheDocument()
-    expect(screen.getByText(/2 chamada\(s\) MCP, 0 comando\(s\) ragx, .* usou o RAGX, 2 inícios de contexto \(subagentes\), 1 falha\(s\)/)).toBeInTheDocument()
+    expect(screen.getByText(/2 chamada\(s\) MCP, 0 comando\(s\) ragx, .* usou o RAGX, 2 inícios de contexto, 1 falha\(s\)/)).toBeInTheDocument()
+    // repetição vem de retomada, /clear ou compactação: nunca "subagentes"
+    expect(screen.queryByText(/subagente/)).not.toBeInTheDocument()
   })
 
   it('log sem ok mostra "falhas: sem dado", nunca "0 falha(s)"', () => {

@@ -16,6 +16,21 @@ interface LogLine {
   err_code?: string
   resp_chars?: number
   resp_tokens?: number
+  /** Quem chamou (`claude-code`, `codex-mcp-client`...); linha sem ele: cliente desconhecido. */
+  client?: string
+  /** A busca caiu para palavra-chave porque o embedder (Ollama) não respondeu. */
+  degraded?: boolean
+}
+
+/** Guarda o maior `ts` por cliente; linha sem `client` não é atribuída a ninguém. */
+function trackClient(byClient: Map<string, { ms: number; ts: string }>, entry: LogLine, entryMs: number): void {
+  if (typeof entry.client !== 'string' || entry.client.length === 0) return
+  const cur = byClient.get(entry.client)
+  if (cur === undefined || entryMs > cur.ms) byClient.set(entry.client, { ms: entryMs, ts: entry.ts })
+}
+
+function clientRecord(byClient: Map<string, { ms: number; ts: string }>): Record<string, string> {
+  return Object.fromEntries([...byClient].map(([client, v]) => [client, v.ts]))
 }
 
 /** Dias no gráfico de economia do detalhe do projeto. */
@@ -64,7 +79,10 @@ function addSavings(series: SavingsSeries, byDate: Map<string, SavingsDay>, entr
 export function readTelemetryFull(projectPath: string, sinceHours: number): TelemetrySummary {
   const logPath = path.join(projectPath, '.ragx', 'logs', 'mcp.jsonl')
   if (!fs.existsSync(logPath)) {
-    return { callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null, savings: emptySavings(Date.now()) }
+    return {
+      callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null, savings: emptySavings(Date.now()),
+      lastCallByClient: {}, degradedCalls: 0,
+    }
   }
 
   const cutoff = Date.now() - sinceHours * 3600 * 1000
@@ -75,6 +93,8 @@ export function readTelemetryFull(projectPath: string, sinceHours: number): Tele
   // abaixo) - por isso rastreado fora do `continue` que filtra a janela.
   let lastCallAt: string | null = null
   let lastCallAtMs = -Infinity
+  const byClient = new Map<string, { ms: number; ts: string }>()
+  let degradedCalls = 0
 
   const savings = emptySavings(Date.now())
   const byDate = new Map(savings.days.map((d) => [d.date, d]))
@@ -98,12 +118,14 @@ export function readTelemetryFull(projectPath: string, sinceHours: number): Tele
       lastCallAtMs = entryMs
       lastCallAt = entry.ts
     }
+    if (!Number.isNaN(entryMs)) trackClient(byClient, entry, entryMs)
 
     if (!Number.isNaN(entryMs)) addSavings(savings, byDate, entry, entryMs)
 
     if (entryMs < cutoff) continue
 
     totalCalls += 1
+    if (entry.degraded === true) degradedCalls += 1
     byTool.set(entry.tool, (byTool.get(entry.tool) ?? 0) + 1)
     if (typeof entry.tokens_delivered === 'number') {
       tokensDelivered += entry.tokens_delivered
@@ -116,6 +138,8 @@ export function readTelemetryFull(projectPath: string, sinceHours: number): Tele
     tokensDelivered,
     lastCallAt,
     savings,
+    lastCallByClient: clientRecord(byClient),
+    degradedCalls,
   }
 }
 
@@ -136,6 +160,7 @@ interface WindowEntry {
   ms: number
   tool: string
   tokens: number
+  degraded: boolean
 }
 
 interface FileState {
@@ -144,10 +169,11 @@ interface FileState {
   windowHours: number
   lastCallAtMs: number
   lastCallAt: string | null
+  byClient: Map<string, { ms: number; ts: string }>
   days: Map<string, DayBucket>
   window: WindowEntry[]
   /** Linhas sem `ts` válido: a leitura completa as conta SEMPRE (`NaN < cutoff` é falso), e nunca saem da janela. */
-  undated: { byTool: Map<string, number>; calls: number; tokens: number }
+  undated: { byTool: Map<string, number>; calls: number; tokens: number; degraded: number }
   summary: TelemetrySummary | null
   validUntil: number
 }
@@ -159,9 +185,10 @@ function freshState(windowHours: number): FileState {
     windowHours,
     lastCallAtMs: -Infinity,
     lastCallAt: null,
+    byClient: new Map(),
     days: new Map(),
     window: [],
-    undated: { byTool: new Map(), calls: 0, tokens: 0 },
+    undated: { byTool: new Map(), calls: 0, tokens: 0, degraded: 0 },
     summary: null,
     validUntil: -Infinity,
   }
@@ -181,16 +208,19 @@ function ingest(state: FileState, text: string, nowMs: number): void {
 
     const entryMs = new Date(entry.ts).getTime()
     const tokens = typeof entry.tokens_delivered === 'number' ? entry.tokens_delivered : 0
+    const degraded = entry.degraded === true
     if (Number.isNaN(entryMs)) {
       state.undated.calls += 1
       state.undated.byTool.set(entry.tool, (state.undated.byTool.get(entry.tool) ?? 0) + 1)
       state.undated.tokens += tokens
+      if (degraded) state.undated.degraded += 1
       continue
     }
     if (entryMs > state.lastCallAtMs) {
       state.lastCallAtMs = entryMs
       state.lastCallAt = entry.ts
     }
+    trackClient(state.byClient, entry, entryMs)
     if (entry.tool === 'build_context' && typeof entry.tokens_delivered === 'number' && typeof entry.baseline_tokens === 'number') {
       const key = localDate(entryMs)
       const day = state.days.get(key) ?? { baseline: 0, delivered: 0, calls: 0 }
@@ -199,7 +229,7 @@ function ingest(state: FileState, text: string, nowMs: number): void {
       day.calls += 1
       state.days.set(key, day)
     }
-    if (entryMs >= cutoff) state.window.push({ ms: entryMs, tool: entry.tool, tokens })
+    if (entryMs >= cutoff) state.window.push({ ms: entryMs, tool: entry.tool, tokens, degraded })
   }
 }
 
@@ -209,10 +239,12 @@ function summarizeState(state: FileState, sinceHours: number, nowMs: number): Te
   const byTool = new Map(state.undated.byTool)
   let totalCalls = state.undated.calls
   let tokensDelivered = state.undated.tokens
+  let degradedCalls = state.undated.degraded
   for (const e of state.window) {
     totalCalls += 1
     byTool.set(e.tool, (byTool.get(e.tool) ?? 0) + 1)
     tokensDelivered += e.tokens
+    if (e.degraded) degradedCalls += 1
   }
 
   const savings = emptySavings(nowMs)
@@ -243,6 +275,8 @@ function summarizeState(state: FileState, sinceHours: number, nowMs: number): Te
     tokensDelivered,
     lastCallAt: state.lastCallAt,
     savings,
+    lastCallByClient: clientRecord(state.byClient),
+    degradedCalls,
   }
 }
 
@@ -275,7 +309,10 @@ export function createTelemetryTail(io: TailFs = nodeTailFs, now: () => number =
       const size = io.size(logPath)
       if (size === null) {
         states.delete(logPath)
-        return { callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null, savings: emptySavings(nowMs) }
+        return {
+          callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null, savings: emptySavings(nowMs),
+          lastCallByClient: {}, degradedCalls: 0,
+        }
       }
       const signature = io.signature?.(logPath) ?? null
       let state = states.get(logPath)

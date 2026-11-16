@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { ActivityEvent, ActivityKind } from './types'
 import { ADOPTION_DAYS, type AdoptionSession } from './adoption'
+import { cliKindFor, isRagxUse } from './ragx-use'
 
 /** Janela do feed: o que passou disso sai da memória. */
 export const ACTIVITY_WINDOW_MS = 24 * 60 * 60 * 1000
@@ -92,7 +93,7 @@ export function parseLine(line: string, source: ActivitySource, log: 'mcp.jsonl'
     name = str(r.tool)
   } else {
     name = str(r.command)
-    kind = name === 'session_start' ? 'session' : 'cli'
+    kind = cliKindFor(name ?? '')
   }
   if (name === null) return null
   return {
@@ -174,7 +175,7 @@ export class ActivityTail {
       if (Date.parse(e.ts) > Date.parse(s.lastAt)) s.lastAt = e.ts
       if (e.kind === 'session') {
         if (s.startedAt === null || Date.parse(e.ts) < Date.parse(s.startedAt)) s.startedAt = e.ts
-      } else if (e.name !== 'nudge') {
+      } else if (isRagxUse(e)) {
         s.calls += 1
       }
     }

@@ -48,6 +48,14 @@ describe('ConnectionsPage', () => {
     expect(within(card('Ollama (Docker)')).getByText('Não conectado')).toBeInTheDocument()
   })
 
+  it('Ollama sem projeto dependente ("Não usado") tem selo neutro, nunca "Conectado"', () => {
+    installBridge()
+    renderPage({ connections: connectionChecks({ ollama: { state: 'ok', stateLabel: 'Não usado', summary: 'Nenhum projeto usa o Ollama agora.' } }) })
+    const ollama = card('Ollama (Docker)')
+    expect(within(ollama).getByText('Não usado')).toBeInTheDocument()
+    expect(within(ollama).queryByText('Conectado')).not.toBeInTheDocument()
+  })
+
   it('mostra o resumo e os fatos (rótulo e valor) de cada card', () => {
     installBridge()
     renderPage()

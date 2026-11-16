@@ -438,12 +438,23 @@ const handlers = createHandlers({
     // Uma detecção do ambiente do Ollama por ciclo (`getConnections` já
     // garante um ciclo por vez); o card usa esse mesmo ambiente, sem um
     // segundo `docker ps`. `handlers` só é lido aqui, depois de criado.
-    const env = await (opts?.light ? ollamaEnv.light() : ollamaEnv.fresh()).catch((err: unknown) => {
-      console.error('detectOllama() falhou:', err)
-      return null
-    })
+    const [env, claudeProfiles] = await Promise.all([
+      (opts?.light ? ollamaEnv.light() : ollamaEnv.fresh()).catch((err: unknown) => {
+        console.error('detectOllama() falhou:', err)
+        return null
+      }),
+      // Os perfis do interruptor (`ragx claude status`): o card do Claude Code conta todos, não só o ~/.claude.json.
+      handlers.claudeProfilesForChecks(opts?.light === true).catch(() => null),
+    ])
     // O modo preferido decide o texto do "Iniciar" (o mesmo que o catálogo roda).
-    const checks = await checkAll(defaultCheckDeps(), snapshot, env, handlers.getLastBenchmark(), preferredOllamaMode())
+    const checks = await checkAll(
+      defaultCheckDeps(),
+      snapshot,
+      env,
+      handlers.getLastBenchmark(),
+      preferredOllamaMode(),
+      claudeProfiles,
+    )
     latestConnections = checks
     return checks
   },

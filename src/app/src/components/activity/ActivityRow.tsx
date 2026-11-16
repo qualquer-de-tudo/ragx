@@ -15,7 +15,7 @@ function msText(ms: number | null): string | null {
   return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s`
 }
 
-const KIND_LABEL: Record<ActivityEvent['kind'], string> = { mcp: 'MCP', cli: 'CLI', session: 'Sessão' }
+const KIND_LABEL: Record<ActivityEvent['kind'], string> = { mcp: 'MCP', cli: 'CLI', session: 'Sessão', nudge: 'Lembrete' }
 
 /**
  * Uma linha do feed de atividade: hora, tipo, o quê e onde, quem e os detalhes. Usada pelo feed e pela sessão expandida

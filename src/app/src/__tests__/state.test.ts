@@ -1,8 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { activeConnectionJob, activeOllamaSwitch, busyProjectIds, deriveProjectState } from '../state'
+import { activeConnectionJob, activeOllamaSwitch, busyProjectIds, deriveProjectState, withFreshness } from '../state'
 import { job, snap } from '../test/snap'
 
 const none = new Set<string>()
+
+describe('withFreshness: a regra única do selo e de "Está em dia?"', () => {
+  it('"defasado" do ragx status (arquivo alterado sem commit) deixa o selo Defasado', () => {
+    expect(withFreshness('ok', { state: 'stale' })).toBe('stale')
+    expect(withFreshness('no-hooks', { state: 'stale' })).toBe('stale')
+  })
+
+  it('em dia, desconhecido ou sem resposta: fica o estado do snapshot', () => {
+    expect(withFreshness('ok', { state: 'fresh' })).toBe('ok')
+    expect(withFreshness('ok', { state: 'unknown' })).toBe('ok')
+    expect(withFreshness('ok', null)).toBe('ok')
+  })
+
+  it('estados mais graves não mudam', () => {
+    for (const s of ['missing', 'indexing', 'error', 'embeddings', 'stale'] as const) {
+      expect(withFreshness(s, { state: 'stale' })).toBe(s)
+    }
+  })
+})
 
 describe('deriveProjectState', () => {
   it('ok quando tudo bate', () => expect(deriveProjectState(snap(), none)).toBe('ok'))

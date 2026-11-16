@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { ActivityPage } from '../ActivityPage'
 import { EVENTS_PER_PAGE } from '../../paging'
-import { liveProjectIds, mergeEvents, whoLabel } from '../../activity'
+import { isLiveNow, liveProjectIds, mergeEvents, whoLabel } from '../../activity'
 import { job, snap } from '../../test/snap'
 import type { ActivityEvent } from '../../types/ragx-bridge'
 
@@ -41,6 +41,16 @@ describe('atividade: regras', () => {
   it('"em uso agora" vale por um minuto', () => {
     const eventos = [ev({ projectId: 'p1', ts: '2026-09-29T19:59:30Z' }), ev({ projectId: 'p2', ts: '2026-09-29T19:58:00Z' })]
     expect([...liveProjectIds(eventos, NOW)]).toEqual(['p1'])
+  })
+
+  it('"em uso agora" só acende com uso do RAGX: sessão aberta e lembrete nudge não contam', () => {
+    const eventos = [
+      ev({ projectId: 'p1', ts: '2026-09-29T19:59:50Z', kind: 'nudge', name: 'nudge' }),
+      ev({ projectId: 'p2', ts: '2026-09-29T19:59:40Z', kind: 'session', name: 'session_start' }),
+      ev({ projectId: 'p3', ts: '2026-09-29T19:59:30Z', kind: 'cli', name: 'search' }),
+    ]
+    expect([...liveProjectIds(eventos, NOW)]).toEqual(['p3'])
+    expect(isLiveNow(eventos.slice(0, 2), NOW)).toBe(false)
   })
 
   it('quem: perfil do Claude, terminal do Claude, terminal, agente sem nome', () => {
@@ -86,16 +96,38 @@ describe('ActivityPage', () => {
   })
 
   it('resume o dia: chamadas, sessões, comandos, economia e projetos em uso', () => {
-    renderPage([
-      ev({ id: '1' }),
-      ev({ id: '2', kind: 'session', name: 'session_start', tokensDelivered: null, baselineTokens: null }),
-      ev({ id: '3', kind: 'cli', name: 'search', projectId: 'p2', projectName: 'ragx', tokensDelivered: null, baselineTokens: null }),
-    ])
-    expect(screen.getByText('Chamadas MCP').nextSibling).toHaveTextContent('1')
+    const tel = (totalCalls: number) => ({ callsByTool: [], totalCalls, tokensDelivered: 0, lastCallAt: null })
+    renderPage(
+      [
+        ev({ id: '1' }),
+        ev({ id: '2', kind: 'session', name: 'session_start', tokensDelivered: null, baselineTokens: null }),
+        // retomada da MESMA sessão: não é outra sessão
+        ev({ id: '2b', kind: 'session', name: 'session_start', tokensDelivered: null, baselineTokens: null }),
+        ev({ id: '3', kind: 'cli', name: 'search', projectId: 'p2', projectName: 'ragx', tokensDelivered: null, baselineTokens: null }),
+        // o lembrete não é comando no terminal
+        ev({ id: '4', kind: 'nudge', name: 'nudge', tokensDelivered: null, baselineTokens: null }),
+      ],
+      // "Chamadas MCP" vem da telemetria (o mesmo número da tela Projetos), não do feed com teto
+      { projects: [snap({ id: 'p1', name: 'Juriflux', telemetry: tel(40) }), snap({ id: 'p2', name: 'ragx', telemetry: tel(2) })] },
+    )
+    expect(screen.getByText('Chamadas MCP').nextSibling).toHaveTextContent('42')
     expect(screen.getByText('Sessões do Claude').nextSibling).toHaveTextContent('1')
     expect(screen.getByText('1 comando(s) no terminal')).toBeInTheDocument()
     expect(screen.getByText('91% menos que ler os arquivos')).toBeInTheDocument()
     expect(screen.getByText('Projetos em uso').nextSibling).toHaveTextContent('2')
+  })
+
+  it('sessões distintas pelo id; linha sem id conta sozinha', () => {
+    const s = (id: string, session: string | null) =>
+      ev({ id, kind: 'session', name: 'session_start', session, tokensDelivered: null, baselineTokens: null })
+    renderPage([s('a', 'x1'), s('b', 'x1'), s('c', 'x2'), s('d', null), s('e', null)])
+    expect(screen.getByText('Sessões do Claude').nextSibling).toHaveTextContent('4')
+  })
+
+  it('só lembrete nudge no último minuto: o indicador não diz "Em uso agora"', () => {
+    renderPage([ev({ kind: 'nudge', name: 'nudge', tokensDelivered: null, baselineTokens: null })])
+    expect(screen.getAllByRole('status').map((n) => n.textContent).join(' ')).toContain('nada no último minuto')
+    expect(screen.getByText('Lembrete de busca mostrado')).toBeInTheDocument()
   })
 
   it('filtra por tipo e por projeto', () => {

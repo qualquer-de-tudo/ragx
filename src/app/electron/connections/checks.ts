@@ -86,21 +86,58 @@ function commandNoLongerExists(command: string | undefined, d: CheckDeps): boole
   return false
 }
 
+/** `client` que o servidor MCP grava quando quem chamou foi o Claude Code. */
+const CLAUDE_CLIENT = 'claude-code'
+
 /**
+ * Última chamada MCP do CLAUDE CODE entre os projetos (`telemetry.lastCallByClient['claude-code']`): chamada do Codex
+ * ou de linha sem `client` (cliente desconhecido) não é atribuída ao Claude.
+ *
  * Nunca lança: `snapshot` vem do processo principal, mas pode ter passado
  * por serialização/deserialização de IPC ou vir de um mock malformado
  * em teste - `projects` pode não ser um array, e cada entrada pode não
  * ter `telemetry`. Qualquer forma inesperada vira "sem dado", não exceção.
  */
-function maxLastCallAt(snapshot: Snapshot | null): string | null {
+function lastClaudeCallAt(snapshot: Snapshot | null): string | null {
   if (!snapshot || !Array.isArray(snapshot.projects)) return null
   let best: string | null = null
   for (const proj of snapshot.projects) {
-    const at = (proj as { telemetry?: { lastCallAt?: unknown } } | null | undefined)?.telemetry?.lastCallAt
+    const byClient = (proj as { telemetry?: { lastCallByClient?: unknown } } | null | undefined)?.telemetry?.lastCallByClient
+    if (typeof byClient !== 'object' || byClient === null) continue
+    const at = (byClient as Record<string, unknown>)[CLAUDE_CLIENT]
     if (typeof at !== 'string') continue
     if (best === null || Date.parse(at) > Date.parse(best)) best = at
   }
   return best
+}
+
+/** Um perfil do Claude Code como `ragx claude status --json` o lista (só o que o card usa). */
+export interface ClaudeProfileState {
+  label: string
+  enabled: boolean
+}
+
+/**
+ * O card lia só o `~/.claude.json` (o perfil padrão) e dizia "Não conectado" com o RAGX ligado num perfil extra, na
+ * mesma aba do interruptor por perfil. Com a lista de perfis (a mesma fonte do interruptor): basta um ligado para
+ * estar conectado, e o card diz quantos. Sem a lista (CLI antiga, falha), fica o que o `~/.claude.json` diz.
+ */
+function withProfiles(check: ConnectionCheck, profiles: readonly ClaudeProfileState[] | null | undefined): ConnectionCheck {
+  if (!Array.isArray(profiles) || profiles.length === 0) return check
+  const on = profiles.filter((p) => p.enabled)
+  const fact = { label: 'Perfis com o RAGX', value: `${on.length} de ${profiles.length}` }
+  if (on.length > 0 && check.state === 'error') {
+    return {
+      ...check,
+      state: 'ok',
+      stateLabel: stateLabelFor('ok'),
+      summary: `O RAGX está ligado em ${on.length} de ${profiles.length} perfil(is) do Claude Code.`,
+      facts: [fact, { label: 'Ligado em', value: on.slice(0, 5).map((p) => p.label).join(', ') }],
+      actions: [],
+      help: null,
+    }
+  }
+  return { ...check, facts: [fact, ...check.facts] }
 }
 
 // RAGX CLI ------------------------------------------------------------
@@ -187,7 +224,24 @@ export async function checkRagx(d: CheckDeps): Promise<ConnectionCheck> {
 
 // Claude Code -----------------------------------------------------------
 
-export async function checkClaude(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck> {
+/**
+ * `profiles`: a lista de `ragx claude status --json` (a mesma do interruptor por perfil), quando o processo principal
+ * a tem; `null`/ausente cai no que o `~/.claude.json` diz.
+ */
+export async function checkClaude(
+  d: CheckDeps,
+  snapshot: Snapshot | null,
+  profiles?: readonly ClaudeProfileState[] | null,
+): Promise<ConnectionCheck> {
+  const check = await checkClaudeJson(d, snapshot)
+  try {
+    return withProfiles(check, profiles)
+  } catch {
+    return check
+  }
+}
+
+async function checkClaudeJson(d: CheckDeps, snapshot: Snapshot | null): Promise<ConnectionCheck> {
   const id = 'claude' as const
   const title = 'Claude Code'
   // Valor seguro caso o próprio cálculo de `lastMcpCallAt` (que depende do
@@ -199,7 +253,7 @@ export async function checkClaude(d: CheckDeps, snapshot: Snapshot | null): Prom
     // Computado dentro do try: um snapshot malformado (ex.: `projects` não
     // é array) não pode derrubar a checagem inteira antes mesmo de ler o
     // ~/.claude.json.
-    lastMcpCallAt = maxLastCallAt(snapshot)
+    lastMcpCallAt = lastClaudeCallAt(snapshot)
 
     const claudeJsonPath = path.join(d.homeDir, '.claude.json')
     const raw = d.readFile(claudeJsonPath)
@@ -510,7 +564,42 @@ function ollamaCheckFromEnv(
   }
 }
 
+/** Rótulo do card do Ollama quando nenhum projeto depende dele: não é falha, só não está em uso. */
+export const OLLAMA_UNUSED_LABEL = 'Não usado'
+
+/**
+ * Ollama fora do ar só é ERRO quando algum projeto usa o provider `ollama` (`neededModelsFor` não vazio): quem só usa
+ * fastembed não pode ver o cabeçalho vermelho por um serviço de que não precisa. Sem dependente, o card fica neutro
+ * (estado `ok`, rótulo "Não usado") e mantém o motivo e a ação de iniciar, para quem quiser ligar.
+ */
+function neutralWhenUnused(check: ConnectionCheck, snapshot: Snapshot | null): ConnectionCheck {
+  // sem snapshot não se sabe quem depende: fica o erro de sempre
+  if (check.state !== 'error' || !snapshot || !Array.isArray(snapshot.projects)) return check
+  if (neededModelsFor(snapshot).models.length > 0) return check
+  return {
+    ...check,
+    state: 'ok',
+    stateLabel: OLLAMA_UNUSED_LABEL,
+    summary: `Nenhum projeto usa o Ollama agora. ${check.summary}`,
+  }
+}
+
 export async function checkOllama(
+  d: CheckDeps,
+  snapshot: Snapshot | null,
+  env?: OllamaEnvironment | null,
+  lastBenchmark?: OllamaBenchmark | null,
+  preferred: PreferredMode = null,
+): Promise<ConnectionCheck> {
+  const check = await checkOllamaRaw(d, snapshot, env, lastBenchmark, preferred)
+  try {
+    return neutralWhenUnused(check, snapshot)
+  } catch {
+    return check
+  }
+}
+
+async function checkOllamaRaw(
   d: CheckDeps,
   snapshot: Snapshot | null,
   env?: OllamaEnvironment | null,
@@ -699,10 +788,11 @@ export async function checkAll(
   env?: OllamaEnvironment | null,
   lastBenchmark?: OllamaBenchmark | null,
   preferred: PreferredMode = null,
+  claudeProfiles: readonly ClaudeProfileState[] | null = null,
 ): Promise<ConnectionCheck[]> {
   return Promise.all([
     guardCheck('ragx', 'RAGX CLI', () => checkRagx(d)),
-    guardCheck('claude', 'Claude Code', () => checkClaude(d, snapshot)),
+    guardCheck('claude', 'Claude Code', () => checkClaude(d, snapshot, claudeProfiles)),
     guardCheck('ollama', ollamaTitleFor(env), () => checkOllama(d, snapshot, env, lastBenchmark, preferred)),
   ])
 }

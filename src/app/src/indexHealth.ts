@@ -18,7 +18,7 @@ const RECENT_WINDOW = 3
 export type HealthLevel = 'ok' | 'warn' | 'bad'
 
 export interface HealthCheck {
-  id: 'embeddings' | 'last-run' | 'failing' | 'hooks'
+  id: 'embeddings' | 'last-run' | 'last-error' | 'failing' | 'hooks'
   level: HealthLevel
   text: string
   /** `kind` de `STATE_ACTION` que resolve, quando existe. */
@@ -134,6 +134,12 @@ export function computeIndexHealth(args: {
     checks.push({ id: 'last-run', level: 'bad', text: `A última indexação falhou: ${runs[0].error}`, action: null })
   } else {
     checks.push({ id: 'last-run', level: 'ok', text: 'A última indexação terminou sem erro.', action: null })
+  }
+
+  // `last_error` do `status.json` (RAGX-0199): o card "Com problema" leva a "Ver detalhes", e o motivo tem de estar aqui.
+  // Sem repetir a mesma mensagem que a última indexação já mostrou.
+  if (project.lastError !== null && (runs.length === 0 || runs[0].error !== project.lastError)) {
+    checks.push({ id: 'last-error', level: 'bad', text: `Erro registrado do índice: ${project.lastError}`, action: null })
   }
 
   const streak = consecutiveFailures(runs)

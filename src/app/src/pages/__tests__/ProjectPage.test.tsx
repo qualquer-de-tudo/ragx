@@ -182,6 +182,16 @@ describe('ProjectPage: está em dia?', () => {
     expect(await screen.findByText('2 arquivo(s) alterado(s) depois da última indexação.')).toBeInTheDocument()
   })
 
+  it('arquivos alterados sem commit: o selo diz Defasado, como "Está em dia?" (a mesma regra)', async () => {
+    // snapshot com commit e branch iguais: sozinho daria "Atualizado"
+    renderPage({ status: stale([{ kind: 'uncommitted_changes', count: 2 }]) })
+    await screen.findByText('2 arquivo(s) alterado(s) depois da última indexação.')
+    const head = screen.getByRole('heading', { level: 1 }).parentElement!
+    expect(within(head).getByText('Defasado')).toBeInTheDocument()
+    expect(within(head).queryByText('Atualizado')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'De relance' })).getByRole('button', { name: /Atualizar/ })).toBeInTheDocument()
+  })
+
   it('embeddings pendentes', async () => {
     renderPage({ status: stale([{ kind: 'pending_embeddings', count: 5 }]) })
     expect(await screen.findByText('5 chunk(s) sem embedding.')).toBeInTheDocument()
@@ -281,6 +291,17 @@ describe('ProjectPage: está em dia?', () => {
     )
     await waitFor(() => expect(bridge.getProjectStatus).toHaveBeenCalledTimes(2))
     expect(bridge.getProjectStatus).toHaveBeenLastCalledWith('p1')
+  })
+
+  it('verifica de novo quando o status.json é regravado sem indexação nova (run de caminhos ou que falhou)', async () => {
+    const { bridge, rerender, onBack } = renderPage({ project: snap({ statusWrittenAt: '2026-09-23T10:00:00Z' }) })
+    await screen.findByText('Em dia com o que está no disco')
+    expect(bridge.getProjectStatus).toHaveBeenCalledTimes(1)
+    // mesmo `index.finishedAt`, só o `written_at` mudou
+    rerender(<ProjectPage project={snap({ statusWrittenAt: '2026-09-23T11:30:00Z' })} jobs={[]} onBack={onBack} />)
+    await waitFor(() => expect(bridge.getProjectStatus).toHaveBeenCalledTimes(2))
+    rerender(<ProjectPage project={snap({ statusWrittenAt: '2026-09-23T11:30:00Z', lastError: 'falhou' })} jobs={[]} onBack={onBack} />)
+    await waitFor(() => expect(bridge.getProjectStatus).toHaveBeenCalledTimes(3))
   })
 })
 
@@ -822,6 +843,22 @@ describe('ProjectPage: de relance (RAGX-0184)', () => {
     expect(screen.getByRole('region', { name: 'De relance' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Ver gráfico' }))
     expect(screen.getByRole('tab', { name: 'Economia de tokens' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('"Ver detalhes" de um projeto com erro: o last_error aparece na faixa, em todas as abas', async () => {
+    rememberProjectTab('historico')
+    renderPage({ project: snap({ lastError: 'Ollama não respondeu em localhost:11434' }) })
+    await screen.findByRole('region', { name: 'De relance' })
+    const faixa = within(screen.getByRole('region', { name: 'De relance' }))
+    expect(faixa.getByText('A última indexação falhou: Ollama não respondeu em localhost:11434')).toBeInTheDocument()
+    expect(within(screen.getByRole('heading', { level: 1 }).parentElement!).getByText('Com problema')).toBeInTheDocument()
+  })
+
+  it('busca degradada nas últimas 24 h aparece em texto na faixa', async () => {
+    renderPage({ project: snap({ telemetry: { callsByTool: [], totalCalls: 4, tokensDelivered: 0, lastCallAt: '2026-09-23T11:00:00Z', degradedCalls: 3 } }) })
+    await screen.findByText('Em dia com o que está no disco')
+    const faixa = within(screen.getByRole('region', { name: 'De relance' }))
+    expect(faixa.getByText(/3 busca\(s\) nas últimas 24 h caíram para palavra-chave/)).toBeInTheDocument()
   })
 
   it('o selo do cabeçalho e o "em uso agora" continuam, e a faixa só chama o status uma vez', async () => {

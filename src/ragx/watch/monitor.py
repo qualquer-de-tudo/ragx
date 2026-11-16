@@ -105,9 +105,9 @@ def _atualizar_grafo(cfg: Config, state: WatchState, tocados: list[str]) -> None
     Quando consolida, o `sync` refaz o grafo completo e esta chamada não acontece.
     """
     try:
-        from ragx.graph.service import update_documents
+        from ragx.graph.service import update_documents_locked
 
-        update_documents(cfg, tocados)
+        update_documents_locked(cfg, tocados, "watch")
     except Exception as exc:
         state.warnings.append(f"grafo: {type(exc).__name__}: {exc}")
 

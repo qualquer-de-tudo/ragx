@@ -107,6 +107,44 @@ def _guarded(fn: Any, tool: str, cfg: Config) -> Any:
         return resposta
 
 
+#: Nome do parâmetro que o SDK preenche com o `Context` da chamada; nunca vai para o schema da ferramenta.
+_CTX = "ragx_ctx"
+#: O `clientInfo.name` que o cliente declarou no `initialize` (RAGX-0199). Um processo do servidor
+#: atende um cliente só (stdio), então basta guardar o primeiro que aparecer.
+_cliente: dict[str, str] = {}
+
+
+def _aceitar_contexto(wrapper: Any, fn: Any, context_cls: Any) -> None:
+    """Faz o SDK injetar o `Context` no `wrapper`, sem tocar na assinatura da ferramenta.
+
+    O SDK acha o parâmetro de contexto pela anotação do tipo e o tira do schema; o dicionário de
+    anotações é NOVO porque `functools.wraps` compartilha o da função original.
+    """
+    import inspect
+    import typing
+
+    # `from __future__ import annotations` deixa as anotações como texto; a assinatura nova precisa
+    # dos tipos já resolvidos, senão o pydantic do SDK não consegue montar o modelo dos argumentos.
+    assinatura = inspect.signature(fn, eval_str=True)
+    extra = inspect.Parameter(_CTX, inspect.Parameter.KEYWORD_ONLY, default=None, annotation=context_cls)
+    params = list(assinatura.parameters.values())
+    wrapper.__signature__ = assinatura.replace(parameters=[*params, extra])
+    wrapper.__annotations__ = {**typing.get_type_hints(fn), _CTX: context_cls}
+
+
+def _lembrar_cliente(ctx: Any) -> None:
+    """Guarda o nome do cliente MCP (Codex, Gemini, Cursor...). Nunca levanta."""
+    if ctx is None or _cliente:
+        return
+    try:
+        params = getattr(ctx.session, "client_params", None)
+        nome = getattr(getattr(params, "client_info", None), "name", None)
+    except Exception:
+        return
+    if isinstance(nome, str) and nome.strip():
+        _cliente["client"] = nome.strip()[:64]
+
+
 def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
     """Telemetria de uso — uma linha por chamada, nunca a query/argumentos.
 
@@ -129,6 +167,9 @@ def _log_call(cfg: Config, tool: str, started_at: float, result: Any) -> None:
             baseline = data.get("baseline_tokens")
             if isinstance(baseline, int):
                 entry["baseline_tokens"] = baseline
+        # O cliente declarado no protocolo; a origem do Claude Code (pelo ambiente), quando
+        # existe, tem precedência dentro de `log_mcp_call`, porque traz perfil e sessão.
+        entry.update(_cliente)
 
         log_mcp_call(cfg.state_dir, entry, cfg.log.retain_days)
     except Exception:
@@ -589,6 +630,10 @@ class KnowledgeAPI:
         }
         if req.tokens > teto:
             payload["tokens_capped"] = teto
+        # Embedder fora (o Ollama fechado): o contexto saiu só da palavra-chave. O agente e o log
+        # precisam saber; antes isso só aparecia na busca, nunca no `build_context` (RAGX-0199).
+        if pack.stats.get("degraded"):
+            payload["degraded"] = pack.stats["degraded"]
         # UMA representação do conteúdo, nunca duas: o markdown e os fragmentos
         # carregavam o mesmo texto, e um pedido de 3.000 tokens chegava a ~8.000
         # (RAGX-0154). `estimated_tokens` conta o markdown que sai, sem o título.
@@ -767,7 +812,7 @@ def build_server(
     allow_write: bool | None = None,
     profile: str | None = None,
 ) -> Any:
-    from mcp.server.mcpserver import MCPServer
+    from mcp.server.mcpserver import Context, MCPServer
 
     write_enabled = cfg.mcp.allow_write if allow_write is None else allow_write
     perfil = profile or cfg.mcp.profile
@@ -797,8 +842,10 @@ def build_server(
 
             @functools.wraps(fn)
             def wrapper(*args: Any, **kwargs: Any) -> str:
+                _lembrar_cliente(kwargs.pop(_CTX, None))
                 return dump(compact(fn(*args, **kwargs)))
 
+            _aceitar_contexto(wrapper, fn, Context)
             server.tool(description=description, structured_output=False)(wrapper)
             return fn
 

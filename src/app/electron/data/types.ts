@@ -34,8 +34,11 @@ export interface SavingsSeries {
   calls: number
 }
 
-/** `mcp`: ferramenta chamada por um agente; `cli`: comando de consulta no terminal; `session`: sessão do Claude aberta no projeto. */
-export type ActivityKind = 'mcp' | 'cli' | 'session'
+/**
+ * `mcp`: ferramenta chamada por um agente; `cli`: comando de consulta no terminal; `session`: sessão do Claude aberta no
+ * projeto; `nudge`: o lembrete de busca do hook (Grep/Glob) foi mostrado, o que NÃO é uso do RAGX (ver `ragx-use.ts`).
+ */
+export type ActivityKind = 'mcp' | 'cli' | 'session' | 'nudge'
 
 /** Uma linha de `.ragx/logs/mcp.jsonl` ou `cli.jsonl`, para a tela de atividade. Nunca a consulta. */
 export interface ActivityEvent {
@@ -56,7 +59,7 @@ export interface ActivityEvent {
   /** Tamanho da resposta no fio, em caracteres, e em tokens estimados (log v2 do servidor MCP). */
   respChars: number | null
   respTokens: number | null
-  /** `claude-code` quando quem chamou foi o Claude Code; `null` quando não dá para saber. */
+  /** Cliente MCP que chamou (`claude-code`, `codex-mcp-client`...); `null` quando não dá para saber. */
   client: string | null
   /** Perfil do Claude Code (`padrão`, `empresa`...). */
   profile: string | null
@@ -71,6 +74,13 @@ export interface TelemetrySummary {
   savings?: SavingsSeries
   /** Maior `ts` de todas as linhas válidas do log, sem o filtro de `sinceHours`. `null` sem log. */
   lastCallAt: string | null
+  /**
+   * O mesmo `lastCallAt`, por cliente MCP (`client` da linha). Linha sem `client` fica de fora: não dá para dizer que
+   * foi o Claude Code. Opcional: snapshot antigo e testes não o têm.
+   */
+  lastCallByClient?: Record<string, string>
+  /** Chamadas da janela `sinceHours` gravadas com `degraded: true` (a busca caiu para palavra-chave: embedder fora). */
+  degradedCalls?: number
 }
 
 /** Um trecho do preview de `build_context` (RAGX-0187): sem `content`, o renderer nunca vê código. */

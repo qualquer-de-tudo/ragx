@@ -147,7 +147,28 @@ def _invocar() -> None:
     Medido neste repo: `--path "*ragx*"` virava `ragx.toml` — um arquivo — e
     a busca devolvia exatamente um documento.
     """
-    typer.main.get_command(app)(windows_expand_args=False)
+    try:
+        typer.main.get_command(app)(windows_expand_args=False)
+    except Exception as exc:
+        _carimbar_falha(exc)
+        raise
+
+
+def _carimbar_falha(exc: BaseException) -> None:
+    """Data e hora antes do traceback quando a saída não é um terminal (RAGX-0199).
+
+    Os hooks de git e o `touch` destacado jogam stderr em `.ragx/logs/hooks.log`; sem isto um
+    `database is locked` ficava lá sem dizer quando aconteceu. No terminal, nada muda.
+    """
+    try:
+        if sys.stderr is not None and not sys.stderr.isatty():
+            from ragx.storage.db import utcnow
+
+            comando = " ".join(a for a in sys.argv[1:3] if not a.startswith("-"))
+            sys.stderr.write(f"--- {utcnow()} ragx {comando}: {type(exc).__name__}\n")
+            sys.stderr.flush()
+    except Exception:
+        pass
 
 
 #: Comandos de CONSULTA que entram no log de atividade (`.ragx/logs/cli.jsonl`).

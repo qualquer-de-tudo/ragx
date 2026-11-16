@@ -890,6 +890,41 @@ describe('createHandlers - perfis do Claude Code', () => {
     expect(() => handlers.addClaudeProfile('token-inventado')).toThrow(/escolha de novo/)
   })
 
+  it('ligar, desligar, adicionar ou remover perfil confere as conexões de novo (card e cabeçalho na hora)', async () => {
+    const runRagxCommand = cli()
+    const checkAll = vi.fn(async () => [])
+    const publishConnections = vi.fn()
+    const deps = makeDeps({ runRagxCommand, checkAll, publishConnections, getRagxExe: () => 'C:/r/ragx.exe' })
+    const handlers = createHandlers(deps)
+    const passos: Array<() => Promise<unknown>> = [
+      () => handlers.setClaudeIntegration(true),
+      () => handlers.setClaudeProfile('claude-code:cliente', false),
+      () => handlers.addClaudeProfile(deps.folderTokens.issue('D:/contas/cliente')),
+      () => handlers.removeClaudeProfile('claude-code:cliente'),
+    ]
+    for (const [i, passo] of passos.entries()) {
+      await passo()
+      await vi.waitFor(() => expect(publishConnections).toHaveBeenCalledTimes(i + 1))
+    }
+    // checagem COMPLETA (sem `light`), a mesma do fim de uma tarefa de conexão
+    expect(checkAll.mock.calls.every((c: unknown[]) => c.length === 1)).toBe(true)
+  })
+
+  it('perfis para o card: a completa pergunta à CLI; a leve usa a última resposta, sem processo', async () => {
+    const runRagxCommand = cli()
+    const handlers = createHandlers(makeDeps({ runRagxCommand }))
+    expect(await handlers.claudeProfilesForChecks(true)).toBeNull() // nada conhecido ainda
+    expect(runRagxCommand).not.toHaveBeenCalled()
+    expect((await handlers.claudeProfilesForChecks(false))?.map((p) => p.id)).toEqual(['claude-code', 'claude-code:cliente'])
+    expect(runRagxCommand).toHaveBeenCalledWith(expect.any(String), ['claude', 'status', '--json'])
+    runRagxCommand.mockClear()
+    expect(await handlers.claudeProfilesForChecks(true)).toHaveLength(2)
+    expect(runRagxCommand).not.toHaveBeenCalled()
+    // CLI falhando: fica a última resposta conhecida
+    runRagxCommand.mockRejectedValueOnce(new Error('fora do ar'))
+    expect(await handlers.claudeProfilesForChecks(false)).toHaveLength(2)
+  })
+
   it('remover desliga antes e tira da lista; perfil detectado não se remove', async () => {
     const runRagxCommand = cli()
     const handlers = createHandlers(makeDeps({ runRagxCommand }))

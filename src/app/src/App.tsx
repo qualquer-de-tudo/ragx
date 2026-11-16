@@ -105,6 +105,8 @@ function App() {
   // O processo principal guarda o resultado da última checagem no snapshot;
   // enquanto ele não tem, vale a checagem feita daqui.
   const health: Health = snapshot?.connectionsHealth ?? worstOf(connections)
+  // Card do Ollama em erro: só acontece quando algum projeto depende dele (sem dependente ele fica "Não usado").
+  const ollamaDown = connections?.some((c) => c.id === 'ollama' && c.state === 'error') ?? false
 
   const onQuery = useCallback((q: string) => {
     setQuery(q)
@@ -198,6 +200,7 @@ function App() {
           jobs={jobs}
           query={query}
           liveIds={liveIds}
+          ollamaDown={ollamaDown}
           onOpen={openProject}
         />
       )
@@ -219,6 +222,7 @@ function App() {
           project={projects.find((p) => p.id === shellRoute.id) ?? null}
           jobs={jobs}
           live={liveIds.has(shellRoute.id)}
+          ollamaDown={ollamaDown}
           onBack={() => setRoute({ page: 'projects' })}
         />
       )

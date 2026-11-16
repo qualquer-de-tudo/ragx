@@ -29,7 +29,8 @@ function summary(g: SessionGroup): string {
     `${formatCompact(g.delivered)} tokens entregues`,
     g.usedRagx ? 'usou o RAGX' : 'não chamou o RAGX',
   ]
-  if (g.starts > 1) parts.push(`${formatNumber(g.starts)} inícios de contexto (subagentes)`)
+  // Início repetido vem de retomada, `/clear` ou compactação do contexto: não é subagente nem outra sessão.
+  if (g.starts > 1) parts.push(`${formatNumber(g.starts)} inícios de contexto`)
   // falha marcada em texto, nunca só por cor ou forma
   parts.push(g.failures === null ? 'falhas: sem dado' : `${formatNumber(g.failures)} falha(s)`)
   return parts.join(', ')

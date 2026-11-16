@@ -173,3 +173,55 @@ def test_leitura_que_nunca_funciona_devolve_o_arquivo_a_fila_em_vez_de_apagar(
     assert touchq.claim(sd) is None
     assert touchq.pending(sd) == ["a.py", "b.py"]  # nada se perdeu: está de volta na fila
     assert not list(sd.glob("*.claimed"))
+
+
+def test_lote_tomado_por_processo_morto_volta_para_a_fila(tmp_path: Path) -> None:
+    """RAGX-0199: um consumidor que morreu entre `claim` e `done` não pode levar as edições junto."""
+    import subprocess
+
+    sd = tmp_path / ".ragx"
+    sd.mkdir()
+    p = subprocess.Popen([sys.executable, "-c", "pass"])
+    p.wait()
+    (sd / f"{touchq.QUEUE_NAME}.{p.pid}.abc.claimed").write_text("src/perdido.py\n", encoding="utf-8")
+    touchq.enqueue(sd, ["src/novo.py"])
+    lote = touchq.claim(sd)
+    assert lote is not None and sorted(lote.paths) == ["src/novo.py", "src/perdido.py"]
+    lote.done()
+    assert not list(sd.glob("*.claimed"))
+
+
+def test_lote_tomado_por_processo_vivo_e_recente_fica_onde_esta(tmp_path: Path) -> None:
+    import os
+
+    sd = tmp_path / ".ragx"
+    sd.mkdir()
+    pai = os.getppid()  # vivo enquanto o teste roda, e diferente do próprio processo
+    tomada = sd / f"{touchq.QUEUE_NAME}.{pai}.abc.claimed"
+    tomada.write_text("src/em_uso.py\n", encoding="utf-8")
+    assert touchq.claim(sd) is None
+    assert tomada.exists()
+
+
+def test_grafo_do_touch_roda_sob_a_trava(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """RAGX-0199: atualizar o grafo fora da trava matava o hook de git com `database is locked`."""
+    from types import SimpleNamespace
+
+    from ragx.core.errors import IndexBusyError
+    from ragx.graph import service
+    from ragx.indexing import lock
+
+    vistos: list[bool] = []
+    monkeypatch.setattr(service, "update_documents",
+                        lambda cfg, rels: vistos.append(lock.holder(cfg.state_dir) is not None))
+    cfg = SimpleNamespace(state_dir=tmp_path)
+    service.update_documents_locked(cfg, ["a.py"], "touch")  # type: ignore[arg-type]
+    assert vistos == [True]
+    assert lock.holder(tmp_path) is None
+
+    assert lock.try_acquire(tmp_path, "index", "hook:post-commit")
+    try:
+        with pytest.raises(IndexBusyError):
+            service.update_documents_locked(cfg, ["a.py"], "touch", wait_s=0)  # type: ignore[arg-type]
+    finally:
+        lock.release(tmp_path)

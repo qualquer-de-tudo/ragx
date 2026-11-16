@@ -35,6 +35,16 @@ describe('computeIndexHealth: checagens', () => {
     expect(h.checks.find((c) => c.id === 'failing')).toBeUndefined() // só 1 seguida
   })
 
+  it('last_error do status.json aparece como checagem bad, sem repetir a mensagem do último run', () => {
+    const h = health({ lastError: 'embedder fora do ar' }, [run()])
+    expect(h.level).toBe('bad')
+    expect(h.checks.find((c) => c.id === 'last-error')).toMatchObject({ level: 'bad', text: 'Erro registrado do índice: embedder fora do ar' })
+    // sem histórico (ragx status ainda não respondeu) também mostra
+    expect(computeIndexHealth({ project: snap({ lastError: 'x' }), state: 'error', status: null }).checks.some((c) => c.id === 'last-error')).toBe(true)
+    // o último run já diz o mesmo erro: uma linha só
+    expect(health({ lastError: 'igual' }, [run({ error: 'igual' })]).checks.some((c) => c.id === 'last-error')).toBe(false)
+  })
+
   it('dois erros seguidos: "está falhando"', () => {
     const h = health({}, [run({ error: 'x' }), run({ error: 'y' }), run()])
     expect(h.checks.find((c) => c.id === 'failing')?.text).toMatch(/está falhando: 2 indexações seguidas/)

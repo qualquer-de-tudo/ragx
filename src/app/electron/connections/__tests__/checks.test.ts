@@ -263,15 +263,43 @@ describe('checkClaude', () => {
     assertNoEmDash(check)
   })
 
-  it('lastMcpCallAt é o maior telemetry.lastCallAt entre os projetos do snapshot', async () => {
+  it('lastMcpCallAt é a última chamada do CLAUDE CODE entre os projetos: Codex e linha sem client não contam', async () => {
     const raw = JSON.stringify({ mcpServers: { ragx: { command: 'ragx' } } })
+    const tel = (lastCallAt: string | null, lastCallByClient: Record<string, string>) =>
+      ({ callsByTool: [], totalCalls: 1, tokensDelivered: 1, lastCallAt, lastCallByClient })
     const snap = snapshot([
-      project({ id: 'a', telemetry: { callsByTool: [], totalCalls: 1, tokensDelivered: 1, lastCallAt: '2026-09-20T10:00:00Z' } }),
-      project({ id: 'b', telemetry: { callsByTool: [], totalCalls: 1, tokensDelivered: 1, lastCallAt: '2026-09-22T10:00:00Z' } }),
+      project({ id: 'a', telemetry: tel('2026-09-20T10:00:00Z', { 'claude-code': '2026-09-20T10:00:00Z' }) }),
+      // a chamada mais nova é do Codex; a linha sem client (24/09) não vira "do Claude"
+      project({ id: 'b', telemetry: tel('2026-09-24T10:00:00Z', { 'claude-code': '2026-09-21T10:00:00Z', 'codex-mcp-client': '2026-09-22T10:00:00Z' }) }),
       project({ id: 'c', telemetry: { callsByTool: [], totalCalls: 0, tokensDelivered: 0, lastCallAt: null } }),
     ])
     const check = await checkClaude(baseDeps({ readFile: () => raw }), snap)
-    expect(check.lastMcpCallAt).toBe('2026-09-22T10:00:00Z')
+    expect(check.lastMcpCallAt).toBe('2026-09-21T10:00:00Z')
+  })
+
+  it('perfis: ligado só num perfil extra conta como conectado e diz quantos', async () => {
+    // ~/.claude.json sem o RAGX: sozinho daria "Não conectado"
+    const raw = JSON.stringify({ mcpServers: {} })
+    const profiles = [
+      { label: 'Claude Code', enabled: false },
+      { label: 'Claude Code (cliente)', enabled: true },
+    ]
+    const check = await checkClaude(baseDeps({ readFile: () => raw }), null, profiles)
+    expect(check.state).toBe('ok')
+    expect(check.summary).toBe('O RAGX está ligado em 1 de 2 perfil(is) do Claude Code.')
+    expect(check.facts).toContainEqual({ label: 'Perfis com o RAGX', value: '1 de 2' })
+    expect(check.actions).toEqual([])
+    assertNoEmDash(check)
+
+    const nenhum = await checkClaude(baseDeps({ readFile: () => raw }), null, profiles.map((p) => ({ ...p, enabled: false })))
+    expect(nenhum.state).toBe('error')
+    expect(nenhum.facts).toContainEqual({ label: 'Perfis com o RAGX', value: '0 de 2' })
+
+    // sem a lista (CLI antiga): o de sempre
+    expect((await checkClaude(baseDeps({ readFile: () => raw }), null, null)).state).toBe('error')
+    // checkAll repassa a lista
+    const [, claude] = await checkAll(baseDeps({ readFile: () => raw }), null, null, null, null, profiles)
+    expect(claude.state).toBe('ok')
   })
 
   it('lastMcpCallAt é null quando não há snapshot ou nenhum projeto chamou o MCP', async () => {
@@ -465,10 +493,26 @@ describe('checkOllama', () => {
     const malformed = { projects: [{}], generatedAt: '2026-09-23T10:00:00Z' } as unknown as Snapshot
     // baseDeps() default (docker sem container, stdout vazio) já dá error
     // por conta própria - o ponto do teste é que a chamada não rejeita por
-    // causa da entrada malformada em `projects`.
+    // causa da entrada malformada em `projects`. A entrada malformada não
+    // depende do Ollama: o card fica neutro ("Não usado"), não vermelho.
     const check = await checkOllama(baseDeps(), malformed)
-    expect(check.state).toBe('error')
+    expect(check.state).toBe('ok')
+    expect(check.stateLabel).toBe('Não usado')
     expect(check.lastMcpCallAt).toBeNull()
+  })
+
+  it('Ollama fora do ar só é erro quando algum projeto usa o provider ollama', async () => {
+    const fastembed = snapshot([project({ embeddingProvider: 'fastembed', embeddingModel: 'BAAI/bge-small-en-v1.5' })])
+    const neutro = await checkOllama(baseDeps(), fastembed)
+    expect(neutro.state).toBe('ok')
+    expect(neutro.stateLabel).toBe('Não usado')
+    expect(neutro.summary).toMatch(/^Nenhum projeto usa o Ollama agora\. /)
+    assertNoEmDash(neutro)
+
+    const usaOllama = await checkOllama(baseDeps(), snapshot([project()]))
+    expect(usaOllama.state).toBe('error')
+    // sem snapshot não se sabe quem depende: erro de sempre
+    expect((await checkOllama(baseDeps(), null)).state).toBe('error')
   })
 })
 

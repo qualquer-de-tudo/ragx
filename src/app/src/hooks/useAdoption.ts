@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { ActivityEvent, AdoptionSummary } from '../types/ragx-bridge'
+import { isRagxUse } from '../../electron/data/ragx-use'
 
 /**
- * Adoção pelos agentes (RAGX-0190): busca no mount e de novo quando chega evento novo de tipo `session` ou `mcp`.
+ * Adoção pelos agentes (RAGX-0190): busca no mount e de novo quando chega `session_start` ou uso do RAGX (`isRagxUse`).
  * `null` enquanto não há resposta (ou se a leitura falhar: a seção some, a tela segue).
  */
 export function useAdoption(events: readonly ActivityEvent[]): AdoptionSummary | null {
   const [summary, setSummary] = useState<AdoptionSummary | null>(null)
   // Chave do último evento que muda a razão: sem ele, o hook não busca de novo.
-  const latest = events.find((e) => e.kind === 'session' || e.kind === 'mcp')?.id ?? null
+  const latest = events.find((e) => e.kind === 'session' || isRagxUse(e))?.id ?? null
 
   useEffect(() => {
     let cancelled = false

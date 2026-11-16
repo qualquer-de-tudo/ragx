@@ -38,11 +38,13 @@ interface GlanceProps {
   status: StatusView
   live: boolean
   jobs: readonly JobView[]
+  /** Problema de embedding em texto (`embeddingAttention`): busca degradada ou Ollama fora com pendentes. */
+  attention?: string | null
   onSeeSavings: () => void
 }
 
 function glanceBlocks(args: GlanceProps): GlanceBlock[] {
-  const { project, state, status, live, jobs, onSeeSavings } = args
+  const { project, state, status, live, jobs, attention = null, onSeeSavings } = args
   const action = STATE_ACTION[state]
   const ratio = savingsRatio(project)
   const last = project.telemetry.lastCallAt
@@ -54,6 +56,8 @@ function glanceBlocks(args: GlanceProps): GlanceBlock[] {
       body: (
         <>
           <div className="glance-main">{freshnessLine(status)}</div>
+          {/* "Ver detalhes" de um card "Com problema" chega aqui: o motivo aparece em todas as abas */}
+          {project.lastError !== null && <p className="hint is-critical">A última indexação falhou: {project.lastError}</p>}
           {action !== null && action.kind !== 'open' && (
             <JobButton
               kind={action.kind}
@@ -87,17 +91,20 @@ function glanceBlocks(args: GlanceProps): GlanceBlock[] {
       id: 'agent',
       title: 'Agente usando?',
       body: (
-        <div className="glance-main">
-          {live ? (
-            'Em uso agora: o agente chamou o RAGX no último minuto.'
-          ) : last ? (
-            <>
-              Última chamada <RelativeTime iso={last} />, {formatNumber(project.telemetry.totalCalls)} chamada(s) em 24 h.
-            </>
-          ) : (
-            'Nenhuma chamada registrada. Confira em Conexões se o RAGX está ligado no Claude Code.'
-          )}
-        </div>
+        <>
+          <div className="glance-main">
+            {live ? (
+              'Em uso agora: o agente chamou o RAGX no último minuto.'
+            ) : last ? (
+              <>
+                Última chamada <RelativeTime iso={last} />, {formatNumber(project.telemetry.totalCalls)} chamada(s) em 24 h.
+              </>
+            ) : (
+              'Nenhuma chamada registrada. Confira em Conexões se o RAGX está ligado no Claude Code.'
+            )}
+          </div>
+          {attention !== null && <p className="hint is-warning">{attention}</p>}
+        </>
       ),
     },
   ]

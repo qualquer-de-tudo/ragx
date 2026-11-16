@@ -455,8 +455,12 @@ arquivos inteiros de onde o contexto saiu). Quando quem chama é o Claude Code, 
 também `client`, `profile` (o perfil, pelo `CLAUDE_CONFIG_DIR`: `padrão`, `empresa`
 de `~/.claude-empresa`...) e `session` (os 8 primeiros caracteres da sessão). Essa
 origem vem do ambiente do processo e é gravada fora do pacote MCP
-(`ragx.diagnostics`), que não lê o ambiente. Fora do Claude Code esses campos não
-aparecem: sem as variáveis dele não dá para saber quem chamou. Query e argumentos
+(`ragx.diagnostics`), que não lê o ambiente. Fora do Claude Code, `client` é o nome que o
+cliente declarou no `initialize` do protocolo (`clientInfo.name`, por exemplo o do Codex);
+`profile` e `session` não aparecem (RAGX-0199). `degraded: true` marca a busca ou o
+`build_context` que caiu para palavra-chave porque o embedder estava fora (o Ollama fechado):
+a chamada dá `ok`, mas sem a parte semântica, e a resposta do `build_context` também traz
+`degraded` com o motivo. Query e argumentos
 nunca são gravados, evitando que o log vire uma cópia do que o time está
 perguntando sobre o próprio código.
 

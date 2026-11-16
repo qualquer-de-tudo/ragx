@@ -259,11 +259,15 @@ def _retrieve(
             }
             if out.partial:
                 stats["partial_vectors"] = out.partial
+            if out.degraded:
+                stats["degraded"] = out.degraded
             return list(out.results), stats, out.query_vec
     res = search(cfg, query, mode="hybrid", limit=want, filters=filters)
     stats = {"graph_seeds": 0, "graph_nodes": 0}
     if res.partial:
         stats["partial_vectors"] = res.partial
+    if res.degraded:
+        stats["degraded"] = res.degraded
     return list(res.results), stats, res.query_vec
 
 

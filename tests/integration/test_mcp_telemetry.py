@@ -190,3 +190,38 @@ def test_a_linha_nunca_traz_a_consulta_nem_a_mensagem_de_erro(proj: Path) -> Non
     asyncio.run(_call_tool(cfg, "get_chunk", chunk_id="nao-existe-segredo"))
     bruto = (proj / ".ragx" / "logs" / "mcp.jsonl").read_text(encoding="utf-8")
     assert "login sso" not in bruto and "nao-existe-segredo" not in bruto
+
+
+def test_busca_que_caiu_para_palavra_chave_grava_degraded() -> None:
+    """RAGX-0199: com o Ollama fechado a chamada dava `ok` e ninguém via que faltou a parte semântica."""
+    from ragx.diagnostics import mcp_entry
+
+    caiu = mcp_entry("search_hybrid", 3.0, "t", {"ok": True, "data": {"degraded": "embedder indisponível"}}, "{}")
+    normal = mcp_entry("search_hybrid", 3.0, "t", {"ok": True, "data": {"degraded": None}}, "{}")
+    assert caiu["degraded"] is True and caiu["ok"] is True
+    assert "degraded" not in normal
+    assert "embedder" not in json.dumps(caiu)  # só o sinal, nunca a mensagem
+
+
+def test_parametro_de_contexto_nao_aparece_no_schema(proj: Path) -> None:
+    import asyncio
+
+    server = build_server(load_config(proj), allow_write=False, profile="full")
+    tools = asyncio.run(server.list_tools())
+    assert tools and all("ragx_ctx" not in json.dumps(t.input_schema) for t in tools)
+
+
+def test_cliente_declarado_no_protocolo_vai_para_o_log(proj: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fora do Claude Code (Codex, Gemini...) a linha ficava sem `client`."""
+    import asyncio
+    from types import SimpleNamespace
+
+    from ragx.mcp import server as srv
+
+    monkeypatch.delenv("CLAUDECODE", raising=False)
+    monkeypatch.setattr(srv, "_cliente", {})
+    ctx = SimpleNamespace(session=SimpleNamespace(
+        client_params=SimpleNamespace(client_info=SimpleNamespace(name="codex-mcp-client"))))
+    srv._lembrar_cliente(ctx)
+    asyncio.run(_call_tool(load_config(proj), "get_dictionary"))
+    assert _log_lines(proj)[-1]["client"] == "codex-mcp-client"

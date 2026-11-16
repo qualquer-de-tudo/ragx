@@ -38,6 +38,25 @@ describe('createTelemetryTail', () => {
     expectSameAsFull(tail)
   })
 
+  it('última chamada POR cliente (linha sem client fica de fora) e chamadas degradadas da janela', () => {
+    const [claude, codex, unknown] = [iso(3 * HOUR), iso(2 * HOUR), iso(HOUR)]
+    fs.writeFileSync(
+      log,
+      [
+        line({ ts: claude, client: 'claude-code' }),
+        line({ ts: codex, client: 'codex-mcp-client', degraded: true }),
+        line({ ts: unknown }), // sem client: desconhecido, não é do Claude
+        line({ ts: iso(30 * HOUR), degraded: true }), // fora da janela de 24 h
+      ].join('\n') + '\n',
+    )
+    const tail = createTelemetryTail()
+    const s = tail.read(dir, 24)
+    expect(s.lastCallAt).toBe(unknown)
+    expect(s.lastCallByClient).toEqual({ 'claude-code': claude, 'codex-mcp-client': codex })
+    expect(s.degradedCalls).toBe(1)
+    expectSameAsFull(tail)
+  })
+
   it('sem crescimento devolve o MESMO objeto (e não relê)', () => {
     fs.writeFileSync(log, [line(), line({ tool: 'build_context', tokens_delivered: 5, baseline_tokens: 50 })].join('\n') + '\n')
     const tail = createTelemetryTail()

@@ -70,6 +70,21 @@ describe('buildSnapshot', () => {
     expect(snap.projects[0].hasStatusFile).toBe(true)
   })
 
+  it('modelo de embedding: o do status.json (último run) vence o do registro; sem ele, o do registro', async () => {
+    const comStatus = await buildSnapshot(baseDeps({
+      readRegistry: () => [project({ embeddingModel: 'modelo-velho' })],
+      readStatus: () => statusFile({ embedding: { provider: 'ollama', model: 'bge-m3' } }),
+    }))
+    expect(comStatus.projects[0].embeddingModel).toBe('bge-m3')
+    const semStatus = await buildSnapshot(baseDeps({ readRegistry: () => [project({ embeddingModel: 'modelo-velho' })] }))
+    expect(semStatus.projects[0].embeddingModel).toBe('modelo-velho')
+  })
+
+  it('written_at do status.json vai para o snapshot (chave para a página do projeto pedir o histórico de novo)', async () => {
+    const snap = await buildSnapshot(baseDeps({ readStatus: () => statusFile({ written_at: '2026-09-24T11:00:00Z' }) }))
+    expect(snap.projects[0].statusWrittenAt).toBe('2026-09-24T11:00:00Z')
+  })
+
   it('(b) projeto sem status.json: counts null e o motivo que manda reindexar (o banco nunca é aberto)', async () => {
     const snap = await buildSnapshot(baseDeps({ readStatus: () => null }))
     expect(snap.projects[0].counts).toBeNull()

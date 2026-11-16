@@ -166,7 +166,8 @@ async function buildProjectSnapshot(proj: HubProject, d: SnapshotDeps): Promise<
     name: proj.name,
     path: proj.path,
     exists,
-    embeddingModel: proj.embeddingModel,
+    // O modelo que o ÚLTIMO run usou (`status.json`) vence o do registro do hub, que pode ter ficado para trás.
+    embeddingModel: statusModel(status) ?? proj.embeddingModel,
     embeddingProvider: status?.embedding.provider ?? null,
     visibility: proj.visibility,
     counts,
@@ -178,8 +179,14 @@ async function buildProjectSnapshot(proj: HubProject, d: SnapshotDeps): Promise<
     pending: status?.pending ?? false,
     lastError: status?.last_error ?? null,
     hasStatusFile: status !== null,
+    statusWrittenAt: typeof status?.written_at === 'string' ? status.written_at : null,
     telemetry,
   }
+}
+
+function statusModel(status: StatusFile | null): string | null {
+  const model = status?.embedding?.model
+  return typeof model === 'string' && model.length > 0 ? model : null
 }
 
 /**
